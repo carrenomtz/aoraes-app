@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AORAES · Preguntas de salud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#14213d">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --midnight:#0e1830; --navy:#14213d; --navy-soft:#3a5077;
+  --gold:#c9a961; --gold-light:#e3d4ab; --gold-deep:#a8842f;
+  --gold-glow:rgba(196,160,90,.16);
+  --ivory:#ffffff; --cream:#f3efe6; --white:#ffffff;
+  --ink:#14213d; --slate:#6c6d76; --mist:#e8e3d6;
+  --sage:#4f7358; --sage-soft:#eaf2ec; --clay:#b0473a;
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --mono:'DM Mono',ui-monospace,monospace;
+  --shadow:0 1px 3px rgba(20,33,61,.06),0 8px 30px rgba(20,33,61,.06);
+  --shadow-lg:0 4px 12px rgba(20,33,61,.08),0 24px 60px rgba(13,23,41,.14);
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.nav{position:sticky;top:0;z-index:50;background:rgba(13,23,41,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(196,160,90,.22);display:flex;align-items:center;padding:.85rem 2rem;gap:1rem}
+.nav-logo{font-family:var(--serif);font-size:1.35rem;font-weight:700;color:var(--gold);letter-spacing:.14em}
+.nav-sep{width:1px;height:18px;background:rgba(255,255,255,.18)}
+.nav-tag{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:.9rem}
+.nav-client{font-size:.8rem;color:rgba(255,255,255,.6)}
+.nav-client b{color:var(--gold-light);font-weight:500}
+.lang-switch{display:inline-flex;align-items:center;border:1px solid rgba(201,169,97,.45);border-radius:9px;overflow:hidden}
+.lang-switch button{border:none;background:transparent;font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.7);padding:6px 11px;cursor:pointer;transition:all .15s}
+.lang-switch button.active{background:var(--gold);color:var(--midnight)}
+
+.hero{background:radial-gradient(120% 100% at 15% 0%,#1a2a47 0%,var(--midnight) 60%);color:#ffffff;padding:2.25rem 2rem 2rem;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-10%;top:-30%;width:50%;height:160%;background:radial-gradient(closest-side,var(--gold-glow),transparent 70%);pointer-events:none}
+.hero-inner{max-width:1180px;margin:0 auto;position:relative;z-index:2}
+.hero-eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem;display:flex;align-items:center;gap:.5rem}
+.hero-eyebrow::before{content:"";width:18px;height:1px;background:var(--gold)}
+.hero-title{font-family:var(--serif);font-size:clamp(1.6rem,3.4vw,2.3rem);font-weight:600;letter-spacing:-.01em;margin-bottom:.65rem}
+.hero-lede{max-width:760px;color:rgba(255,255,255,.72);font-size:.95rem;line-height:1.65}
+
+.disclaimer{max-width:1180px;margin:1.5rem auto 0;padding:0 2rem}
+.disclaimer-box{border:1.5px solid var(--gold-deep);background:var(--cream);border-radius:14px;padding:1.1rem 1.4rem;font-size:.85rem;line-height:1.6;color:var(--ink)}
+.disclaimer-box b{color:var(--navy)}
+
+.toolbar{max-width:1180px;margin:1.5rem auto 0;padding:0 2rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;justify-content:space-between}
+.tb-field{display:flex;flex-direction:column;gap:.35rem;min-width:260px;flex:1}
+.tb-field label{font-family:var(--mono);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--slate)}
+.tb-field input{border:1px solid var(--mist);border-radius:8px;padding:.55rem .75rem;font-family:var(--sans);font-size:.9rem;background:var(--white);color:inherit}
+.tb-field input:focus{outline:none;border-color:var(--gold)}
+.tb-actions{display:flex;gap:.6rem;flex-wrap:wrap}
+.btn{border:none;border-radius:9px;padding:.6rem 1.05rem;font-family:var(--sans);font-size:.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.45rem;transition:.15s}
+.btn svg{width:15px;height:15px}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:var(--midnight)}
+.btn-primary:hover{box-shadow:0 4px 14px rgba(196,160,90,.4)}
+.btn-ghost{background:transparent;border:1px dashed var(--mist);color:var(--slate)}
+.btn-ghost:hover{border-color:var(--clay);color:var(--clay)}
+
+.section{max-width:1180px;margin:0 auto;padding:2rem 2rem}
+.section-head{margin-bottom:1.1rem}
+.section-code{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--navy);color:var(--gold-light);font-family:var(--mono);font-size:.72rem;font-weight:700;margin-right:.6rem}
+.section-title{font-family:var(--serif);font-size:1.35rem;font-weight:600;color:var(--navy);display:inline-flex;align-items:center;vertical-align:middle}
+.section-sub{font-size:.86rem;color:var(--slate);margin-top:.5rem;margin-left:2.3rem}
+
+.qcard{background:var(--white);border:1px solid var(--mist);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.qrow{display:grid;grid-template-columns:1fr 190px 190px;gap:1.1rem;align-items:start;padding:1rem 1.3rem;border-bottom:1px solid var(--mist)}
+.qrow:last-child{border-bottom:none}
+.qrow.qgroup-intro{background:var(--cream);grid-template-columns:1fr;font-size:.85rem;color:var(--slate);line-height:1.55}
+.qrow.qgroup-intro b{color:var(--navy)}
+.qtext{font-size:.87rem;line-height:1.55;color:var(--ink);display:flex;gap:.55rem}
+.qtext .qcode{font-family:var(--mono);font-size:.72rem;color:var(--gold-deep);font-weight:700;flex-shrink:0;padding-top:.1rem}
+.qtext b{color:var(--navy)}
+.qans{display:flex;flex-direction:column;gap:.5rem}
+.qans-head{font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--slate);display:none}
+.qcol.dim{opacity:.4}
+.qcol.dim:focus-within,.qcol.dim:hover{opacity:1}
+.yn{display:inline-flex;gap:1rem}
+.yn label{display:inline-flex;align-items:center;gap:.35rem;font-size:.82rem;color:var(--ink);cursor:pointer;user-select:none}
+.yn input[type=checkbox]{width:15px;height:15px;accent-color:var(--navy);cursor:pointer}
+.qdetail{margin-top:.15rem;border:1px solid var(--mist);border-radius:7px;padding:.4rem .55rem;font-family:var(--sans);font-size:.78rem;background:var(--cream);color:inherit;display:none;width:100%}
+.qdetail.show{display:block}
+.qdetail:focus{outline:none;border-color:var(--gold)}
+.qnum{display:flex;align-items:center;gap:.4rem}
+.qnum input[type=number]{width:5.5em;border:1px solid var(--mist);border-radius:7px;padding:.35rem .5rem;font-family:var(--mono);font-size:.85rem;background:var(--white);color:inherit;text-align:right;-moz-appearance:textfield}
+.qnum input[type=number]::-webkit-outer-spin-button,.qnum input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.qnum input:focus{outline:none;border-color:var(--gold)}
+.qmeasure{display:flex;gap:.6rem}
+.qmeasure div{display:flex;align-items:center;gap:.35rem}
+.qmeasure input{width:5em;border:1px solid var(--mist);border-radius:7px;padding:.35rem .5rem;font-family:var(--mono);font-size:.85rem;background:var(--white);color:inherit;text-align:right;-moz-appearance:textfield}
+.qmeasure input::-webkit-outer-spin-button,.qmeasure input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.qmeasure input:focus{outline:none;border-color:var(--gold)}
+.qmeasure span{font-size:.74rem;color:var(--slate)}
+.qsub{margin-top:.3rem;padding-left:.2rem}
+
+.cols-head{max-width:1180px;margin:0 auto;padding:0 2rem;display:grid;grid-template-columns:1fr 190px 190px;gap:1.1rem;position:sticky;top:60px;z-index:20;background:var(--ivory)}
+.cols-head-inner{grid-column:2/4;display:grid;grid-template-columns:190px 190px;gap:1.1rem;padding:.6rem 0;border-bottom:2px solid var(--navy)}
+.cols-head-inner .ch{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);font-weight:700}
+
+.foot{background:var(--midnight);color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.72rem;font-family:var(--mono);line-height:1.7;margin-top:1rem}
+.foot b{color:var(--gold);opacity:.8}
+
+@media(max-width:760px){
+  .qrow{grid-template-columns:1fr}
+  .qans-head{display:block;margin-top:.3rem}
+  .cols-head{display:none}
+}
+@media print{
+  .nav,.toolbar,.cols-head{display:none!important}
+  .hero{background:var(--navy)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .qcard{box-shadow:none;break-inside:avoid}
+  .qrow{break-inside:avoid}
+  body{font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">AORAES</div>
+  <div class="nav-sep"></div>
+  <div class="nav-tag" data-i18n="nav_tag">Cuestionario médico</div>
+  <div class="nav-right">
+    <div class="nav-client" id="nav-client-wrap" style="display:none"><span data-i18n="prepared_for">Preparado para</span> <b id="nav-client-name">—</b></div>
+    <div class="lang-switch">
+      <button type="button" data-lang="es">ES</button>
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="de">DE</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow" data-i18n="hero_eyebrow">Salud &amp; suscripción</div>
+    <h1 class="hero-title" data-i18n="hero_title">Preguntas de salud</h1>
+    <p class="hero-lede" data-i18n="hero_lede">Cuestionario de referencia para recabar el historial de salud del cliente antes de solicitar un seguro de vida, incapacidad, dependencia o salud.</p>
+  </div>
+</header>
+
+<div class="disclaimer">
+  <div class="disclaimer-box" data-i18n="disclaimer">Para poder tramitar la solicitud, la aseguradora necesita respuestas veraces y completas a estas preguntas.</div>
+</div>
+
+<div class="toolbar">
+  <div class="tb-field" id="tb-client-field">
+    <label data-i18n="client_label">Cliente (referencia interna)</label>
+    <input type="text" id="tb-client" autocomplete="off">
+  </div>
+  <div class="tb-actions">
+    <button type="button" class="btn btn-ghost" id="btn-clear">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M4 4l.6 9a1 1 0 0 0 1 .9h4.8a1 1 0 0 0 1-.9L12 4"/></svg>
+      <span id="btn-clear-label">Limpiar formulario (nuevo cliente)</span>
+    </button>
+    <button type="button" class="btn btn-primary" id="btn-print">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+      <span data-i18n="btn_print">Imprimir / Guardar PDF</span>
+    </button>
+  </div>
+</div>
+
+<div class="cols-head">
+  <div class="cols-head-inner">
+    <div class="ch" data-i18n="persona_a">Persona A</div>
+    <div class="ch" data-i18n="persona_b">Persona B</div>
+  </div>
+</div>
+
+<main id="qroot"></main>
+
+<div class="foot" data-i18n="footer">AORAES · Cuestionario de referencia, no sustituye el formulario oficial de la aseguradora.</div>
+
+<script>
+(function(){
+'use strict';
+
+var UI = {
+  es:{
+    nav_tag:'Cuestionario médico',
+    hero_eyebrow:'Salud & suscripción',
+    hero_title:'Preguntas de salud',
+    hero_lede:'Cuestionario de referencia para recabar el historial de salud del cliente antes de solicitar un seguro de vida, incapacidad, dependencia o salud. Responda con la mayor exactitud posible — la ley exige una declaración veraz y completa; omitir algo, aunque parezca poco importante, puede dejar al cliente sin cobertura real.',
+    disclaimer:'Para poder tramitar la solicitud, la aseguradora necesita respuestas veraces y completas a estas preguntas. Se debe indicar también lo que ya está curado, aunque parezca poco importante o no se considere una enfermedad. El incumplimiento del deber de declaración puede hacer que el cliente se quede sin cobertura real, aunque siga pagando las primas.',
+    client_label:'Cliente (referencia interna)',
+    btn_clear:'Limpiar formulario (nuevo cliente)',
+    btn_print:'Imprimir / Guardar PDF',
+    persona_a:'Persona A',
+    persona_b:'Persona B',
+    footer:'AORAES · Cuestionario de referencia, no sustituye el formulario oficial de la aseguradora · Verifique siempre la solicitud definitiva con la compañía correspondiente.',
+    no:'No', si:'Sí', detail_ph:'Detalles...',
+    confirm_clear:'¿Seguro que quieres limpiar el formulario? Se perderán todas las respuestas guardadas.',
+    prepared_for:'Preparado para',
+    btn_clear_client:'Limpiar respuestas de este cliente',
+    confirm_clear_client:'¿Seguro que quieres borrar las respuestas médicas de {0}? No se puede deshacer.'
+  },
+  en:{
+    nav_tag:'Medical questionnaire',
+    hero_eyebrow:'Health & underwriting',
+    hero_title:'Health questions',
+    hero_lede:'Reference questionnaire to gather the client’s health history before applying for life, disability, long-term care, or health insurance. Answer as accurately as possible — the law requires a truthful and complete disclosure; omitting something, even if it seems unimportant, can leave the client without real coverage.',
+    disclaimer:'To process the application, the insurer needs truthful and complete answers to these questions. This includes anything already resolved, even if it seems unimportant or was not considered an illness. Breaching the duty of disclosure can mean the client has no real coverage even while still paying premiums.',
+    client_label:'Client (internal reference)',
+    btn_clear:'Clear form (new client)',
+    btn_print:'Print / Save as PDF',
+    persona_a:'Person A',
+    persona_b:'Person B',
+    footer:'AORAES · Reference questionnaire, does not replace the insurer’s official form · Always verify the final application with the relevant company.',
+    no:'No', si:'Yes', detail_ph:'Details...',
+    confirm_clear:'Are you sure you want to clear the form? All saved answers will be lost.',
+    prepared_for:'Prepared for',
+    btn_clear_client:'Clear this client’s answers',
+    confirm_clear_client:'Are you sure you want to delete the medical answers for {0}? This cannot be undone.'
+  },
+  de:{
+    nav_tag:'Gesundheitsfragebogen',
+    hero_eyebrow:'Gesundheit & Risikoprüfung',
+    hero_title:'Gesundheitsfragen',
+    hero_lede:'Referenzfragebogen zur Erfassung der Gesundheitshistorie des Kunden vor Beantragung einer Lebens-, BU-, Pflege- oder Krankenversicherung. Bitte so genau wie möglich beantworten — das Gesetz verlangt eine wahrheitsgemäße und vollständige Angabe; das Weglassen von Angaben, auch wenn sie unwesentlich erscheinen, kann dazu führen, dass kein tatsächlicher Versicherungsschutz besteht.',
+    disclaimer:'Um den Antrag prüfen zu können, benötigt die Versicherung wahrheitsgemäße und vollständige Antworten auf diese Fragen. Anzugeben ist auch, was ausgeheilt ist, selbst wenn es als unwesentlich empfunden bzw. nicht als Krankheit behandelt wurde. Die Verletzung der Anzeigepflicht kann dazu führen, dass kein tatsächlicher Versicherungsschutz besteht, obwohl weiterhin Beiträge gezahlt werden.',
+    client_label:'Kunde (interne Referenz)',
+    btn_clear:'Formular leeren (neuer Kunde)',
+    btn_print:'Drucken / Als PDF speichern',
+    persona_a:'Person A',
+    persona_b:'Person B',
+    footer:'AORAES · Referenzfragebogen, ersetzt nicht das offizielle Formular des Versicherers · Bitte den endgültigen Antrag stets mit dem jeweiligen Unternehmen abgleichen.',
+    no:'Nein', si:'Ja', detail_ph:'Erläuterungen...',
+    confirm_clear:'Formular wirklich leeren? Alle gespeicherten Antworten gehen verloren.',
+    prepared_for:'Erstellt für',
+    btn_clear_client:'Antworten dieses Kunden löschen',
+    confirm_clear_client:'Gesundheitsantworten von {0} wirklich löschen? Dies kann nicht rückgängig gemacht werden.'
+  }
+};
+
+// ---- question bank ----
+// type: 'yn' (nein/ja, optional detail), 'text' (free text), 'measure' (cm/kg),
+//       'number' (single count), 'yn-sub' (yn + up to 2 sub yn fields), 'group-intro'
+var SECTIONS = [
+  { id:'A', title:{es:'Médico de cabecera',en:'Family doctor',de:'Hausarzt'}, items:[
+    { id:'a1', code:'A1', type:'yn',
+      text:{es:'¿Tiene médico de cabecera (Hausarzt)?', en:'Do you have a family/general practitioner (Hausarzt)?', de:'Haben Sie einen Hausarzt?'} },
+    { id:'a2', code:'A2', type:'text',
+      text:{es:'Si sí, indique nombre y dirección del médico de cabecera. Si no, ¿quién conoce mejor su estado de salud? (nombre, dirección y especialidad del médico, terapeuta, psicólogo, hospital o clínica)',
+            en:'If yes, name and address of the family doctor. If no, who is best informed about your health (name, address and specialty of the doctor, practitioner, psychologist, hospital/clinic)?',
+            de:'Wenn ja, Name und Anschrift des Hausarztes. Wenn nein, wer ist am besten über Ihren Gesundheitszustand informiert (Name, Anschrift und Fachrichtung des Arztes, Heilpraktikers, Psychologen, Krankenhauses/Kurklinik)?'} }
+  ]},
+  { id:'B', title:{es:'Datos físicos y estilo de vida',en:'Physical data & lifestyle',de:'Körperdaten & Lebensstil'}, items:[
+    { id:'b1', code:'B1', type:'measure',
+      text:{es:'¿Cuánto mide y cuánto pesa?', en:'What is your height and weight?', de:'Wie groß und wie schwer sind Sie?'} },
+    { id:'b2', code:'B2', type:'yn', detail:true,
+      text:{es:'¿Ha practicado en los últimos 2 años deportes o aficiones de riesgo elevado (p. ej. deportes aéreos, motociclismo/automovilismo, submarinismo, equitación, deportes de combate)?',
+            en:'In the last 2 years, have you practiced any high-risk sports or hobbies (e.g. aviation sports, motor sports, diving, horse riding, combat sports)?',
+            de:'Haben Sie in den letzten zwei Jahren Sportarten und Hobbys mit erhöhtem Risiko ausgeübt (z. B. Flugsport, Motorsport, Tauchsport, Reitsport, Kampfsport)?'},
+      detailPh:{es:'¿Cuáles?', en:'Which ones?', de:'Welche?'} },
+    { id:'b3', code:'B3', type:'yn',
+      text:{es:'¿Ha fumado (cigarrillos, puros, cigarritos o pipa) o usado cigarrillos/puros/pipas electrónicos en los últimos 12 meses?',
+            en:'In the last 12 months, have you smoked (cigarettes, cigars, cigarillos or pipe) or used electronic cigarettes/cigars/pipes?',
+            de:'Haben Sie in den letzten 12 Monaten Zigaretten, Zigarren, Zigarillos oder Pfeife geraucht bzw. elektrische Zigaretten, elektrische Zigarren, elektrische Zigarillos oder elektrische Pfeifen benutzt?'} },
+    { id:'b4', code:'B4', type:'yn', detail:true,
+      text:{es:'¿Va a residir en los próximos 12 meses más de 3 meses seguidos fuera de Europa?',
+            en:'Will you be staying outside Europe for more than 3 consecutive months at any point in the next 12 months?',
+            de:'Werden Sie sich innerhalb der nächsten 12 Monate für einen Zeitraum von mehr als 3 Monaten im außereuropäischen Ausland aufhalten?'},
+      detailPh:{es:'País', en:'Country', de:'Land'} }
+  ]},
+  { id:'C', title:{es:'Historial médico (últimos 5–10 años)',en:'Medical history (last 5–10 years)',de:'Krankengeschichte (letzte 5–10 Jahre)'}, items:[
+    { id:'c1', code:'C1', type:'yn',
+      text:{es:'¿Se le ha diagnosticado alguna vez una infección por VIH (test de sida positivo)?',
+            en:'Have you ever been diagnosed with an HIV infection (positive AIDS test)?',
+            de:'Wurde bei Ihnen jemals eine HIV-Infektion festgestellt (positiver AIDS-Test)?'} },
+    { id:'c2', code:'C2', type:'yn',
+      text:{es:'¿Se le ha diagnosticado alguna vez cáncer o un tumor?',
+            en:'Have you ever been diagnosed with cancer or a tumor?',
+            de:'Wurde bei Ihnen jemals eine Krebs- oder Tumorerkrankung festgestellt?'} },
+    { id:'c3', code:'C3', type:'group-intro',
+      text:{es:'En los últimos 5 años, ¿ha sido examinado(a), asesorado(a) o tratado(a) por alguno de los siguientes motivos? (incluye revisiones de control)',
+            en:'In the last 5 years, have you been examined, advised on, or treated for any of the following? (including check-ups)',
+            de:'Haben oder hatten Sie in den letzten 5 Jahren in folgenden Bereichen Krankheiten, Unfallfolgen, Verletzungen oder Beschwerden? Haben Untersuchungen (inklusive Kontrolluntersuchungen), Beratungen oder Behandlungen stattgefunden?'} },
+    { id:'c3_1', code:'C3.1', type:'yn', detail:true, html:true,
+      text:{es:'<b>Corazón</b>, circulación o vasos sanguíneos (p. ej. hipertensión, infarto, trastornos circulatorios, enfermedades venosas)',
+            en:'<b>Heart</b>, circulation or blood vessels (e.g. high blood pressure, heart attack, circulatory disorders, venous disease)',
+            de:'<b>Herz</b>, Kreislauf oder Gefäße (z. B. Bluthochdruck, Infarkt, Durchblutungsstörungen, Venenerkrankungen)'} },
+    { id:'c3_2', code:'C3.2', type:'yn', detail:true, html:true,
+      text:{es:'<b>Aparato respiratorio</b> (p. ej. bronquitis aguda o crónica, asma, apnea del sueño, sinusitis)',
+            en:'<b>Respiratory system</b> (e.g. acute or chronic bronchitis, asthma, sleep apnea, sinusitis)',
+            de:'<b>Atmungsorgane</b> (z. B. akute oder chronische Bronchitis, Asthma, Schlafapnoe, Entzündung der Nasennebenhöhlen)'} },
+    { id:'c3_3', code:'C3.3', type:'yn', detail:true, html:true,
+      text:{es:'<b>Estómago</b>, intestino, vesícula biliar, páncreas o hígado (p. ej. inflamación, valores analíticos elevados, endoscopia digestiva, acidez/reflujo)',
+            en:'<b>Stomach</b>, intestines, gallbladder, pancreas or liver (e.g. inflammation, elevated lab values, endoscopy/colonoscopy, heartburn)',
+            de:'<b>Magen</b>, Darm, Galle, Bauchspeicheldrüse oder Leber (z. B. Entzündung, erhöhte Laborwerte, Magen-Darm-Spiegelung, Sodbrennen)'} },
+    { id:'c3_4', code:'C3.4', type:'yn', detail:true, html:true,
+      text:{es:'<b>Riñón</b>, vejiga, próstata u órganos pélvicos (p. ej. inflamación, cálculos, sangre o proteína en orina, incontinencia, quistes)',
+            en:'<b>Kidney</b>, bladder, prostate or pelvic organs (e.g. inflammation, stones, blood/protein in urine, incontinence, cysts)',
+            de:'<b>Niere</b>, Blase, Prostata oder Unterleibsorgane (z. B. Entzündung, Steinleiden, Blut- oder Eiweißausscheidung, Harninkontinenz, Zysten)'} },
+    { id:'c3_5', code:'C3.5', type:'yn', detail:true, html:true,
+      text:{es:'<b>Esterilidad</b> o trastornos de fertilidad (p. ej. fertilidad reducida, tratamiento hormonal, deseo de embarazo no cumplido)',
+            en:'<b>Infertility</b> or fertility disorders (e.g. reduced fertility, hormone treatment, unfulfilled wish to have children)',
+            de:'<b>Sterilität</b> oder Fruchtbarkeitsstörung (z. B. eingeschränkte Fruchtbarkeit, Hormonbehandlung, unerfüllter Kinderwunsch)'} },
+    { id:'c3_6', code:'C3.6', type:'yn', detail:true, html:true,
+      text:{es:'<b>Metabolismo</b> u hormonas (p. ej. glucosa o lípidos elevados, gota, alteración de la tiroides)',
+            en:'<b>Metabolism</b> or hormones (e.g. elevated blood sugar or lipids, gout, thyroid dysfunction)',
+            de:'<b>Stoffwechsel</b> oder Hormonhaushalt (z. B. erhöhte Blutzucker- oder Blutfettwerte, Gicht, Funktionsstörung der Schilddrüse)'} },
+    { id:'c3_7', code:'C3.7', type:'yn', detail:true, html:true,
+      text:{es:'<b>Sangre</b> (p. ej. anemia, trastornos de la coagulación)',
+            en:'<b>Blood</b> disorders (e.g. anemia, coagulation disorders)',
+            de:'<b>Bluterkrankungen</b> (z. B. Anämie, Blutgerinnungsstörung)'} },
+    { id:'c3_8', code:'C3.8', type:'yn', detail:true, html:true,
+      text:{es:'<b>Sistema nervioso</b>, médula espinal o cerebro (p. ej. epilepsia, migraña, mareos, trastornos del equilibrio o la marcha, cefaleas)',
+            en:'<b>Nervous system</b>, spinal cord or brain (e.g. epilepsy, migraine, dizziness, balance or gait disorders, headaches)',
+            de:'<b>Nervensystem</b>, Rückenmark oder Gehirn (z. B. Epilepsie, Migräne, Schwindel, Stand-, Gang- oder Gleichgewichtsstörungen, Kopfschmerzen)'} },
+    { id:'c3_9', code:'C3.9', type:'yn', detail:true, html:true,
+      text:{es:'<b>Psique</b> (p. ej. depresión, trastornos de ansiedad, trastornos psicosomáticos, duelo, TDAH, trastornos del sueño)',
+            en:'<b>Mental health</b> (e.g. depression, anxiety disorders, psychosomatic disorders, grief/loss, ADHD, sleep disorders)',
+            de:'<b>Psyche</b> (z. B. Depressionen, Angststörungen, psychosomatische Störungen, Trennungs- und Trauerproblematik, ADS, Schlafstörung)'} },
+    { id:'c3_10', code:'C3.10', type:'yn', detail:true, html:true,
+      text:{es:'<b>Columna vertebral</b>, tendones, ligamentos, músculos, huesos o articulaciones (p. ej. enfermedades de espalda, hernia discal, artrosis, reuma, contracturas)',
+            en:'<b>Spine</b>, tendons, ligaments, muscles, bones or joints (e.g. back conditions, disc problems, osteoarthritis, rheumatism, muscle tension)',
+            de:'<b>Wirbelsäule</b>, Sehnen, Bänder, Muskeln, Knochen oder Gelenke (z. B. Rücken-, Bandscheiben- oder Knieerkrankungen, Arthrose, Rheuma, Verspannungen)'} },
+    { id:'c3_11', code:'C3.11', type:'yn', detail:true, html:true,
+      text:{es:'<b>Piel</b> o alergias (p. ej. fiebre del heno, alergia alimentaria, psoriasis, eccemas, neurodermatitis)',
+            en:'<b>Skin</b> or allergies (e.g. hay fever, food allergy, psoriasis, eczema, atopic dermatitis)',
+            de:'<b>Haut</b> oder Allergien (z. B. Heuschnupfen, Nahrungsmittelallergie, Schuppenflechte, Ekzeme, Neurodermitis)'} },
+    { id:'c3_12', code:'C3.12', type:'yn', detail:true, html:true,
+      text:{es:'<b>Ojos</b> u oídos (p. ej. cataratas, glaucoma, acúfenos/tinnitus, tratamiento láser)',
+            en:'<b>Eyes</b> or ears (e.g. cataracts, glaucoma, tinnitus, laser treatment)',
+            de:'<b>Augen</b> oder Ohren (z. B. grauer oder grüner Star, Tinnitus, Laserbehandlung)'} },
+    { id:'c3_13', code:'C3.13', type:'yn', detail:true, html:true,
+      text:{es:'<b>Infecciones</b> (p. ej. hepatitis aguda o crónica, enfermedades tropicales, infecciones de transmisión sexual, infección tras picadura de garrapata, Covid-19)',
+            en:'<b>Infections</b> (e.g. acute or chronic hepatitis, tropical diseases, sexually transmitted infections, tick-bite infection, Covid-19)',
+            de:'<b>Infektionen</b> (z. B. akute oder chronische Hepatitis, Tropenkrankheiten, Geschlechtserkrankungen, Infektion nach Zeckenbiss, Covid-19)'} },
+    { id:'c3_14', code:'C3.14', type:'yn', detail:true, html:true,
+      text:{es:'<b>Intoxicaciones</b> o adicciones (p. ej. consumo de alcohol o drogas)',
+            en:'<b>Poisoning</b> or addiction (e.g. alcohol or drug use)',
+            de:'<b>Vergiftungen</b> oder Suchterkrankungen (z. B. Alkohol- oder Drogenkonsum)'} },
+    { id:'c4', code:'C4', type:'yn', detail:true,
+      text:{es:'¿Le han recetado medicamentos, médicos o naturópatas, en los últimos 2 años? (indique cuáles en «Detalles»)',
+            en:'In the last 2 years, have doctors or alternative practitioners prescribed you any medication? (please list in “Details”)',
+            de:'Wurden Ihnen in den letzten 2 Jahren von Ärzten oder Heilpraktikern Medikamente verordnet? (bitte Medikamente unter Erläuterungen angeben)'} },
+    { id:'c5', code:'C5', type:'yn',
+      text:{es:'¿Ha tenido operaciones (también ambulatorias) o ingresos hospitalarios en los últimos 10 años (p. ej. hospital, clínica de rehabilitación o cura)?',
+            en:'In the last 10 years, have you had any operations (including outpatient) or hospital stays (e.g. hospital, rehab or spa clinic)?',
+            de:'Haben in den letzten 10 Jahren Operationen (auch ambulante) oder stationäre Aufenthalte (z. B. Krankenhaus, Reha- oder Kurklinik) stattgefunden?'} },
+    { id:'c6', code:'C6', type:'yn',
+      text:{es:'¿Son necesarios o se le han recomendado tratamientos, revisiones o exploraciones ambulatorias u hospitalarias (incluidas revisiones de control)?',
+            en:'Are any outpatient or inpatient treatments, consultations or examinations necessary or recommended (including check-ups)?',
+            de:'Sind ambulante oder stationäre Behandlungen, Beratungen oder Untersuchungen (auch Kontrolluntersuchungen) notwendig oder angeraten?'} },
+    { id:'c7', code:'C7', type:'yn', detail:true,
+      text:{es:'¿Existe un embarazo en curso?', en:'Is there a current pregnancy?', de:'Besteht eine Schwangerschaft?'},
+      detailPh:{es:'Semana de embarazo al solicitar', en:'Week of pregnancy at application', de:'Schwangerschaftswoche bei Antragstellung'} }
+  ]},
+  { id:'D', title:{es:'Discapacidad y prestaciones',en:'Disability & benefits',de:'Behinderung & Leistungen'}, items:[
+    { id:'d1', code:'D1', type:'yn', detail:true,
+      text:{es:'¿Existen limitaciones físicas o psíquicas (p. ej. amputaciones, parálisis, discapacidad visual a partir de 8 dioptrías, hipoacusia)?',
+            en:'Do you have any physical or mental impairments (e.g. amputations, paralysis, visual impairment from 8 diopters, hearing loss)?',
+            de:'Bestehen geistige oder körperliche Beeinträchtigungen (z. B. Amputationen, Lähmungen, Fehlsichtigkeit ab 8 Dioptrien, Schwerhörigkeit)?'},
+      detailPh:{es:'Diagnóstico y grado', en:'Diagnosis and degree', de:'Diagnose und Grad'} },
+    { id:'d2', code:'D2', type:'yn', detail:true,
+      text:{es:'¿Existe una incapacidad laboral o profesional reconocida, o un accidente de trabajo reconocido?',
+            en:'Has a reduced earning capacity, occupational disability, or a recognized work accident been established?',
+            de:'Besteht Erwerbsminderung, Berufsunfähigkeit oder ist ein Arbeitsunfall anerkannt?'},
+      detailPh:{es:'% y adjuntar resolución', en:'% and attach official decision', de:'%-Satz und Bescheid'} },
+    { id:'d3', code:'D3', type:'yn', detail:true,
+      text:{es:'¿Percibe o ha solicitado, por motivos de salud en los últimos 5 años, una pensión u otra prestación periódica? ¿Tiene certificado de discapacidad?',
+            en:'Do you receive, or have you applied for in the last 5 years, a pension or other recurring benefit for health reasons? Do you hold a disability certificate?',
+            de:'Bezogen/Beziehen Sie aus gesundheitlichen Gründen eine Rente/eine sonstige wiederkehrende Leistung, haben Sie einen Schwerbehindertenausweis, oder haben Sie in den letzten 5 Jahren eine solche Leistung beantragt?'},
+      detailPh:{es:'Porcentaje / detalles', en:'Percentage / details', de:'Prozentsatz / Erläuterungen'} },
+    { id:'d4', code:'D4', type:'yn', detail:true,
+      text:{es:'¿Se han contratado ya, o solicitado en los últimos 5 años (incluso junto con esta solicitud), seguros de incapacidad laboral, renta por dependencia o capacidad básica en otra aseguradora de vida?',
+            en:'Have occupational disability, long-term care, or basic-ability insurance policies already been taken out with another life insurer, or applied for in the last 5 years (even together with this application)?',
+            de:'Wurden bereits Berufs-/Erwerbsunfähigkeits-, Pflegerenten- oder Grundfähigkeits-(Zusatz-)Versicherungen bei anderen Lebensversicherungsunternehmen abgeschlossen, oder sind solche Anträge in den letzten 5 Jahren gestellt worden?'},
+      detailPh:{es:'Renta anual BU/EU/dependencia', en:'Annual BU/EU/care annuity', de:'Jährliche BU-/EU-/Pflegerente'} },
+    { id:'d5', code:'D5', type:'yn',
+      text:{es:'¿Utiliza o necesita ayuda visual (gafas, lentillas)?', en:'Do you use or need visual aids (glasses, contact lenses)?', de:'Wird eine Sehhilfe (Brille, Kontaktlinsen) getragen oder ist eine solche notwendig oder angeraten?'} }
+  ]},
+  { id:'E', title:{es:'Salud dental',en:'Dental health',de:'Zahngesundheit'}, items:[
+    { id:'e1', code:'E1', type:'yn-sub',
+      text:{es:'¿Tiene prótesis dental removible?', en:'Do you have removable dentures?', de:'Haben Sie herausnehmbaren Zahnersatz?'},
+      sub:[
+        {id:'up', text:{es:'¿Maxilar superior?', en:'Upper jaw?', de:'Im Oberkiefer?'}},
+        {id:'lo', text:{es:'¿Maxilar inferior?', en:'Lower jaw?', de:'Im Unterkiefer?'}}
+      ] },
+    { id:'e2', code:'E2', type:'number',
+      text:{es:'¿En cuántos dientes se ha realizado una endodoncia (tratamiento de conducto) en los últimos 2 años?',
+            en:'In how many teeth has a root canal treatment been performed in the last 2 years?',
+            de:'Bei wie vielen Zähnen wurde in den letzten zwei Jahren eine Zahnwurzelbehandlung durchgeführt?'} },
+    { id:'e3', code:'E3', type:'yn',
+      text:{es:'¿Se le ha diagnosticado o tratado periodontitis / piorrea en los últimos 3 años?',
+            en:'Has periodontosis/periodontitis been diagnosed or treated in the last 3 years?',
+            de:'Wurde in den letzten drei Jahren eine Parodontose oder Parodontitis festgestellt oder behandelt?'} },
+    { id:'e4', code:'E4', type:'yn',
+      text:{es:'¿Está en curso, o es necesario o se ha recomendado, algún tratamiento dental, ortodóncico o de prótesis dental?',
+            en:'Is any dental, orthodontic, or denture/prosthesis treatment currently underway, necessary, or recommended?',
+            de:'Findet zurzeit eine Zahnbehandlung, eine kieferorthopädische Behandlung oder eine Zahnersatzmaßnahme statt, oder ist eine solche notwendig oder angeraten?'} },
+    { id:'e5', code:'E5', type:'number',
+      text:{es:'Número de dientes naturales perdidos aún no reemplazados (sin contar muelas del juicio, dientes de leche ni cierre de espacios)',
+            en:'Number of missing natural teeth not yet replaced (excluding wisdom teeth, baby teeth, and closed gaps)',
+            de:'Anzahl der noch nicht ersetzten fehlenden natürlichen Zähne (ohne Weisheits- und Milchzähne sowie Lückenschluss)'} }
+  ]}
+];
+
+// ---- state / persistence ----
+// Standalone mode (no CRM client open): one autosaved scratch draft.
+// Client-linked mode (opened from a client's workspace in index.html): answers are
+// keyed by client id, so each client keeps their own record across visits.
+var STORAGE_KEY='aoraes_med_draft_v1';
+var MED_BY_CLIENT_KEY='aoraes_med_by_client_v1';
+var CLIENTS_KEY='aoraes_clients_v1', ACTIVE_KEY='aoraes_active_client';
+var currentClientId=null, currentClientName=null;
+(function initialClientSync(){
+  try{
+    var id=localStorage.getItem(ACTIVE_KEY);
+    if(id){
+      var arr=JSON.parse(localStorage.getItem(CLIENTS_KEY))||[];
+      var rec=arr.filter(function(c){return c.id===id;})[0];
+      currentClientId=id; currentClientName=rec?(rec.name||null):null;
+    }
+  }catch(e){}
+})();
+var lang=(function(){try{return localStorage.getItem('aoraes_lang')||'es';}catch(e){return 'es';}})();
+var state=loadState();
+
+function defaultState(){ return { client:'', a:{}, b:{} }; }
+function loadState(){
+  try{
+    if(currentClientId){
+      var byClient=JSON.parse(localStorage.getItem(MED_BY_CLIENT_KEY))||{};
+      var rec=byClient[currentClientId];
+      return rec ? { client:rec.client||'', a:rec.a||{}, b:rec.b||{} } : defaultState();
+    }
+    var raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    var parsed=JSON.parse(raw);
+    return { client:parsed.client||'', a:parsed.a||{}, b:parsed.b||{} };
+  }catch(e){ return defaultState(); }
+}
+function saveState(){
+  try{
+    if(currentClientId){
+      var byClient=JSON.parse(localStorage.getItem(MED_BY_CLIENT_KEY))||{};
+      byClient[currentClientId]=state;
+      localStorage.setItem(MED_BY_CLIENT_KEY, JSON.stringify(byClient));
+      // Espejo opcional en la carpeta Clientes; index.html decide si hay carpeta configurada.
+      try{ if(window.parent && window.parent!==window && typeof window.parent.aoraesMirrorClients==='function') window.parent.aoraesMirrorClients([currentClientId]); }catch(e2){}
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+  }catch(e){}
+}
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+// ---- rendering ----
+function renderAll(){
+  var root=document.getElementById('qroot');
+  var html='';
+  SECTIONS.forEach(function(sec){
+    html+='<section class="section" id="sec-'+sec.id+'">';
+    html+='<div class="section-head"><span class="section-code">'+sec.id+'</span><h2 class="section-title">'+esc(sec.title[lang])+'</h2></div>';
+    html+='<div class="qcard">';
+    sec.items.forEach(function(q){ html+=renderQuestion(q); });
+    html+='</div></section>';
+  });
+  root.innerHTML=html;
+  bindEvents();
+  reflectState();
+}
+
+function renderQuestion(q){
+  if(q.type==='group-intro'){
+    return '<div class="qrow qgroup-intro">'+esc(q.text[lang])+'</div>';
+  }
+  var label=q.html?q.text[lang]:esc(q.text[lang]);
+  var out='<div class="qrow" data-qid="'+q.id+'">';
+  out+='<div class="qtext"><span class="qcode">'+q.code+'</span><span>'+label+'</span></div>';
+  out+=renderAnswerCol(q,'a')+renderAnswerCol(q,'b');
+  out+='</div>';
+  return out;
+}
+
+function renderAnswerCol(q,person){
+  var head='<div class="qans-head">'+UI[lang][person==='a'?'persona_a':'persona_b']+'</div>';
+  if(q.type==='text'){
+    return '<div class="qans qcol" data-person="'+person+'">'+head+
+      '<input type="text" class="qdetail show" data-text="'+q.id+'" data-person="'+person+'"></div>';
+  }
+  if(q.type==='measure'){
+    return '<div class="qans qcol" data-person="'+person+'">'+head+
+      '<div class="qmeasure">'+
+      '<div><input type="number" min="0" max="250" data-num="'+q.id+'.h" data-person="'+person+'"><span>cm</span></div>'+
+      '<div><input type="number" min="0" max="300" data-num="'+q.id+'.w" data-person="'+person+'"><span>kg</span></div>'+
+      '</div></div>';
+  }
+  if(q.type==='number'){
+    return '<div class="qans qcol" data-person="'+person+'">'+head+
+      '<div class="qnum"><input type="number" min="0" max="99" data-num="'+q.id+'" data-person="'+person+'"></div></div>';
+  }
+  if(q.type==='yn-sub'){
+    var sub=(q.sub||[]).map(function(s){
+      return '<label class="qsub"><input type="checkbox" data-sub="'+q.id+'.'+s.id+'" data-person="'+person+'"> '+esc(s.text[lang])+'</label>';
+    }).join('');
+    return '<div class="qans qcol" data-person="'+person+'">'+head+
+      ynPair(q.id,person)+
+      '<div class="qsub-wrap" data-subwrap="'+q.id+'" data-person="'+person+'" style="display:none">'+sub+'</div></div>';
+  }
+  // default: yn (with optional detail)
+  var detailHtml='';
+  if(q.detail){
+    var ph=(q.detailPh?q.detailPh[lang]:UI[lang].detail_ph);
+    detailHtml='<input type="text" class="qdetail" placeholder="'+esc(ph)+'" data-detail="'+q.id+'" data-person="'+person+'">';
+  }
+  return '<div class="qans qcol" data-person="'+person+'">'+head+ynPair(q.id,person)+detailHtml+'</div>';
+}
+
+function ynPair(qid,person){
+  return '<div class="yn">'+
+    '<label><input type="checkbox" data-ans="no" data-qid="'+qid+'" data-person="'+person+'"> <span class="ans-lbl-no">'+UI[lang].no+'</span></label>'+
+    '<label><input type="checkbox" data-ans="si" data-qid="'+qid+'" data-person="'+person+'"> <span class="ans-lbl-si">'+UI[lang].si+'</span></label>'+
+    '</div>';
+}
+
+// ---- events ----
+function bindEvents(){
+  document.querySelectorAll('input[data-ans]').forEach(function(cb){
+    cb.addEventListener('change',function(){
+      var qid=cb.getAttribute('data-qid'), person=cb.getAttribute('data-person'), ans=cb.getAttribute('data-ans');
+      var p=state[person]; if(!p[qid])p[qid]={};
+      if(cb.checked){
+        p[qid].ans=ans;
+        var sibling=document.querySelector('input[data-ans="'+(ans==='si'?'no':'si')+'"][data-qid="'+qid+'"][data-person="'+person+'"]');
+        if(sibling)sibling.checked=false;
+      } else {
+        if(p[qid].ans===ans) p[qid].ans=null;
+      }
+      saveState();
+      updateVisibility(qid,person);
+    });
+  });
+  document.querySelectorAll('input[data-detail]').forEach(function(inp){
+    inp.addEventListener('input',function(){
+      var qid=inp.getAttribute('data-detail'), person=inp.getAttribute('data-person');
+      var p=state[person]; if(!p[qid])p[qid]={};
+      p[qid].detail=inp.value; saveState();
+    });
+  });
+  document.querySelectorAll('input[data-sub]').forEach(function(inp){
+    inp.addEventListener('change',function(){
+      var key=inp.getAttribute('data-sub'), person=inp.getAttribute('data-person');
+      var parts=key.split('.'), qid=parts[0], subid=parts[1];
+      var p=state[person]; if(!p[qid])p[qid]={}; if(!p[qid].sub)p[qid].sub={};
+      p[qid].sub[subid]=inp.checked; saveState();
+    });
+  });
+  document.querySelectorAll('input[data-num]').forEach(function(inp){
+    inp.addEventListener('input',function(){
+      var key=inp.getAttribute('data-num'), person=inp.getAttribute('data-person');
+      state[person][key]=inp.value; saveState();
+      updateDim(person);
+    });
+  });
+  document.querySelectorAll('input[data-text]').forEach(function(inp){
+    inp.addEventListener('input',function(){
+      var qid=inp.getAttribute('data-text'), person=inp.getAttribute('data-person');
+      state[person][qid]=inp.value; saveState();
+      updateDim(person);
+    });
+  });
+  var clientEl=document.getElementById('tb-client');
+  clientEl.addEventListener('input',function(){ state.client=clientEl.value; saveState(); });
+}
+
+function updateVisibility(qid,person){
+  var det=document.querySelector('input[data-detail="'+qid+'"][data-person="'+person+'"]');
+  if(det){
+    var checked=document.querySelector('input[data-ans="si"][data-qid="'+qid+'"][data-person="'+person+'"]').checked;
+    det.classList.toggle('show',checked);
+  }
+  var subwrap=document.querySelector('[data-subwrap="'+qid+'"][data-person="'+person+'"]');
+  if(subwrap){
+    var checkedSi=document.querySelector('input[data-ans="si"][data-qid="'+qid+'"][data-person="'+person+'"]').checked;
+    subwrap.style.display=checkedSi?'block':'none';
+  }
+  updateDim(person);
+}
+
+function updateDim(person){
+  var col=document.querySelectorAll('.qcol[data-person="'+person+'"]');
+  var has=hasAnyData(person);
+  col.forEach(function(c){ c.classList.toggle('dim', !has); });
+}
+
+function hasAnyData(person){
+  var p=state[person];
+  for(var k in p){
+    var v=p[k];
+    if(v==null) continue;
+    if(typeof v==='string' && v.trim()!=='') return true;
+    if(typeof v==='object'){
+      if(v.ans) return true;
+      if(v.detail && v.detail.trim()!=='') return true;
+      if(v.sub){ for(var s in v.sub){ if(v.sub[s]) return true; } }
+    }
+  }
+  return false;
+}
+
+function reflectState(){
+  ['a','b'].forEach(function(person){
+    var p=state[person];
+    for(var qid in p){
+      var v=p[qid];
+      if(v==null) continue;
+      if(typeof v==='string'){
+        var numEl=document.querySelector('input[data-num="'+qid+'"][data-person="'+person+'"],input[data-text="'+qid+'"][data-person="'+person+'"]');
+        if(numEl) numEl.value=v;
+        continue;
+      }
+      if(v.ans){
+        var cb=document.querySelector('input[data-ans="'+v.ans+'"][data-qid="'+qid+'"][data-person="'+person+'"]');
+        if(cb) cb.checked=true;
+      }
+      if(v.detail){
+        var det=document.querySelector('input[data-detail="'+qid+'"][data-person="'+person+'"]');
+        if(det){ det.value=v.detail; }
+      }
+      if(v.sub){
+        for(var s in v.sub){
+          var subEl=document.querySelector('input[data-sub="'+qid+'.'+s+'"][data-person="'+person+'"]');
+          if(subEl) subEl.checked=!!v.sub[s];
+        }
+      }
+      updateVisibility(qid,person);
+    }
+    updateDim(person);
+  });
+  document.getElementById('tb-client').value=state.client||'';
+}
+
+// ---- client chrome (nav-client label, toolbar field, clear button) ----
+function updateClientChrome(){
+  var navWrap=document.getElementById('nav-client-wrap');
+  var navName=document.getElementById('nav-client-name');
+  var tbField=document.getElementById('tb-client-field');
+  var clearLabel=document.getElementById('btn-clear-label');
+  if(currentClientId){
+    navWrap.style.display='';
+    navName.textContent=currentClientName||'—';
+    tbField.style.display='none';
+    clearLabel.textContent=UI[lang].btn_clear_client;
+  } else {
+    navWrap.style.display='none';
+    tbField.style.display='';
+    clearLabel.textContent=UI[lang].btn_clear;
+  }
+}
+
+// Called by index.html whenever the CRM's active client changes (or on first load
+// of this tab/iframe) so this page keeps answering "whose questionnaire is this?".
+window.aoraesSetClient=function(id,name){
+  id=id||null;
+  if(id===currentClientId) return;
+  currentClientId=id; currentClientName=name||null;
+  state=loadState();
+  renderAll();
+  updateClientChrome();
+};
+
+// ---- i18n chrome ----
+function applyLang(l){
+  lang=(l==='en'||l==='de')?l:'es';
+  try{localStorage.setItem('aoraes_lang',lang);}catch(e){}
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    var key=el.getAttribute('data-i18n');
+    if(UI[lang][key]!=null) el.textContent=UI[lang][key];
+  });
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-lang')===lang);
+  });
+  document.documentElement.setAttribute('lang',lang);
+  renderAll();
+  updateClientChrome();
+}
+
+// ---- toolbar actions ----
+document.addEventListener('click',function(e){
+  var lb=e.target.closest('[data-lang]');
+  if(lb){ applyLang(lb.getAttribute('data-lang')); return; }
+});
+document.getElementById('btn-print').addEventListener('click',function(){ window.print(); });
+document.getElementById('btn-clear').addEventListener('click',function(){
+  var msg=currentClientId ? UI[lang].confirm_clear_client.replace('{0}',currentClientName||'') : UI[lang].confirm_clear;
+  if(!confirm(msg)) return;
+  state=defaultState(); saveState(); renderAll();
+});
+
+applyLang(lang);
+})();
+</script>
+</body>
+</html>

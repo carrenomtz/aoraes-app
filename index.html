@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>AORAES · Herramientas del asesor</title>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="AORAES" />
+<meta name="theme-color" content="#14213d" />
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+
+  /* ============================================================
+     AORAES · design system — "private wealth instrument"
+     Brand: navy + restrained gold on warm ivory. Fraunces (display,
+     optical) + Manrope (text) + tabular figures for all numbers.
+     ============================================================ */
+  :root{
+    /* surfaces */
+    --bg:#f3efe6; --surface:#ffffff; --surface-soft:#ffffff; --navy:#14213d; --navy-deep:#0e1830; --navy-2:#3a5077;
+    /* ink ramp */
+    --ink:#1b1c22; --muted:#6c6d76; --faint:#9a9ba4;
+    /* lines + gold */
+    --line:#e8e3d6; --line-soft:#f3efe6; --line-strong:#dcd5c4;
+    --gold:#c9a961; --gold-deep:#a8842f; --gold-soft:#e3d4ab; --gold-tint:#eaf2ec;
+    /* status */
+    --green:#c9a961; --red:#b0473a; --amber:#c9a961;
+    /* elevation (soft, navy-tinted) */
+    --sh-1:0 1px 2px rgba(20,33,61,.05), 0 1px 1px rgba(20,33,61,.04);
+    --sh-2:0 4px 14px rgba(20,33,61,.07);
+    --sh-3:0 18px 44px rgba(20,33,61,.13);
+    /* radii + rhythm */
+    --r-sm:9px; --r-md:13px; --r-lg:18px; --r-xl:22px;
+    --tab:tabular-nums;
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Manrope',system-ui,-apple-system,sans-serif; font-size:15px; line-height:1.55;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    display:flex; flex-direction:column; min-height:100%;
+  }
+  h1,h2,h3,h4{font-family:'Fraunces',Georgia,serif; font-optical-sizing:auto; font-weight:600; letter-spacing:-.01em; color:var(--navy); margin:0}
+  .num{font-variant-numeric:var(--tab)}
+  ::selection{background:var(--gold-soft)}
+  :focus-visible{outline:2px solid var(--gold-deep); outline-offset:2px; border-radius:4px}
+  a{color:inherit}
+
+  /* ---------- app bar ---------- */
+  .appbar{
+    position:sticky; top:0; z-index:30; flex:0 0 auto;
+    display:flex; align-items:center; gap:16px; height:62px; padding:0 clamp(14px,3vw,30px);
+    background:linear-gradient(168deg,#182746 0%,var(--navy-deep) 100%);
+    color:#ffffff; border-bottom:1px solid #20304f;
+    box-shadow:0 1px 0 rgba(201,169,97,.25), 0 10px 30px rgba(13,22,38,.22);
+  }
+  .brand{display:flex; align-items:center; gap:10px; margin-right:auto; min-width:0}
+  .brand-icon{height:26px; width:auto; flex:0 0 auto; display:block}
+  .brand-text{display:flex; flex-direction:column; line-height:1; min-width:0}
+  .brand-mark{font-family:'Fraunces',sans-serif; font-weight:700; font-size:21px; letter-spacing:.04em; color:var(--gold-soft)}
+  .brand-sub{font-size:9.5px; letter-spacing:.22em; text-transform:uppercase; color:#9db0cf; margin-top:4px}
+  .active-chip{
+    display:none; align-items:center; gap:8px; cursor:pointer;
+    background:rgba(201,169,97,.14); border:1px solid rgba(230,216,178,.34); color:var(--gold-soft);
+    font-size:12px; font-weight:600; padding:6px 8px 6px 12px; border-radius:999px; white-space:nowrap; max-width:240px;
+    transition:background .18s var(--ease), border-color .18s var(--ease);
+  }
+  .active-chip.on{display:inline-flex}
+  .active-chip:hover{background:rgba(201,169,97,.22); border-color:rgba(230,216,178,.55)}
+  .active-chip .ac-dot{width:7px; height:7px; border-radius:50%; background:var(--gold); flex:0 0 auto; box-shadow:0 0 0 3px rgba(201,169,97,.22)}
+  .active-chip .ac-name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .active-chip .ac-x{background:transparent; border:0; color:#9db0cf; cursor:pointer; font-size:13px; line-height:1; padding:2px 3px; border-radius:5px}
+  .active-chip .ac-x:hover{color:#ffffff}
+  .switch{display:flex; gap:4px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none}
+  .switch::-webkit-scrollbar{display:none}
+  .switch button{
+    flex:0 0 auto; background:transparent; border:1px solid transparent; color:#c4d0e3;
+    font-family:inherit; font-size:13px; font-weight:600; padding:9px 15px; border-radius:var(--r-sm);
+    cursor:pointer; white-space:nowrap; transition:background .16s var(--ease), color .16s var(--ease);
+  }
+  .switch button:hover{background:rgba(255,255,255,.07); color:#ffffff}
+  .switch button.active{background:var(--gold); color:var(--navy-deep); border-color:var(--gold); box-shadow:0 2px 8px rgba(201,169,97,.35)}
+
+  .scr{flex:1 1 auto; overflow-y:auto}
+  .scr[hidden]{display:none}
+  @media (prefers-reduced-motion:no-preference){
+    #home:not([hidden]), #workspace:not([hidden]){animation:rise .34s var(--ease) both}
+    @keyframes rise{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  }
+
+  /* ---------- cockpit ---------- */
+  .home{padding:clamp(26px,4.5vw,46px) clamp(16px,5vw,48px) 52px}
+  .cock{max-width:1100px; margin:0 auto}
+  .cock-head{display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap; margin-bottom:22px}
+  .cock-eyebrow{font-size:10.5px; letter-spacing:.26em; text-transform:uppercase; color:var(--gold-deep); font-weight:700}
+  .cock-eyebrow::before{content:""; display:inline-block; width:18px; height:1.5px; background:var(--gold); vertical-align:middle; margin-right:9px; transform:translateY(-2px)}
+  .cock-head h1{font-size:clamp(26px,4vw,36px); line-height:1.04; margin-top:10px}
+  .cock-new{
+    background:var(--navy); color:#ffffff; border:0; font-family:inherit; font-weight:600; font-size:13.5px;
+    min-height:42px; padding:0 19px; border-radius:var(--r-md); cursor:pointer;
+    box-shadow:var(--sh-2); transition:transform .16s var(--ease), background .16s var(--ease), box-shadow .16s var(--ease);
+  }
+  .cock-new:hover{background:var(--navy-deep); transform:translateY(-1px); box-shadow:var(--sh-3)}
+  .cock-new:active{transform:translateY(0)}
+
+  .cock-insights{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:22px}
+  .ins{
+    position:relative; display:flex; align-items:center; gap:13px;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:14px 16px; box-shadow:var(--sh-1);
+  }
+  .ins::before{content:""; position:absolute; left:0; top:12px; bottom:12px; width:2px; border-radius:2px; background:var(--line-strong)}
+  .ins:first-child::before{background:var(--gold)}
+  .ins-num{font-family:'Fraunces',sans-serif; font-weight:600; font-size:26px; line-height:1; color:var(--navy); font-variant-numeric:var(--tab); min-width:1ch}
+  .ins-lbl{font-size:11.5px; color:var(--muted); line-height:1.28}
+  .ins.alert::before{background:var(--red)} .ins.alert .ins-num{color:var(--red)}
+  .ins.warn::before{background:var(--amber)} .ins.warn .ins-num{color:var(--amber)}
+  .ins.tap{cursor:pointer; transition:transform .16s var(--ease), box-shadow .16s var(--ease)}
+  .ins.tap:hover{transform:translateY(-2px); box-shadow:var(--sh-2)}
+
+  .cock-toolbar{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px}
+  .cock-toolbar input,.cock-toolbar select{
+    font-family:inherit; font-size:13.5px; color:var(--ink); background:var(--surface);
+    border:1px solid var(--line); border-radius:var(--r-sm); padding:10px 13px; min-height:42px; transition:border-color .16s var(--ease), box-shadow .16s var(--ease);
+  }
+  .cock-toolbar input{flex:1 1 240px; min-width:0}
+  .cock-toolbar input::placeholder{color:var(--faint)}
+  .cock-toolbar input:focus,.cock-toolbar select:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-tint)}
+  .cock-toolbar select{flex:0 0 auto; cursor:pointer}
+
+  .cock-list{display:flex; flex-direction:column; gap:11px}
+  .cli{
+    display:flex; align-items:stretch; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
+    overflow:hidden; box-shadow:var(--sh-1); transition:box-shadow .18s var(--ease), border-color .18s var(--ease), transform .18s var(--ease);
+  }
+  .cli:hover{box-shadow:var(--sh-3); border-color:var(--gold-soft); transform:translateY(-2px)}
+  .cli.active{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold), var(--sh-2)}
+  .cli-main{flex:1 1 auto; display:flex; align-items:center; gap:15px; padding:15px 17px; cursor:pointer; min-width:0}
+  .cli-score{
+    flex:0 0 auto; width:46px; height:46px; border-radius:12px; display:grid; place-items:center;
+    color:#ffffff; font-weight:700; font-size:18px; font-family:'Fraunces',sans-serif; font-variant-numeric:var(--tab);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.18), 0 4px 10px rgba(20,33,61,.16);
+  }
+  .cli-body{min-width:0; flex:1 1 auto}
+  .cli-namerow{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .cli-name{font-weight:700; color:var(--navy); font-size:15.5px; letter-spacing:-.005em}
+  .cli-chip{font-size:10px; font-weight:700; letter-spacing:.02em; padding:3px 9px; border-radius:999px; border:1px solid; text-transform:uppercase}
+  .cli-meta{font-size:12px; color:var(--muted); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-variant-numeric:var(--tab)}
+  .cli-sub{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+  .cli-review{font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:999px; background:rgba(58,80,119,.07); color:var(--navy-2); border:1px solid rgba(58,80,119,.16)}
+  .cli-review.overdue{background:#fbeae6; color:var(--red); border-color:#e7c3bb}
+  .cli-review.today,.cli-review.soon{background:var(--gold-tint); color:var(--amber); border-color:var(--gold-soft)}
+  .cli-tag{font-size:10.5px; font-weight:600; color:var(--navy-2); background:rgba(58,80,119,.06); border:1px solid rgba(58,80,119,.13); border-radius:999px; padding:3px 9px}
+  /* Grid en vez de columna: "Abrir ficha" ocupa el ancho completo arriba (acción principal),
+     los 3 accesos directos van en una fila debajo — la mitad de alto que apilados en columna. */
+  .cli-acts{flex:0 0 auto; display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:12px 14px; border-left:1px solid var(--line-soft); background:linear-gradient(var(--surface-soft),var(--surface-soft)); min-width:210px; align-content:center}
+  .cli-act{font-family:inherit; font-size:12px; font-weight:600; min-height:32px; padding:0 10px; border-radius:var(--r-sm); cursor:pointer; white-space:nowrap; border:1px solid; transition:background .14s var(--ease), transform .14s var(--ease)}
+  .cli-act:active{transform:translateY(1px)}
+  .cli-act.an{background:var(--navy); color:#ffffff; border-color:var(--navy); grid-column:1/-1} .cli-act.an:hover{background:var(--navy-deep)}
+  .cli-act.ju{background:var(--surface); color:var(--navy); border-color:var(--gold-soft)} .cli-act.ju:hover{background:var(--gold-tint)}
+  @media(max-width:620px){.cli{flex-direction:column}.cli-acts{border-left:0; border-top:1px solid var(--line-soft)}}
+
+  .cock-empty{text-align:center; color:var(--muted); background:var(--surface); border:1px dashed var(--line-strong); border-radius:var(--r-lg); padding:52px 24px; font-size:14px; box-shadow:var(--sh-1)}
+  .cock-empty b{color:var(--navy)} .cock-empty .ce-new{margin-top:18px}
+
+  .cock-tools{max-width:1100px; margin:30px auto 0; display:flex; gap:11px; flex-wrap:wrap; align-items:center; border-top:1px solid var(--line); padding-top:20px}
+  .cock-tools .ct-lbl{font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); font-weight:700; margin-right:4px}
+  .ct-link{font-family:inherit; background:var(--surface); border:1px solid var(--line); color:var(--navy); font-weight:600; font-size:12.5px; min-height:38px; padding:0 14px; border-radius:var(--r-sm); cursor:pointer; transition:border-color .14s var(--ease), background .14s var(--ease)}
+  .ct-link:hover{border-color:var(--gold-soft); background:var(--gold-tint)}
+  .cock-note{max-width:1100px; margin:18px auto 0; color:var(--faint); font-size:11.5px; line-height:1.6}
+  .cock-storage{max-width:1100px; margin:8px auto 0; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .cs-status{color:var(--faint); font-size:11.5px; line-height:1.6}
+  .cs-action{font-family:inherit; font-size:11.5px; font-weight:600; padding:4px 11px; border-radius:999px; border:1px solid var(--line-strong); background:var(--surface); color:var(--navy); cursor:pointer; transition:.13s}
+  .cs-action:hover{border-color:var(--gold); background:var(--gold-tint)}
+  .cock-updates{max-width:1100px; margin:34px auto 0; border-top:1px solid var(--line); padding-top:24px}
+  .cu-head{margin-bottom:16px}
+  .cu-eyebrow{font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--gold-deep); font-weight:700}
+  .cu-head h3{font-family:'Fraunces',serif; font-weight:600; font-size:19px; color:var(--navy); margin-top:6px}
+  .cu-list{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px}
+  .cu-item{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:14px 16px; box-shadow:var(--sh-1)}
+  .cu-tag{display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:999px; margin-bottom:8px}
+  .cu-tag.new{background:#eaf2ec; color:#4f7358}
+  .cu-tag.improve{background:var(--gold-tint); color:var(--gold-deep)}
+  .cu-tag.fix{background:#f7e9e6; color:var(--red)}
+  .cu-tag.base{background:var(--line-soft); color:var(--muted)}
+  .cu-title{font-weight:600; font-size:13.5px; color:var(--navy); margin-bottom:4px; line-height:1.35}
+  .cu-desc{font-size:12px; color:var(--muted); line-height:1.55}
+  .cu-item.hidden-extra{display:none}
+  .cu-more{margin-top:14px; background:transparent; border:1px dashed var(--line-strong); color:var(--muted); font-family:inherit; font-size:12px; font-weight:600; padding:8px 14px; border-radius:var(--r-sm); cursor:pointer}
+  .cu-more:hover{border-color:var(--gold); color:var(--gold-deep)}
+
+  /* ---------- client workspace ---------- */
+  .ws{max-width:1020px; margin:0 auto; padding:clamp(18px,3.4vw,34px) clamp(16px,5vw,42px) 56px}
+  .ws-back{background:transparent; border:0; color:var(--navy-2); font-family:inherit; font-weight:600; font-size:13px; cursor:pointer; padding:4px 2px; margin-bottom:16px; border-radius:6px}
+  .ws-back:hover{color:var(--navy)}
+  .ws-head{
+    position:relative; display:flex; align-items:center; gap:18px; overflow:hidden;
+    background:linear-gradient(168deg,#182746,var(--navy-deep)); color:#ffffff;
+    border-radius:var(--r-lg); padding:22px 24px; box-shadow:var(--sh-3);
+  }
+  .ws-head::after{content:""; position:absolute; left:0; right:0; bottom:0; height:2px; background:linear-gradient(90deg,var(--gold),transparent 60%)}
+  .ws-score{
+    flex:0 0 auto; width:60px; height:60px; border-radius:15px; display:grid; place-items:center;
+    font-family:'Fraunces',sans-serif; font-weight:700; font-size:24px; color:#ffffff; font-variant-numeric:var(--tab);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.22), 0 6px 16px rgba(0,0,0,.22);
+  }
+  .ws-id{flex:1 1 auto; min-width:0}
+  .ws-name{font-family:'Fraunces',sans-serif; font-weight:600; font-size:22px; display:flex; align-items:center; gap:9px; flex-wrap:wrap; color:#ffffff}
+  .ws-name .wchip{font-family:'Manrope'; font-size:10px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:3px 9px; border-radius:999px; border:1px solid}
+  .ws-metaline{font-size:12.5px; color:#a9b6cf; margin-top:6px; font-variant-numeric:var(--tab)}
+  .ws-verdict{flex:0 0 auto; text-align:right; font-size:11.5px; color:#c4cfe1; max-width:190px; line-height:1.45}
+  .ws-verdict b{display:block; font-family:'Fraunces',sans-serif; font-weight:600; font-size:15px; color:var(--gold-soft); margin-bottom:3px}
+  @media(max-width:560px){.ws-head{flex-wrap:wrap}.ws-verdict{text-align:left; max-width:none; flex-basis:100%; margin-top:4px}}
+
+  .ws-stepper{display:flex; gap:2px; overflow-x:auto; margin:20px 0 20px; border-bottom:1px solid var(--line); scrollbar-width:none}
+  .ws-stepper::-webkit-scrollbar{display:none}
+  .ws-stepper button{
+    flex:0 0 auto; background:transparent; border:0; border-bottom:2px solid transparent; color:var(--muted);
+    font-family:inherit; font-size:13.5px; font-weight:600; padding:11px 15px; cursor:pointer; white-space:nowrap;
+    transition:color .16s var(--ease), border-color .16s var(--ease);
+  }
+  .ws-stepper button:hover{color:var(--navy)}
+  .ws-stepper button.active{color:var(--navy); border-bottom-color:var(--gold)}
+  .ws-sec{display:none}
+  .ws-sec.active{display:block; animation:fade .28s var(--ease) both}
+  @media (prefers-reduced-motion:reduce){.ws-sec.active{animation:none}}
+  /* Más ancho que .ws (1020px): estas herramientas son apps completas con su propio layout
+     responsive interno (p. ej. el panel de resultados de Análisis se ancla a la derecha solo
+     a partir de 1000px de ancho) — si el iframe queda más estrecho que eso, pierden ese diseño. */
+  .ws-frame-wrap{max-width:1400px; margin:0 auto 40px; padding:0 clamp(10px,2vw,24px); box-sizing:border-box}
+  .ws-frame-wrap[hidden]{display:none}
+  .ws-frame{display:block; width:100%; height:calc(100vh - 250px); min-height:480px; border:1px solid var(--line); border-radius:var(--r-lg); background:var(--surface); box-shadow:var(--sh-1)}
+  .ws-jub-bar{margin-bottom:10px; background:linear-gradient(90deg,var(--gold-tint),rgba(246,239,221,.4)); border:1px solid var(--gold-soft); border-radius:var(--r-md)}
+  .ws-jub-bar[hidden]{display:none}
+  .ws-jub-bar .bb-inner{padding:10px 14px}
+  @keyframes fade{from{opacity:0} to{opacity:1}}
+  .ws-lead{color:var(--muted); font-size:13.5px; margin:0 0 18px; max-width:62ch}
+
+  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:12px; margin-bottom:20px}
+  .kpi{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:15px 17px; box-shadow:var(--sh-1)}
+  .kpi-lbl{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700}
+  .kpi-val{font-family:'Fraunces',sans-serif; font-weight:600; font-size:23px; color:var(--navy); margin-top:6px; line-height:1.1; font-variant-numeric:var(--tab)}
+  .kpi-val.pos{color:var(--green)} .kpi-val.neg{color:var(--red)}
+  .kpi-sub{font-size:11.5px; color:var(--muted); margin-top:4px; font-variant-numeric:var(--tab)}
+
+  .ws-cta{display:inline-flex; align-items:center; gap:8px; background:var(--navy); color:#ffffff; border:0; font-family:inherit; font-weight:600; font-size:13px; min-height:42px; padding:0 18px; border-radius:var(--r-md); cursor:pointer; transition:background .16s var(--ease), transform .16s var(--ease)}
+  .ws-cta:hover{background:var(--navy-deep); transform:translateY(-1px)} .ws-cta:active{transform:translateY(0)}
+  .ws-cta.ghost{background:var(--surface); color:var(--navy); border:1px solid var(--gold-soft)} .ws-cta.ghost:hover{background:var(--gold-tint)}
+  .ws-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:19px; margin-bottom:14px; box-shadow:var(--sh-1)}
+  .ws-card h3{font-size:16px; margin-bottom:11px}
+  .ws-field{display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line-soft); font-size:13.5px}
+  .ws-field:last-child{border-bottom:0} .ws-field .k{color:var(--muted)} .ws-field .v{color:var(--ink); font-weight:600; text-align:right; font-variant-numeric:var(--tab)}
+  .ws-skel{color:var(--muted); font-size:13px; padding:14px 16px; background:var(--surface-soft); border:1px solid var(--line-soft); border-radius:var(--r-md); position:relative; overflow:hidden}
+  .ws-skel::after{content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(201,169,97,.10),transparent); transform:translateX(-100%); animation:shimmer 1.4s infinite}
+  @media (prefers-reduced-motion:reduce){.ws-skel::after{animation:none}}
+  @keyframes shimmer{to{transform:translateX(100%)}}
+
+  /* proposal — the signature one-pager */
+  #proposal-doc{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:clamp(24px,4vw,44px); box-shadow:var(--sh-2)}
+  .pd-head{position:relative; padding-bottom:16px; margin-bottom:20px; border-bottom:1px solid var(--navy)}
+  .pd-head::after{content:""; position:absolute; left:0; bottom:-1px; width:64px; height:3px; background:var(--gold)}
+  .pd-brand{font-family:'Fraunces',sans-serif; font-weight:700; font-size:19px; color:var(--navy); letter-spacing:.01em}
+  .pd-brand span{color:var(--gold-deep); font-size:12.5px; font-weight:600; letter-spacing:.02em}
+  .pd-title{font-family:'Fraunces',sans-serif; font-weight:600; font-size:26px; color:var(--navy); margin-top:9px}
+  .pd-sub{color:var(--muted); font-size:13px; margin-top:4px; font-variant-numeric:var(--tab)}
+  .pd-verdict{background:var(--gold-tint); border-left:3px solid var(--gold); border-radius:0 var(--r-sm) var(--r-sm) 0; padding:14px 17px; margin-bottom:20px; font-size:14px; line-height:1.5}
+  .pd-verdict b{color:var(--navy)}
+  .pd-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; margin-bottom:20px}
+  .pd-cell{background:var(--surface); padding:14px 16px}
+  .pd-cell .k{font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700}
+  .pd-cell .v{font-family:'Fraunces',sans-serif; font-weight:600; font-size:20px; color:var(--navy); margin-top:5px; font-variant-numeric:var(--tab)}
+  .pd-cell .v.pos{color:var(--green)} .pd-cell .v.neg{color:var(--red)}
+  .pd-cell .s{font-size:11px; color:var(--muted); margin-top:3px}
+  .pd-sec{margin-bottom:20px}
+  .pd-sec h4{font-family:'Fraunces',sans-serif; font-weight:600; font-size:16px; color:var(--navy); margin-bottom:11px; padding-bottom:7px; border-bottom:1px solid var(--line); position:relative}
+  .pd-sec h4::after{content:""; position:absolute; left:0; bottom:-1px; width:30px; height:2px; background:var(--gold)}
+  .pd-cols{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+  @media(max-width:620px){.pd-cols{grid-template-columns:1fr}}
+  .pd-list{list-style:none; margin:0; padding:0}
+  .pd-list li{position:relative; padding:7px 0 7px 24px; font-size:13.5px; line-height:1.45; border-bottom:1px solid var(--line-soft)}
+  .pd-list li:last-child{border-bottom:0}
+  .pd-list.prio li::before{content:"→"; position:absolute; left:0; color:var(--gold-deep); font-weight:700}
+  .pd-list.str li::before{content:"✓"; position:absolute; left:0; color:var(--green); font-weight:700}
+  .pd-foot{margin-top:22px; padding-top:15px; border-top:1px solid var(--line); font-size:10.5px; color:var(--faint); line-height:1.6}
+  .fire-bar{height:9px; background:var(--line); border-radius:999px; overflow:hidden; margin:6px 0 9px}
+  .fire-fill{height:100%; background:linear-gradient(90deg,var(--gold-deep),var(--gold)); border-radius:999px; transition:width .5s var(--ease)}
+  @media (prefers-reduced-motion:reduce){.fire-fill{transition:none}}
+  .fire-cap{font-size:11px; color:var(--muted); line-height:1.5}
+  .ws-print{margin-top:16px}
+  .seg-notes{white-space:pre-wrap; font-size:13.5px; color:var(--ink); background:var(--surface-soft); border:1px solid var(--line-soft); border-radius:var(--r-sm); padding:13px 15px; min-height:50px; line-height:1.55}
+
+  /* proyecto inmobiliario */
+  .inm-f{display:block; margin-bottom:11px}
+  .inm-f>span:first-child{display:block; font-size:11.5px; color:var(--muted); font-weight:600; margin-bottom:4px}
+  .inm-inp-wrap{position:relative; display:block}
+  .inm-inp{width:100%; box-sizing:border-box; font-family:inherit; font-size:13.5px; color:var(--navy); font-weight:600; font-variant-numeric:var(--tab); background:var(--surface-soft); border:1px solid var(--line); border-radius:var(--r-sm); padding:9px 34px 9px 11px; min-height:38px; transition:border-color .14s var(--ease), box-shadow .14s var(--ease)}
+  .inm-inp:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-tint); background:var(--surface)}
+  .inm-inp::-webkit-outer-spin-button,.inm-inp::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+  .inm-inp[type=number]{-moz-appearance:textfield}
+  .inm-suf{position:absolute; right:11px; top:50%; transform:translateY(-50%); font-size:11.5px; color:var(--muted); font-weight:600; pointer-events:none}
+  .inm-precio{max-width:280px; margin-bottom:18px}
+  .inm-precio .inm-inp{font-size:16px}
+  .inm-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:18px}
+  @media(max-width:900px){.inm-grid{grid-template-columns:1fr}}
+  .inm-card{background:var(--surface-soft); border:1px solid var(--line); border-radius:var(--r-md); padding:15px}
+  .inm-card h4{font-family:'Fraunces',sans-serif; font-weight:600; font-size:14px; color:var(--navy); margin-bottom:10px}
+  .inm-note{font-size:11.5px; color:var(--muted); margin:-4px 0 11px; line-height:1.4}
+  .inm-quick{display:flex; flex-wrap:wrap; gap:6px; margin:-3px 0 11px}
+  .inm-quick button{font-family:inherit; font-size:12px; font-weight:700; color:var(--navy); background:var(--surface); border:1px solid var(--gold-soft); border-radius:999px; padding:5px 12px; cursor:pointer; transition:.14s}
+  .inm-quick button:hover{background:var(--gold-tint); border-color:var(--gold)}
+  .inm-results{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  @media(max-width:900px){.inm-results{grid-template-columns:1fr}}
+  .inm-res-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:15px; box-shadow:var(--sh-1)}
+  .inm-res-card h5{font-family:'Fraunces',sans-serif; font-weight:600; font-size:13.5px; color:var(--navy); margin-bottom:9px}
+  .inm-res-line{display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--line-soft); font-size:12.5px; color:var(--muted)}
+  .inm-res-line b{color:var(--ink); font-weight:700; font-variant-numeric:var(--tab)}
+  .inm-res-line.total{border-bottom:0; padding-top:9px; margin-top:2px; border-top:1px solid var(--line)}
+  .inm-res-line.total b{color:var(--navy); font-size:14px}
+  .inm-res-line.save{border-bottom:0}
+  .inm-res-line.save.pos b{color:var(--green)}
+  .inm-res-line.save.neg b{color:var(--red)}
+  .inm-mode{display:inline-flex; gap:3px; background:var(--surface-soft); border:1px solid var(--line); border-radius:999px; padding:3px; margin-bottom:14px}
+  .inm-mode button{font-family:inherit; font-size:12.5px; font-weight:700; color:var(--muted); background:transparent; border:0; border-radius:999px; padding:7px 16px; cursor:pointer; transition:.14s}
+  .inm-mode button:hover{color:var(--navy)}
+  .inm-mode button.active{background:var(--navy); color:#ffffff}
+
+  /* ---------- module frames ---------- */
+  .frames{display:flex; flex-direction:column; background:var(--bg)}
+  .frames[hidden]{display:none}
+  .frame-stage{position:relative; flex:1 1 auto}
+  .frame-stage iframe{position:absolute; inset:0; width:100%; height:100%; border:0; background:var(--bg)}
+  #bridge-banner{flex:0 0 auto; background:linear-gradient(90deg,var(--gold-tint),rgba(246,239,221,.4)); border-bottom:1px solid var(--gold-soft)}
+  #bridge-banner[hidden]{display:none}
+  .bb-inner{display:flex; align-items:center; gap:12px; padding:10px clamp(14px,3vw,24px); font-size:13px; color:var(--navy); flex-wrap:wrap}
+  .bb-ico{display:inline-grid; place-items:center; width:23px; height:23px; border-radius:7px; background:var(--navy); color:var(--gold-soft); font-size:12px; flex:0 0 auto}
+  .bb-txt{flex:1 1 auto; min-width:160px; font-variant-numeric:var(--tab)} .bb-txt b{color:var(--navy)}
+  .bb-save{flex:0 0 auto; background:var(--gold); color:var(--navy-deep); border:0; font-family:inherit; font-weight:700; font-size:12.5px; min-height:34px; padding:0 13px; border-radius:var(--r-sm); cursor:pointer; transition:background .14s var(--ease)}
+  .bb-save:hover{background:#bd9a4f} .bb-save:disabled{background:#d6cba6; color:#6b6750; cursor:default}
+  .bb-undo{flex:0 0 auto; background:var(--navy); color:#ffffff; border:0; font-family:inherit; font-weight:600; font-size:12.5px; min-height:34px; padding:0 13px; border-radius:var(--r-sm); cursor:pointer}
+  .bb-undo:hover{background:var(--navy-deep)}
+  .bb-close{flex:0 0 auto; background:transparent; border:0; color:var(--muted); font-size:15px; cursor:pointer; padding:4px 6px; line-height:1; border-radius:5px}
+  .bb-close:hover{color:var(--ink)}
+
+  /* ---------- print: only the proposal ---------- */
+  @media print{
+    body.print-mode .appbar, body.print-mode #home, body.print-mode #frames, body.print-mode .ws-back, body.print-mode .ws-stepper, body.print-mode .ws-print{display:none !important}
+    body.print-mode #workspace{display:block !important; overflow:visible}
+    body.print-mode .ws{max-width:none; padding:0}
+    body.print-mode .ws-head, body.print-mode .ws-sec:not(.print-target){display:none !important}
+    body.print-mode .ws-sec.print-target{display:block !important; animation:none}
+    body.print-mode #proposal-doc{box-shadow:none; border:0; border-radius:0; padding:0}
+    @page{margin:15mm}
+  }
+</style>
+</head>
+<body>
+  <div class="appbar">
+    <div class="brand"><img class="brand-icon" src="./logo-icon-gold.png" alt="" aria-hidden="true"><div class="brand-text"><span class="brand-mark">AORAES</span><span class="brand-sub">Departamento Español</span></div></div>
+    <div class="active-chip" id="active-chip" role="button" tabindex="0" aria-label="Abrir ficha del cliente activo"><span class="ac-dot"></span><span class="ac-name" id="ac-name"></span><button class="ac-x" id="ac-x" title="Quitar cliente activo" aria-label="Quitar cliente activo">&#10005;</button></div>
+    <nav class="switch" id="switch">
+      <button type="button" data-go="home" class="active">Inicio</button>
+      <button type="button" data-go="analisis">Análisis &amp; CRM</button>
+      <button type="button" data-go="jubilacion">Comparador de jubilación</button>
+      <button type="button" data-go="medico">Preguntas médicas</button>
+    </nav>
+  </div>
+
+  <main class="scr home" id="home">
+    <div class="cock">
+      <div class="cock-head">
+        <div><span class="cock-eyebrow">Panel del asesor</span><h1>Tu cartera de clientes</h1></div>
+        <button type="button" class="cock-new" id="cock-new">+ Nuevo cliente</button>
+      </div>
+      <div class="cock-insights" id="cock-insights"></div>
+      <div class="cock-toolbar">
+        <input type="search" id="cock-search" aria-label="Buscar clientes" placeholder="Buscar por nombre, etiqueta o asesor…" />
+        <select id="cock-status" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option value="prospecto">Prospecto</option><option value="contactado">Contactado</option><option value="analisis_pendiente">Análisis pendiente</option><option value="analisis">Análisis en curso</option><option value="propuesta">Propuesta enviada</option><option value="implementacion">En implementación</option><option value="cliente">Cliente activo</option><option value="inactivo">Inactivo</option></select>
+        <select id="cock-sort" aria-label="Ordenar clientes"><option value="saved">Orden: más recientes</option><option value="review">Orden: próxima revisión</option><option value="score">Orden: puntuación</option><option value="name">Orden: nombre (A–Z)</option></select>
+      </div>
+      <div class="cock-list" id="cock-list"></div>
+    </div>
+    <div class="cock-tools">
+      <span class="ct-lbl">Herramientas</span>
+      <button type="button" class="ct-link" data-go="analisis">Abrir Análisis &amp; CRM</button>
+      <button type="button" class="ct-link" data-go="jubilacion">Abrir Comparador de jubilación</button>
+      <button type="button" class="ct-link" data-go="medico">Abrir Preguntas médicas</button>
+    </div>
+    <div class="cock-note">Abre un cliente para ver su recorrido y la propuesta consolidada. Los datos se guardan en este dispositivo desde el módulo de Análisis.</div>
+    <div class="cock-storage" id="cock-storage">
+      <span class="cs-status" id="cs-status"></span>
+      <button type="button" class="cs-action" id="cs-action" hidden></button>
+    </div>
+    <div class="cock-updates">
+      <div class="cu-head">
+        <span class="cu-eyebrow">Novedades</span>
+        <h3>Esto es lo que hemos ido construyendo</h3>
+      </div>
+      <div class="cu-list" id="cu-list"></div>
+      <button type="button" class="cu-more" id="cu-more" hidden>Ver todo</button>
+    </div>
+  </main>
+
+  <div class="scr" id="workspace" hidden>
+    <div id="ws-content"></div>
+    <div class="ws-frame-wrap" id="ws-frame-analisis" hidden></div>
+    <div class="ws-frame-wrap" id="ws-frame-jubilacion" hidden></div>
+    <div class="ws-frame-wrap" id="ws-frame-medico" hidden></div>
+  </div>
+
+  <div class="scr frames" id="frames" hidden>
+    <div id="bridge-banner" hidden></div>
+    <div class="frame-stage" id="frame-stage"></div>
+  </div>
+
+  <script>
+  (function(){
+    var CRM_STATUS={prospecto:{l:'Prospecto',c:'#6c6d76'},contactado:{l:'Contactado',c:'#e3d4ab'},analisis_pendiente:{l:'Análisis pendiente',c:'#9aa3b5'},analisis:{l:'Análisis en curso',c:'#c9a961'},propuesta:{l:'Propuesta enviada',c:'#3a5077'},implementacion:{l:'En implementación',c:'#b0473a'},cliente:{l:'Cliente activo',c:'#5e8a5e'},inactivo:{l:'Inactivo',c:'#9aa3b5'}};
+    // "Pareja" no longer comes from a couple-mode flag (the app now always captures Persona A/B
+    // simultaneously) — a household counts as a couple once Persona B has a name on file.
+    function isCouple(rec){ try{ return !!(rec && rec.data && rec.data.fields && (rec.data.fields['pers:nombre_B']||'').trim()); }catch(e){ return false; } }
+    function scoreColor(v){ if(v>=80)return '#c9a961'; if(v>=60)return '#7a9a4e'; if(v>=40)return '#e3d4ab'; return '#b0473a'; }
+    function verdict(v){ if(v>=80)return ['Excelente','Las bases están bien cubiertas. El foco pasa a optimizar fiscalidad y rentabilidad.']; if(v>=60)return ['Sólida','Una situación estable con margen para reforzar una o dos áreas concretas.']; if(v>=40)return ['Mejorable','Hay cimientos, pero varias áreas clave necesitan atención a corto plazo.']; return ['Necesita atención','Conviene actuar pronto sobre el flujo de caja y la protección básica.']; }
+    function reviewState(iso){ if(!iso)return null; var t=new Date();t.setHours(0,0,0,0); var d=new Date(iso+'T00:00:00'); if(isNaN(d.getTime()))return null; var diff=Math.round((d-t)/86400000); if(diff<0)return {cls:'overdue',txt:'Vencida'}; if(diff===0)return {cls:'today',txt:'Hoy'}; if(diff<=14)return {cls:'soon',txt:'En '+diff+' día'+(diff===1?'':'s')}; return {cls:'',txt:d.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}; }
+    function relTime(iso){ var s=Math.round((Date.now()-new Date(iso).getTime())/1000); if(s<60)return 'hace instantes'; if(s<3600)return 'hace '+Math.round(s/60)+' min'; if(s<86400)return 'hace '+Math.round(s/3600)+' h'; return new Date(iso).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'}); }
+    function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+    var EUR=new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+    function eur(n){ return (n==null||isNaN(n))?'—':EUR.format(Math.round(n)); }
+
+    var CLIENTS_KEY='aoraes_clients_v1', ACTIVE_KEY='aoraes_active_client';
+    function readClients(){ try{ return JSON.parse(localStorage.getItem(CLIENTS_KEY))||[]; }catch(e){ return []; } }
+    function findClient(id){ return readClients().filter(function(c){return c.id===id;})[0]||null; }
+    function getActive(){ try{ return localStorage.getItem(ACTIVE_KEY)||null; }catch(e){ return null; } }
+    function setActive(id){ try{ if(id)localStorage.setItem(ACTIVE_KEY,id); else localStorage.removeItem(ACTIVE_KEY); }catch(e){} updateActiveChip(); }
+    var SOLUTIONS_KEY='aoraes_solutions_v1';
+    function readSolutions(){ try{ return JSON.parse(localStorage.getItem(SOLUTIONS_KEY))||{}; }catch(e){ return {}; } }
+    function getSolution(id){ var m=readSolutions(); return (id&&m[id])?m[id]:null; }
+    function saveSolution(id,scen){ try{ var m=readSolutions(); m[id]=scen; localStorage.setItem(SOLUTIONS_KEY,JSON.stringify(m)); writeClientFile(id); }catch(e){} }
+    var MED_BY_CLIENT_KEY='aoraes_med_by_client_v1';
+
+    /* ---------- Carpeta Clientes (respaldo real en disco) ----------
+       localStorage sigue siendo la fuente que usa la app en el día a día (síncrona, sin
+       reescribir toda la app a un modelo async). La carpeta Clientes es un espejo real: cada
+       cliente guardado se escribe también como un archivo .json ahí, y al arrancar se importa
+       cualquier archivo que falte o esté más nuevo que lo que hay en localStorage — así, si se
+       copia/sincroniza la carpeta Clientes a otra Mac, esa instalación recoge la cartera sola.
+       Si el navegador no soporta la API (solo existe en Chromium) todo lo demás sigue
+       funcionando exactamente igual que hoy, sin ningún cambio de comportamiento. */
+    var FS_SUPPORTED=(typeof window.showDirectoryPicker==='function');
+    var clientesDirHandle=null, clientesDirStatus='idle';
+    function idbOpen(){
+      return new Promise(function(resolve,reject){
+        var req=indexedDB.open('aoraes_fs_v1',1);
+        req.onupgradeneeded=function(){ req.result.createObjectStore('handles'); };
+        req.onsuccess=function(){ resolve(req.result); };
+        req.onerror=function(){ reject(req.error); };
+      });
+    }
+    function idbGet(key){
+      return idbOpen().then(function(db){
+        return new Promise(function(resolve,reject){
+          var req=db.transaction('handles','readonly').objectStore('handles').get(key);
+          req.onsuccess=function(){ resolve(req.result||null); };
+          req.onerror=function(){ reject(req.error); };
+        });
+      });
+    }
+    function idbSet(key,val){
+      return idbOpen().then(function(db){
+        return new Promise(function(resolve,reject){
+          var tx=db.transaction('handles','readwrite');
+          tx.objectStore('handles').put(val,key);
+          tx.oncomplete=function(){ resolve(); };
+          tx.onerror=function(){ reject(tx.error); };
+        });
+      });
+    }
+    function verifyDirPermission(handle,askIfNeeded){
+      return handle.queryPermission({mode:'readwrite'}).then(function(p){
+        if(p==='granted') return true;
+        if(!askIfNeeded) return false;
+        return handle.requestPermission({mode:'readwrite'}).then(function(p2){ return p2==='granted'; });
+      });
+    }
+    function setStorageStatus(status){
+      clientesDirStatus=status;
+      var el=document.getElementById('cs-status'), act=document.getElementById('cs-action');
+      if(!el||!act) return;
+      if(status==='unsupported'){ el.textContent='La carpeta Clientes necesita Google Chrome (no disponible en este navegador).'; act.hidden=true; }
+      else if(status==='idle'){ el.textContent='Los datos se guardan en este dispositivo. Puedes además respaldarlos en una carpeta Clientes real.'; act.hidden=false; act.textContent='Configurar carpeta Clientes'; }
+      else if(status==='ok'){ el.textContent='✓ Sincronizado con la carpeta Clientes.'; act.hidden=false; act.textContent='Cambiar carpeta'; }
+      else if(status==='denied'){ el.textContent='⚠ Sin acceso a la carpeta Clientes.'; act.hidden=false; act.textContent='Reactivar acceso'; }
+      else { el.textContent='⚠ No se pudo acceder a la carpeta Clientes.'; act.hidden=false; act.textContent='Reintentar'; }
+    }
+    function clientPayload(id){
+      var rec=findClient(id); if(!rec) return null;
+      var medico=null; try{ var m=JSON.parse(localStorage.getItem(MED_BY_CLIENT_KEY))||{}; medico=m[id]||null; }catch(e){}
+      return { id:id, record:rec, solution:getSolution(id)||null, medico:medico, exportedAt:new Date().toISOString() };
+    }
+    function writeClientFile(id){
+      if(!clientesDirHandle || clientesDirStatus!=='ok') return Promise.resolve();
+      var payload=clientPayload(id); if(!payload) return Promise.resolve();
+      return clientesDirHandle.getFileHandle(id+'.json',{create:true}).then(function(fh){
+        return fh.createWritable().then(function(w){ return w.write(JSON.stringify(payload,null,2)).then(function(){ return w.close(); }); });
+      }).catch(function(e){ console.error('AORAES: fallo al escribir el archivo del cliente',id,e); });
+    }
+    function removeClientFile(id){
+      if(!clientesDirHandle || clientesDirStatus!=='ok') return Promise.resolve();
+      return clientesDirHandle.removeEntry(id+'.json').catch(function(e){ /* ya no existe u otro fallo menor: no es crítico */ });
+    }
+    window.aoraesMirrorClients=function(ids){ (ids||[]).forEach(function(id){ writeClientFile(id); }); };
+    window.aoraesRemoveMirroredClient=function(id){ removeClientFile(id); };
+    function bulkExportToClientesDir(){
+      var arr=readClients();
+      return Promise.all(arr.map(function(c){ return writeClientFile(c.id); }));
+    }
+    function mergeImportedClient(payload){
+      if(!payload || !payload.id || !payload.record) return;
+      var arr=readClients(), idx=-1;
+      for(var i=0;i<arr.length;i++){ if(arr[i].id===payload.id){ idx=i; break; } }
+      var existing=idx>=0?arr[idx]:null;
+      var existingTime=existing?new Date(existing.savedAt||0).getTime():0;
+      var fileTime=new Date(payload.exportedAt||0).getTime();
+      if(existing && existingTime>=fileTime) return; // la copia local es igual o más nueva
+      if(idx>=0) arr[idx]=payload.record; else arr.push(payload.record);
+      try{ localStorage.setItem(CLIENTS_KEY,JSON.stringify(arr)); }catch(e){}
+      if(payload.solution){ try{ var sols=readSolutions(); sols[payload.id]=payload.solution; localStorage.setItem(SOLUTIONS_KEY,JSON.stringify(sols)); }catch(e){} }
+      if(payload.medico){ try{ var m=JSON.parse(localStorage.getItem(MED_BY_CLIENT_KEY))||{}; m[payload.id]=payload.medico; localStorage.setItem(MED_BY_CLIENT_KEY,JSON.stringify(m)); }catch(e){} }
+    }
+    function importFromClientesDir(){
+      if(!clientesDirHandle) return Promise.resolve();
+      var names=[];
+      return (async function(){
+        for await (var entry of clientesDirHandle.values()){
+          if(entry.kind==='file' && /\.json$/i.test(entry.name)) names.push(entry);
+        }
+        for(var i=0;i<names.length;i++){
+          try{
+            var file=await names[i].getFile();
+            var payload=JSON.parse(await file.text());
+            mergeImportedClient(payload);
+          }catch(e){ console.error('AORAES: fallo al importar archivo de cliente',names[i].name,e); }
+        }
+        renderCockpit();
+      })().catch(function(e){ console.error('AORAES: fallo al importar la carpeta Clientes',e); });
+    }
+    function pickClientesDir(){
+      if(!FS_SUPPORTED) return;
+      window.showDirectoryPicker({id:'aoraes-clientes',mode:'readwrite'}).then(function(handle){
+        return verifyDirPermission(handle,true).then(function(ok){
+          if(!ok){ setStorageStatus('denied'); return; }
+          clientesDirHandle=handle;
+          return idbSet('clientesDir',handle).then(function(){
+            setStorageStatus('ok');
+            return importFromClientesDir().then(bulkExportToClientesDir);
+          });
+        });
+      }).catch(function(e){ if(e && e.name==='AbortError') return; console.error('AORAES: fallo al elegir la carpeta Clientes',e); setStorageStatus('error'); });
+    }
+    function reactivateClientesDir(){
+      if(clientesDirHandle){
+        verifyDirPermission(clientesDirHandle,true).then(function(ok){
+          setStorageStatus(ok?'ok':'denied');
+          if(ok) importFromClientesDir();
+        });
+      } else pickClientesDir();
+    }
+    function initClientesDir(){
+      if(!FS_SUPPORTED){ setStorageStatus('unsupported'); return; }
+      setStorageStatus('idle');
+      idbGet('clientesDir').then(function(handle){
+        if(!handle) return;
+        clientesDirHandle=handle;
+        return verifyDirPermission(handle,false).then(function(ok){
+          setStorageStatus(ok?'ok':'denied');
+          if(ok) return importFromClientesDir();
+        });
+      }).catch(function(e){ console.error('AORAES: fallo al leer la carpeta Clientes guardada',e); setStorageStatus('error'); });
+    }
+    function syncMedico(){
+      var f=MOD.medico.el; if(!f) return;
+      try{
+        var id=getActive(), rec=id?findClient(id):null;
+        if(f.contentWindow && f.contentWindow.aoraesSetClient) f.contentWindow.aoraesSetClient(id, rec?rec.name:null);
+      }catch(e){}
+    }
+    // Orden del pipeline CRM; solo avanza el estado hacia "propuesta", nunca lo retrocede
+    // (p. ej. un cliente ya "en implementación" no debe volver a "propuesta" al releer un escenario).
+    var CRM_PIPELINE_ORDER=['prospecto','contactado','analisis_pendiente','analisis','propuesta','implementacion','cliente'];
+    function advanceStatusToPropuesta(id){
+      try{
+        var arr=readClients(), changed=false;
+        for(var i=0;i<arr.length;i++){ if(arr[i].id===id){
+          var cm=arr[i].crm||{}; var st=cm.status||'prospecto';
+          var stIdx=CRM_PIPELINE_ORDER.indexOf(st), propIdx=CRM_PIPELINE_ORDER.indexOf('propuesta');
+          if(stIdx>=0 && stIdx<propIdx){ cm.status='propuesta'; arr[i].crm=cm; changed=true; }
+          break;
+        } }
+        if(changed){ localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr)); writeClientFile(id); }
+        return changed;
+      }catch(e){ return false; }
+    }
+
+    var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false} };
+    var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames');
+    var stage=document.getElementById('frame-stage'), sw=document.getElementById('switch'), banner=document.getElementById('bridge-banner');
+    var insEl=document.getElementById('cock-insights'), listEl=document.getElementById('cock-list');
+    var searchEl=document.getElementById('cock-search'), statusEl=document.getElementById('cock-status'), sortEl=document.getElementById('cock-sort');
+    var acChip=document.getElementById('active-chip'), acName=document.getElementById('ac-name');
+    var lastSig=null, pendingApply=null, pendingOpen=null, pendingSummary=null, wsId=null, wsStep='diagnostico', wsRec=null, inmSaveTimer=null;
+
+    function setActiveTab(view){ var b=sw.querySelectorAll('button'); for(var i=0;i<b.length;i++)b[i].classList.toggle('active',b[i].getAttribute('data-go')===view); }
+    function updateActiveChip(){ var id=getActive(); var rec=id?findClient(id):null; if(rec){ acName.textContent=rec.name||'Cliente'; acChip.classList.add('on'); } else acChip.classList.remove('on'); }
+    function screenTo(name){ home.hidden=(name!=='home'); wsScreen.hidden=(name!=='workspace'); frames.hidden=(name!=='frames'); }
+
+    /* ---------- iframe plumbing ---------- */
+    function ensureFrame(view){
+      if(MOD[view].el) return MOD[view].el;
+      var f=document.createElement('iframe'); f.src=MOD[view].url;
+      f.title=(view==='analisis')?'Análisis financiero y CRM':(view==='jubilacion'?'Comparador de jubilación':'Preguntas médicas');
+      f.addEventListener('load',function(){
+        MOD[view].ready=true;
+        if(view==='analisis'){ if(pendingOpen){ var o=pendingOpen; pendingOpen=null; try{o();}catch(e){} } if(pendingSummary){ var s=pendingSummary; pendingSummary=null; try{s();}catch(e){} } }
+        if(view==='jubilacion' && pendingApply){ var p=pendingApply; pendingApply=null; try{p();}catch(e){} }
+        if(view==='medico') syncMedico();
+      });
+      stage.appendChild(f); MOD[view].el=f; return f;
+    }
+    function callAnalisis(fn,arg){ try{ var f=MOD.analisis.el; if(f&&f.contentWindow&&f.contentWindow[fn]) return f.contentWindow[fn](arg); }catch(e){} return null; }
+    function getClient(){ if(!MOD.analisis.el||!MOD.analisis.ready)return null; return callAnalisis('aoraesGetClient'); }
+    function sigOf(c){ return c?[c.name,c.age,c.retireAge,c.monthlyContribution,c.suggestedRetirement].join('|'):null; }
+    function hideBanner(){ banner.hidden=true; banner.innerHTML=''; }
+    function showBanner(data,snap){
+      var bits=[]; if(data.age!=null)bits.push(data.age+' años'); if(data.retireAge!=null)bits.push('jubilación '+data.retireAge); var mc=(data.suggestedRetirement!=null && data.suggestedRetirement>0)?data.suggestedRetirement:data.monthlyContribution; if(mc!=null)bits.push(Math.round(mc)+' €/mes'+((data.suggestedRetirement!=null && data.suggestedRetirement>0)?' sugerido a jubilación':'')); bits.push('50% Rürup · 50% Privatrente');
+      banner.innerHTML='<div class="bb-inner"><span class="bb-ico">&#8596;</span><span class="bb-txt">Cargado desde el CRM: <b>'+esc(data.name)+'</b>'+(bits.length?' &middot; '+bits.join(' &middot; '):'')+'</span><button type="button" class="bb-save">Guardar solución en la ficha</button><button type="button" class="bb-undo">Deshacer</button><button type="button" class="bb-close" aria-label="Cerrar">&#10005;</button></div>';
+      banner.hidden=false;
+      var sv=banner.querySelector('.bb-save');
+      if(sv) sv.onclick=function(){ var id=getActive(); if(!id)return; var scen=null; try{ var f=MOD.jubilacion.el; if(f&&f.contentWindow.aoraesGetScenario) scen=f.contentWindow.aoraesGetScenario(); }catch(e){} if(scen){ saveSolution(id,scen); var bumped=advanceStatusToPropuesta(id); sv.textContent=bumped?'✓ Guardada · estado → Propuesta':'✓ Guardada en la ficha'; sv.disabled=true; } else { sv.textContent='No se pudo leer el escenario'; } };
+      banner.querySelector('.bb-undo').onclick=function(){ try{ var f=MOD.jubilacion.el; if(f&&f.contentWindow.aoraesRestore)f.contentWindow.aoraesRestore(snap); }catch(e){} hideBanner(); };
+      banner.querySelector('.bb-close').onclick=hideBanner;
+    }
+    function maybeBridge(){
+      var c=getClient(), sig=sigOf(c); if(!c||!c.name||sig===lastSig)return;
+      var run=function(){ try{ var f=MOD.jubilacion.el; if(f&&f.contentWindow.aoraesApplyClient){ var snap=f.contentWindow.aoraesApplyClient(c); showBanner(c,snap); lastSig=sig; } }catch(e){} };
+      if(MOD.jubilacion.ready)run(); else pendingApply=run;
+    }
+
+    function show(view){
+      if(view==='home'||!MOD[view]){ screenTo('home'); for(var k in MOD){ if(MOD[k].el)MOD[k].el.style.display='none'; } setActiveTab('home'); renderCockpit(); updateActiveChip(); if(location.hash)history.replaceState(null,'','#'); return; }
+      screenTo('frames'); ensureFrame(view);
+      for(var j in MOD){ if(MOD[j].el)MOD[j].el.style.display=(j===view)?'block':'none'; }
+      setActiveTab(view); if(location.hash.slice(1)!==view)history.replaceState(null,'','#'+view);
+      if(view==='jubilacion')maybeBridge(); else hideBanner();
+      if(view==='medico')syncMedico();
+    }
+    // Los atajos de fila abren directamente la ficha del cliente en la pestaña pedida —
+    // ya no saltan a una pantalla aparte, el panel único de la ficha es quien manda ahora.
+    function openClientIn(view,id){ openWorkspace(id,view); }
+    function newClient(){ setActive(null); ensureFrame('analisis'); var doNew=function(){ callAnalisis('aoraesNewClient'); show('analisis'); }; if(MOD.analisis.ready)doNew(); else pendingOpen=doNew; }
+
+    /* ---------- client workspace: panel único con pestañas ----------
+       Las 3 herramientas (Análisis financiero, Comparación de pensión, Preguntas médicas) viven
+       como iframes dedicados dentro de la propia ficha (wsFrames), separados de MOD/ensureFrame
+       (que siguen sirviendo solo al modo "sin cliente" de la navegación superior). Se precargan
+       los 3 en cuanto se abre la ficha para que cambiar de pestaña sea instantáneo, sin saltos. */
+    var wsFrames={analisis:{el:null,ready:false,_opened:null},jubilacion:{el:null,ready:false,_applied:null},medico:{el:null,ready:false,_client:null}};
+    function ensureWsFrame(kind){
+      if(wsFrames[kind].el) return wsFrames[kind].el;
+      var urlMap={analisis:'./analisis.html',jubilacion:'./jubilacion.html',medico:'./preguntas-medicas.html'};
+      var titleMap={analisis:'Análisis financiero',jubilacion:'Comparación de pensión',medico:'Preguntas médicas'};
+      var host=document.getElementById('ws-frame-'+kind); if(!host) return null;
+      if(kind==='jubilacion' && !document.getElementById('ws-jub-bar')){
+        var bar=document.createElement('div'); bar.className='ws-jub-bar'; bar.id='ws-jub-bar'; bar.hidden=true;
+        bar.innerHTML='<div class="bb-inner"><span class="bb-ico">&#8596;</span><span class="bb-txt" id="ws-jub-status">Datos del cliente cargados en el comparador.</span><button type="button" class="bb-save" id="ws-jub-save">Guardar solución en la ficha</button><button type="button" class="bb-undo" id="ws-jub-undo">Deshacer</button></div>';
+        host.appendChild(bar);
+      }
+      var f=document.createElement('iframe');
+      f.className='ws-frame';
+      // analisis.html abre en la lista de clientes por defecto; pasarle el id directamente evita
+      // el parpadeo (y la posible carrera) de depender solo de aoraesOpenClient tras la carga.
+      f.src=(kind==='analisis' && wsId)?(urlMap[kind]+'?client='+encodeURIComponent(wsId)):urlMap[kind];
+      f.title=titleMap[kind];
+      f.addEventListener('load',function(){ wsFrames[kind].ready=true; syncWsFrames(); if(kind==='analisis') applyWsStepView(wsStep); });
+      host.appendChild(f); wsFrames[kind].el=f;
+      return f;
+    }
+    // Resumen y Propuesta reutilizan el mismo iframe de Análisis financiero (misma ficha ya
+    // cargada) en vez de duplicar su lógica: solo le piden cambiar de vista interna.
+    function applyWsStepView(step){
+      if(!wsFrames.analisis.ready || !wsFrames.analisis.el) return;
+      try{
+        var cw=wsFrames.analisis.el.contentWindow;
+        // El informe (PDF) es un overlay que no se cierra solo: si se sale de "Propuesta" sin
+        // cerrarlo, se quedaría tapando el resto de vistas de este mismo iframe.
+        if(step!=='propuesta' && cw.aoraesCloseInforme) cw.aoraesCloseInforme();
+        if(step==='analisis') cw.aoraesSetView('analysis');
+        else if(step==='resumen') cw.aoraesSetView('report');
+        else if(step==='propuesta') cw.aoraesOpenInforme();
+      }catch(e){ console.error('AORAES: fallo al cambiar de vista en Análisis financiero para',step,e); }
+    }
+    function saveWsSolution(){
+      if(!wsId || !wsFrames.jubilacion.el) return;
+      var statusEl=document.getElementById('ws-jub-status'), saveBtn=document.getElementById('ws-jub-save');
+      var scen=null;
+      try{ scen=wsFrames.jubilacion.el.contentWindow.aoraesGetScenario(); }catch(e){ console.error('AORAES: fallo al leer el escenario de jubilación',e); }
+      if(!scen){ if(statusEl) statusEl.textContent='No se pudo leer el escenario.'; return; }
+      var id=wsId;
+      saveSolution(id,scen);
+      var bumped=advanceStatusToPropuesta(id);
+      if(statusEl) statusEl.textContent=bumped?'✓ Guardada · estado → Propuesta':'✓ Guardada en la ficha';
+      if(saveBtn) saveBtn.disabled=true;
+      // refresca el Resumen para que la solución guardada se vea sin tener que reabrir la ficha
+      try{ var rec=findClient(id); if(rec && wsFrames.analisis.ready){ var s=wsFrames.analisis.el.contentWindow.aoraesClientSummary(id); if(s) renderWorkspace(rec,s); } }catch(e){}
+    }
+    function undoWsSolution(){
+      // "Deshacer" no revierte al estado en blanco de la herramienta (poco útil aquí, ya que
+      // cada pestaña es una instancia dedicada al cliente) — vuelve a aplicar los datos del
+      // cliente, deshaciendo así cualquier ajuste manual hecho tras la carga automática.
+      if(!wsId || !wsFrames.jubilacion.el || !wsFrames.analisis.el) return;
+      try{
+        var c=wsFrames.analisis.el.contentWindow.aoraesGetClient();
+        if(c) wsFrames.jubilacion.el.contentWindow.aoraesApplyClient(c);
+      }catch(e){ console.error('AORAES: fallo al deshacer en Comparación de pensión',e); }
+      var statusEl=document.getElementById('ws-jub-status'), saveBtn=document.getElementById('ws-jub-save');
+      if(statusEl) statusEl.textContent='Deshecho: se restauraron los valores originales del cliente.';
+      if(saveBtn) saveBtn.disabled=false;
+    }
+    function syncWsFrames(){
+      if(!wsId) return;
+      var id=wsId, rec=findClient(id); if(!rec) return;
+      if(wsFrames.medico.ready && wsFrames.medico._client!==id){
+        try{ wsFrames.medico.el.contentWindow.aoraesSetClient(id,rec.name); wsFrames.medico._client=id; }
+        catch(e){ console.error('AORAES: fallo al preparar Preguntas médicas para',id,e); }
+      }
+      if(wsFrames.analisis.ready && wsFrames.analisis._opened!==id){
+        try{
+          wsFrames.analisis.el.contentWindow.aoraesOpenClient(id);
+          wsFrames.analisis._opened=id;
+          var s=wsFrames.analisis.el.contentWindow.aoraesClientSummary(id);
+          if(wsId===id){ if(s) renderWorkspace(findClient(id)||rec,s); else { console.error('AORAES: no se pudo calcular el resumen del cliente',id); renderWorkspaceFallback(findClient(id)||rec); } }
+        }catch(e){ console.error('AORAES: fallo al preparar Análisis financiero para',id,e); }
+      }
+      if(wsFrames.jubilacion.ready && wsFrames.analisis._opened===id && wsFrames.jubilacion._applied!==id){
+        try{
+          var c=wsFrames.analisis.el.contentWindow.aoraesGetClient();
+          if(c){
+            wsFrames.jubilacion.el.contentWindow.aoraesApplyClient(c);
+            wsFrames.jubilacion._applied=id;
+            var bar=document.getElementById('ws-jub-bar'); if(bar) bar.hidden=false;
+          }
+        }catch(e){ console.error('AORAES: fallo al preparar Comparación de pensión para',id,e); }
+      }
+    }
+    function teardownWsFrames(){
+      ['analisis','jubilacion','medico'].forEach(function(k){
+        var host=document.getElementById('ws-frame-'+k); if(host) host.innerHTML='';
+        wsFrames[k]={el:null,ready:false,_opened:null,_applied:null,_client:null};
+      });
+    }
+    function openWorkspace(id,initialStep){
+      var rec=findClient(id); if(!rec){ show('home'); return; }
+      teardownWsFrames();
+      setActive(id); wsId=id; wsStep=initialStep||'resumen';
+      for(var k in MOD){ if(MOD[k].el)MOD[k].el.style.display='none'; }
+      renderWorkspace(rec,null);            // instant skeleton from the saved record
+      screenTo('workspace'); setActiveTab('home');
+      window.scrollTo(0,0); wsScreen.scrollTop=0;
+      ensureWsFrame('analisis'); ensureWsFrame('jubilacion'); ensureWsFrame('medico');
+      setStep(wsStep);
+    }
+
+
+
+    function renderWorkspace(rec,s){
+      try{ renderWorkspaceInner(rec,s); }
+      catch(e){ console.error('AORAES: fallo al construir la ficha de',rec&&rec.name,e); renderWorkspaceFallback(rec); }
+    }
+    function renderWorkspaceFallback(rec){
+      var st=CRM_STATUS[(rec.crm&&rec.crm.status)||'prospecto']||CRM_STATUS.prospecto;
+      document.getElementById('ws-content').innerHTML='<div class="ws">'+
+        '<button type="button" class="ws-back" id="ws-back">← Volver a la cartera</button>'+
+        '<div class="ws-head"><div class="ws-score" style="background:#9aa3b5">—</div>'+
+          '<div class="ws-id"><div class="ws-name">'+esc(rec.name||'Cliente')+'<span class="wchip" style="background:'+st.c+'33;color:#ffffff;border-color:'+st.c+'88">'+st.l+'</span></div></div></div>'+
+        '<div class="ws-card"><h3>No se pudo calcular el resumen automáticamente</h3>'+
+        '<p class="ws-lead">Puede deberse a un dato incompleto o antiguo en la ficha. Los datos guardados no se han perdido: ábrelos en Análisis financiero para revisarlos.</p>'+
+        '<button type="button" class="ws-cta" data-deep="analisis">Abrir Análisis financiero →</button></div></div>';
+    }
+    var PERSONAL_FIELD_LABELS=[
+      ['tratamiento','Tratamiento'],['nombre','Nombre y apellidos'],['fechaNacimiento','Fecha de nacimiento'],
+      ['lugarNacimiento','Lugar de nacimiento'],['paisNacimiento','País de nacimiento'],['estadoCivil','Estado civil'],
+      ['nacionalidad','Nacionalidad'],['profesion','Profesión / actividad'],['email','Correo electrónico'],
+      ['telefono','Teléfono'],['direccion','Dirección'],['steuerId','Steuer-ID'],['fumador','¿Fumador?'],
+      ['aportacionDeseada','Aportación mensual objetivo']
+    ];
+    function fmtISODate(s){ var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s); return m?(m[3]+'/'+m[2]+'/'+m[1]):s; }
+    function personalDataBlock(rec,letter,title){
+      var flds=(rec.data&&rec.data.fields)||{};
+      var rows=PERSONAL_FIELD_LABELS.map(function(f){
+        var key=f[0], label=f[1], raw=flds['pers:'+key+'_'+letter];
+        if(raw==null || raw==='') return null;
+        var val=raw;
+        if(key==='fechaNacimiento') val=fmtISODate(raw);
+        else if(key==='aportacionDeseada'){ var n=parseFloat(raw); if(!(n>0)) return null; val=eur(n)+'/mes'; }
+        return [label,val];
+      }).filter(Boolean);
+      if(!rows.length) return '';
+      return '<div class="ws-card" style="margin-top:14px"><h3>'+esc(title)+'</h3>'+rows.map(function(r){return '<div class="ws-field"><span class="k">'+esc(r[0])+'</span><span class="v">'+esc(r[1])+'</span></div>';}).join('')+'</div>';
+    }
+
+    /* ---------- Proyecto inmobiliario: Bausparvertrag vs. banco directo ----------
+       Cálculo orientativo con amortización estándar (anualidad francesa). La asignación real
+       del préstamo en un Bausparvertrag depende del algoritmo colectivo interno de la
+       Bausparkasse (Zuteilung), no replicable con exactitud fuera de su sistema. */
+    function annuityQuota(principal,annualRatePct,months){
+      var r=(annualRatePct||0)/100/12;
+      if(months<=0) return 0;
+      if(Math.abs(r)<1e-9) return principal/months;
+      return principal*r/(1-Math.pow(1+r,-months));
+    }
+    function savingsQuota(target,annualRatePct,months){
+      var r=(annualRatePct||0)/100/12;
+      if(months<=0) return 0;
+      if(Math.abs(r)<1e-9) return target/months;
+      return target*r/(Math.pow(1+r,months)-1);
+    }
+    function calcInmuebleOption(precio,cfg){
+      precio=precio||0;
+      var pct=Math.max(0,Math.min(100,cfg.pct||0));
+      var objetivoAhorro=precio*pct/100;
+      var capitalPrestamo=precio-objetivoAhorro;
+      var mesesAhorro=Math.max(0,Math.round((cfg.anios||0)*12));
+      var mesesPrestamo=Math.max(1,Math.round((cfg.plazoPrestamo||0)*12));
+      var cuotaAhorro=(pct>0&&mesesAhorro>0)?savingsQuota(objetivoAhorro,cfg.interesAhorro,mesesAhorro):0;
+      var interesGanadoAhorro=(pct>0&&mesesAhorro>0)?Math.max(0,objetivoAhorro-cuotaAhorro*mesesAhorro):0;
+      var cuotaPrestamo=annuityQuota(capitalPrestamo,cfg.interesPrestamo,mesesPrestamo);
+      var interesTotalPrestamo=Math.max(0,cuotaPrestamo*mesesPrestamo-capitalPrestamo);
+      var comision=precio*(cfg.comision||0)/100;
+      var costeTotal=precio+interesTotalPrestamo+comision-interesGanadoAhorro;
+      return {objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal};
+    }
+    function isoDateYearsAgo(years){
+      var d=new Date(); d.setFullYear(d.getFullYear()-years);
+      var m=('0'+(d.getMonth()+1)).slice(-2), day=('0'+d.getDate()).slice(-2);
+      return d.getFullYear()+'-'+m+'-'+day;
+    }
+    function todayISO(){ return isoDateYearsAgo(0); }
+    function mesesEntreFechas(fechaAISO,fechaBISO){
+      var a=fechaAISO?new Date(fechaAISO+'T00:00:00'):null, b=fechaBISO?new Date(fechaBISO+'T00:00:00'):null;
+      if(!a||isNaN(a.getTime())||!b||isNaN(b.getTime())) return 0;
+      return Math.max(0,(b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth()));
+    }
+    function balanceTrasMeses(P,annualRatePct,cuota,mesesTranscurridos){
+      var r=(annualRatePct||0)/100/12;
+      return Math.abs(r)<1e-9
+        ? Math.max(0,P-cuota*mesesTranscurridos)
+        : Math.max(0,P*Math.pow(1+r,mesesTranscurridos)-cuota*((Math.pow(1+r,mesesTranscurridos)-1)/r));
+    }
+    function calcRefiRemaining(refi){
+      var P=refi.importeOriginal||0;
+      var totalMeses=Math.max(1,Math.round((refi.plazoOriginal||0)*12));
+      var cuotaOriginal=annuityQuota(P,refi.interesOriginal,totalMeses);
+      var elapsedMeses=Math.min(totalMeses,mesesEntreFechas(refi.fechaInicio,todayISO()));
+      var saldoPendiente=balanceTrasMeses(P,refi.interesOriginal,cuotaOriginal,elapsedMeses);
+      var mesesRestantes=Math.max(0,totalMeses-elapsedMeses);
+      var interesRestante=Math.max(0,cuotaOriginal*mesesRestantes-saldoPendiente);
+      var costeTotalSeguirIgual=saldoPendiente+interesRestante;
+      return {cuotaOriginal:cuotaOriginal,totalMeses:totalMeses,elapsedMeses:elapsedMeses,mesesRestantes:mesesRestantes,saldoPendiente:saldoPendiente,interesRestante:interesRestante,costeTotalSeguirIgual:costeTotalSeguirIgual};
+    }
+    function saldoEnFecha(refi,fechaISO){
+      var P=refi.importeOriginal||0;
+      var totalMeses=Math.max(1,Math.round((refi.plazoOriginal||0)*12));
+      var cuotaOriginal=annuityQuota(P,refi.interesOriginal,totalMeses);
+      var elapsed=Math.min(totalMeses,mesesEntreFechas(refi.fechaInicio,fechaISO));
+      return balanceTrasMeses(P,refi.interesOriginal,cuotaOriginal,elapsed);
+    }
+    function defaultInmueble(){
+      return {
+        modo:'compra',
+        precio:200000,
+        a:{pct:40,anios:3.5,interesAhorro:0.05,interesPrestamo:1.75,plazoPrestamo:7,comision:1.6},
+        b:{pct:50,anios:5,interesAhorro:0.05,interesPrestamo:0.95,plazoPrestamo:8,comision:1.6},
+        banco:{pct:0,anios:0,interesAhorro:0,interesPrestamo:3.5,plazoPrestamo:20,comision:0},
+        refi:{
+          importeOriginal:200000,interesOriginal:3.0,plazoOriginal:25,fechaInicio:isoDateYearsAgo(5),fechaRefi:isoDateYearsAgo(-5),
+          banco:{interesPrestamo:3.5,plazoPrestamo:15,comision:0},
+          a:{pct:40,interesAhorro:0.05,interesPrestamo:1.75,plazoPrestamo:15,comision:1.6},
+          b:{pct:50,interesAhorro:0.05,interesPrestamo:0.95,plazoPrestamo:15,comision:1.6}
+        }
+      };
+    }
+    function inmuebleOptField(opt,key,label,val,step,suffix,extra){
+      return '<label class="inm-f"><span>'+esc(label)+'</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" data-inm-opt="'+opt+'" data-inm-field="'+key+'" value="'+val+'" step="'+step+'" '+(extra||'')+'><span class="inm-suf">'+suffix+'</span></span></label>';
+    }
+    function inmuebleOptionCard(opt,title,cfg,note){
+      var fields='';
+      var withAhorro=(opt==='a'||opt==='b'||opt==='refiA'||opt==='refiB');
+      var withAnios=(opt==='a'||opt==='b');
+      if(withAhorro){
+        fields+=inmuebleOptField(opt,'pct','% ahorrado',cfg.pct,'1','%','min="0" max="100"');
+        if(withAnios) fields+=inmuebleOptField(opt,'anios','Años de ahorro',cfg.anios,'1','años','min="0" max="40"');
+        fields+=inmuebleOptField(opt,'interesAhorro','Interés del ahorro',cfg.interesAhorro,'0.01','%','min="0" max="20"');
+      }
+      fields+=inmuebleOptField(opt,'interesPrestamo','Interés del préstamo',cfg.interesPrestamo,'0.01','%','min="0" max="20"');
+      if(opt==='banco'||opt==='refiBanco'){
+        fields+='<div class="inm-quick" data-inm-quick="banco">'+[2,3,4,4.2,5].map(function(r){return '<button type="button" data-inm-rate="'+r+'">'+String(r).replace('.',',')+'%</button>';}).join('')+'</div>';
+      }
+      fields+=inmuebleOptField(opt,'plazoPrestamo','Plazo del préstamo',cfg.plazoPrestamo,'1','años','min="1" max="40"')+
+        inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
+      return '<div class="inm-card" data-inm-card="'+opt+'"><h4>'+esc(title)+'</h4>'+(note?'<p class="inm-note">'+esc(note)+'</p>':'')+fields+'</div>';
+    }
+    function inmuebleModeToggle(modo){
+      return '<div class="inm-mode" role="tablist" aria-label="Modo del proyecto inmobiliario">'+
+        ['compra:Comprar','refi:Refinanciar'].map(function(p){var a=p.split(':');var on=(a[0]===modo);return '<button type="button" data-inm-mode="'+a[0]+'"'+(on?' class="active"':'')+' aria-pressed="'+(on?'true':'false')+'">'+a[1]+'</button>';}).join('')+
+      '</div>';
+    }
+    function inmuebleRefiCurrentCard(refi){
+      return '<div class="inm-card"><h4>Tu crédito actual</h4><p class="inm-note">Cuéntanos del crédito que el cliente ya tiene.</p>'+
+        inmuebleOptField('refiActual','importeOriginal','¿Cuánto pidió prestado originalmente?',refi.importeOriginal,'1000','€','min="0"')+
+        inmuebleOptField('refiActual','interesOriginal','¿Qué tasa de interés le dieron?',refi.interesOriginal,'0.01','%','min="0" max="20"')+
+        inmuebleOptField('refiActual','plazoOriginal','¿A cuántos años lo pidió?',refi.plazoOriginal,'1','años','min="1" max="40"')+
+        '<label class="inm-f"><span>¿Cuándo empezó el crédito?</span><input type="date" class="inm-inp" id="inm-refi-fecha-inicio" value="'+esc(refi.fechaInicio||'')+'"></label>'+
+        '<label class="inm-f"><span>¿Cuándo planea refinanciar?</span><input type="date" class="inm-inp" id="inm-refi-fecha-objetivo" value="'+esc(refi.fechaRefi||'')+'"></label>'+
+        '<div id="inm-refi-saldo-wrap">'+inmuebleRefiSaldoHTML(refi)+'</div>'+
+      '</div>';
+    }
+    // Si la fecha de refinanciación quedó en el pasado (o antes de que el crédito empezara),
+    // se trata como "hoy" — proyectar hacia atrás no tiene sentido y antes daba un saldo
+    // engañoso (el importe original completo, en vez del saldo real de hoy).
+    function fechaRefiEfectiva(refi){
+      var hoy=todayISO();
+      return (refi.fechaRefi&&refi.fechaRefi>hoy)?refi.fechaRefi:hoy;
+    }
+    function inmuebleRefiSaldoHTML(refi){
+      var rem=calcRefiRemaining(refi);
+      var fr=fechaRefiEfectiva(refi);
+      var mesesHastaRefi=mesesEntreFechas(todayISO(),fr);
+      var saldoAtRefi=saldoEnFecha(refi,fr);
+      return '<div class="ws-field"><span class="k">Saldo pendiente hoy</span><span class="v">'+eur(rem.saldoPendiente)+'</span></div>'+
+        '<div class="ws-field"><span class="k">Años hasta refinanciar</span><span class="v">'+(mesesHastaRefi/12).toFixed(1)+'</span></div>'+
+        '<div class="ws-field"><span class="k">Saldo estimado en esa fecha</span><span class="v">'+eur(saldoAtRefi)+'</span></div>';
+    }
+    function inmuebleRefiResultsHTML(refi){
+      var rem=calcRefiRemaining(refi);
+      var fr=fechaRefiEfectiva(refi);
+      var mesesHastaRefi=mesesEntreFechas(todayISO(),fr);
+      var anosDisponibles=mesesHastaRefi/12;
+      var saldoAtRefi=saldoEnFecha(refi,fr);
+      // Si la fecha de refinanciación cae después de que el crédito original ya se habría
+      // terminado de pagar solo, no se sigue pagando cuota en ese tramo — se limita al tiempo
+      // que el crédito original realmente sigue vivo.
+      var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
+      var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,plazoPrestamo:refi.banco.plazoPrestamo,comision:refi.banco.comision});
+      var rA=calcInmuebleOption(saldoAtRefi,{pct:refi.a.pct,anios:anosDisponibles,interesAhorro:refi.a.interesAhorro,interesPrestamo:refi.a.interesPrestamo,plazoPrestamo:refi.a.plazoPrestamo,comision:refi.a.comision});
+      var rB=calcInmuebleOption(saldoAtRefi,{pct:refi.b.pct,anios:anosDisponibles,interesAhorro:refi.b.interesAhorro,interesPrestamo:refi.b.interesPrestamo,plazoPrestamo:refi.b.plazoPrestamo,comision:refi.b.comision});
+      var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
+      var costeAAbs=costeMientrasTanto+rA.costeTotal;
+      var costeBAbs=costeMientrasTanto+rB.costeTotal;
+      var mejorEsA=costeAAbs<=costeBAbs;
+      function baseRow(){
+        return '<div class="inm-res-card"><h5>Tu crédito actual</h5>'+
+          '<div class="inm-res-line"><span>Cuota actual</span><b>'+eur(rem.cuotaOriginal)+'/mes</b></div>'+
+          '<div class="inm-res-line"><span>Interés restante</span><b>'+eur(rem.interesRestante)+'</b></div>'+
+          '<div class="inm-res-line total"><span>Coste total restante</span><b>'+eur(rem.costeTotalSeguirIgual)+'</b></div>'+
+        '</div>';
+      }
+      function row(title,r,costeAbs,destacar){
+        var ahorroVs=rem.costeTotalSeguirIgual-costeAbs;
+        return '<div class="inm-res-card"><h5>'+(destacar?'★ ':'')+esc(title)+'</h5>'+
+          (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
+          '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
+          '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
+          '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(costeAbs)+'</b></div>'+
+          '<div class="inm-res-line save '+(ahorroVs>=0?'pos':'neg')+'"><span>'+(ahorroVs>=0?'Ahorras vs. seguir igual':'Más caro que seguir igual')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>'+
+        '</div>';
+      }
+      return '<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false)+
+        row('Badenia · '+(refi.a.pct||0)+'% ahorro',rA,costeAAbs,mejorEsA)+
+        row('Badenia · '+(refi.b.pct||0)+'% ahorro',rB,costeBAbs,!mejorEsA)+'</div>';
+    }
+    function inmuebleResultsHTML(precio,inm){
+      var ra=calcInmuebleOption(precio,inm.a), rb=calcInmuebleOption(precio,inm.b), rk=calcInmuebleOption(precio,inm.banco);
+      function row(title,r,isBanco){
+        var ahorroVs=isBanco?null:(rk.costeTotal-r.costeTotal);
+        return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
+          (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
+          '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
+          '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
+          '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(r.costeTotal)+'</b></div>'+
+          (ahorroVs!=null?'<div class="inm-res-line save '+(ahorroVs>=0?'pos':'neg')+'"><span>'+(ahorroVs>=0?'Ahorras vs. banco':'Más caro que el banco')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>':'')+
+          '</div>';
+      }
+      return '<div class="inm-results">'+row('Bausparvertrag · '+(inm.a.pct||0)+'% ahorro',ra,false)+row('Bausparvertrag · '+(inm.b.pct||0)+'% en '+(inm.b.anios||0)+' años',rb,false)+row('Banco directo',rk,true)+'</div>';
+    }
+    function normalizeInmueble(rec){
+      if(!rec.inmueble) rec.inmueble=defaultInmueble();
+      var inm=rec.inmueble, def=defaultInmueble();
+      if(!inm.modo) inm.modo='compra';
+      if(!inm.refi) inm.refi=def.refi;
+      if(!inm.refi.a) inm.refi.a=def.refi.a;
+      if(!inm.refi.b) inm.refi.b=def.refi.b;
+      if(!inm.refi.banco) inm.refi.banco=def.refi.banco;
+      if(!inm.refi.fechaRefi) inm.refi.fechaRefi=def.refi.fechaRefi;
+      return inm;
+    }
+    function inmuebleBlock(rec){
+      var inm=normalizeInmueble(rec);
+      var body=(inm.modo==='refi')
+        ? '<div class="inm-grid">'+
+            inmuebleRefiCurrentCard(inm.refi)+
+            inmuebleOptionCard('refiBanco','Refinanciar con banco',inm.refi.banco,'A tipo de mercado, sobre el saldo pendiente.')+
+            inmuebleOptionCard('refiA','Badenia · opción clásica',inm.refi.a,'Ahorro en paralelo hasta la fecha de refinanciación.')+
+            inmuebleOptionCard('refiB','Badenia · opción acelerada',inm.refi.b,'Ahorro en paralelo hasta la fecha de refinanciación.')+
+          '</div>'+
+          '<div id="inm-results-wrap">'+inmuebleRefiResultsHTML(inm.refi)+'</div>'
+        : '<label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
+          '<div class="inm-grid">'+
+            inmuebleOptionCard('a','Bausparvertrag · opción clásica',inm.a)+
+            inmuebleOptionCard('b','Bausparvertrag · opción acelerada',inm.b)+
+            inmuebleOptionCard('banco','Banco directo',inm.banco,'Sin fase de ahorro: se financia el 100% desde el inicio.')+
+          '</div>'+
+          '<div id="inm-results-wrap">'+inmuebleResultsHTML(inm.precio,inm)+'</div>';
+      return '<div class="ws-card"><h3>Proyecto inmobiliario</h3>'+
+        inmuebleModeToggle(inm.modo)+
+        '<p class="ws-lead">'+(inm.modo==='refi'
+          ?'Compara seguir con el crédito actual, refinanciar con banco a tipo de mercado, o refinanciar con Badenia a un tipo fijo sobre el saldo pendiente. Cálculo orientativo con amortización estándar.'
+          :'Compara financiar la compra con un Bausparvertrag (fase de ahorro a interés casi nulo + préstamo a tipo fijo pactado hoy) frente a una hipoteca bancaria directa a tipo de mercado. Cálculo orientativo con amortización estándar; la Bausparkasse asigna el préstamo real según su propio algoritmo colectivo, que puede variar el plazo de ahorro.')+'</p>'+
+        body+
+      '</div>';
+    }
+    function refreshInmuebleResults(){
+      if(!wsRec||!wsRec.inmueble) return;
+      var inm=wsRec.inmueble;
+      var el=document.getElementById('inm-results-wrap'); if(!el) return;
+      if(inm.modo==='refi'){
+        el.innerHTML=inmuebleRefiResultsHTML(inm.refi);
+        var sw=document.getElementById('inm-refi-saldo-wrap'); if(sw) sw.innerHTML=inmuebleRefiSaldoHTML(inm.refi);
+      } else {
+        el.innerHTML=inmuebleResultsHTML(inm.precio,inm);
+      }
+    }
+    function persistInmueble(){
+      if(!wsId||!wsRec||!wsRec.inmueble) return;
+      var arr=readClients();
+      for(var i=0;i<arr.length;i++){
+        if(arr[i].id===wsId){ arr[i].inmueble=wsRec.inmueble; arr[i].savedAt=new Date().toISOString(); break; }
+      }
+      try{ localStorage.setItem(CLIENTS_KEY,JSON.stringify(arr)); }catch(e){ console.error('AORAES: fallo al guardar el proyecto inmobiliario',e); }
+      writeClientFile(wsId);
+    }
+    function scheduleInmuebleSave(){
+      if(inmSaveTimer) clearTimeout(inmSaveTimer);
+      inmSaveTimer=setTimeout(persistInmueble,500);
+    }
+    function renderWorkspaceInner(rec,s){
+      // syncWsFrames() puede volver a llamar aquí (p.ej. cuando el iframe de análisis termina de
+      // cargar) con una copia recién releída de localStorage — si el asesor acaba de editar el
+      // Proyecto inmobiliario y el guardado con debounce (scheduleInmuebleSave) aún no se disparó,
+      // esa copia estaría desactualizada y perdería el cambio. Se conserva el estado en memoria.
+      if(wsRec&&wsRec.id===rec.id&&wsRec.inmueble) rec.inmueble=wsRec.inmueble;
+      wsRec=rec;
+      var score=(s&&typeof s.score==='number')?s.score:(typeof rec.score==='number'?rec.score:null);
+      var vd=verdict(score||0), col=scoreColor(score||0), st=CRM_STATUS[(rec.crm&&rec.crm.status)||'prospecto']||CRM_STATUS.prospecto;
+      var rs=reviewState(rec.crm&&rec.crm.review);
+      var cm=rec.crm||{}, contact=[cm.email,cm.phone].filter(Boolean).join(' · ');
+
+      // Seguimiento
+      var seg='<div class="ws-card"><h3>Estado y seguimiento</h3>'+
+        '<div class="ws-field"><span class="k">Estado</span><span class="v">'+st.l+'</span></div>'+
+        '<div class="ws-field"><span class="k">Próxima revisión</span><span class="v">'+(rs?(rs.cls==='overdue'?'Vencida':rs.txt):'—')+'</span></div>'+
+        '<div class="ws-field"><span class="k">Etiquetas</span><span class="v">'+(esc(cm.tags||'—'))+'</span></div>'+
+        '<div class="ws-field"><span class="k">Guardado</span><span class="v">'+(rec.savedAt?relTime(rec.savedAt):'—')+'</span></div>'+
+        '</div><div class="ws-card"><h3>Notas</h3><div class="seg-notes">'+(esc(cm.notes||'').trim()||'Sin notas. Edita la ficha en el módulo de Análisis.')+'</div></div>'+
+        '<button type="button" class="ws-cta ghost" data-deep="analisis">Editar ficha en Análisis →</button>';
+
+      // Perfil — ficha general + todos los datos personales de S.10 (Persona A y, si aplica, B)
+      var perfil='<div class="ws-card"><h3>Ficha del cliente</h3>'+
+        '<div class="ws-field"><span class="k">Nombre</span><span class="v">'+esc(rec.name||'—')+'</span></div>'+
+        '<div class="ws-field"><span class="k">Asesor/a</span><span class="v">'+esc(rec.advisor||'—')+'</span></div>'+
+        '<div class="ws-field"><span class="k">Estado</span><span class="v">'+st.l+'</span></div>'+
+        (contact?'<div class="ws-field"><span class="k">Contacto</span><span class="v">'+esc(contact)+'</span></div>':'')+
+        (isCouple(rec)?'<div class="ws-field"><span class="k">Tipo</span><span class="v">Pareja</span></div>':'')+
+        '</div>'+personalDataBlock(rec,'A','Datos personales · Persona A')+personalDataBlock(rec,'B','Datos personales · Persona B')+
+        '<button type="button" class="ws-cta ghost" data-deep="analisis">Editar datos en Análisis →</button>';
+
+      var isTool=!!WS_TOOL_STEPS[wsStep];
+      document.getElementById('ws-content').innerHTML='<div class="ws">'+
+        '<button type="button" class="ws-back" id="ws-back">← Volver a la cartera</button>'+
+        '<div class="ws-head"><div class="ws-score" style="background:'+col+'">'+(score!=null?score:'—')+'</div>'+
+          '<div class="ws-id"><div class="ws-name">'+esc(rec.name||'Cliente')+(isCouple(rec)?'<span class="wchip" style="background:#3a507733;color:#e3d4ab;border-color:#ffffff33">Pareja</span>':'')+'<span class="wchip" style="background:'+st.c+'33;color:#ffffff;border-color:'+st.c+'88">'+st.l+'</span></div>'+
+          '<div class="ws-metaline">'+[esc(rec.advisor||''),(rec.savedAt?('actualizado '+relTime(rec.savedAt)):'')].filter(Boolean).join(' · ')+'</div></div>'+
+          '<div class="ws-verdict"><b>'+vd[0]+'</b>'+vd[1].slice(0,70)+(vd[1].length>70?'…':'')+'</div></div>'+
+        '<div class="ws-stepper" id="ws-stepper" role="tablist" aria-label="Secciones del cliente">'+
+          ['analisis:Análisis financiero','resumen:Resumen','jubilacion:Comparación de pensión','inmueble:Proyecto inmobiliario','medico:Preguntas médicas','perfil:Perfil','propuesta:Propuesta','seguimiento:Seguimiento'].map(function(p){var a=p.split(':');var on=(a[0]===wsStep);return '<button type="button" role="tab" id="tab-'+a[0]+'" aria-controls="sec-'+a[0]+'" aria-selected="'+(on?'true':'false')+'" data-step="'+a[0]+'"'+(on?' class="active"':'')+'>'+a[1]+'</button>';}).join('')+
+        '</div>'+
+        '<div class="ws-body" id="ws-summary-body"'+(isTool?' style="display:none"':'')+'>'+
+          '<section class="ws-sec'+(wsStep==='inmueble'?' active':'')+'" id="sec-inmueble" role="tabpanel" aria-labelledby="tab-inmueble" tabindex="0" data-sec="inmueble">'+inmuebleBlock(rec)+'</section>'+
+          '<section class="ws-sec'+(wsStep==='perfil'?' active':'')+'" id="sec-perfil" role="tabpanel" aria-labelledby="tab-perfil" tabindex="0" data-sec="perfil">'+perfil+'</section>'+
+          '<section class="ws-sec'+(wsStep==='seguimiento'?' active':'')+'" id="sec-seguimiento" role="tabpanel" aria-labelledby="tab-seguimiento" tabindex="0" data-sec="seguimiento">'+seg+'</section>'+
+        '</div></div>';
+      showWsFrameFor(wsStep);
+    }
+
+    // Resumen y Propuesta no tienen iframe propio: reutilizan el de Análisis financiero (misma
+    // ficha ya cargada), solo cambiando de vista interna vía applyWsStepView.
+    var WS_TOOL_STEPS={analisis:1,jubilacion:1,medico:1,resumen:1,propuesta:1};
+    var WS_FRAME_FOR_STEP={analisis:'analisis',resumen:'analisis',propuesta:'analisis',jubilacion:'jubilacion',medico:'medico'};
+    function showWsFrameFor(step){
+      var frameKind=WS_FRAME_FOR_STEP[step];
+      ['analisis','jubilacion','medico'].forEach(function(k){ var el=document.getElementById('ws-frame-'+k); if(el) el.hidden=(frameKind!==k); });
+    }
+    function setStep(step){
+      wsStep=step;
+      var btns=wsScreen.querySelectorAll('.ws-stepper button'); for(var i=0;i<btns.length;i++){ var on=btns[i].getAttribute('data-step')===step; btns[i].classList.toggle('active',on); btns[i].setAttribute('aria-selected',on?'true':'false'); }
+      var isTool=!!WS_TOOL_STEPS[step];
+      var body=document.getElementById('ws-summary-body'); if(body) body.style.display=isTool?'none':'';
+      var secs=wsScreen.querySelectorAll('#ws-summary-body .ws-sec'); for(var j=0;j<secs.length;j++)secs[j].classList.toggle('active',!isTool&&secs[j].getAttribute('data-sec')===step);
+      showWsFrameFor(step);
+      if(isTool){
+        var frameKind=WS_FRAME_FOR_STEP[step];
+        ensureWsFrame(frameKind);
+        syncWsFrames();
+        if(frameKind==='analisis' && wsFrames.analisis.ready) applyWsStepView(step);
+      }
+      wsScreen.scrollTop=0;
+    }
+    /* ---------- cockpit ---------- */
+    function renderCockpit(){
+      try{ renderCockpitInner(); }
+      catch(e){
+        console.error('AORAES: fallo al construir la cartera de clientes',e);
+        if(insEl) insEl.innerHTML='';
+        if(listEl) listEl.innerHTML='<div class="cock-empty">No se pudo construir la cartera (dato antiguo o con forma inesperada en alguna ficha). Revisa la consola y avísanos para corregirlo.</div>';
+      }
+    }
+    function renderCockpitInner(){
+      var arr=readClients(), activeId=getActive();
+      var overdue=0, low=0, neg=0, proposals=0;
+      arr.forEach(function(c){
+        try{ var cm=c.crm||{}; var rs=reviewState(cm.review); if(rs&&rs.cls==='overdue')overdue++; if(typeof c.score==='number'&&c.score<40)low++; if(typeof c.flow==='number'&&c.flow<0)neg++; var st0=cm.status||'prospecto'; if(st0==='propuesta'||st0==='implementacion')proposals++; }
+        catch(e){ console.error('AORAES: fallo al calcular estadísticas del cockpit para',c&&c.id,e); }
+      });
+      insEl.innerHTML='<div class="ins"><span class="ins-num">'+arr.length+'</span><span class="ins-lbl">cliente'+(arr.length===1?'':'s')+'<br>en cartera</span></div>'+
+        '<div class="ins '+(overdue?'alert tap':'')+'" '+(overdue?'data-filter="review"':'')+'><span class="ins-num">'+overdue+'</span><span class="ins-lbl">revisión'+(overdue===1?'':'es')+'<br>vencida'+(overdue===1?'':'s')+'</span></div>'+
+        '<div class="ins '+(low?'warn':'')+'"><span class="ins-num">'+low+'</span><span class="ins-lbl">salud<br>financiera baja</span></div>'+
+        '<div class="ins '+(neg?'warn':'')+'"><span class="ins-num">'+neg+'</span><span class="ins-lbl">flujo<br>mensual negativo</span></div>'+
+        '<div class="ins"><span class="ins-num">'+proposals+'</span><span class="ins-lbl">propuesta'+(proposals===1?'':'s')+'<br>en curso</span></div>';
+      var q=(searchEl.value||'').toLowerCase().trim(), fS=statusEl.value||'', sortBy=sortEl.value||'saved';
+      var shown=arr.filter(function(c){ var cm=c.crm||{}; if(fS&&(cm.status||'prospecto')!==fS)return false; if(!q)return true; return [c.name,cm.tags,cm.email,c.advisor].join(' ').toLowerCase().indexOf(q)>=0; });
+      shown.sort(function(a,b){ var ca=a.crm||{},cb=b.crm||{}; if(sortBy==='name')return (a.name||'').localeCompare(b.name||'','es'); if(sortBy==='score')return (b.score||0)-(a.score||0); if(sortBy==='review'){var ra=ca.review||'9999-12-31',rb=cb.review||'9999-12-31';return ra<rb?-1:(ra>rb?1:0);} return new Date(b.savedAt||0)-new Date(a.savedAt||0); });
+      if(arr.length===0){ listEl.innerHTML='<div class="cock-empty">Aún no tienes clientes guardados.<br>Crea el primero para empezar tu cartera.<div class="ce-new"><button type="button" class="cock-new" id="empty-new">+ Nuevo cliente</button></div></div>'; var en=document.getElementById('empty-new'); if(en)en.onclick=newClient; return; }
+      if(shown.length===0){ listEl.innerHTML='<div class="cock-empty">Sin resultados para los filtros actuales.</div>'; return; }
+      listEl.innerHTML=shown.map(function(c){
+        try{ return renderCliRow(c,activeId); }
+        catch(e){
+          console.error('AORAES: fallo al construir la fila del cliente',c&&c.id,e);
+          return '<div class="cli"><div class="cli-main" data-ws="'+esc((c&&c.id)||'')+'" role="button" tabindex="0"><div class="cli-score" style="background:#9aa3b5">—</div><div class="cli-body"><div class="cli-namerow"><span class="cli-name">'+esc((c&&c.name)||'Cliente')+'</span></div><div class="cli-meta">No se pudo mostrar esta ficha (dato con forma inesperada).</div></div></div><div class="cli-acts"><button type="button" class="cli-act an" data-ws="'+esc((c&&c.id)||'')+'">Abrir ficha</button></div></div>';
+        }
+      }).join('');
+    }
+    function renderCliRow(c,activeId){
+      var cm=c.crm||{}, st=CRM_STATUS[cm.status||'prospecto']||CRM_STATUS.prospecto, col=scoreColor(c.score||0), rs=reviewState(cm.review);
+      var flds=(c.data&&c.data.fields)||{};
+      var profesion=String(flds['pers:profesion_A']||flds['pers:profesion_B']||'').trim();
+      var aportObjetivo=(parseFloat(flds['pers:aportacionDeseada_A'])||0)+(parseFloat(flds['pers:aportacionDeseada_B'])||0);
+      var contact=[cm.email,cm.phone].filter(Boolean).join(' · '); var meta=[c.advisor||'',profesion,contact,'guardado '+relTime(c.savedAt)].filter(Boolean).join(' · ');
+      var tags=String(cm.tags||'').split(',').map(function(t){return t.trim();}).filter(Boolean).slice(0,3); var sub='';
+      if(rs)sub+='<span class="cli-review '+rs.cls+'">'+(rs.cls?'Revisión: ':'Próx. revisión: ')+rs.txt+'</span>';
+      if(aportObjetivo>0)sub+='<span class="cli-tag">Ahorro objetivo '+eur(aportObjetivo)+'/mes</span>';
+      tags.forEach(function(t){ sub+='<span class="cli-tag">'+esc(t)+'</span>'; });
+      return '<div class="cli'+(c.id===activeId?' active':'')+'"><div class="cli-main" data-ws="'+c.id+'" role="button" tabindex="0" aria-label="Abrir ficha de '+esc(c.name||'cliente')+'"><div class="cli-score" style="background:'+col+'">'+(c.score!=null?c.score:'—')+'</div><div class="cli-body"><div class="cli-namerow"><span class="cli-name">'+esc(c.name||'Cliente')+'</span><span class="cli-chip" style="background:'+st.c+'1f;color:'+st.c+';border-color:'+st.c+'55">'+st.l+'</span>'+(isCouple(c)?'<span class="cli-chip" style="background:#3a50771f;color:#3a5077;border-color:#3a507755">Pareja</span>':'')+'</div><div class="cli-meta">'+esc(meta)+'</div>'+(sub?'<div class="cli-sub">'+sub+'</div>':'')+'</div></div><div class="cli-acts"><button type="button" class="cli-act an" data-ws="'+c.id+'">Abrir ficha</button><button type="button" class="cli-act ju" data-ana="'+c.id+'">Análisis</button><button type="button" class="cli-act ju" data-jub="'+c.id+'">Jubilación</button><button type="button" class="cli-act ju" data-med="'+c.id+'">Médico</button></div></div>';
+    }
+
+    /* ---------- novedades (running log of what this tool can do) ---------- */
+    // Add one entry here whenever a feature ships — most recent first.
+    // tag: 'new' | 'improve' | 'fix' | 'base'
+    var NOVEDADES=[
+      {tag:'new',label:'Nuevo',title:'Proyecto inmobiliario',desc:'Nueva pestaña en la ficha del cliente que compara financiar una vivienda con un Bausparvertrag (ahorro + préstamo a tipo fijo) frente a una hipoteca bancaria directa a tipo de mercado ajustable.'},
+      {tag:'new',label:'Nuevo',title:'Preguntas médicas por cliente',desc:'Cuestionario de salud en español, inglés y alemán. Se abre desde la pestaña "Médico" de cada cliente y guarda sus respuestas por separado.'},
+      {tag:'improve',label:'Mejora',title:'Comparador de jubilación rediseñado',desc:'Nuevo orden de secciones, colores unificados en botones y toggles, y campos numéricos junto a los sliders de sueldo y ahorro para escribir la cifra exacta.'},
+      {tag:'fix',label:'Corrección',title:'Texto sin procesar en el comparador',desc:'Se corrigió un fallo que mostraba código interno de la librería de PDF como texto visible al final de la página.'},
+      {tag:'improve',label:'Mejora',title:'Puntuación de vivienda más realista',desc:'El progreso hacia el objetivo de vivienda ahora depende del tamaño real del Bausparvertrag frente a una vivienda de referencia, no solo de si existe un plan.'},
+      {tag:'improve',label:'Mejora',title:'Jubilación y pirámide alineadas',desc:'La previsión de jubilación de la puntuación general y la de la pirámide usan ahora la misma Rentenlücke real, en vez de dos lógicas distintas.'},
+      {tag:'improve',label:'Mejora',title:'Liquidez vs. inversión a corto plazo',desc:'Cada cuenta de ahorro o inversión se puede marcar como "líquida" para que cuente como fondo de emergencia cuando corresponda.'},
+      {tag:'improve',label:'Mejora',title:'Fondo de emergencia sobre gasto total',desc:'El objetivo de 3 a 6 meses de colchón ahora se calcula sobre el gasto total del hogar, no solo el esencial.'},
+      {tag:'base',label:'Base',title:'Orden DVAG en el análisis financiero',desc:'El análisis completo (S.2 a S.11) sigue el orden y la nomenclatura del sistema DVAG, con Persona A y B siempre visibles.'}
+    ];
+    function renderNovedades(){
+      var list=document.getElementById('cu-list'), moreBtn=document.getElementById('cu-more');
+      var LIMIT=4;
+      list.innerHTML=NOVEDADES.map(function(n,i){
+        return '<div class="cu-item'+(i>=LIMIT?' hidden-extra':'')+'"><span class="cu-tag '+n.tag+'">'+n.label+'</span><div class="cu-title">'+esc(n.title)+'</div><div class="cu-desc">'+esc(n.desc)+'</div></div>';
+      }).join('');
+      if(NOVEDADES.length>LIMIT){
+        moreBtn.hidden=false;
+        moreBtn.onclick=function(){ list.querySelectorAll('.hidden-extra').forEach(function(el){el.classList.remove('hidden-extra');}); moreBtn.hidden=true; };
+      } else moreBtn.hidden=true;
+    }
+
+    /* ---------- events ---------- */
+    sw.addEventListener('click',function(e){ var b=e.target.closest('button[data-go]'); if(b)show(b.getAttribute('data-go')); });
+    document.querySelector('.cock-tools').addEventListener('click',function(e){ var b=e.target.closest('[data-go]'); if(b)show(b.getAttribute('data-go')); });
+    document.getElementById('cock-new').addEventListener('click',newClient);
+    document.getElementById('ac-x').addEventListener('click',function(e){ e.stopPropagation(); setActive(null); });
+    acChip.addEventListener('click',function(){ var id=getActive(); if(id)openWorkspace(id); });
+    acChip.addEventListener('keydown',function(e){ if((e.key==='Enter'||e.key===' ')&&e.target===acChip){ e.preventDefault(); var id=getActive(); if(id)openWorkspace(id); } });
+    listEl.addEventListener('click',function(e){
+      var ws=e.target.closest('[data-ws]'); if(ws){ openWorkspace(ws.getAttribute('data-ws')); return; }
+      var ju=e.target.closest('[data-jub]'); if(ju){ openClientIn('jubilacion',ju.getAttribute('data-jub')); return; }
+      var an=e.target.closest('[data-ana]'); if(an){ openClientIn('analisis',an.getAttribute('data-ana')); return; }
+      var md=e.target.closest('[data-med]'); if(md){ openClientIn('medico',md.getAttribute('data-med')); return; }
+    });
+    listEl.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ var ws=e.target.closest('.cli-main[data-ws]'); if(ws){ e.preventDefault(); openWorkspace(ws.getAttribute('data-ws')); } } });
+    insEl.addEventListener('click',function(e){ var t=e.target.closest('[data-filter="review"]'); if(t){ sortEl.value='review'; renderCockpit(); } });
+    searchEl.addEventListener('input',renderCockpit); statusEl.addEventListener('change',renderCockpit); sortEl.addEventListener('change',renderCockpit);
+    wsScreen.addEventListener('click',function(e){
+      var bk=e.target.closest('#ws-back'); if(bk){ teardownWsFrames(); wsId=null; wsRec=null; show('home'); return; }
+      var stp=e.target.closest('.ws-stepper button'); if(stp){ setStep(stp.getAttribute('data-step')); return; }
+      var dp=e.target.closest('[data-deep]'); if(dp){ setStep(dp.getAttribute('data-deep')); return; }
+      var sv=e.target.closest('#ws-jub-save'); if(sv){ saveWsSolution(); return; }
+      var un=e.target.closest('#ws-jub-undo'); if(un){ undoWsSolution(); return; }
+      var rt=e.target.closest('[data-inm-rate]'); if(rt){ var card=rt.closest('.inm-card'); var inp=card&&card.querySelector('[data-inm-field="interesPrestamo"]'); if(inp){ inp.value=rt.getAttribute('data-inm-rate'); inp.dispatchEvent(new Event('input',{bubbles:true})); } return; }
+      var md=e.target.closest('[data-inm-mode]'); if(md){
+        if(!wsRec) return;
+        normalizeInmueble(wsRec).modo=md.getAttribute('data-inm-mode');
+        var sec=document.getElementById('sec-inmueble'); if(sec) sec.innerHTML=inmuebleBlock(wsRec);
+        scheduleInmuebleSave();
+        return;
+      }
+    });
+    wsScreen.addEventListener('input',function(e){
+      var t=e.target;
+      if(t.id==='inm-precio'){
+        if(!wsRec) return;
+        if(!wsRec.inmueble) wsRec.inmueble=defaultInmueble();
+        var v=parseFloat(t.value); wsRec.inmueble.precio=isNaN(v)?0:v;
+        refreshInmuebleResults(); scheduleInmuebleSave();
+        return;
+      }
+      if(t.id==='inm-refi-fecha-inicio'){
+        if(!wsRec) return;
+        normalizeInmueble(wsRec).refi.fechaInicio=t.value;
+        refreshInmuebleResults(); scheduleInmuebleSave();
+        return;
+      }
+      if(t.id==='inm-refi-fecha-objetivo'){
+        if(!wsRec) return;
+        normalizeInmueble(wsRec).refi.fechaRefi=t.value;
+        refreshInmuebleResults(); scheduleInmuebleSave();
+        return;
+      }
+      var opt=t.getAttribute('data-inm-opt'), field=t.getAttribute('data-inm-field');
+      if(opt&&field&&wsRec){
+        var inm=normalizeInmueble(wsRec);
+        var val=parseFloat(t.value); val=isNaN(val)?0:val;
+        if(opt==='refiActual') inm.refi[field]=val;
+        else if(opt==='refiBanco') inm.refi.banco[field]=val;
+        else if(opt==='refiA') inm.refi.a[field]=val;
+        else if(opt==='refiB') inm.refi.b[field]=val;
+        else inm[opt][field]=val;
+        refreshInmuebleResults(); scheduleInmuebleSave();
+      }
+    });
+    window.addEventListener('hashchange',function(){ var v=location.hash.slice(1); show(MOD[v]?v:'home'); });
+    document.getElementById('cs-action').addEventListener('click',function(){
+      if(clientesDirStatus==='denied') reactivateClientesDir(); else pickClientesDir();
+    });
+
+    var initial=location.hash.slice(1);
+    show(MOD[initial]?initial:'home');
+    renderNovedades();
+    initClientesDir();
+
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
+      window.addEventListener('load',function(){ navigator.serviceWorker.register('./sw.js').catch(function(e){ console.log('SW registration failed:', e); }); });
+    }
+  })();
+  </script>
+</body>
+</html>
