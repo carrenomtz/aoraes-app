@@ -1969,14 +1969,20 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   //   'capital'   → pago único (fallecimiento, enfermedades graves, inversión, Bauspar)
   //   'cobertura' → suma máxima que responde la póliza (seguros patrimoniales y de salud)
   // `aporte:true` marca además los que llevan aportación periódica y alimentan la Rentenlücke simulada.
+  // `garantizado` (por defecto true si se omite): si la cifra que se escriba en "garantia" es un
+  // importe contractual fijo (Versicherungssumme, Rente garantizada, Bausparsumme) o solo una
+  // PROYECCIÓN que depende de que los fondos rindan lo asumido (típicamente ~6%, como en los
+  // Vorschläge reales) — ver el propio contrato VASP: capital garantizado 0,00€, todo lo demás
+  // "voraussichtlich" a distintos supuestos de rentabilidad. Mezclar ambas cosas bajo "asegurado"
+  // sería engañoso para el cliente, así que se totalizan y se rotulan por separado.
   var PROPUESTA_TYPE_META={
     'BU (Incapacidad laboral)':{benefit:'renta',lbl:'Renta mensual si no puede trabajar'},
     'Pflege (Dependencia)':{benefit:'renta',lbl:'Renta mensual en caso de dependencia'},
     'Seguro de fallecimiento':{benefit:'capital',lbl:'Capital que recibe la familia'},
     'Enfermedades graves (Cáncer, Ictus, Infarto)':{benefit:'capital',lbl:'Capital al diagnóstico'},
-    'Basisrente':{benefit:'renta',lbl:'Renta vitalicia al jubilarse',aporte:true},
-    'Vermögensaufbau (renta vitalicia con fondos)':{benefit:'renta',lbl:'Renta vitalicia al jubilarse (fondos)',aporte:true},
-    'Inversión':{benefit:'capital',lbl:'Capital estimado al final',aporte:true},
+    'Basisrente':{benefit:'renta',lbl:'Renta vitalicia estimada (no garantizada)',aporte:true,garantizado:false},
+    'Vermögensaufbau (renta vitalicia con fondos)':{benefit:'renta',lbl:'Renta vitalicia estimada con fondos (no garantizada)',aporte:true,garantizado:false},
+    'Inversión':{benefit:'capital',lbl:'Capital estimado (no garantizado)',aporte:true,garantizado:false},
     'Bauspar':{benefit:'capital',lbl:'Bausparsumme',aporte:true}
   };
   var PROPUESTA_META_DEFAULT={benefit:'cobertura',lbl:'Suma asegurada (cobertura máxima)'};
@@ -4705,40 +4711,50 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       var propRows=getContractRows('propuesta').filter(function(row){ return row.tipo || row.producto || (parseFloat(row.aportacion)||0)>0 || (parseFloat(row.garantia)||0)>0; });
       if(!propRows.length) return [];
       var personaLbl=function(v){ var m=FIELD_META.persona.options.filter(function(o){return o[0]===v;})[0]; return m?m[1]:(v||'—'); };
-      var totalMensual=0, totalRenta=0, totalCapital=0, hayCobertura=false;
+      var totalMensual=0, totalRentaGar=0, totalRentaEst=0, totalCapitalGar=0, totalCapitalEst=0, hayCobertura=false, hayEstimado=false;
       var propBody=propRows.map(function(row){
         var pm=propuestaMeta(row.tipo);
+        var esGarantizado=(pm.garantizado!==false);
         var ap=parseFloat(row.aportacion)||0, apMensual=(row.aportFrecuencia==='anual')?(ap/12):ap;
         if(pm.aporte) totalMensual+=apMensual;
         var gar=parseFloat(row.garantia)||0;
         if(gar>0){
-          if(pm.benefit==='renta') totalRenta+=gar;
-          else if(pm.benefit==='capital') totalCapital+=gar;
+          if(pm.benefit==='renta'){ if(esGarantizado) totalRentaGar+=gar; else totalRentaEst+=gar; }
+          else if(pm.benefit==='capital'){ if(esGarantizado) totalCapitalGar+=gar; else totalCapitalEst+=gar; }
           else hayCobertura=true;
+          if(!esGarantizado) hayEstimado=true;
         }
         // la unidad va pegada a la cifra: sin ella el cliente no puede saber si 1.500 € es al mes o de una vez
-        var garTxt=gar>0?('<b>'+M(gar)+'</b>'+(pm.benefit==='renta'?('<span style="color:#8a8470">'+pickL('/mes','/mo')+'</span>'):'')):'—';
+        var garTxt=gar>0?('<b>'+M(gar)+'</b>'+(pm.benefit==='renta'?('<span style="color:#8a8470">'+pickL('/mes','/mo')+'</span>'):'')+(esGarantizado?'':'*')):'—';
         return '<tr><td><b>'+esc(row.tipo||'—')+'</b>'+(row.producto?('<br><span style="color:#8a8470;font-size:9pt">'+esc(row.producto)+'</span>'):'')+'</td>'+
           '<td>'+esc(personaLbl(row.persona))+'</td>'+
           '<td class="num">'+garTxt+'<br><span style="color:#8a8470;font-size:8pt">'+esc(pm.lbl)+'</span></td>'+
           '<td class="num">'+(pm.aporte&&ap>0?('<b>'+M(ap)+'</b> <span style="color:#8a8470">'+(row.aportFrecuencia==='anual'?pickL('/año','/yr'):pickL('/mes','/mo'))+'</span>'):'—')+'</td></tr>';
       }).join('');
       // Se totalizan por separado rentas y capitales (son cosas distintas y sumarlas no significaría
-      // nada); las coberturas patrimoniales nunca se suman — una RC de varios millones aplastaría el
-      // resto y daría una cifra sin sentido para el cliente.
+      // nada), y dentro de cada una, por separado lo GARANTIZADO (cifra contractual fija: Rente
+      // garantizada, Todesfallsumme, Bausparsumme, Versicherungssumme) de lo ESTIMADO (proyección que
+      // depende de que los fondos rindan lo asumido, típicamente ~6% — ver el Vorschlag real: capital
+      // garantizado 0,00€, todo lo demás "voraussichtlich"). Mezclarlas bajo "asegurado" sería
+      // engañoso. Las coberturas patrimoniales nunca se suman — una RC de varios millones aplastaría
+      // el resto y daría una cifra sin sentido para el cliente.
+      var card=function(lab,val,extra){return '<div class="sh-card" style="flex:1"><div class="sh-card-title">'+lab+'</div><p style="font-family:\'Fraunces\',serif;font-size:20pt;color:#14213d;margin:4px 0 0">'+val+'</p>'+(extra?('<div style="font-size:8pt;color:#8a8470;margin-top:2px">'+extra+'</div>'):'')+'</div>';};
       var cards='';
-      if(totalRenta>0) cards+='<div class="sh-card" style="flex:1"><div class="sh-card-title">'+pickL('Renta mensual asegurada','Monthly income secured')+'</div><p style="font-family:\'Fraunces\',serif;font-size:20pt;color:#14213d;margin:4px 0 0">'+M(totalRenta)+pickL('/mes','/mo')+'</p></div>';
-      if(totalCapital>0) cards+='<div class="sh-card" style="flex:1"><div class="sh-card-title">'+pickL('Capital asegurado','Capital secured')+'</div><p style="font-family:\'Fraunces\',serif;font-size:20pt;color:#14213d;margin:4px 0 0">'+M(totalCapital)+'</p></div>';
-      cards+='<div class="sh-card" style="flex:1"><div class="sh-card-title">'+pickL('Aporte mensual total','Total monthly contribution')+'</div><p style="font-family:\'Fraunces\',serif;font-size:20pt;color:#14213d;margin:4px 0 0">'+M(totalMensual)+'</p></div>';
+      if(totalRentaGar>0) cards+=card(pickL('Renta mensual garantizada','Monthly income guaranteed'),M(totalRentaGar)+pickL('/mes','/mo'));
+      if(totalRentaEst>0) cards+=card(pickL('Renta mensual estimada*','Monthly income (estimated)*'),M(totalRentaEst)+pickL('/mes','/mo'),pickL('No garantizada','Not guaranteed'));
+      if(totalCapitalGar>0) cards+=card(pickL('Capital garantizado','Capital guaranteed'),M(totalCapitalGar));
+      if(totalCapitalEst>0) cards+=card(pickL('Capital estimado*','Capital (estimated)*'),M(totalCapitalEst),pickL('No garantizado','Not guaranteed'));
+      cards+=card(pickL('Aporte mensual total','Total monthly contribution'),M(totalMensual));
       var pages=[
         divider('<div class="dv-num">'+pickL('Recomendación','Recommendation')+'</div><h2>'+pickL('Propuesta','Proposal')+'</h2><p class="dv-sub">'+pickL('Lo que gana el cliente con cada producto','What the client gains with each product')+'</p>'),
         page('Propuesta','<div class="sh-eyebrow">'+pickL('Recomendación AORAES','AORAES recommendation')+'</div><h2>'+pickL('Resumen de la propuesta','Proposal summary')+'</h2>'+
-          '<p class="sh-lead">'+pickL('Esto es lo que cada producto le garantiza, y lo que cuesta conseguirlo.','This is what each product guarantees you, and what it costs to have it.')+'</p>'+
+          '<p class="sh-lead">'+pickL('Esto es lo que cada producto le da, y lo que cuesta conseguirlo.','This is what each product gives you, and what it costs to have it.')+'</p>'+
           '<table class="sh-table" style="margin-top:12px"><tbody>'+
             '<tr style="color:#8a8470;font-size:8.5pt"><td>'+pickL('Producto','Product')+'</td><td>'+pickL('Titular','Holder')+'</td><td class="num">'+pickL('Lo que recibe','What you receive')+'</td><td class="num">'+pickL('Aporte','Contribution')+'</td></tr>'+
             propBody+
           '</tbody></table>'+
-          '<div style="display:flex;gap:14px;margin-top:18px;align-items:stretch">'+cards+'</div>'+
+          '<div style="display:flex;gap:14px;margin-top:18px;align-items:stretch;flex-wrap:wrap">'+cards+'</div>'+
+          (hayEstimado?('<p class="sh-note">'+pickL('* Importe estimado, no garantizado: depende de que los fondos rindan la rentabilidad asumida en el cálculo. El capital/renta realmente garantizado por contrato puede ser muy inferior — o cero.','* Estimated, not guaranteed: it depends on the funds achieving the assumed return used in this calculation. The amount actually guaranteed by contract may be much lower — or zero.')+'</p>'):'')+
           (hayCobertura?('<p class="sh-note">'+pickL('Las sumas aseguradas de los seguros patrimoniales figuran en cada línea; no se suman entre sí porque cubren riesgos distintos.','Coverage sums for property insurance are shown per line; they are not added together because they cover different risks.')+'</p>'):''))
       ];
       // Comparativa antes/después — solo en modo un titular (r llega desde contentPages); en modo
