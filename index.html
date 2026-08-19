@@ -104,6 +104,33 @@
     border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:7px 13px; cursor:pointer; flex:0 0 auto;
   }
   .signout-btn:hover{background:rgba(255,255,255,.12); color:#fff}
+  .notif-wrap{position:relative; flex:0 0 auto}
+  .notif-wrap[hidden]{display:none}
+  .notif-bell{
+    position:relative; width:36px; height:36px; border-radius:9px; border:1px solid transparent;
+    background:none; font-size:17px; cursor:pointer; color:#c4d0e3; transition:background .14s var(--ease), border-color .14s var(--ease);
+  }
+  .notif-bell:hover{background:rgba(255,255,255,.08)}
+  .notif-badge{
+    position:absolute; top:2px; right:2px; min-width:16px; height:16px; padding:0 4px; border-radius:999px;
+    background:var(--red); color:#fff; font-size:10px; font-weight:800; line-height:16px; text-align:center; box-shadow:0 0 0 2px var(--navy-deep);
+  }
+  .notif-badge[hidden]{display:none}
+  .notif-panel{
+    position:absolute; right:0; top:calc(100% + 8px); z-index:40; width:min(360px,92vw); max-height:70vh; overflow-y:auto;
+    background:#fff; border:1px solid var(--line-strong); border-radius:var(--r-md); box-shadow:var(--sh-3); padding:8px;
+  }
+  .notif-panel[hidden]{display:none}
+  .notif-sec+.notif-sec{margin-top:6px; padding-top:10px; border-top:1px solid var(--line-soft)}
+  .notif-sec-title{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); font-weight:700; padding:4px 8px 6px}
+  .notif-empty{font-size:12.5px; color:var(--faint); padding:6px 8px 10px}
+  .notif-row{display:flex; align-items:center; gap:10px; padding:8px; border-radius:9px; cursor:pointer}
+  .notif-row:hover{background:var(--gold-tint)}
+  .notif-row-body{min-width:0; flex:1 1 auto}
+  .notif-row-title{font-size:12.5px; font-weight:700; color:var(--navy); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .notif-row-meta{font-size:11px; color:var(--muted); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .notif-row-act{font-family:inherit; font-size:11.5px; font-weight:700; color:#4f7358; background:#eaf2ec; border:1px solid #cfe3d4; border-radius:7px; padding:6px 10px; cursor:pointer; flex:0 0 auto}
+  .notif-row-act:hover{background:#dcebe0}
   .lang-switch-top{display:flex; gap:3px; flex:0 0 auto}
   .lang-switch-top button{
     font-size:17px; line-height:1; opacity:.55; background:none; border:1px solid transparent;
@@ -527,6 +554,19 @@
       <button type="button" data-go="medico">Preguntas médicas</button>
       <button type="button" data-go="asesores" id="nav-asesores" hidden>Asesores</button>
     </nav>
+    <div class="notif-wrap" id="notif-wrap" hidden>
+      <button type="button" class="notif-bell" id="notif-bell" aria-label="Notificaciones" aria-haspopup="true">🔔<span class="notif-badge" id="notif-badge" hidden>0</span></button>
+      <div class="notif-panel" id="notif-panel" hidden>
+        <div class="notif-sec">
+          <div class="notif-sec-title">Solicitudes de acceso</div>
+          <div id="notif-pending"></div>
+        </div>
+        <div class="notif-sec">
+          <div class="notif-sec-title">Clientes nuevos</div>
+          <div id="notif-clients"></div>
+        </div>
+      </div>
+    </div>
     <div class="lang-switch-top" id="lang-switch-top" role="group" aria-label="Idioma">
       <button type="button" data-lang="es" title="Español" aria-label="Español">🇪🇸</button>
       <button type="button" data-lang="en" title="English" aria-label="English">🇬🇧</button>
@@ -608,7 +648,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, getDocs, onSnapshot, serverTimestamp }
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, collectionGroup, query, where, orderBy, limit as fsLimit, getDocs, onSnapshot, serverTimestamp }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     var firebaseConfig = {
@@ -628,7 +668,7 @@
     var ADMIN_UID = 'DMDXyvqfaeQiXfb3pYmoX95vNR82';
 
     var currentUid = null, currentProfile = null, viewingUid = null;
-    var unsubClients = null, unsubProfile = null;
+    var unsubClients = null, unsubProfile = null, unsubPendingAdvisors = null, unsubRecentClients = null;
 
     function clientsCol(uid){ return collection(db, 'users', uid || viewingUid || currentUid, 'clients'); }
     function profileDoc(uid){ return doc(db, 'users', uid); }
@@ -694,6 +734,38 @@
       }, function(err){ console.error('AORAES cloud: fallo al escuchar cambios', err); });
     }
 
+    // ---- solo para el admin: campana de notificaciones ----
+    // Solicitudes pendientes: en vivo sobre /users filtrando status=pending (misma regla que ya
+    // permite al admin listar /users, sin reglas nuevas). Clientes recientes: collectionGroup sobre
+    // TODAS las subcolecciones clients de TODOS los asesores a la vez, ordenado por su fecha de
+    // creación real (record.createdAt, ver analisis.html) — los clientes de antes de esta función no
+    // tienen ese campo, así que Firestore los deja fuera solos; no hace falta migrar nada.
+    function startPendingAdvisorsWatch(){
+      if(unsubPendingAdvisors) return;
+      try{
+        unsubPendingAdvisors = onSnapshot(query(collection(db,'users'), where('status','==','pending')), function(snap){
+          var arr=[]; snap.forEach(function(d){ arr.push(Object.assign({uid:d.id}, d.data())); });
+          window.dispatchEvent(new CustomEvent('aoraes-pending-advisors-update', {detail: arr}));
+        }, function(err){ console.error('AORAES cloud: fallo al escuchar solicitudes pendientes', err); });
+      }catch(e){ console.error(e); }
+    }
+    function stopPendingAdvisorsWatch(){ if(unsubPendingAdvisors){ unsubPendingAdvisors(); unsubPendingAdvisors=null; } }
+    function startRecentClientsWatch(){
+      if(unsubRecentClients) return;
+      try{
+        unsubRecentClients = onSnapshot(query(collectionGroup(db,'clients'), orderBy('record.createdAt','desc'), fsLimit(25)), function(snap){
+          var arr=[];
+          snap.forEach(function(d){
+            var data=d.data()||{}; var rec=data.record||{};
+            var ownerUid = d.ref.parent.parent ? d.ref.parent.parent.id : null;
+            arr.push({ clientId:d.id, ownerUid:ownerUid, name:rec.name||'—', createdAt:rec.createdAt||null });
+          });
+          window.dispatchEvent(new CustomEvent('aoraes-recent-clients-update', {detail: arr}));
+        }, function(err){ console.error('AORAES cloud: fallo al escuchar clientes recientes', err); });
+      }catch(e){ console.error(e); }
+    }
+    function stopRecentClientsWatch(){ if(unsubRecentClients){ unsubRecentClients(); unsubRecentClients=null; } }
+
     function ensureProfileAndListen(user){
       var pDoc = profileDoc(user.uid);
       getDoc(pDoc).then(function(snap){
@@ -715,6 +787,9 @@
           if(currentProfile && currentProfile.status==='approved'){
             if(!unsubClients) startListening();
           } else if(unsubClients){ unsubClients(); unsubClients=null; }
+          if(currentProfile && currentProfile.status==='approved' && currentProfile.role==='admin'){
+            startPendingAdvisorsWatch(); startRecentClientsWatch();
+          } else { stopPendingAdvisorsWatch(); stopRecentClientsWatch(); }
         }, function(err){ console.error('AORAES cloud: fallo al escuchar el perfil', err); });
       }).catch(function(e){ console.error('AORAES cloud: fallo al preparar el perfil', e); });
     }
@@ -738,6 +813,7 @@
         window.AORAES_CLOUD.ready = false;
         if(unsubClients){ unsubClients(); unsubClients=null; }
         if(unsubProfile){ unsubProfile(); unsubProfile=null; }
+        stopPendingAdvisorsWatch(); stopRecentClientsWatch();
         gateEl.hidden = false;
         statusEl.hidden = true;
         document.getElementById('pending-gate').hidden = true;
@@ -802,13 +878,16 @@
       var pendingEl = document.getElementById('pending-gate');
       var msgEl = document.getElementById('pending-msg');
       var navAse = document.getElementById('nav-asesores');
+      var notifWrap = document.getElementById('notif-wrap');
       if(!profile){ pendingEl.hidden = true; return; }
       if(profile.status === 'approved'){
         pendingEl.hidden = true;
         navAse.hidden = (profile.role !== 'admin');
+        notifWrap.hidden = (profile.role !== 'admin');
       } else {
         pendingEl.hidden = false;
         navAse.hidden = true;
+        notifWrap.hidden = true;
         msgEl.innerHTML = (profile.status === 'rechazado')
           ? '<p><b>Tu solicitud de acceso fue rechazada.</b></p><p>Si crees que es un error, contacta con el responsable del equipo.</p>'
           : '<p><b>Tu cuenta está pendiente de autorización.</b></p><p>El responsable del equipo debe aprobar tu acceso antes de que puedas ver tu cartera. Esta pantalla se actualizará sola en cuanto te aprueben — no hace falta que recargues.</p>';
@@ -1197,6 +1276,60 @@
       document.querySelectorAll('#asesores-list .ase-menu').forEach(function(m){ m.hidden=true; });
     });
     window.addEventListener('aoraes-viewing-changed', function(){ if(!asesoresScr.hidden) renderAsesores(); });
+
+    /* ---------- Campana de notificaciones (admin) ----------
+       Dos fuentes en vivo alimentadas por el módulo Firebase: solicitudes de asesor pendientes y
+       clientes nuevos de todo el equipo (evento aoraes-recent-clients-update, basado en
+       record.createdAt — ver analisis.html). El badge cuenta pendientes + clientes creados después
+       de la última vez que se abrió la campana (aoraes_notif_seen_at en localStorage). */
+    var NOTIF_SEEN_KEY='aoraes_notif_seen_at';
+    var _pendingAdvisors=[], _recentClients=[], _advisorEmailByUid={};
+    var notifPanel=document.getElementById('notif-panel'), notifBadge=document.getElementById('notif-badge');
+    function getNotifSeenAt(){ try{ return localStorage.getItem(NOTIF_SEEN_KEY)||''; }catch(e){ return ''; } }
+    function setNotifSeenAt(iso){ try{ localStorage.setItem(NOTIF_SEEN_KEY, iso); }catch(e){} }
+    function updateNotifBadge(){
+      var seen=getNotifSeenAt();
+      var unseenClients=_recentClients.filter(function(c){ return c.createdAt && (!seen || c.createdAt>seen); }).length;
+      var total=_pendingAdvisors.length+unseenClients;
+      if(total>0){ notifBadge.hidden=false; notifBadge.textContent=total>99?'99+':String(total); } else notifBadge.hidden=true;
+    }
+    function renderNotifPanel(){
+      var pendEl=document.getElementById('notif-pending'), cliEl=document.getElementById('notif-clients');
+      pendEl.innerHTML = _pendingAdvisors.length ? _pendingAdvisors.map(function(p){
+        return '<div class="notif-row"><div class="notif-row-body"><div class="notif-row-title">'+esc(p.email||p.uid)+'</div><div class="notif-row-meta">Pendiente de aprobación</div></div><button type="button" class="notif-row-act" data-notif-approve="'+esc(p.uid)+'">Aprobar</button></div>';
+      }).join('') : '<div class="notif-empty">No hay solicitudes pendientes.</div>';
+      cliEl.innerHTML = _recentClients.length ? _recentClients.slice(0,10).map(function(c){
+        var advEmail=_advisorEmailByUid[c.ownerUid]||c.ownerUid||'';
+        var when=c.createdAt?relTime(c.createdAt):'';
+        return '<div class="notif-row" data-notif-client-uid="'+esc(c.ownerUid||'')+'" data-notif-client-email="'+esc(advEmail)+'"><div class="notif-row-body"><div class="notif-row-title">'+esc(c.name||'—')+'</div><div class="notif-row-meta">'+esc(advEmail)+(when?' · '+esc(when):'')+'</div></div></div>';
+      }).join('') : '<div class="notif-empty">Sin actividad reciente.</div>';
+    }
+    window.addEventListener('aoraes-pending-advisors-update', function(e){ _pendingAdvisors=e.detail||[]; updateNotifBadge(); if(!notifPanel.hidden) renderNotifPanel(); });
+    window.addEventListener('aoraes-recent-clients-update', function(e){ _recentClients=e.detail||[]; updateNotifBadge(); if(!notifPanel.hidden) renderNotifPanel(); });
+    document.getElementById('notif-bell').addEventListener('click', function(){
+      var wasOpen=!notifPanel.hidden;
+      notifPanel.hidden=wasOpen;
+      if(!wasOpen){
+        setNotifSeenAt(new Date().toISOString());
+        updateNotifBadge();
+        if(window.AORAES_CLOUD&&window.AORAES_CLOUD.listAdvisors){
+          window.AORAES_CLOUD.listAdvisors().then(function(list){
+            _advisorEmailByUid={}; list.forEach(function(p){ _advisorEmailByUid[p.uid]=p.email||p.uid; });
+            renderNotifPanel();
+          });
+        } else renderNotifPanel();
+      }
+    });
+    notifPanel.addEventListener('click', function(e){
+      var approveBtn=e.target.closest('[data-notif-approve]');
+      if(approveBtn){ window.AORAES_CLOUD.approveAdvisor(approveBtn.getAttribute('data-notif-approve')); return; }
+      var row=e.target.closest('[data-notif-client-uid]');
+      if(row){
+        window.AORAES_CLOUD.viewAsAdvisor(row.getAttribute('data-notif-client-uid'), row.getAttribute('data-notif-client-email'));
+        setActive(null); show('home'); notifPanel.hidden=true;
+      }
+    });
+    document.addEventListener('click', function(e){ if(!e.target.closest('#notif-wrap')) notifPanel.hidden=true; });
 
     // Los atajos de fila abren directamente la ficha del cliente en la pestaña pedida —
     // ya no saltan a una pantalla aparte, el panel único de la ficha es quien manda ahora.

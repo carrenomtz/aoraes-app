@@ -4112,9 +4112,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       return;
     }
     var arr=loadClients(), now=new Date().toISOString();
+    var existingRec=currentId?(arr.filter(function(c){return c.id===currentId;})[0]):null;
     var rec={
       id:currentId||('c'+Date.now()+Math.floor(Math.random()*1000)),
       name:name, advisor:advisor, date:$('#m_fecha').value||'', savedAt:now,
+      createdAt:(existingRec&&existingRec.createdAt)||now,
       score:scoreVal, flow:flowVal,
       couple:couple.on?true:false,
       data:couple.on?(personStore.p1||blankState()):collectState()
