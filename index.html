@@ -63,6 +63,21 @@
     background:linear-gradient(168deg,#182746 0%,var(--navy-deep) 100%); padding:20px;
   }
   .auth-gate[hidden]{display:none}
+  .auth-topbar{
+    position:absolute; top:0; left:0; right:0; z-index:1;
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:16px clamp(16px,4vw,36px); background:rgba(255,255,255,.06); border-bottom:1px solid rgba(255,255,255,.1);
+  }
+  .auth-topbar-langs{display:flex; gap:4px}
+  .auth-topbar-langs button{
+    font-size:19px; line-height:1; background:none; border:1px solid transparent; border-radius:8px;
+    padding:6px 8px; cursor:pointer; opacity:.68; transition:opacity .14s var(--ease), border-color .14s var(--ease), background .14s var(--ease);
+  }
+  .auth-topbar-langs button:hover{opacity:1; background:rgba(255,255,255,.08)}
+  .auth-topbar-langs button.active{opacity:1; border-color:rgba(230,216,178,.5); background:rgba(201,169,97,.14)}
+  .auth-topbar-logo{display:block; flex:0 0 auto}
+  .auth-topbar-logo img{height:22px; width:auto; display:block; filter:brightness(0) invert(1)}
+  @media(max-width:480px){ .auth-topbar-logo img{height:18px} .auth-topbar-langs button{font-size:16px; padding:5px 6px} }
   .auth-box{width:100%; max-width:360px; background:var(--surface); border-radius:18px; padding:34px 30px; text-align:center; box-shadow:0 30px 70px rgba(13,22,38,.35)}
   .auth-logo{height:38px; width:auto; margin:0 auto 10px}
   .auth-box h1{font-family:'Fraunces',serif; font-size:24px; color:var(--navy); margin:0 0 2px; letter-spacing:.02em}
@@ -89,13 +104,13 @@
     border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:7px 13px; cursor:pointer; flex:0 0 auto;
   }
   .signout-btn:hover{background:rgba(255,255,255,.12); color:#fff}
-  .lang-switch-top{display:flex; gap:1px; flex:0 0 auto}
+  .lang-switch-top{display:flex; gap:3px; flex:0 0 auto}
   .lang-switch-top button{
-    font:inherit; font-size:11px; font-weight:700; letter-spacing:.03em; color:#7d8db0;
-    background:none; border:none; padding:6px 7px; cursor:pointer; border-radius:6px; transition:color .14s var(--ease)
+    font-size:17px; line-height:1; opacity:.55; background:none; border:1px solid transparent;
+    padding:5px 6px; cursor:pointer; border-radius:7px; transition:opacity .14s var(--ease), border-color .14s var(--ease), background .14s var(--ease)
   }
-  .lang-switch-top button:hover{color:#c9d3e6}
-  .lang-switch-top button.active{color:var(--gold-soft)}
+  .lang-switch-top button:hover{opacity:.85; background:rgba(255,255,255,.07)}
+  .lang-switch-top button.active{opacity:1; border-color:rgba(230,216,178,.45); background:rgba(201,169,97,.14)}
   .pending-msg{font-size:13.5px; line-height:1.6; color:var(--ink); text-align:left; margin-top:6px}
   .pending-msg p{margin:0 0 10px}
   .pending-msg p:last-child{margin-bottom:0; color:var(--muted); font-size:12.5px}
@@ -454,6 +469,16 @@
 </head>
 <body>
   <div class="auth-gate" id="auth-gate">
+    <div class="auth-topbar">
+      <div class="auth-topbar-langs" id="auth-topbar-langs" role="group" aria-label="Idioma">
+        <button type="button" data-lang="es" title="Español" aria-label="Español">🇪🇸</button>
+        <button type="button" data-lang="en" title="English" aria-label="English">🇬🇧</button>
+        <button type="button" data-lang="de" title="Deutsch" aria-label="Deutsch">🇩🇪</button>
+      </div>
+      <a class="auth-topbar-logo" href="https://www.aoraes.de" target="_blank" rel="noopener" title="Ir a aoraes.de">
+        <img src="./logo-wordmark-navy.png" alt="AORAES">
+      </a>
+    </div>
     <div class="auth-box">
       <img class="auth-logo" src="./logo-icon-gold.png" alt="" aria-hidden="true">
       <h1>AORAES</h1>
@@ -503,9 +528,9 @@
       <button type="button" data-go="asesores" id="nav-asesores" hidden>Asesores</button>
     </nav>
     <div class="lang-switch-top" id="lang-switch-top" role="group" aria-label="Idioma">
-      <button type="button" data-lang="es">ES</button>
-      <button type="button" data-lang="en">EN</button>
-      <button type="button" data-lang="de">DE</button>
+      <button type="button" data-lang="es" title="Español" aria-label="Español">🇪🇸</button>
+      <button type="button" data-lang="en" title="English" aria-label="English">🇬🇧</button>
+      <button type="button" data-lang="de" title="Deutsch" aria-label="Deutsch">🇩🇪</button>
     </div>
     <button type="button" class="signout-btn" id="signout-btn" title="Cerrar sesión">Cerrar sesión</button>
   </div>
@@ -1202,11 +1227,17 @@
     function setAppLang(lang){
       if(lang!=='en'&&lang!=='de') lang='es';
       try{ localStorage.setItem(APP_LANG_KEY,lang); }catch(e){}
-      document.querySelectorAll('#lang-switch-top [data-lang]').forEach(function(b){ b.classList.toggle('active',b.getAttribute('data-lang')===lang); });
+      document.querySelectorAll('#lang-switch-top [data-lang], #auth-topbar-langs [data-lang]').forEach(function(b){ b.classList.toggle('active',b.getAttribute('data-lang')===lang); });
       for(var k in MOD){ if(MOD[k].el && MOD[k].ready) applyLangToFrame(MOD[k].el.contentWindow,k,lang); }
       for(var k2 in wsFrames){ if(wsFrames[k2].el && wsFrames[k2].ready) applyLangToFrame(wsFrames[k2].el.contentWindow,k2,lang); }
     }
     document.getElementById('lang-switch-top').addEventListener('click', function(e){
+      var b=e.target.closest('[data-lang]'); if(b) setAppLang(b.getAttribute('data-lang'));
+    });
+    // El toggle de banderas en la pantalla de acceso (antes de iniciar sesión) solo deja lista la
+    // preferencia — no hay nada que traducir todavía, así que al entrar la app y las herramientas
+    // ya abren directo en el idioma elegido, sin pasos extra.
+    document.getElementById('auth-topbar-langs').addEventListener('click', function(e){
       var b=e.target.closest('[data-lang]'); if(b) setAppLang(b.getAttribute('data-lang'));
     });
     setAppLang(getAppLang());
