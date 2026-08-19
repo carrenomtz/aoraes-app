@@ -1186,6 +1186,7 @@
         <div class="contract-table" id="contract-s7-body"></div>
         <button type="button" class="cr-add" data-craddition="s7">+ Añadir cuenta, ahorro o inversión</button>
         <div id="s7-summary" class="s7-summary"></div>
+        <div class="row"><label for="f-sit-precioViviendaObjetivo">Precio estimado de la vivienda objetivo (opcional, si hay meta de vivienda)</label><span class="euro"><input id="f-sit-precioViviendaObjetivo" type="number" min="0" data-sit="precioViviendaObjetivo" placeholder="p. ej. 350000"></span></div>
         <div class="cat-label">Perfil de estrategia (Anlageprofil WpHG)</div>
         <p class="goal-intro" style="margin-top:0">Reparta 5 puntos. No se puede maximizar todo a la vez: la estrategia define el equilibrio entre rentabilidad, flexibilidad y seguridad.</p>
         <div class="tri-layout">
@@ -2813,7 +2814,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
             ahorro:sit.ahorroLiquido||0,
             inversiones:invTotal,tieneAhorroInv:tieneAhorroInv,pillars:pillars,ret:ret,
             deuda:sit.deudaTotal||0,tagesgeld:sit.tagesgeldSaldo||0,etf:sit.etfSaldo||0,
-            viviendaSaldo:sit.ahorroViviendaSaldo||0,bausparsummeTarget:sit.bausparsummeTotal||0,horizon:horizon,
+            viviendaSaldo:sit.ahorroViviendaSaldo||0,bausparsummeTarget:sit.bausparsummeTotal||0,precioViviendaObjetivo:sit.precioViviendaObjetivo||0,horizon:horizon,
             tieneMenores:tieneMenores,menoresComp:menoresComp,menoresNoAplica:!!sit.menoresNoAplica,
             deseaVivienda:!!sit.deseaVivienda,ahorrandoVivienda:!!sit.ahorrandoVivienda,
             hasData:(totIncome>0||totExp>0),rendAhorro:(sit.rendAhorro||5),infl:(sit.inflacion||0),edad:edadAct};
@@ -3232,14 +3233,18 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // solo porque el cliente todavía no ha empezado a ahorrar para la vivienda, un objetivo aparte.
     var l2=[['Plan de Jubilación', Math.round(jubScore), 2]];
     // Vivienda: tener CUALQUIER Bausparvertrag no significa "objetivo cubierto" — un Bausparsumme de
-    // 30.000€ no compra una casa. Puntuamos por tamaño del objetivo (frente a 250.000€, precio de
-    // referencia mínimo para marcar el 100%; por debajo, proporcional) y por avance dentro de ese
-    // objetivo (Guthaben/Bausparsumme); el peor de los dos manda, porque un objetivo grande sin ahorro
-    // real (o un ahorro completo sobre un objetivo irrisorio) no es "listo".
+    // 30.000€ no compra una casa. Puntuamos por tamaño del objetivo (frente al precio real de la
+    // vivienda que el cliente quiere comprar, si el asesor lo ha registrado en S.7; sin ese dato, se
+    // usa 250.000€ como referencia orientativa) y por avance dentro de ese objetivo
+    // (Guthaben/Bausparsumme); el peor de los dos manda, porque un objetivo grande sin ahorro real (o
+    // un ahorro completo sobre un objetivo irrisorio) no es "listo". No existe una regla oficial DBBV
+    // de "la Bausparsumme debe ser tal % del precio" — depende del proyecto real de cada cliente, así
+    // que el precio real (cuando se conoce) siempre gana sobre la referencia genérica.
     if(r.deseaVivienda){
       var vScore;
       if(r.bausparsummeTarget>0){
-        var vTam=clamp(r.bausparsummeTarget/250000*100,0,100);
+        var precioRef=r.precioViviendaObjetivo>0?r.precioViviendaObjetivo:250000;
+        var vTam=clamp(r.bausparsummeTarget/precioRef*100,0,100);
         var vProg=clamp((r.viviendaSaldo||0)/r.bausparsummeTarget*100,0,100);
         vScore=Math.round(Math.min(vTam,vProg));
       }else{
