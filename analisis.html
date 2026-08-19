@@ -1835,11 +1835,12 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     ['insPflege','Dependencia (Pflegeversicherung)'],
     ['insAccidentes','Seguro de accidentes'],
     ['insLegal','Defensa jurídica (abogados)'],
-    ['insVida','Seguro de vida']
+    ['insVida','Seguro de vida'],
+    ['insViaje','Seguro de viaje (equipaje, cancelación, médico en el extranjero)']
   ];
   // S.4 · Gesundheits- & Risikovorsorge   |   S.6 · Vermögensabsicherung
   var insS4=['insAccidentes','insIncap','insSalud','insPflege','insVida'];
-  var insS6=['insRC','insHogar','insGlas','insLegal','insGebaude','insAuto'];
+  var insS6=['insRC','insHogar','insGlas','insLegal','insGebaude','insAuto','insViaje'];
 
   var goals = [
     ['fiscal','Ahorro fiscal y ayudas estatales','Pagar menos impuestos y aprovechar todas las ventajas fiscales.'],
@@ -1919,13 +1920,13 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   // insurances — grouped into must-have and nice-to-have
   var insLabel={}; insurances.forEach(function(f){insLabel[f[0]]=f[1];});
   var insMust=['insSalud','insIncap','insPflege','insRC','insVida'];
-  var insNice=['insAuto','insHogar','insGebaude','insGlas','insAccidentes','insLegal'];
+  var insNice=['insAuto','insHogar','insGebaude','insGlas','insAccidentes','insLegal','insViaje'];
   // protection scoring weights: must-haves weigh most; Glas/Accidentes/Legal (weight 0) never affect the
   // score. insVida solía tener peso 0 (invisible para la pirámide) — un cliente sin seguro de
   // fallecimiento podía marcar "familia" al 100% con solo salud+incapacidad+dependencia, aunque su
   // familia se quedara sin ingresos ni hipoteca cubierta si él/ella faltara. Ahora pesa igual que las
   // demás coberturas esenciales.
-  var insWeight={insSalud:2,insIncap:2,insPflege:2,insVida:2,insRC:2,insAuto:1,insHogar:1,insGebaude:1,insGlas:0,insAccidentes:0,insLegal:0};
+  var insWeight={insSalud:2,insIncap:2,insPflege:2,insVida:2,insRC:2,insAuto:1,insHogar:1,insGebaude:1,insGlas:0,insAccidentes:0,insLegal:0,insViaje:0};
   // generic repeatable contract-row config — must be defined before insRow()/insGroup() run (below)
   var FIELD_META={
     tipo:{label:'Tipo de producto',kind:'type'},
@@ -1935,6 +1936,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     entidad:{label:'Institución bancaria',kind:'text'},
     tarifa:{label:'Tarifa / plan (opcional)',kind:'text'},
     beneficioMensual:{label:'Renta mensual asegurada (si queda incapacitado)',kind:'euro'},
+    elemental:{label:'¿Incluye daños por fenómenos naturales (inundación, terremoto)?',kind:'checkbox'},
     bausparsumme:{label:'Bausparsumme',kind:'euro'},
     saldo:{label:'Saldo / valor actual',kind:'euro'},
     aportacion:{label:'Aportación periódica (opcional)',kind:'euro'},
@@ -2009,7 +2011,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   }
   // insurance/protection contracts (S.4 · S.6) reuse the same repeatable-row engine, registered
   // dynamically per insurance key below (see insRow()) — compact fields only, no policy/technical detail.
-  var INS_HOUSEHOLD={insRC:1,insHogar:1,insGlas:1,insLegal:1,insGebaude:1}; // shared, no Persona selector
+  var INS_HOUSEHOLD={insRC:1,insHogar:1,insGlas:1,insLegal:1,insGebaude:1,insViaje:1}; // shared, no Persona selector
   function insSectionKey(key){ return 'ins_'+key; }
   function insRow(key){
     var sec=insSectionKey(key);
@@ -2017,6 +2019,10 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // BU es la única cobertura donde el importe asegurado cambia la puntuación (ver groupIns): no basta
     // con tenerla, importa si cubre suficiente gasto — por eso solo aquí se pide la renta mensual.
     if(key==='insIncap') fields=fields.concat(['beneficioMensual']);
+    // Elementarschaden (inundación, terremoto...) casi nunca es una póliza aparte — viene como añadido
+    // dentro de Hogar/Edificio. En vez de crear un seguro nuevo, se pregunta aquí mismo si el contrato
+    // ya la incluye; solo registra el dato, no cambia la puntuación (mantenerlo simple).
+    if(key==='insHogar'||key==='insGebaude') fields=fields.concat(['elemental']);
     CONTRACT_SECTIONS[sec]={fields:fields};
     return '<div class="ins-row">'+
       '<label class="chk ins-have"><input type="checkbox" data-ins="'+key+'"><span>'+insLabel[key]+'</span></label>'+
