@@ -284,6 +284,7 @@
   .ins.warn::before{background:var(--amber)} .ins.warn .ins-num{color:var(--amber)}
   .ins.tap{cursor:pointer; transition:transform .16s var(--ease), box-shadow .16s var(--ease)}
   .ins.tap:hover{transform:translateY(-2px); box-shadow:var(--sh-2)}
+  .ins.selected{border-color:var(--gold); box-shadow:0 0 0 2px var(--gold), var(--sh-2)}
 
   .cock-toolbar{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px}
   .cock-toolbar input,.cock-toolbar select{
@@ -1173,7 +1174,7 @@
     var insEl=document.getElementById('cock-insights'), listEl=document.getElementById('cock-list');
     var searchEl=document.getElementById('cock-search'), statusEl=document.getElementById('cock-status'), sortEl=document.getElementById('cock-sort');
     var acChip=document.getElementById('active-chip'), acName=document.getElementById('ac-name');
-    var lastSig=null, pendingApply=null, pendingOpen=null, pendingSummary=null, wsId=null, wsStep='diagnostico', wsRec=null, inmSaveTimer=null;
+    var lastSig=null, pendingApply=null, pendingOpen=null, pendingSummary=null, wsId=null, wsStep='diagnostico', wsRec=null, inmSaveTimer=null, cockQuickFilter=null;
 
     function setActiveTab(view){ var b=sw.querySelectorAll('button'); for(var i=0;i<b.length;i++)b[i].classList.toggle('active',b[i].getAttribute('data-go')===view); }
     function updateActiveChip(){ var id=getActive(); var rec=id?findClient(id):null; if(rec){ acName.textContent=rec.name||'Cliente'; acChip.classList.add('on'); } else acChip.classList.remove('on'); }
@@ -2171,13 +2172,27 @@
         try{ var cm=c.crm||{}; var rs=reviewState(cm.review); if(rs&&rs.cls==='overdue')overdue++; if(typeof c.score==='number'&&c.score<40)low++; if(typeof c.flow==='number'&&c.flow<0)neg++; var st0=cm.status||'prospecto'; if(st0==='propuesta'||st0==='implementacion')proposals++; }
         catch(e){ console.error('AORAES: fallo al calcular estadísticas del cockpit para',c&&c.id,e); }
       });
-      insEl.innerHTML='<div class="ins"><span class="ins-num">'+arr.length+'</span><span class="ins-lbl">cliente'+(arr.length===1?'':'s')+'<br>en cartera</span></div>'+
-        '<div class="ins '+(overdue?'alert tap':'')+'" '+(overdue?'data-filter="review"':'')+'><span class="ins-num">'+overdue+'</span><span class="ins-lbl">revisión'+(overdue===1?'':'es')+'<br>vencida'+(overdue===1?'':'s')+'</span></div>'+
-        '<div class="ins '+(low?'warn':'')+'"><span class="ins-num">'+low+'</span><span class="ins-lbl">salud<br>financiera baja</span></div>'+
-        '<div class="ins '+(neg?'warn':'')+'"><span class="ins-num">'+neg+'</span><span class="ins-lbl">flujo<br>mensual negativo</span></div>'+
-        '<div class="ins"><span class="ins-num">'+proposals+'</span><span class="ins-lbl">propuesta'+(proposals===1?'':'s')+'<br>en curso</span></div>';
+      var qf=cockQuickFilter;
+      function insCard(filterId,count,cls,label){
+        return '<div class="ins tap'+(cls?(' '+cls):'')+(qf===filterId?' selected':'')+'" data-filter="'+filterId+'"><span class="ins-num">'+count+'</span><span class="ins-lbl">'+label+'</span></div>';
+      }
+      insEl.innerHTML=
+        insCard('all',arr.length,'','cliente'+(arr.length===1?'':'s')+'<br>en cartera')+
+        insCard('review',overdue,overdue?'alert':'','revisión'+(overdue===1?'':'es')+'<br>vencida'+(overdue===1?'':'s'))+
+        insCard('low',low,low?'warn':'','salud<br>financiera baja')+
+        insCard('neg',neg,neg?'warn':'','flujo<br>mensual negativo')+
+        insCard('proposals',proposals,'','propuesta'+(proposals===1?'':'s')+'<br>en curso');
+      function matchesQuickFilter(c){
+        if(!qf) return true;
+        var cm=c.crm||{};
+        if(qf==='review'){ var rs=reviewState(cm.review); return !!(rs&&rs.cls==='overdue'); }
+        if(qf==='low') return typeof c.score==='number' && c.score<40;
+        if(qf==='neg') return typeof c.flow==='number' && c.flow<0;
+        if(qf==='proposals'){ var st0=cm.status||'prospecto'; return st0==='propuesta'||st0==='implementacion'; }
+        return true;
+      }
       var q=(searchEl.value||'').toLowerCase().trim(), fS=statusEl.value||'', sortBy=sortEl.value||'saved';
-      var shown=arr.filter(function(c){ var cm=c.crm||{}; if(fS&&(cm.status||'prospecto')!==fS)return false; if(!q)return true; return [c.name,cm.tags,cm.email,c.advisor].join(' ').toLowerCase().indexOf(q)>=0; });
+      var shown=arr.filter(function(c){ if(!matchesQuickFilter(c))return false; var cm=c.crm||{}; if(fS&&(cm.status||'prospecto')!==fS)return false; if(!q)return true; return [c.name,cm.tags,cm.email,c.advisor].join(' ').toLowerCase().indexOf(q)>=0; });
       shown.sort(function(a,b){ var ca=a.crm||{},cb=b.crm||{}; if(sortBy==='name')return (a.name||'').localeCompare(b.name||'','es'); if(sortBy==='score')return (b.score||0)-(a.score||0); if(sortBy==='review'){var ra=ca.review||'9999-12-31',rb=cb.review||'9999-12-31';return ra<rb?-1:(ra>rb?1:0);} return new Date(b.savedAt||0)-new Date(a.savedAt||0); });
       if(arr.length===0){ listEl.innerHTML='<div class="cock-empty">Aún no tienes clientes guardados.<br>Crea el primero para empezar tu cartera.<div class="ce-new"><button type="button" class="cock-new" id="empty-new">+ Nuevo cliente</button></div></div>'; var en=document.getElementById('empty-new'); if(en)en.onclick=newClient; return; }
       if(shown.length===0){ listEl.innerHTML='<div class="cock-empty">Sin resultados para los filtros actuales.</div>'; return; }
@@ -2256,7 +2271,12 @@
       var md=e.target.closest('[data-med]'); if(md){ openClientIn('medico',md.getAttribute('data-med')); return; }
     });
     listEl.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ var ws=e.target.closest('.cli-main[data-ws]'); if(ws){ e.preventDefault(); openWorkspace(ws.getAttribute('data-ws')); } } });
-    insEl.addEventListener('click',function(e){ var t=e.target.closest('[data-filter="review"]'); if(t){ sortEl.value='review'; renderCockpit(); } });
+    insEl.addEventListener('click',function(e){
+      var t=e.target.closest('[data-filter]'); if(!t) return;
+      var f=t.getAttribute('data-filter');
+      cockQuickFilter=(f==='all'||cockQuickFilter===f)?null:f;
+      renderCockpit();
+    });
     searchEl.addEventListener('input',renderCockpit); statusEl.addEventListener('change',renderCockpit); sortEl.addEventListener('change',renderCockpit);
     wsScreen.addEventListener('click',function(e){
       var bk=e.target.closest('#ws-back'); if(bk){ teardownWsFrames(); wsId=null; wsRec=null; show('home'); return; }
