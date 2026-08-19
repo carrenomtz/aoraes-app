@@ -1163,7 +1163,7 @@
     <section class="card">
       <div class="card-head"><div><span class="eyebrow">S.5 · Altersversorgung</span><h2>Previsión privada para la jubilación</h2></div></div>
       <div class="card-body">
-        <p class="goal-intro">Registre cada contrato (jubilación o previsión para menores/Ausbildungsvorsorge). La Rentenlücke se calcula automáticamente a partir de estos datos y de la Renteninformation (S.10).</p>
+        <p class="goal-intro">Registre cada contrato (jubilación o previsión para menores/Ausbildungsvorsorge). La Rentenlücke se calcula automáticamente a partir de estos datos y de la Renteninformation (S.10). En Betriebliche Altersversorgung y Direktversicherung, indique solo la aportación propia del cliente (Entgeltumwandlung) — el 15% de aporte obligatorio del empleador (desde 2019) se suma solo, no lo incluya usted mismo.</p>
         <div class="contract-table" id="contract-s5-body"></div>
         <button type="button" class="cr-add" data-craddition="s5">+ Añadir contrato</button>
         <div class="cat-label">Supuestos de jubilación</div>
@@ -2271,12 +2271,20 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var tot=incA+incB;
     return tot>0 ? {A:incA/tot,B:incB/tot} : {A:0.5,B:0.5};
   }
+  // Zuschusspflicht des Arbeitgebers (§1a Abs.1a BetrAVG, desde 2019): al menos 15% del importe
+  // convertido, mientras el empleador se ahorre cuota patronal a la Seguridad Social por la
+  // Entgeltumwandlung — que es el caso habitual dentro de los límites normales. El asesor solo
+  // introduce la aportación propia del cliente (ver aviso en la tarjeta S.5); este aporte extra se
+  // suma aquí, en el cálculo, no en el dato que ve/edita el asesor.
+  var BAV_EMPLOYER_MATCH=0.15;
+  var BAV_TYPES=['Betriebliche Altersversorgung','Direktversicherung'];
   function recalcS5(){
     var rows=getContractRows('s5'), aporte=0, aporteA=0, aporteB=0, tieneJub=false, tieneMenores=false, menoresComp='';
     var share=incomeShareAB();
     rows.forEach(function(r){
       var monto=parseFloat(r.aportacion)||0;
       if(r.aportFrecuencia==='anual') monto=monto/12; // el asesor puede indicar el importe como aporte anual
+      if(BAV_TYPES.indexOf(r.tipo)>=0) monto*=(1+BAV_EMPLOYER_MATCH);
       if(r.tipo==='Ausbildungsvorsorge'){ tieneMenores=true; if(!menoresComp && r.compania) menoresComp=r.compania; }
       else {
         aporte+=monto; if(monto>0||r.compania) tieneJub=true;
