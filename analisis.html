@@ -1306,7 +1306,7 @@
     <section class="card">
       <div class="card-head"><div><span class="eyebrow">S.12 · Vorschlag</span><h2>Propuesta</h2></div></div>
       <div class="card-body">
-        <p class="goal-intro">Registre aquí los productos que se van a proponer al cliente, con el aporte recomendado para cada uno. Esta lista alimenta directamente la página "Propuesta" del informe final — es una simulación, no se guarda como dato real del cliente en S.2–S.11.</p>
+        <p class="goal-intro">Registre aquí los productos que se van a proponer al cliente y, sobre todo, <b>qué gana con cada uno</b>: la renta que cobraría, el capital asegurado o la cobertura de la póliza. El informe le presenta la propuesta por ese beneficio, no por lo que cuesta. Es una simulación: no se guarda como dato real del cliente en S.2–S.11.</p>
         <div class="contract-table" id="contract-propuesta-body"></div>
         <button type="button" class="cr-add" data-craddition="propuesta">+ Añadir producto a la propuesta</button>
         <div class="prop-preview" id="prop-preview" hidden></div>
@@ -1935,7 +1935,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     aportacion:{label:'Aportación periódica (opcional)',kind:'euro'},
     frecuencia:{label:'Frecuencia',kind:'select',options:[['mensual','Mensual'],['trimestral','Trimestral'],['semestral','Semestral'],['anual','Anual']]},
     aportFrecuencia:{label:'¿El importe anterior es aporte mensual o anual?',kind:'select',options:[['mensual','Aporte mensual'],['anual','Aporte anual']]},
-    garantia:{label:'Garantía (cuánto le pagarán)',kind:'euro'},
+    garantia:{label:'Lo que recibe el cliente',kind:'euro'}, // la etiqueta real la pone resolveFields() según el tipo
     fechaVencimiento:{label:'Fecha de vencimiento (opcional)',kind:'date'},
     tipoInteres:{label:'Tipo de interés % (opcional)',kind:'number'},
     tieneAportacion:{label:'¿Existe una aportación periódica?',kind:'checkbox'},
@@ -1951,9 +1951,25 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         .concat(['Enfermedades graves (Cáncer, Ictus, Infarto)','Basisrente','Inversión','Bauspar','Otro']),
         fields:['persona','tipo','producto','garantia']} // fallback; ver resolveFields() para el detalle por tipo
   };
-  // S.12 · tipos con aportación periódica real (alimentan la Rentenlücke simulada); el resto son
-  // coberturas de protección — ahí interesa la garantía (cuánto cobra el cliente), no el aporte.
-  var PROPUESTA_APORTE_TYPES=['Basisrente','Inversión','Bauspar'];
+  // S.12 · lo que el cliente RECIBE con cada producto propuesto. Es el eje de la sección y de la
+  // página del informe: la propuesta se le explica por su beneficio, no por lo que le cuesta.
+  // Una cifra en euros sin unidad es ambigua para el cliente (1.500 € ¿al mes o pago único?), así
+  // que cada tipo declara de qué naturaleza es su prestación:
+  //   'renta'     → importe mensual mientras dure la prestación (BU, Pflege, Basisrente)
+  //   'capital'   → pago único (fallecimiento, enfermedades graves, inversión, Bauspar)
+  //   'cobertura' → suma máxima que responde la póliza (seguros patrimoniales y de salud)
+  // `aporte:true` marca además los que llevan aportación periódica y alimentan la Rentenlücke simulada.
+  var PROPUESTA_TYPE_META={
+    'BU (Incapacidad laboral)':{benefit:'renta',lbl:'Renta mensual si no puede trabajar'},
+    'Pflege (Dependencia)':{benefit:'renta',lbl:'Renta mensual en caso de dependencia'},
+    'Seguro de fallecimiento':{benefit:'capital',lbl:'Capital que recibe la familia'},
+    'Enfermedades graves (Cáncer, Ictus, Infarto)':{benefit:'capital',lbl:'Capital al diagnóstico'},
+    'Basisrente':{benefit:'renta',lbl:'Renta vitalicia al jubilarse',aporte:true},
+    'Inversión':{benefit:'capital',lbl:'Capital estimado al final',aporte:true},
+    'Bauspar':{benefit:'capital',lbl:'Bausparsumme',aporte:true}
+  };
+  var PROPUESTA_META_DEFAULT={benefit:'cobertura',lbl:'Suma asegurada (cobertura máxima)'};
+  function propuestaMeta(tipo){ return PROPUESTA_TYPE_META[tipo]||PROPUESTA_META_DEFAULT; }
   // S.7 · which fields appear once a "Tipo de producto" is chosen — everything else stays hidden.
   // Persona + Tipo are always shown first (see resolveFields). Array items are either a field key
   // (default FIELD_META label) or [fieldKey, labelOverride] for a type-specific wording.
@@ -1978,8 +1994,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     }
     if(section==='propuesta'){
       rowData=rowData||{};
-      var isAporte=rowData.tipo && PROPUESTA_APORTE_TYPES.indexOf(rowData.tipo)>=0;
-      return isAporte ? ['persona','tipo','producto','aportacion','aportFrecuencia'] : ['persona','tipo','producto','garantia'];
+      if(!rowData.tipo) return ['persona','tipo']; // sin tipo todavía no se sabe qué prestación pedir
+      var pm=propuestaMeta(rowData.tipo);
+      var f=['persona','tipo','producto',['garantia',pm.lbl]];
+      if(pm.aporte) f=f.concat(['aportacion','aportFrecuencia']);
+      return f;
     }
     return CONTRACT_SECTIONS[section].fields;
   }
@@ -4589,25 +4608,41 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       var propRows=getContractRows('propuesta').filter(function(row){ return row.tipo || row.producto || (parseFloat(row.aportacion)||0)>0 || (parseFloat(row.garantia)||0)>0; });
       if(!propRows.length) return [];
       var personaLbl=function(v){ var m=FIELD_META.persona.options.filter(function(o){return o[0]===v;})[0]; return m?m[1]:(v||'—'); };
-      var totalMensual=0;
+      var totalMensual=0, totalRenta=0, totalCapital=0, hayCobertura=false;
       var propBody=propRows.map(function(row){
-        var isAporte=PROPUESTA_APORTE_TYPES.indexOf(row.tipo)>=0;
+        var pm=propuestaMeta(row.tipo);
         var ap=parseFloat(row.aportacion)||0, apMensual=(row.aportFrecuencia==='anual')?(ap/12):ap;
-        if(isAporte) totalMensual+=apMensual;
+        if(pm.aporte) totalMensual+=apMensual;
         var gar=parseFloat(row.garantia)||0;
+        if(gar>0){
+          if(pm.benefit==='renta') totalRenta+=gar;
+          else if(pm.benefit==='capital') totalCapital+=gar;
+          else hayCobertura=true;
+        }
+        // la unidad va pegada a la cifra: sin ella el cliente no puede saber si 1.500 € es al mes o de una vez
+        var garTxt=gar>0?('<b>'+M(gar)+'</b>'+(pm.benefit==='renta'?('<span style="color:#8a8470">'+pickL('/mes','/mo')+'</span>'):'')):'—';
         return '<tr><td><b>'+esc(row.tipo||'—')+'</b>'+(row.producto?('<br><span style="color:#8a8470;font-size:9pt">'+esc(row.producto)+'</span>'):'')+'</td>'+
           '<td>'+esc(personaLbl(row.persona))+'</td>'+
-          '<td class="num">'+(isAporte?('<b>'+M(ap)+'</b> '+(row.aportFrecuencia==='anual'?pickL('/año','/yr'):pickL('/mes','/mo'))):'—')+'</td>'+
-          '<td class="num">'+(gar>0?('<b>'+M(gar)+'</b>'):'—')+'</td></tr>';
+          '<td class="num">'+garTxt+'<br><span style="color:#8a8470;font-size:8pt">'+esc(pm.lbl)+'</span></td>'+
+          '<td class="num">'+(pm.aporte&&ap>0?('<b>'+M(ap)+'</b> <span style="color:#8a8470">'+(row.aportFrecuencia==='anual'?pickL('/año','/yr'):pickL('/mes','/mo'))+'</span>'):'—')+'</td></tr>';
       }).join('');
+      // Se totalizan por separado rentas y capitales (son cosas distintas y sumarlas no significaría
+      // nada); las coberturas patrimoniales nunca se suman — una RC de varios millones aplastaría el
+      // resto y daría una cifra sin sentido para el cliente.
+      var cards='';
+      if(totalRenta>0) cards+='<div class="sh-card" style="flex:1"><div class="sh-card-title">'+pickL('Renta mensual asegurada','Monthly income secured')+'</div><p style="font-family:\'Fraunces\',serif;font-size:20pt;color:#14213d;margin:4px 0 0">'+M(totalRenta)+pickL('/mes','/mo')+'</p></div>';
+      if(totalCapital>0) cards+='<div class="sh-card" style="flex:1"><div class="sh-card-title">'+pickL('Capital asegurado','Capital secured')+'</div><p style="font-family:\'Fraunces\',serif;font-size:20pt;color:#14213d;margin:4px 0 0">'+M(totalCapital)+'</p></div>';
+      cards+='<div class="sh-card" style="flex:1"><div class="sh-card-title">'+pickL('Aporte mensual total','Total monthly contribution')+'</div><p style="font-family:\'Fraunces\',serif;font-size:20pt;color:#14213d;margin:4px 0 0">'+M(totalMensual)+'</p></div>';
       var pages=[
-        divider('<div class="dv-num">'+pickL('Recomendación','Recommendation')+'</div><h2>'+pickL('Propuesta','Proposal')+'</h2><p class="dv-sub">'+pickL('Los productos que proponemos y su garantía','The products we propose and their guaranteed benefit')+'</p>'),
+        divider('<div class="dv-num">'+pickL('Recomendación','Recommendation')+'</div><h2>'+pickL('Propuesta','Proposal')+'</h2><p class="dv-sub">'+pickL('Lo que gana el cliente con cada producto','What the client gains with each product')+'</p>'),
         page('Propuesta','<div class="sh-eyebrow">'+pickL('Recomendación AORAES','AORAES recommendation')+'</div><h2>'+pickL('Resumen de la propuesta','Proposal summary')+'</h2>'+
-          '<table class="sh-table" style="margin-top:16px"><tbody>'+
-            '<tr style="color:#8a8470;font-size:8.5pt"><td>'+pickL('Producto','Product')+'</td><td>'+pickL('Titular','Holder')+'</td><td class="num">'+pickL('Aporte','Contribution')+'</td><td class="num">'+pickL('Garantía','Guaranteed benefit')+'</td></tr>'+
+          '<p class="sh-lead">'+pickL('Esto es lo que cada producto le garantiza, y lo que cuesta conseguirlo.','This is what each product guarantees you, and what it costs to have it.')+'</p>'+
+          '<table class="sh-table" style="margin-top:12px"><tbody>'+
+            '<tr style="color:#8a8470;font-size:8.5pt"><td>'+pickL('Producto','Product')+'</td><td>'+pickL('Titular','Holder')+'</td><td class="num">'+pickL('Lo que recibe','What you receive')+'</td><td class="num">'+pickL('Aporte','Contribution')+'</td></tr>'+
             propBody+
           '</tbody></table>'+
-          '<div class="sh-card" style="margin-top:18px;text-align:right"><div class="sh-card-title" style="text-align:right">'+pickL('Aporte mensual total','Total monthly contribution')+'</div><p style="font-family:\'Fraunces\',serif;font-size:22pt;color:#14213d;margin:4px 0 0">'+M(totalMensual)+'</p></div>')
+          '<div style="display:flex;gap:14px;margin-top:18px;align-items:stretch">'+cards+'</div>'+
+          (hayCobertura?('<p class="sh-note">'+pickL('Las sumas aseguradas de los seguros patrimoniales figuran en cada línea; no se suman entre sí porque cubren riesgos distintos.','Coverage sums for property insurance are shown per line; they are not added together because they cover different risks.')+'</p>'):''))
       ];
       // Comparativa antes/después — solo en modo un titular (r llega desde contentPages); en modo
       // pareja S.12 es una sola lista compartida del hogar y no hay un "r" único con el que comparar.
