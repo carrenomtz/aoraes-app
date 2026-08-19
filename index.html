@@ -89,6 +89,57 @@
     border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:7px 13px; cursor:pointer; flex:0 0 auto;
   }
   .signout-btn:hover{background:rgba(255,255,255,.12); color:#fff}
+  .pending-msg{font-size:13.5px; line-height:1.6; color:var(--ink); text-align:left; margin-top:6px}
+  .pending-msg p{margin:0 0 10px}
+  .pending-msg p:last-child{margin-bottom:0; color:var(--muted); font-size:12.5px}
+  .viewing-banner{
+    display:none; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;
+    background:var(--gold-tint); color:var(--gold-deep); border-bottom:1px solid var(--gold-soft);
+    font-size:12.5px; font-weight:600; padding:8px 16px; text-align:center;
+  }
+  .viewing-banner.on{display:flex}
+  .viewing-banner button{
+    font:inherit; font-size:12px; font-weight:700; color:var(--navy); background:#fff;
+    border:1px solid var(--gold-soft); border-radius:999px; padding:5px 13px; cursor:pointer;
+  }
+  .viewing-banner button:hover{background:var(--gold-tint)}
+  .ase-list{display:flex; flex-direction:column; gap:11px}
+  .ase-empty{text-align:center; color:var(--muted); background:var(--surface); border:1px dashed var(--line-strong); border-radius:var(--r-lg); padding:40px 24px; font-size:14px}
+  .ase-row{display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:14px 17px; box-shadow:var(--sh-1); flex-wrap:wrap}
+  .ase-body{min-width:0; flex:1 1 220px}
+  .ase-email{font-weight:700; color:var(--navy); font-size:14.5px; word-break:break-word}
+  .ase-meta{font-size:11.5px; color:var(--muted); margin-top:3px}
+  .ase-badge{font-size:10px; font-weight:700; letter-spacing:.03em; padding:3px 9px; border-radius:999px; border:1px solid; text-transform:uppercase}
+  .ase-badge.pending{background:var(--gold-tint); color:var(--amber); border-color:var(--gold-soft)}
+  .ase-badge.approved{background:#eaf2ec; color:#4f7358; border-color:#cfe3d4}
+  .ase-badge.rechazado{background:#fbeae6; color:var(--red); border-color:#e7c3bb}
+  .ase-badge.admin{background:var(--navy); color:#fff; border-color:var(--navy)}
+  .ase-acts{display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:0 0 auto}
+  .ase-act{font-family:inherit; font-size:12px; font-weight:600; min-height:34px; padding:0 13px; border-radius:var(--r-sm); cursor:pointer; border:1px solid; white-space:nowrap}
+  .ase-act.ok{background:#eaf2ec; color:#4f7358; border-color:#cfe3d4} .ase-act.ok:hover{background:#dcebe0}
+  .ase-act.view{background:var(--surface); color:var(--navy); border-color:var(--gold-soft)} .ase-act.view:hover{background:var(--gold-tint)}
+  .ase-act:disabled{opacity:.5; cursor:default}
+  .ase-count{font-size:11.5px; color:var(--faint); margin-top:3px}
+  .ase-menu-wrap{position:relative; flex:0 0 auto}
+  .ase-menu-btn{
+    width:34px; height:34px; border-radius:var(--r-sm); border:1px solid var(--line-strong); background:var(--surface);
+    color:var(--navy); font-size:16px; font-weight:700; line-height:1; cursor:pointer; letter-spacing:1px;
+  }
+  .ase-menu-btn:hover{background:var(--gold-tint); border-color:var(--gold-soft)}
+  .ase-menu{
+    position:absolute; right:0; top:calc(100% + 6px); z-index:20; min-width:200px;
+    background:#fff; border:1px solid var(--line-strong); border-radius:var(--r-md); box-shadow:var(--sh-3);
+    padding:6px; display:flex; flex-direction:column; gap:2px;
+  }
+  .ase-menu[hidden]{display:none}
+  .ase-menu button{
+    font-family:inherit; text-align:left; font-size:12.5px; font-weight:600; color:var(--navy);
+    background:none; border:0; border-radius:7px; padding:9px 10px; cursor:pointer; white-space:nowrap;
+  }
+  .ase-menu button:hover{background:var(--gold-tint)}
+  .ase-menu button.danger{color:var(--red)}
+  .ase-menu button.danger:hover{background:#fbeae6}
+  .ase-menu hr{border:0; border-top:1px solid var(--line-soft); margin:4px 2px}
   .appbar{
     position:sticky; top:0; z-index:30; flex:0 0 auto;
     display:flex; align-items:center; gap:16px; height:62px; padding:0 clamp(14px,3vw,30px);
@@ -421,6 +472,19 @@
     </div>
   </div>
 
+  <div class="auth-gate" id="pending-gate" hidden>
+    <div class="auth-box" id="pending-box">
+      <img class="auth-logo" src="./logo-icon-gold.png" alt="" aria-hidden="true">
+      <h1>AORAES</h1>
+      <p class="auth-sub">Panel del asesor</p>
+      <div class="pending-msg" id="pending-msg">
+        <p><b>Tu cuenta está pendiente de autorización.</b></p>
+        <p>El responsable del equipo debe aprobar tu acceso antes de que puedas ver tu cartera. Esta pantalla se actualizará sola en cuanto te aprueben — no hace falta que recargues.</p>
+      </div>
+      <button type="button" class="auth-toggle" id="pending-signout" style="margin-top:18px">Cerrar sesión</button>
+    </div>
+  </div>
+
   <div class="appbar">
     <div class="brand"><img class="brand-icon" src="./logo-icon-gold.png" alt="" aria-hidden="true"><div class="brand-text"><span class="brand-mark">AORAES</span><span class="brand-sub">Departamento Español</span></div></div>
     <div class="active-chip" id="active-chip" role="button" tabindex="0" aria-label="Abrir ficha del cliente activo"><span class="ac-dot"></span><span class="ac-name" id="ac-name"></span><button class="ac-x" id="ac-x" title="Quitar cliente activo" aria-label="Quitar cliente activo">&#10005;</button></div>
@@ -429,8 +493,14 @@
       <button type="button" data-go="analisis">Análisis &amp; CRM</button>
       <button type="button" data-go="jubilacion">Comparador de jubilación</button>
       <button type="button" data-go="medico">Preguntas médicas</button>
+      <button type="button" data-go="asesores" id="nav-asesores" hidden>Asesores</button>
     </nav>
     <button type="button" class="signout-btn" id="signout-btn" title="Cerrar sesión">Cerrar sesión</button>
+  </div>
+
+  <div class="viewing-banner" id="viewing-banner" hidden>
+    <span>👁 Viendo la cartera de <b id="viewing-name"></b> (modo administrador)</span>
+    <button type="button" id="viewing-back">Volver a mi cartera</button>
   </div>
 
   <main class="scr home" id="home">
@@ -480,6 +550,17 @@
     <div class="frame-stage" id="frame-stage"></div>
   </div>
 
+  <main class="scr home" id="asesores" hidden>
+    <div class="cock">
+      <div class="cock-head">
+        <div><span class="cock-eyebrow">Administración</span><h1>Asesores</h1></div>
+        <button type="button" class="cock-new" id="asesores-refresh">↻ Actualizar</button>
+      </div>
+      <p class="cock-note" style="margin:0 0 18px">"Restringir acceso" nunca borra la cartera de un asesor — solo le quita su propio acceso. Tú sigues viendo y editando sus clientes en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar". Solo "Borrar cuenta" (⋮) elimina datos, y pide confirmarlo escribiendo el correo.</p>
+      <div id="asesores-list"></div>
+    </div>
+  </main>
+
   <!-- ---------- Firebase: login + sincronización en la nube ----------
        Módulo aparte (ES module, sin build step, vía CDN) porque el resto de la app es JS
        clásico. Expone window.AORAES_CLOUD para que el script principal (y analisis.html /
@@ -490,7 +571,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot }
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, getDocs, onSnapshot, serverTimestamp }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     var firebaseConfig = {
@@ -505,21 +586,65 @@
     var fbApp = initializeApp(firebaseConfig);
     var auth = getAuth(fbApp);
     var db = getFirestore(fbApp);
-    var currentUid = null, unsubClients = null;
+    // único responsable con acceso de administrador desde el arranque — identificado por UID (no por
+    // correo, que puede cambiar) para que perder/cambiar el correo nunca le quite el acceso de admin.
+    var ADMIN_UID = 'DMDXyvqfaeQiXfb3pYmoX95vNR82';
 
-    function clientsCol(){ return collection(db, 'users', currentUid, 'clients'); }
+    var currentUid = null, currentProfile = null, viewingUid = null;
+    var unsubClients = null, unsubProfile = null;
+
+    function clientsCol(uid){ return collection(db, 'users', uid || viewingUid || currentUid, 'clients'); }
+    function profileDoc(uid){ return doc(db, 'users', uid); }
 
     window.AORAES_CLOUD = {
       ready: false,
       uid: null,
+      profile: null,       // {email, role, status}
+      viewingUid: null,    // si el admin está viendo la cartera de otro asesor
+      viewingEmail: null,
       // guarda/actualiza el documento completo de un cliente (id, record, solution, medico, exportedAt)
       syncClient: function(payload){
-        if(!currentUid || !payload || !payload.id) return Promise.resolve();
-        return setDoc(doc(clientsCol(), payload.id), payload).catch(function(e){ console.error('AORAES cloud: fallo al guardar', e); });
+        var uid = viewingUid || currentUid;
+        if(!uid || !payload || !payload.id) return Promise.resolve();
+        return setDoc(doc(clientsCol(uid), payload.id), payload).catch(function(e){ console.error('AORAES cloud: fallo al guardar', e); });
       },
       removeClient: function(id){
-        if(!currentUid || !id) return Promise.resolve();
-        return deleteDoc(doc(clientsCol(), id)).catch(function(e){ console.error('AORAES cloud: fallo al borrar', e); });
+        var uid = viewingUid || currentUid;
+        if(!uid || !id) return Promise.resolve();
+        return deleteDoc(doc(clientsCol(uid), id)).catch(function(e){ console.error('AORAES cloud: fallo al borrar', e); });
+      },
+      // ---- solo para el admin: gestión de asesores ----
+      listAdvisors: function(){
+        return getDocs(collection(db,'users')).then(function(snap){
+          var arr=[]; snap.forEach(function(d){ arr.push(Object.assign({uid:d.id}, d.data())); }); return arr;
+        });
+      },
+      approveAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'approved'}).catch(function(e){ console.error('AORAES cloud: fallo al aprobar',e); }); },
+      rejectAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'rechazado'}).catch(function(e){ console.error('AORAES cloud: fallo al rechazar',e); }); },
+      countClients: function(uid){ return getDocs(collection(db,'users',uid,'clients')).then(function(snap){ return snap.size; }); },
+      // Borra el perfil Y todos los clientes del asesor de la nube — no borra su acceso de inicio de
+      // sesión (eso necesitaría un backend con permisos de administrador que hoy no existe), pero deja
+      // su cuenta sin ningún dato: si vuelve a entrar, arrancaría de cero como un asesor nuevo pendiente.
+      deleteAdvisorAccount: function(uid){
+        return getDocs(collection(db,'users',uid,'clients')).then(function(snap){
+          return Promise.all(snap.docs.map(function(d){ return deleteDoc(d.ref); }));
+        }).then(function(){
+          return deleteDoc(profileDoc(uid));
+        }).catch(function(e){ console.error('AORAES cloud: fallo al borrar la cuenta del asesor',e); throw e; });
+      },
+      viewAsAdvisor: function(uid, email){
+        viewingUid = uid;
+        window.AORAES_CLOUD.viewingUid = uid;
+        window.AORAES_CLOUD.viewingEmail = email || uid;
+        startListening();
+        window.dispatchEvent(new CustomEvent('aoraes-viewing-changed', {detail:{uid:uid, email:email}}));
+      },
+      viewMyOwn: function(){
+        viewingUid = null;
+        window.AORAES_CLOUD.viewingUid = null;
+        window.AORAES_CLOUD.viewingEmail = null;
+        startListening();
+        window.dispatchEvent(new CustomEvent('aoraes-viewing-changed', {detail:{uid:null}}));
       }
     };
 
@@ -532,6 +657,31 @@
       }, function(err){ console.error('AORAES cloud: fallo al escuchar cambios', err); });
     }
 
+    function ensureProfileAndListen(user){
+      var pDoc = profileDoc(user.uid);
+      getDoc(pDoc).then(function(snap){
+        if(!snap.exists()){
+          var bootstrapAdmin = (user.uid === ADMIN_UID);
+          return setDoc(pDoc, {
+            email: user.email,
+            role: bootstrapAdmin ? 'admin' : 'advisor',
+            status: bootstrapAdmin ? 'approved' : 'pending',
+            requestedAt: serverTimestamp()
+          });
+        }
+      }).then(function(){
+        if(unsubProfile) unsubProfile();
+        unsubProfile = onSnapshot(pDoc, function(snap){
+          currentProfile = snap.data() || null;
+          window.AORAES_CLOUD.profile = currentProfile;
+          window.dispatchEvent(new CustomEvent('aoraes-profile-update', {detail: currentProfile}));
+          if(currentProfile && currentProfile.status==='approved'){
+            if(!unsubClients) startListening();
+          } else if(unsubClients){ unsubClients(); unsubClients=null; }
+        }, function(err){ console.error('AORAES cloud: fallo al escuchar el perfil', err); });
+      }).catch(function(e){ console.error('AORAES cloud: fallo al preparar el perfil', e); });
+    }
+
     var gateEl, statusEl;
     onAuthStateChanged(auth, function(user){
       gateEl = gateEl || document.getElementById('auth-gate');
@@ -541,15 +691,21 @@
         window.AORAES_CLOUD.uid = user.uid;
         window.AORAES_CLOUD.ready = true;
         gateEl.hidden = true;
-        startListening();
+        ensureProfileAndListen(user);
         window.dispatchEvent(new CustomEvent('aoraes-signed-in', {detail:{uid:user.uid}}));
       } else {
-        currentUid = null;
+        currentUid = null; currentProfile = null; viewingUid = null;
         window.AORAES_CLOUD.uid = null;
+        window.AORAES_CLOUD.profile = null;
+        window.AORAES_CLOUD.viewingUid = null;
         window.AORAES_CLOUD.ready = false;
         if(unsubClients){ unsubClients(); unsubClients=null; }
+        if(unsubProfile){ unsubProfile(); unsubProfile=null; }
         gateEl.hidden = false;
         statusEl.hidden = true;
+        document.getElementById('pending-gate').hidden = true;
+        document.getElementById('nav-asesores').hidden = true;
+        document.getElementById('viewing-banner').classList.remove('on');
         window.dispatchEvent(new CustomEvent('aoraes-signed-out'));
       }
     });
@@ -599,6 +755,38 @@
       }).finally(function(){ btn.disabled = false; });
     });
     document.getElementById('signout-btn').addEventListener('click', function(){ signOut(auth); });
+    document.getElementById('pending-signout').addEventListener('click', function(){ signOut(auth); });
+
+    // Pantalla de "pendiente de aprobación": se muestra sola mientras el perfil no esté aprobado,
+    // y se oculta sola en cuanto el admin apruebe (gracias al listener en vivo del perfio arriba,
+    // no hace falta recargar la página).
+    window.addEventListener('aoraes-profile-update', function(e){
+      var profile = e.detail;
+      var pendingEl = document.getElementById('pending-gate');
+      var msgEl = document.getElementById('pending-msg');
+      var navAse = document.getElementById('nav-asesores');
+      if(!profile){ pendingEl.hidden = true; return; }
+      if(profile.status === 'approved'){
+        pendingEl.hidden = true;
+        navAse.hidden = (profile.role !== 'admin');
+      } else {
+        pendingEl.hidden = false;
+        navAse.hidden = true;
+        msgEl.innerHTML = (profile.status === 'rechazado')
+          ? '<p><b>Tu solicitud de acceso fue rechazada.</b></p><p>Si crees que es un error, contacta con el responsable del equipo.</p>'
+          : '<p><b>Tu cuenta está pendiente de autorización.</b></p><p>El responsable del equipo debe aprobar tu acceso antes de que puedas ver tu cartera. Esta pantalla se actualizará sola en cuanto te aprueben — no hace falta que recargues.</p>';
+      }
+    });
+    window.addEventListener('aoraes-viewing-changed', function(e){
+      var banner = document.getElementById('viewing-banner');
+      var nameEl = document.getElementById('viewing-name');
+      if(e.detail && e.detail.uid){ nameEl.textContent = e.detail.email || e.detail.uid; banner.classList.add('on'); }
+      else banner.classList.remove('on');
+    });
+    document.getElementById('viewing-back').addEventListener('click', function(){
+      window.AORAES_CLOUD.viewMyOwn();
+      if(typeof window.aoraesGoHome==='function') window.aoraesGoHome();
+    });
   </script>
 
   <script>
@@ -831,7 +1019,7 @@
     }
 
     var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false} };
-    var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames');
+    var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames'), asesoresScr=document.getElementById('asesores');
     var stage=document.getElementById('frame-stage'), sw=document.getElementById('switch'), banner=document.getElementById('bridge-banner');
     var insEl=document.getElementById('cock-insights'), listEl=document.getElementById('cock-list');
     var searchEl=document.getElementById('cock-search'), statusEl=document.getElementById('cock-status'), sortEl=document.getElementById('cock-sort');
@@ -840,7 +1028,8 @@
 
     function setActiveTab(view){ var b=sw.querySelectorAll('button'); for(var i=0;i<b.length;i++)b[i].classList.toggle('active',b[i].getAttribute('data-go')===view); }
     function updateActiveChip(){ var id=getActive(); var rec=id?findClient(id):null; if(rec){ acName.textContent=rec.name||'Cliente'; acChip.classList.add('on'); } else acChip.classList.remove('on'); }
-    function screenTo(name){ home.hidden=(name!=='home'); wsScreen.hidden=(name!=='workspace'); frames.hidden=(name!=='frames'); }
+    function screenTo(name){ home.hidden=(name!=='home'); wsScreen.hidden=(name!=='workspace'); frames.hidden=(name!=='frames'); asesoresScr.hidden=(name!=='asesores'); }
+    window.aoraesGoHome=function(){ show('home'); };
 
     /* ---------- iframe plumbing ---------- */
     function ensureFrame(view){
@@ -875,6 +1064,7 @@
     }
 
     function show(view){
+      if(view==='asesores'){ screenTo('asesores'); for(var k0 in MOD){ if(MOD[k0].el)MOD[k0].el.style.display='none'; } setActiveTab('asesores'); renderAsesores(); if(location.hash.slice(1)!=='asesores')history.replaceState(null,'','#asesores'); return; }
       if(view==='home'||!MOD[view]){ screenTo('home'); for(var k in MOD){ if(MOD[k].el)MOD[k].el.style.display='none'; } setActiveTab('home'); renderCockpit(); updateActiveChip(); if(location.hash)history.replaceState(null,'','#'); return; }
       screenTo('frames'); ensureFrame(view);
       for(var j in MOD){ if(MOD[j].el)MOD[j].el.style.display=(j===view)?'block':'none'; }
@@ -882,6 +1072,95 @@
       if(view==='jubilacion')maybeBridge(); else hideBanner();
       if(view==='medico')syncMedico();
     }
+
+    /* ---------- ASESORES: panel de administración ----------
+       Solo lo ve el admin (nav-asesores permanece hidden para el resto vía aoraes-profile-update).
+       Lee/escribe directo contra window.AORAES_CLOUD — sin duplicar el modelo de datos del módulo Firebase. */
+    var STATUS_LABEL={pending:'Pendiente',approved:'Aprobado',rechazado:'Restringido'};
+    function fmtRequested(ts){
+      try{ var d=ts&&ts.toDate?ts.toDate():null; if(!d)return ''; return 'Solicitado '+relTime(d.toISOString()); }catch(e){ return ''; }
+    }
+    function renderAsesores(){
+      var listEl=document.getElementById('asesores-list');
+      listEl.innerHTML='<div class="ase-empty">Cargando asesores…</div>';
+      if(!window.AORAES_CLOUD||!window.AORAES_CLOUD.listAdvisors){ listEl.innerHTML='<div class="ase-empty">La nube no está lista todavía.</div>'; return; }
+      window.AORAES_CLOUD.listAdvisors().then(function(list){
+        list.sort(function(a,b){ var oa=a.status==='pending'?0:1, ob=b.status==='pending'?0:1; if(oa!==ob)return oa-ob; return (a.email||'').localeCompare(b.email||''); });
+        if(!list.length){ listEl.innerHTML='<div class="ase-empty">Todavía no hay asesores registrados.</div>'; return; }
+        return Promise.all(list.map(function(p){
+          return window.AORAES_CLOUD.countClients(p.uid).then(function(n){ p._count=n; }).catch(function(){ p._count=null; });
+        })).then(function(){ return list; });
+      }).then(function(list){
+        if(!list) return;
+        var viewing=window.AORAES_CLOUD.viewingUid;
+        listEl.innerHTML='<div class="ase-list">'+list.map(function(p){
+          var isSelf=(p.uid===window.AORAES_CLOUD.uid);
+          var statusCls=p.status==='approved'?'approved':(p.status==='rechazado'?'rechazado':'pending');
+          var badges='<span class="ase-badge '+statusCls+'">'+(STATUS_LABEL[p.status]||p.status||'—')+'</span>';
+          if(p.role==='admin') badges+=' <span class="ase-badge admin">Admin</span>';
+          var countTxt=(p._count==null)?'':(p._count+' cliente'+(p._count===1?'':'s'));
+          var reqTxt=fmtRequested(p.requestedAt);
+          var metaLine=[countTxt,reqTxt].filter(Boolean).join(' · ');
+
+          var items='';
+          if(p.status!=='approved') items+='<button type="button" data-ase-approve="'+esc(p.uid)+'">✓ Aprobar</button>';
+          if(p.status==='approved' && !isSelf){
+            items+=(viewing===p.uid)
+              ? '<button type="button" data-ase-unview="1">↺ Dejar de ver esta cartera</button>'
+              : '<button type="button" data-ase-view="'+esc(p.uid)+'" data-ase-view-email="'+esc(p.email||'')+'">👁 Ver cartera</button>';
+          }
+          if(p.role!=='admin'){
+            if(items) items+='<hr>';
+            if(p.status!=='rechazado'){
+              items+=(p.status==='approved')
+                ? '<button type="button" data-ase-reject="'+esc(p.uid)+'" data-ase-reject-email="'+esc(p.email||'')+'">Restringir acceso al asesor</button>'
+                : '<button type="button" data-ase-reject="'+esc(p.uid)+'" data-ase-reject-email="'+esc(p.email||'')+'">Rechazar solicitud</button>';
+            }
+            items+='<button type="button" class="danger" data-ase-delete="'+esc(p.uid)+'" data-ase-delete-email="'+esc(p.email||'')+'">🗑 Borrar cuenta…</button>';
+          }
+          var menu=(!isSelf && items) ? ('<div class="ase-menu-wrap"><button type="button" class="ase-menu-btn" data-ase-menu-toggle="'+esc(p.uid)+'" aria-label="Opciones" aria-haspopup="true">⋮</button><div class="ase-menu" id="ase-menu-'+esc(p.uid)+'" hidden>'+items+'</div></div>') : '';
+
+          return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+esc(p.email||p.uid)+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+'</div><div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+'</div><div class="ase-acts">'+menu+'</div></div>';
+        }).join('')+'</div>';
+      }).catch(function(e){ console.error('AORAES: fallo al listar asesores',e); listEl.innerHTML='<div class="ase-empty">No se pudo cargar la lista. Revisa la consola.</div>'; });
+    }
+    document.getElementById('asesores-refresh').addEventListener('click', renderAsesores);
+    document.getElementById('asesores-list').addEventListener('click', function(e){
+      var toggle=e.target.closest('[data-ase-menu-toggle]');
+      if(toggle){
+        var menu=document.getElementById('ase-menu-'+toggle.getAttribute('data-ase-menu-toggle'));
+        var wasOpen=!menu.hidden;
+        document.querySelectorAll('#asesores-list .ase-menu').forEach(function(m){ m.hidden=true; });
+        menu.hidden=wasOpen;
+        return;
+      }
+      var b=e.target.closest('button'); if(!b) return;
+      document.querySelectorAll('#asesores-list .ase-menu').forEach(function(m){ m.hidden=true; });
+      if(b.hasAttribute('data-ase-approve')) window.AORAES_CLOUD.approveAdvisor(b.getAttribute('data-ase-approve')).then(renderAsesores);
+      else if(b.hasAttribute('data-ase-reject')){
+        var wasApproved=(b.textContent.indexOf('Restringir')===0);
+        var email=b.getAttribute('data-ase-reject-email')||'este asesor';
+        var msg=wasApproved
+          ? '¿Restringir el acceso de '+email+'?\n\nYa no podrá entrar a su cuenta, pero sus clientes NO se borran — tú los sigues viendo y editando en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar".'
+          : '¿Rechazar la solicitud de acceso de '+email+'? Todavía no tiene ningún cliente guardado, así que no hay nada que perder — puedes aprobarlo más adelante si cambias de opinión.';
+        if(confirm(msg)) window.AORAES_CLOUD.rejectAdvisor(b.getAttribute('data-ase-reject')).then(renderAsesores);
+      }
+      else if(b.hasAttribute('data-ase-delete')){
+        var delUid=b.getAttribute('data-ase-delete'), delEmail=b.getAttribute('data-ase-delete-email')||'';
+        var typed=prompt('Esto borra PERMANENTEMENTE el perfil y todos los clientes de "'+delEmail+'" — no se puede deshacer.\n\nPara confirmar, escribe su correo exacto:');
+        if(typed===null) return;
+        if(typed.trim().toLowerCase()!==delEmail.trim().toLowerCase()){ alert('El correo no coincide — no se borró nada.'); return; }
+        window.AORAES_CLOUD.deleteAdvisorAccount(delUid).then(renderAsesores).catch(function(){ alert('No se pudo borrar. Revisa la consola.'); });
+      }
+      else if(b.hasAttribute('data-ase-view')){ window.AORAES_CLOUD.viewAsAdvisor(b.getAttribute('data-ase-view'), b.getAttribute('data-ase-view-email')); setActive(null); show('home'); }
+      else if(b.hasAttribute('data-ase-unview')){ window.AORAES_CLOUD.viewMyOwn(); setActive(null); renderAsesores(); }
+    });
+    document.addEventListener('click', function(e){
+      if(e.target.closest('.ase-menu-wrap')) return;
+      document.querySelectorAll('#asesores-list .ase-menu').forEach(function(m){ m.hidden=true; });
+    });
+    window.addEventListener('aoraes-viewing-changed', function(){ if(!asesoresScr.hidden) renderAsesores(); });
+
     // Los atajos de fila abren directamente la ficha del cliente en la pestaña pedida —
     // ya no saltan a una pantalla aparte, el panel único de la ficha es quien manda ahora.
     function openClientIn(view,id){ openWorkspace(id,view); }
