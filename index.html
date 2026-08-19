@@ -222,6 +222,32 @@
   }
   .switch button:hover{background:rgba(255,255,255,.07); color:#ffffff}
   .switch button.active{background:var(--gold); color:var(--navy-deep); border-color:var(--gold); box-shadow:0 2px 8px rgba(201,169,97,.35)}
+  .appbar-menu{display:flex; align-items:center; gap:14px}
+  .nav-toggle{
+    display:none; align-items:center; justify-content:center; width:38px; height:38px; flex:0 0 auto; margin-left:auto;
+    border-radius:9px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06);
+    color:#fff; font-size:18px; line-height:1; cursor:pointer;
+  }
+  .nav-toggle:hover{background:rgba(255,255,255,.12)}
+  @media(max-width:860px){
+    .active-chip{max-width:110px}
+    .nav-toggle{display:flex}
+    .appbar-menu{
+      position:absolute; top:62px; left:0; right:0; z-index:50; display:none;
+      flex-direction:column; align-items:stretch; gap:12px; padding:14px 16px 20px;
+      background:linear-gradient(168deg,#182746 0%,var(--navy-deep) 100%); border-bottom:1px solid #20304f;
+      box-shadow:0 16px 32px rgba(13,22,38,.35); max-height:calc(100vh - 62px); overflow-y:auto;
+    }
+    .appbar-menu.open{display:flex}
+    .appbar-menu .switch{flex-direction:column; overflow-x:visible; gap:2px}
+    .appbar-menu .switch button{width:100%; text-align:left; padding:12px 14px}
+    .appbar-menu .notif-wrap{align-self:stretch}
+    .appbar-menu .notif-bell{width:100%; display:flex; align-items:center; justify-content:center; gap:8px}
+    .appbar-menu .notif-panel{position:static; width:100%; margin-top:8px; box-shadow:none}
+    .appbar-menu .lang-switch-top{justify-content:center; gap:10px; padding:4px 0}
+    .appbar-menu .lang-switch-top button{font-size:21px; padding:8px 10px}
+    .appbar-menu .signout-btn{width:100%; text-align:center}
+  }
 
   .scr{flex:1 1 auto; overflow-y:auto}
   .scr[hidden]{display:none}
@@ -547,32 +573,36 @@
   <div class="appbar">
     <div class="brand"><img class="brand-icon" src="./logo-icon-gold.png" alt="" aria-hidden="true"><div class="brand-text"><span class="brand-mark">AORAES</span><span class="brand-sub">Departamento Español</span></div></div>
     <div class="active-chip" id="active-chip" role="button" tabindex="0" aria-label="Abrir ficha del cliente activo"><span class="ac-dot"></span><span class="ac-name" id="ac-name"></span><button class="ac-x" id="ac-x" title="Quitar cliente activo" aria-label="Quitar cliente activo">&#10005;</button></div>
-    <nav class="switch" id="switch">
-      <button type="button" data-go="home" class="active">Inicio</button>
-      <button type="button" data-go="analisis">Análisis &amp; CRM</button>
-      <button type="button" data-go="jubilacion">Comparador de jubilación</button>
-      <button type="button" data-go="medico">Preguntas médicas</button>
-      <button type="button" data-go="asesores" id="nav-asesores" hidden>Asesores</button>
-    </nav>
-    <div class="notif-wrap" id="notif-wrap" hidden>
-      <button type="button" class="notif-bell" id="notif-bell" aria-label="Notificaciones" aria-haspopup="true">🔔<span class="notif-badge" id="notif-badge" hidden>0</span></button>
-      <div class="notif-panel" id="notif-panel" hidden>
-        <div class="notif-sec">
-          <div class="notif-sec-title">Solicitudes de acceso</div>
-          <div id="notif-pending"></div>
-        </div>
-        <div class="notif-sec">
-          <div class="notif-sec-title">Clientes nuevos</div>
-          <div id="notif-clients"></div>
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="appbar-menu">☰</button>
+    <div class="appbar-menu" id="appbar-menu">
+      <nav class="switch" id="switch">
+        <button type="button" data-go="home" class="active">Inicio</button>
+        <button type="button" data-go="analisis">Análisis &amp; CRM</button>
+        <button type="button" data-go="jubilacion">Comparador de jubilación</button>
+        <button type="button" data-go="medico">Preguntas médicas</button>
+        <button type="button" id="nav-inmueble">Proyecto inmobiliario</button>
+        <button type="button" data-go="asesores" id="nav-asesores" hidden>Asesores</button>
+      </nav>
+      <div class="notif-wrap" id="notif-wrap" hidden>
+        <button type="button" class="notif-bell" id="notif-bell" aria-label="Notificaciones" aria-haspopup="true">🔔<span class="notif-badge" id="notif-badge" hidden>0</span></button>
+        <div class="notif-panel" id="notif-panel" hidden>
+          <div class="notif-sec">
+            <div class="notif-sec-title">Solicitudes de acceso</div>
+            <div id="notif-pending"></div>
+          </div>
+          <div class="notif-sec">
+            <div class="notif-sec-title">Clientes nuevos</div>
+            <div id="notif-clients"></div>
+          </div>
         </div>
       </div>
+      <div class="lang-switch-top" id="lang-switch-top" role="group" aria-label="Idioma">
+        <button type="button" data-lang="es" title="Español" aria-label="Español">🇪🇸</button>
+        <button type="button" data-lang="en" title="English" aria-label="English">🇬🇧</button>
+        <button type="button" data-lang="de" title="Deutsch" aria-label="Deutsch">🇩🇪</button>
+      </div>
+      <button type="button" class="signout-btn" id="signout-btn" title="Cerrar sesión">Cerrar sesión</button>
     </div>
-    <div class="lang-switch-top" id="lang-switch-top" role="group" aria-label="Idioma">
-      <button type="button" data-lang="es" title="Español" aria-label="Español">🇪🇸</button>
-      <button type="button" data-lang="en" title="English" aria-label="English">🇬🇧</button>
-      <button type="button" data-lang="de" title="Deutsch" aria-label="Deutsch">🇩🇪</button>
-    </div>
-    <button type="button" class="signout-btn" id="signout-btn" title="Cerrar sesión">Cerrar sesión</button>
   </div>
 
   <div class="viewing-banner" id="viewing-banner" hidden>
@@ -1469,6 +1499,8 @@
       'Solicitudes de acceso':'Access requests','Clientes nuevos':'New clients',
       'Pendiente de aprobación':'Pending approval','Aprobar':'Approve',
       'No hay solicitudes pendientes.':'No pending requests.','Sin actividad reciente.':'No recent activity.',
+      'Abrir menú':'Open menu',
+      'Selecciona un cliente primero para ver su Proyecto inmobiliario.':'Select a client first to see their real estate project.',
       'Ir a aoraes.de':'Go to aoraes.de','Correo':'Email','Contraseña':'Password',
       'Repetir contraseña':'Repeat password','Mostrar contraseña':'Show password','Ocultar contraseña':'Hide password',
       'Entrar':'Sign in','Crear cuenta':'Create account',
@@ -1555,6 +1587,8 @@
       'Solicitudes de acceso':'Zugriffsanfragen','Clientes nuevos':'Neue Kunden',
       'Pendiente de aprobación':'Genehmigung ausstehend','Aprobar':'Genehmigen',
       'No hay solicitudes pendientes.':'Keine ausstehenden Anfragen.','Sin actividad reciente.':'Keine kürzliche Aktivität.',
+      'Abrir menú':'Menü öffnen',
+      'Selecciona un cliente primero para ver su Proyecto inmobiliario.':'Wähle zuerst einen Kunden aus, um dessen Immobilienprojekt zu sehen.',
       'Ir a aoraes.de':'Zu aoraes.de','Correo':'E-Mail','Contraseña':'Passwort',
       'Repetir contraseña':'Passwort wiederholen','Mostrar contraseña':'Passwort anzeigen','Ocultar contraseña':'Passwort verbergen',
       'Entrar':'Anmelden','Crear cuenta':'Konto erstellen',
@@ -2146,7 +2180,23 @@
     }
 
     /* ---------- events ---------- */
-    sw.addEventListener('click',function(e){ var b=e.target.closest('button[data-go]'); if(b)show(b.getAttribute('data-go')); });
+    var navToggle=document.getElementById('nav-toggle'), appbarMenu=document.getElementById('appbar-menu');
+    navToggle.addEventListener('click', function(){
+      var open=appbarMenu.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', open?'true':'false');
+    });
+    document.addEventListener('click', function(e){
+      if(!appbarMenu.classList.contains('open')) return;
+      if(e.target.closest('#appbar-menu')||e.target===navToggle||navToggle.contains(e.target)) return;
+      appbarMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false');
+    });
+    document.getElementById('nav-inmueble').addEventListener('click', function(){
+      appbarMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false');
+      var id=getActive();
+      if(id) openWorkspace(id,'inmueble');
+      else { alert('Selecciona un cliente primero para ver su Proyecto inmobiliario.'); show('home'); }
+    });
+    sw.addEventListener('click',function(e){ var b=e.target.closest('button[data-go]'); if(b){ show(b.getAttribute('data-go')); appbarMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false'); } });
     document.querySelector('.cock-tools').addEventListener('click',function(e){ var b=e.target.closest('[data-go]'); if(b)show(b.getAttribute('data-go')); });
     document.getElementById('cock-new').addEventListener('click',newClient);
     document.getElementById('ac-x').addEventListener('click',function(e){ e.stopPropagation(); setActive(null); });
