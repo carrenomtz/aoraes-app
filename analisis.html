@@ -3206,13 +3206,14 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     }
     var l2=[['Plan de Jubilación', Math.round(jubScore)]];
     // Vivienda: tener CUALQUIER Bausparvertrag no significa "objetivo cubierto" — un Bausparsumme de
-    // 30.000€ no compra una casa. Puntuamos por tamaño del objetivo (frente a ~300.000€, un precio de
-    // referencia) y por avance dentro de ese objetivo (Guthaben/Bausparsumme); el peor de los dos manda,
-    // porque un objetivo grande sin ahorro real (o un ahorro completo sobre un objetivo irrisorio) no es "listo".
+    // 30.000€ no compra una casa. Puntuamos por tamaño del objetivo (frente a 250.000€, precio de
+    // referencia mínimo para marcar el 100%; por debajo, proporcional) y por avance dentro de ese
+    // objetivo (Guthaben/Bausparsumme); el peor de los dos manda, porque un objetivo grande sin ahorro
+    // real (o un ahorro completo sobre un objetivo irrisorio) no es "listo".
     if(r.deseaVivienda){
       var vScore;
       if(r.bausparsummeTarget>0){
-        var vTam=clamp(r.bausparsummeTarget/300000*100,0,100);
+        var vTam=clamp(r.bausparsummeTarget/250000*100,0,100);
         var vProg=clamp((r.viviendaSaldo||0)/r.bausparsummeTarget*100,0,100);
         vScore=Math.round(Math.min(vTam,vProg));
       }else{
