@@ -412,6 +412,8 @@
 
   .ws-cta{display:inline-flex; align-items:center; gap:8px; background:var(--navy); color:#ffffff; border:0; font-family:inherit; font-weight:600; font-size:13px; min-height:42px; padding:0 18px; border-radius:var(--r-md); cursor:pointer; transition:background .16s var(--ease), transform .16s var(--ease)}
   .ws-cta:hover{background:var(--navy-deep); transform:translateY(-1px)} .ws-cta:active{transform:translateY(0)}
+  .ws-cta:disabled{opacity:.6; cursor:default; transform:none}
+  .ws-generic-banner{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; background:var(--gold-tint); border:1px solid var(--gold-soft); border-radius:var(--r-md); padding:14px 18px; margin:14px 0; font-size:13px; color:var(--navy-2)}
   .ws-cta.ghost{background:var(--surface); color:var(--navy); border:1px solid var(--gold-soft)} .ws-cta.ghost:hover{background:var(--gold-tint)}
   .ws-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:19px; margin-bottom:14px; box-shadow:var(--sh-1)}
   .ws-card h3{font-size:16px; margin-bottom:11px}
@@ -728,7 +730,7 @@
       },
       approveAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'approved'}).catch(function(e){ console.error('AORAES cloud: fallo al aprobar',e); }); },
       rejectAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'rechazado'}).catch(function(e){ console.error('AORAES cloud: fallo al rechazar',e); }); },
-      countClients: function(uid){ return getDocs(collection(db,'users',uid,'clients')).then(function(snap){ return snap.size; }); },
+      countClients: function(uid){ return getDocs(collection(db,'users',uid,'clients')).then(function(snap){ var n=0; snap.forEach(function(d){ var r=(d.data()||{}).record; if(!r||!r._generic) n++; }); return n; }); },
       // Borra el perfil Y todos los clientes del asesor de la nube — no borra su acceso de inicio de
       // sesión (eso necesitaría un backend con permisos de administrador que hoy no existe), pero deja
       // su cuenta sin ningún dato: si vuelve a entrar, arrancaría de cero como un asesor nuevo pendiente.
@@ -787,6 +789,7 @@
           var arr=[];
           snap.forEach(function(d){
             var data=d.data()||{}; var rec=data.record||{};
+            if(rec._generic) return;
             var ownerUid = d.ref.parent.parent ? d.ref.parent.parent.id : null;
             arr.push({ clientId:d.id, ownerUid:ownerUid, name:rec.name||'—', createdAt:rec.createdAt||null });
           });
@@ -1500,7 +1503,10 @@
       'Pendiente de aprobación':'Pending approval','Aprobar':'Approve',
       'No hay solicitudes pendientes.':'No pending requests.','Sin actividad reciente.':'No recent activity.',
       'Abrir menú':'Open menu',
-      'Selecciona un cliente primero para ver su Proyecto inmobiliario.':'Select a client first to see their real estate project.',
+      'Simulación genérica, sin cliente':'Generic simulation, no client',
+      'Estás en modo genérico — no se guarda en ningún cliente.':"You're in generic mode — this isn't saved to any client.",
+      'Estás en modo genérico — no se guarda en ningún cliente. Abre la ficha de un cliente para guardar aquí su propia simulación.':"You're in generic mode — this isn't saved to any client. Open a client's file to save their own simulation here.",
+      'Guardar en la ficha de':"Save to the file for",
       'Ir a aoraes.de':'Go to aoraes.de','Correo':'Email','Contraseña':'Password',
       'Repetir contraseña':'Repeat password','Mostrar contraseña':'Show password','Ocultar contraseña':'Hide password',
       'Entrar':'Sign in','Crear cuenta':'Create account',
@@ -1588,7 +1594,10 @@
       'Pendiente de aprobación':'Genehmigung ausstehend','Aprobar':'Genehmigen',
       'No hay solicitudes pendientes.':'Keine ausstehenden Anfragen.','Sin actividad reciente.':'Keine kürzliche Aktivität.',
       'Abrir menú':'Menü öffnen',
-      'Selecciona un cliente primero para ver su Proyecto inmobiliario.':'Wähle zuerst einen Kunden aus, um dessen Immobilienprojekt zu sehen.',
+      'Simulación genérica, sin cliente':'Allgemeine Simulation, ohne Kunde',
+      'Estás en modo genérico — no se guarda en ningún cliente.':'Du bist im allgemeinen Modus — wird bei keinem Kunden gespeichert.',
+      'Estás en modo genérico — no se guarda en ningún cliente. Abre la ficha de un cliente para guardar aquí su propia simulación.':'Du bist im allgemeinen Modus — wird bei keinem Kunden gespeichert. Öffne die Akte eines Kunden, um hier dessen eigene Simulation zu speichern.',
+      'Guardar en la ficha de':'In der Akte speichern von',
       'Ir a aoraes.de':'Zu aoraes.de','Correo':'E-Mail','Contraseña':'Passwort',
       'Repetir contraseña':'Passwort wiederholen','Mostrar contraseña':'Passwort anzeigen','Ocultar contraseña':'Passwort verbergen',
       'Entrar':'Anmelden','Crear cuenta':'Konto erstellen',
@@ -1739,6 +1748,29 @@
         var host=document.getElementById('ws-frame-'+k); if(host) host.innerHTML='';
         wsFrames[k]={el:null,ready:false,_opened:null,_applied:null,_client:null};
       });
+    }
+    // El "Proyecto inmobiliario" genérico de la barra superior reutiliza el mismo motor de
+    // cálculo/render que la ficha de un cliente (inmuebleBlock, calcInmueble, el guardado con
+    // debounce vía scheduleInmuebleSave/persistInmueble) apoyándose en un cliente-fantasma con id
+    // fijo 'aoraes_generic' — así no hay que duplicar ni la lógica de cálculo ni la de guardado. Se
+    // filtra de la cartera, de las estadísticas y de las cuentas de Asesores/notificaciones porque
+    // nunca es un cliente real.
+    function ensureGenericInmuebleRec(){
+      if(findClient('aoraes_generic')) return;
+      var rec={ id:'aoraes_generic', name:'Proyecto genérico', _generic:true, inmueble:defaultInmueble(), savedAt:new Date().toISOString() };
+      var arr=readClients(); arr.unshift(rec);
+      try{ localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr)); }catch(e){}
+      if(_cloudClientsById) _cloudClientsById[rec.id]={ id:rec.id, record:rec, solution:null, medico:null, exportedAt:new Date().toISOString() };
+      writeClientFile('aoraes_generic');
+    }
+    function openGenericInmueble(){
+      ensureGenericInmuebleRec();
+      var rec=findClient('aoraes_generic'); if(!rec) return;
+      teardownWsFrames();
+      wsId='aoraes_generic'; wsStep='inmueble';
+      renderWorkspace(rec,null);
+      screenTo('workspace'); setActiveTab('home');
+      window.scrollTo(0,0); wsScreen.scrollTop=0;
     }
     function openWorkspace(id,initialStep){
       var rec=findClient(id); if(!rec){ show('home'); return; }
@@ -2034,7 +2066,24 @@
       if(inmSaveTimer) clearTimeout(inmSaveTimer);
       inmSaveTimer=setTimeout(persistInmueble,500);
     }
+    function renderGenericInmuebleWorkspace(rec){
+      if(wsRec&&wsRec.id===rec.id&&wsRec.inmueble) rec.inmueble=wsRec.inmueble;
+      wsRec=rec;
+      var activeId=getActive();
+      var activeRec=(activeId&&activeId!=='aoraes_generic')?findClient(activeId):null;
+      var banner=activeRec
+        ? ('<div class="ws-generic-banner"><span>Estás en modo genérico — no se guarda en ningún cliente.</span><button type="button" class="ws-cta" id="ws-generic-save-client"><span class="ws-gsc-label">Guardar en la ficha de</span> '+esc(activeRec.name||'cliente')+'</button></div>')
+        : '<div class="ws-generic-banner"><span>Estás en modo genérico — no se guarda en ningún cliente. Abre la ficha de un cliente para guardar aquí su propia simulación.</span></div>';
+      document.getElementById('ws-content').innerHTML='<div class="ws">'+
+        '<button type="button" class="ws-back" id="ws-back">← Volver a la cartera</button>'+
+        '<div class="ws-head"><div class="ws-id"><div class="ws-name">Proyecto inmobiliario</div><div class="ws-metaline">Simulación genérica, sin cliente</div></div></div>'+
+        banner+
+        '<div class="ws-body" id="ws-summary-body">'+
+          '<section class="ws-sec active" id="sec-inmueble" role="tabpanel" data-sec="inmueble">'+inmuebleBlock(rec)+'</section>'+
+        '</div></div>';
+    }
     function renderWorkspaceInner(rec,s){
+      if(rec._generic){ renderGenericInmuebleWorkspace(rec); return; }
       // syncWsFrames() puede volver a llamar aquí (p.ej. cuando el iframe de análisis termina de
       // cargar) con una copia recién releída de localStorage — si el asesor acaba de editar el
       // Proyecto inmobiliario y el guardado con debounce (scheduleInmuebleSave) aún no se disparó,
@@ -2116,7 +2165,7 @@
       }
     }
     function renderCockpitInner(){
-      var arr=readClients(), activeId=getActive();
+      var arr=readClients().filter(function(c){ return !c._generic; }), activeId=getActive();
       var overdue=0, low=0, neg=0, proposals=0;
       arr.forEach(function(c){
         try{ var cm=c.crm||{}; var rs=reviewState(cm.review); if(rs&&rs.cls==='overdue')overdue++; if(typeof c.score==='number'&&c.score<40)low++; if(typeof c.flow==='number'&&c.flow<0)neg++; var st0=cm.status||'prospecto'; if(st0==='propuesta'||st0==='implementacion')proposals++; }
@@ -2192,9 +2241,7 @@
     });
     document.getElementById('nav-inmueble').addEventListener('click', function(){
       appbarMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false');
-      var id=getActive();
-      if(id) openWorkspace(id,'inmueble');
-      else { alert('Selecciona un cliente primero para ver su Proyecto inmobiliario.'); show('home'); }
+      openGenericInmueble();
     });
     sw.addEventListener('click',function(e){ var b=e.target.closest('button[data-go]'); if(b){ show(b.getAttribute('data-go')); appbarMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false'); } });
     document.querySelector('.cock-tools').addEventListener('click',function(e){ var b=e.target.closest('[data-go]'); if(b)show(b.getAttribute('data-go')); });
@@ -2223,6 +2270,21 @@
         normalizeInmueble(wsRec).modo=md.getAttribute('data-inm-mode');
         var sec=document.getElementById('sec-inmueble'); if(sec) sec.innerHTML=inmuebleBlock(wsRec);
         scheduleInmuebleSave();
+        return;
+      }
+      var gs=e.target.closest('#ws-generic-save-client'); if(gs){
+        var targetId=getActive();
+        if(targetId && targetId!=='aoraes_generic' && wsRec && wsRec.inmueble){
+          var arr=readClients(), idx=-1;
+          for(var i=0;i<arr.length;i++){ if(arr[i].id===targetId){ idx=i; break; } }
+          if(idx>=0){
+            arr[idx].inmueble=wsRec.inmueble; arr[idx].savedAt=new Date().toISOString();
+            try{ localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr)); }catch(err){}
+            if(_cloudClientsById && _cloudClientsById[targetId]) _cloudClientsById[targetId].record=arr[idx];
+            writeClientFile(targetId);
+            gs.textContent='✓ Guardado en la ficha'; gs.disabled=true;
+          }
+        }
         return;
       }
     });
