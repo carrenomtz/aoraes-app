@@ -2845,7 +2845,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       var text=gr[1];
       if(k==='hijos'){
         if(r.tieneMenores){
-          text='Ya cuenta con una previsión para menores'+(r.menoresComp?(' ('+r.menoresComp+')'):'')+'. Revisar que la aportación cubra el coste previsto de los estudios.';
+          text='Ya cuenta con una previsión para menores'+(r.menoresComp?(' ('+esc(r.menoresComp)+')'):'')+'. Revisar que la aportación cubra el coste previsto de los estudios.';
         }else{
           text='Sin previsión para menores actualmente. Constituir un plan de ahorro finalista para los estudios de los hijos.';
         }
@@ -4469,7 +4469,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
             '<button class="cli-btn del" data-del="'+c.id+'">Eliminar</button>'+
           '</div></div>';
   }
-  function esc(s){return String(s).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];});}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
 
   /* ---------- export / import ---------- */
   function exportData(){
