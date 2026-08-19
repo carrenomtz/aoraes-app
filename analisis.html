@@ -1175,6 +1175,7 @@
     <section class="card">
       <div class="card-head"><div><span class="eyebrow">S.6 · Vermögensabsicherung</span><h2>Protección del patrimonio</h2></div></div>
       <div class="card-body">
+        <p class="goal-intro">En Responsabilidad civil indique también la suma asegurada (Deckungssumme): la responsabilidad del cliente es ilimitada por ley, así que una suma baja lo deja igual de expuesto que no tener RC. Marcada sin importe se mantiene el criterio anterior (cuenta completo).</p>
         <div class="ins-list" id="ins-grid-s6"></div>
       </div>
     </section>
@@ -1940,6 +1941,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     tarifa:{label:'Tarifa / plan (opcional)',kind:'text'},
     beneficioMensual:{label:'Renta mensual asegurada (si queda incapacitado)',kind:'euro'},
     elemental:{label:'¿Incluye daños por fenómenos naturales (inundación, terremoto)?',kind:'checkbox'},
+    sumaAsegurada:{label:'Suma asegurada (Deckungssumme)',kind:'euro'},
     bausparsumme:{label:'Bausparsumme',kind:'euro'},
     saldo:{label:'Saldo / valor actual',kind:'euro'},
     aportacion:{label:'Aportación periódica (opcional)',kind:'euro'},
@@ -2026,9 +2028,10 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   function insRow(key){
     var sec=insSectionKey(key);
     var fields=INS_HOUSEHOLD[key]?['compania','producto','tarifa']:['persona','compania','producto','tarifa'];
-    // BU es la única cobertura donde el importe asegurado cambia la puntuación (ver groupIns): no basta
-    // con tenerla, importa si cubre suficiente gasto — por eso solo aquí se pide la renta mensual.
+    // BU y RC son las coberturas donde el importe asegurado cambia la puntuación (ver groupIns): no
+    // basta con tenerla, importa si cubre lo suficiente — por eso solo aquí se pide el importe.
     if(key==='insIncap') fields=fields.concat(['beneficioMensual']);
+    if(key==='insRC') fields=fields.concat(['sumaAsegurada']);
     // Elementarschaden (inundación, terremoto...) casi nunca es una póliza aparte — viene como añadido
     // dentro de Hogar/Edificio. En vez de crear un seguro nuevo, se pregunta aquí mismo si el contrato
     // ya la incluye; solo registra el dato, no cambia la puntuación (mantenerlo simple).
@@ -2609,6 +2612,18 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       if(!(totExp>0)) return 0; // hay importe pero no se puede juzgar suficiencia sin gastos registrados
       return Math.min(renta/totExp/BU_ADEQUACY_THRESHOLD,1);
     }
+    // RC (insRC): la responsabilidad civil es ILIMITADA por ley — el asegurador solo responde hasta
+    // la Deckungssumme pactada, así que una suma baja deja al cliente expuesto igual que no tener RC.
+    // Umbral AORAES: 3.000.000€, la suma de la tarifa BASIS según el guion oficial DBBV de Haftpflicht
+    // (frente a los 50.000.000€ de la tarifa OPTIMAL, habitual en pólizas DVAG reales) — por debajo,
+    // crédito proporcional. Igual que con BU, sin dato todavía se mantiene el criterio anterior.
+    var RC_ADEQUACY_THRESHOLD=3000000;
+    function rcCoverageCredit(){
+      var rows=getContractRows(insSectionKey('insRC')), any=false, suma=0;
+      rows.forEach(function(r){ var v=r.sumaAsegurada; if(v!==undefined&&String(v).trim()!==''){ any=true; suma=Math.max(suma,parseFloat(v)||0); } });
+      if(!any) return 1;
+      return Math.min(suma/RC_ADEQUACY_THRESHOLD,1);
+    }
     // weighted insurance coverage (respecting "No aplica"); weight 0 = not scored
     function groupIns(keys){
       var num=0,den=0;
@@ -2619,7 +2634,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         den+=w;
         var have=document.querySelector('[data-ins="'+k+'"]');
         if(!(have&&have.checked)) return;
-        num += (k==='insIncap') ? w*buCoverageCredit() : w;
+        num += (k==='insIncap') ? w*buCoverageCredit() : (k==='insRC') ? w*rcCoverageCredit() : w;
       });
       return den>0?num/den*100:100;
     }
