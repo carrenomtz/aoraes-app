@@ -2541,12 +2541,13 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       var key=e.getAttribute('data-sit');
       sit[key]= e.type==='checkbox' ? e.checked : num(e);
     });
-    // BU (insIncap): tenerla no basta si la renta asegurada es baja frente a los gastos — a partir de
-    // ~70% de los gastos mensuales se considera cobertura completa (estándar habitual de suficiencia
-    // de una BU); por debajo, crédito proporcional. Si el asesor aún no registró el importe (campo
-    // vacío, no cero) se mantiene el criterio anterior — marcada = cuenta completo — para no penalizar
-    // de golpe fichas ya guardadas antes de que existiera este campo.
-    var BU_ADEQUACY_THRESHOLD=0.70;
+    // BU (insIncap): tenerla no basta si la renta asegurada es baja frente a los gastos — criterio
+    // AORAES: se asegura el 100% de los gastos totales del cliente (para que no quede en negativo si
+    // se incapacita), así que ese es también el umbral de cobertura completa aquí; por debajo, crédito
+    // proporcional. Si el asesor aún no registró el importe (campo vacío, no cero) se mantiene el
+    // criterio anterior — marcada = cuenta completo — para no penalizar de golpe fichas ya guardadas
+    // antes de que existiera este campo.
+    var BU_ADEQUACY_THRESHOLD=1.0;
     function buCoverageCredit(){
       var rows=getContractRows(insSectionKey('insIncap')), any=false, renta=0;
       rows.forEach(function(r){ var v=r.beneficioMensual; if(v!==undefined&&String(v).trim()!==''){ any=true; renta+=parseFloat(v)||0; } });
