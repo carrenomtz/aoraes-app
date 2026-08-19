@@ -4679,6 +4679,21 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         if(r2){
           var Lp=levelScores(r), Lp2=levelScores(r2);
           var gapTxt=function(d){ return (d&&d.ready&&!d.pensionPending)?(M(d.gap)+pickL('/mes','/mo')):'—'; };
+          // Objetivo/Disponible/Brecha antes y después, en la MISMA escala (denom compartido) —
+          // así la barra de Brecha se ve encoger de verdad en vez de comparar dos gráficos sueltos.
+          var retReady = r.ret&&r.ret.ready&&!r.ret.pensionPending && r2.ret&&r2.ret.ready&&!r2.ret.pensionPending;
+          var vbBlock='';
+          if(retReady){
+            var dispA=r.ret.statePension+r.ret.priv, dispB=r2.ret.statePension+r2.ret.priv, H=140;
+            var denom=Math.max(r.ret.target,dispA,r.ret.gap,r2.ret.target,dispB,r2.ret.gap,1);
+            var vb=function(label,val,color){var h=Math.max(val/denom*H,4);return '<div class="sh-vbar"><div class="col" style="height:'+h+'px;background:'+color+'">'+M(val)+'</div><div class="cap">'+label+'</div></div>';};
+            var vbGroup=function(d,disp){return '<div class="sh-vbars" style="height:'+(H+34)+'px">'+vb(pickL('Objetivo','Target'),d.target,'#14213d')+vb(pickL('Disponible','Available'),disp,'#3a5077')+vb(pickL('Brecha','Gap'),d.gap,'#b0473a')+'</div>';};
+            vbBlock='<h3 style="margin:18px 0 0">'+pickL('Tu Rentenlücke, antes y después','Your Rentenlücke, before and after')+'</h3>'+
+              '<div style="display:flex;gap:22px;margin-top:2px">'+
+                '<div style="flex:1"><div class="sh-card-title" style="text-align:center">'+pickL('Antes','Before')+'</div>'+vbGroup(r.ret,dispA)+'</div>'+
+                '<div style="flex:1"><div class="sh-card-title" style="text-align:center">'+pickL('Después','After')+'</div>'+vbGroup(r2.ret,dispB)+'</div>'+
+              '</div>';
+          }
           pages.push(page('Propuesta','<div class="sh-eyebrow">'+pickL('Comparativa','Comparison')+'</div><h2>'+pickL('Antes y después de la propuesta','Before and after the proposal')+'</h2>'+
             '<p class="sh-lead">'+pickL('Así queda tu situación si se implementan estos productos:','This is how your situation looks if these products are implemented:')+'</p>'+
             '<div style="display:flex;gap:22px;align-items:flex-start;margin:12px 0 18px">'+
@@ -4688,7 +4703,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
             '<div class="sh-grid2" style="grid-template-columns:repeat(2,1fr)">'+
               kpi(pickL('Rentenlücke antes','Rentenlücke before'),gapTxt(r.ret))+
               kpi(pickL('Rentenlücke después','Rentenlücke after'),gapTxt(r2.ret))+
-            '</div>'));
+            '</div>'+vbBlock));
         }
       }
       return pages;
