@@ -1955,7 +1955,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
           'Depot de inversión','Fondos de inversión','ETF','Acciones','Criptomonedas','Bausparvertrag','Otros ahorros o inversiones']},
     propuesta:{types:['BU (Incapacidad laboral)','Pflege (Dependencia)','Seguro de fallecimiento']
         .concat(insurances.filter(function(f){return ['insIncap','insPflege','insVida'].indexOf(f[0])<0;}).map(function(f){return f[1];}))
-        .concat(['Enfermedades graves (Cáncer, Ictus, Infarto)','Basisrente','Inversión','Bauspar','Otro']),
+        .concat(['Enfermedades graves (Cáncer, Ictus, Infarto)','Basisrente','Vermögensaufbau (renta vitalicia con fondos)','Inversión','Bauspar','Otro']),
         fields:['persona','tipo','producto','garantia']} // fallback; ver resolveFields() para el detalle por tipo
   };
   // S.12 · lo que el cliente RECIBE con cada producto propuesto. Es el eje de la sección y de la
@@ -1972,6 +1972,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     'Seguro de fallecimiento':{benefit:'capital',lbl:'Capital que recibe la familia'},
     'Enfermedades graves (Cáncer, Ictus, Infarto)':{benefit:'capital',lbl:'Capital al diagnóstico'},
     'Basisrente':{benefit:'renta',lbl:'Renta vitalicia al jubilarse',aporte:true},
+    'Vermögensaufbau (renta vitalicia con fondos)':{benefit:'renta',lbl:'Renta vitalicia al jubilarse (fondos)',aporte:true},
     'Inversión':{benefit:'capital',lbl:'Capital estimado al final',aporte:true},
     'Bauspar':{benefit:'capital',lbl:'Bausparsumme',aporte:true}
   };
@@ -3871,6 +3872,8 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         PROP_INS_MAP[row.tipo].forEach(function(key){ snap.fields['ins:'+key]=true; });
       } else if(row.tipo==='Basisrente'){
         snap.contract.s5.push({tipo:'Basisrente',persona:persona,compania:'Propuesta',aportacion:aporte,aportFrecuencia:freq});
+      } else if(row.tipo==='Vermögensaufbau (renta vitalicia con fondos)'){
+        snap.contract.s5.push({tipo:'Rentenversicherung',persona:persona,compania:'Propuesta',aportacion:aporte,aportFrecuencia:freq});
       } else if(row.tipo==='Inversión'){
         snap.contract.s7.push({persona:persona,tipo:'Fondos de inversión',entidad:'Propuesta',aportacion:aporte,frecuencia:freq,tieneAportacion:true});
       } else if(row.tipo==='Bauspar'){
