@@ -69,8 +69,13 @@
   .auth-sub{font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin:0 0 22px}
   .auth-box form{display:flex; flex-direction:column; gap:4px; text-align:left}
   .auth-box label{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-top:10px}
-  .auth-box input{font:inherit; font-size:14.5px; padding:10px 12px; border:1.5px solid var(--line,#e2ddd0); border-radius:9px; background:#fff; color:var(--ink)}
+  .auth-box input{font:inherit; font-size:14.5px; padding:10px 12px; border:1.5px solid var(--line,#e2ddd0); border-radius:9px; background:#fff; color:var(--ink); width:100%; box-sizing:border-box}
   .auth-box input:focus{outline:none; border-color:var(--navy)}
+  .auth-pass-wrap{position:relative; display:flex}
+  .auth-pass-wrap input{padding-right:40px}
+  .auth-eye{position:absolute; right:4px; top:50%; transform:translateY(-50%); width:32px; height:32px; border:none; background:none; cursor:pointer; font-size:15px; opacity:.55; border-radius:6px; line-height:1}
+  .auth-eye:hover{opacity:.9; background:rgba(20,33,61,.06)}
+  #auth-pass2-wrap[hidden], #auth-pass2-label[hidden]{display:none}
   .auth-err{font-size:12.5px; color:#b0473a; background:rgba(176,71,58,.08); border:1px solid rgba(176,71,58,.25); border-radius:8px; padding:8px 10px; margin-top:10px}
   .auth-err[hidden]{display:none}
   #auth-submit{margin-top:16px; font:inherit; font-weight:700; font-size:14px; padding:11px; border:none; border-radius:9px; background:var(--navy); color:#fff; cursor:pointer}
@@ -399,7 +404,15 @@
         <label for="auth-email">Correo</label>
         <input type="email" id="auth-email" autocomplete="username" required>
         <label for="auth-pass">Contraseña</label>
-        <input type="password" id="auth-pass" autocomplete="current-password" required minlength="6">
+        <div class="auth-pass-wrap">
+          <input type="password" id="auth-pass" autocomplete="current-password" required minlength="6">
+          <button type="button" class="auth-eye" id="auth-eye" aria-label="Mostrar contraseña" title="Mostrar contraseña">👁</button>
+        </div>
+        <label for="auth-pass2" id="auth-pass2-label" hidden>Repetir contraseña</label>
+        <div class="auth-pass-wrap" id="auth-pass2-wrap" hidden>
+          <input type="password" id="auth-pass2" autocomplete="new-password" minlength="6">
+          <button type="button" class="auth-eye" id="auth-eye2" aria-label="Mostrar contraseña" title="Mostrar contraseña">👁</button>
+        </div>
         <div class="auth-err" id="auth-err" hidden></div>
         <button type="submit" id="auth-submit">Entrar</button>
       </form>
@@ -547,14 +560,33 @@
       document.getElementById('auth-submit').textContent = isSignup ? 'Crear cuenta' : 'Entrar';
       this.textContent = isSignup ? '¿Ya tienes cuenta? Inicia sesión' : '¿Primera vez? Crea tu cuenta';
       document.getElementById('auth-err').hidden = true;
+      document.getElementById('auth-pass2-wrap').hidden = !isSignup;
+      document.getElementById('auth-pass2-label').hidden = !isSignup;
+      document.getElementById('auth-pass2').required = isSignup;
+      if(!isSignup) document.getElementById('auth-pass2').value = '';
     });
+    function wireEye(btnId, inputId){
+      document.getElementById(btnId).addEventListener('click', function(){
+        var input = document.getElementById(inputId);
+        var showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+        this.textContent = showing ? '👁' : '🙈';
+        this.title = showing ? 'Mostrar contraseña' : 'Ocultar contraseña';
+      });
+    }
+    wireEye('auth-eye', 'auth-pass');
+    wireEye('auth-eye2', 'auth-pass2');
     document.getElementById('auth-form').addEventListener('submit', function(e){
       e.preventDefault();
       var email = document.getElementById('auth-email').value.trim();
       var pass = document.getElementById('auth-pass').value;
       var errEl = document.getElementById('auth-err');
       var btn = document.getElementById('auth-submit');
-      errEl.hidden = true; btn.disabled = true;
+      errEl.hidden = true;
+      if(isSignup && pass !== document.getElementById('auth-pass2').value){
+        errEl.textContent = 'Las contraseñas no coinciden — revísalas.'; errEl.hidden = false; return;
+      }
+      btn.disabled = true;
       var action = isSignup ? createUserWithEmailAndPassword : signInWithEmailAndPassword;
       action(auth, email, pass).catch(function(err){
         var msg = 'No se pudo continuar. Revisa el correo y la contraseña.';
