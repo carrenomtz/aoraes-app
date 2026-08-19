@@ -4621,6 +4621,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var fecha=fmtDate(fechaISO||new Date().toISOString().slice(0,10));
     var edad=ageFromDOB(($('#m_fecha_nac')||{}).value)||0;
     var PHYS=0, _footName='';
+    // el informe puede llamar a pyramidSVG() varias veces (pirámide principal, Antes, Después) y todas
+    // acaban en el mismo documento — sin un prefijo por llamada, los <linearGradient id="ig0..5"> se
+    // repetían y el navegador resolvía "url(#ig0)" con el PRIMER gradiente de ese id en todo el
+    // documento, así que la pirámide "Después" se pintaba con los colores de la primera pirámide.
+    var PYR_CALL=0;
     function cover(inner){PHYS++;return '<div class="sheet cover">'+inner+'</div>';}
     function divider(inner){PHYS++;return '<div class="sheet divider">'+inner+'</div>';}
     function page(sec,inner){PHYS++;return '<div class="sheet"><div class="sh-watermark"><img src="./logo-icon-navy.png" alt=""></div><div class="sheet-head"><span class="sh-brand"><img src="./logo-icon-navy.png" alt="">AORAES</span><span class="sh-sec">'+esc(sec)+'</span></div><div class="sheet-body">'+inner+'</div><div class="sheet-foot"><span>'+pickL('AORAES · Informe para ','AORAES · Report for ')+esc(_footName||cliente||pickL('cliente','client'))+'</span>'+(asesor?('<span>'+pickL('Asesor/a: ','Advisor: ')+esc(asesor)+'</span>'):'')+'<span>'+PHYS+'</span></div></div>';}
@@ -4701,8 +4706,9 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var S=[];
     var pctR=function(x){return Math.round((x||0)*100)+'%';};
     function pyramidSVG(L){
+      var callId=PYR_CALL++;
       var defs='', gid=0;
-      function grad(col){var id='ig'+(gid++);defs+='<linearGradient id="'+id+'" x1="0" y1="0" x2="0.25" y2="1"><stop offset="0" stop-color="'+pyrShade(col,26)+'"/><stop offset="0.5" stop-color="'+col+'"/><stop offset="1" stop-color="'+pyrShade(col,-20)+'"/></linearGradient>';return 'url(#'+id+')';}
+      function grad(col){var id='ig'+callId+'_'+(gid++);defs+='<linearGradient id="'+id+'" x1="0" y1="0" x2="0.25" y2="1"><stop offset="0" stop-color="'+pyrShade(col,26)+'"/><stop offset="0.5" stop-color="'+col+'"/><stop offset="1" stop-color="'+pyrShade(col,-20)+'"/></linearGradient>';return 'url(#'+id+')';}
       function txt(x,y,size,weight,t,fill,halo){return '<text x="'+x+'" y="'+y+'" text-anchor="middle" fill="'+(fill||'#ffffff')+'" font-family="Manrope,sans-serif" font-size="'+size+'" font-weight="'+weight+'"'+(halo?' style="paint-order:stroke;stroke:rgba(14,24,48,.30);stroke-width:2.4px;stroke-linejoin:round"':'')+'>'+t+'</text>';}
       function poly(pts,col){return '<polygon points="'+pts+'" fill="'+grad(col)+'" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round"/>';}
       function lerp(a,b,t){return a+(b-a)*t;}
