@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AORAES · Análisis Financiero Personal</title>
@@ -4915,6 +4914,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     document.querySelectorAll('[data-lang]').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-lang')===lang);});
     try{document.documentElement.setAttribute('lang',lang);}catch(e){}
   }
+  window.applyLang=applyLang;
   document.addEventListener('click',function(e){var lb=e.target.closest&&e.target.closest('[data-lang]'); if(lb){applyLang(lb.getAttribute('data-lang'));}});
   function pickL(es,en){return (typeof lang!=='undefined'&&lang==='en')?en:es;}
   function tL(es){return (typeof lang!=='undefined'&&lang==='en'&&I18N[es])?I18N[es]:es;}

@@ -89,6 +89,13 @@
     border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:7px 13px; cursor:pointer; flex:0 0 auto;
   }
   .signout-btn:hover{background:rgba(255,255,255,.12); color:#fff}
+  .lang-switch-top{display:flex; gap:1px; flex:0 0 auto}
+  .lang-switch-top button{
+    font:inherit; font-size:11px; font-weight:700; letter-spacing:.03em; color:#7d8db0;
+    background:none; border:none; padding:6px 7px; cursor:pointer; border-radius:6px; transition:color .14s var(--ease)
+  }
+  .lang-switch-top button:hover{color:#c9d3e6}
+  .lang-switch-top button.active{color:var(--gold-soft)}
   .pending-msg{font-size:13.5px; line-height:1.6; color:var(--ink); text-align:left; margin-top:6px}
   .pending-msg p{margin:0 0 10px}
   .pending-msg p:last-child{margin-bottom:0; color:var(--muted); font-size:12.5px}
@@ -495,6 +502,11 @@
       <button type="button" data-go="medico">Preguntas médicas</button>
       <button type="button" data-go="asesores" id="nav-asesores" hidden>Asesores</button>
     </nav>
+    <div class="lang-switch-top" id="lang-switch-top" role="group" aria-label="Idioma">
+      <button type="button" data-lang="es">ES</button>
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="de">DE</button>
+    </div>
     <button type="button" class="signout-btn" id="signout-btn" title="Cerrar sesión">Cerrar sesión</button>
   </div>
 
@@ -1172,6 +1184,33 @@
        (que siguen sirviendo solo al modo "sin cliente" de la navegación superior). Se precargan
        los 3 en cuanto se abre la ficha para que cambiar de pestaña sea instantáneo, sin saltos. */
     var wsFrames={analisis:{el:null,ready:false,_opened:null},jubilacion:{el:null,ready:false,_applied:null},medico:{el:null,ready:false,_client:null}};
+
+    /* ---------- Idioma ----------
+       Los 3 embebidos (Análisis, Jubilación, Preguntas médicas) ya traían su propio selector
+       ES/EN/DE — este de arriba solo centraliza el cambio para no tener que abrir cada uno y
+       buscarlo. Cada iframe ya lee aoraes_lang de localStorage al cargar, así que uno recién
+       creado toma el idioma solo; aquí solo hace falta empujarlo a los que ya estaban abiertos.
+       El resto de la app (cockpit, panel Asesores, pantallas de acceso) sigue en español por ahora. */
+    var APP_LANG_KEY='aoraes_lang';
+    function getAppLang(){ try{ return localStorage.getItem(APP_LANG_KEY)||'es'; }catch(e){ return 'es'; } }
+    function applyLangToFrame(win,kind,lang){
+      try{
+        if(kind==='jubilacion' && win.applyLangJub) win.applyLangJub(lang);
+        else if(win.applyLang) win.applyLang(lang);
+      }catch(e){}
+    }
+    function setAppLang(lang){
+      if(lang!=='en'&&lang!=='de') lang='es';
+      try{ localStorage.setItem(APP_LANG_KEY,lang); }catch(e){}
+      document.querySelectorAll('#lang-switch-top [data-lang]').forEach(function(b){ b.classList.toggle('active',b.getAttribute('data-lang')===lang); });
+      for(var k in MOD){ if(MOD[k].el && MOD[k].ready) applyLangToFrame(MOD[k].el.contentWindow,k,lang); }
+      for(var k2 in wsFrames){ if(wsFrames[k2].el && wsFrames[k2].ready) applyLangToFrame(wsFrames[k2].el.contentWindow,k2,lang); }
+    }
+    document.getElementById('lang-switch-top').addEventListener('click', function(e){
+      var b=e.target.closest('[data-lang]'); if(b) setAppLang(b.getAttribute('data-lang'));
+    });
+    setAppLang(getAppLang());
+
     function ensureWsFrame(kind){
       if(wsFrames[kind].el) return wsFrames[kind].el;
       var urlMap={analisis:'./analisis.html',jubilacion:'./jubilacion.html',medico:'./preguntas-medicas.html'};
