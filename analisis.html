@@ -1918,10 +1918,14 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
 
   // insurances — grouped into must-have and nice-to-have
   var insLabel={}; insurances.forEach(function(f){insLabel[f[0]]=f[1];});
-  var insMust=['insSalud','insIncap','insPflege','insRC'];
-  var insNice=['insAuto','insHogar','insGebaude','insGlas','insAccidentes','insLegal','insVida'];
-  // protection scoring weights: must-haves weigh most; Vida/Glas/Accidentes/Legal (weight 0) never affect the score
-  var insWeight={insSalud:2,insIncap:2,insPflege:2,insVida:0,insRC:2,insAuto:1,insHogar:1,insGebaude:1,insGlas:0,insAccidentes:0,insLegal:0};
+  var insMust=['insSalud','insIncap','insPflege','insRC','insVida'];
+  var insNice=['insAuto','insHogar','insGebaude','insGlas','insAccidentes','insLegal'];
+  // protection scoring weights: must-haves weigh most; Glas/Accidentes/Legal (weight 0) never affect the
+  // score. insVida solía tener peso 0 (invisible para la pirámide) — un cliente sin seguro de
+  // fallecimiento podía marcar "familia" al 100% con solo salud+incapacidad+dependencia, aunque su
+  // familia se quedara sin ingresos ni hipoteca cubierta si él/ella faltara. Ahora pesa igual que las
+  // demás coberturas esenciales.
+  var insWeight={insSalud:2,insIncap:2,insPflege:2,insVida:2,insRC:2,insAuto:1,insHogar:1,insGebaude:1,insGlas:0,insAccidentes:0,insLegal:0};
   // generic repeatable contract-row config — must be defined before insRow()/insGroup() run (below)
   var FIELD_META={
     tipo:{label:'Tipo de producto',kind:'type'},
@@ -2397,7 +2401,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     '</div>';
 
     h+='<div id="pension-sec-oficial'+sfx+'" class="pension-sec" style="display:none">'+
-      '<div class="row"><label for="f-sit-pensionPublica'+sfx+'">Pensión pública según Renteninformation (€/mes)</label><span class="euro"><input id="f-sit-pensionPublica'+sfx+'" type="number" min="0" data-sit="pensionPublica_'+l+'" placeholder="importe oficial proyectado"></span></div>'+
+      '<div class="row"><label for="f-sit-pensionPublica'+sfx+'">Pensión pública BRUTA según Renteninformation (€/mes)</label><span class="euro"><input id="f-sit-pensionPublica'+sfx+'" type="number" min="0" data-sit="pensionPublica_'+l+'" placeholder="importe oficial proyectado, en bruto"></span></div>'+
       '<div class="row"><label for="f-sit-renteInfoFecha'+sfx+'">Fecha de esa Renteninformation</label><input id="f-sit-renteInfoFecha'+sfx+'" type="date"></div>'+
     '</div>';
 
@@ -2685,10 +2689,12 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         pension.totalPoints=totalPoints; pension.existingPoints=existingPoints; pension.otherPoints=otherPoints;
         pension.confidence=confidence; pension.accessFactor=accessFactor; pension.yearsUntilRetirement=yearsUntilRetirement;
         pension.regularAge=getRegularRetirementAge(dobP); pension.ready=true; pension.pensionKnown=known;
-        // El importe oficial ya lo introduce el asesor en los términos que considera comparables;
-        // el estimado por Entgeltpunkte es bruto y se convierte de forma aproximada para compararlo
-        // con el objetivo (definido en euros netos) — ver AORAES_GERMANY_VALUES.stateNetOfGrossFactor.
-        pension.statePension=!known?0:((pubInputRaw>0)?pension.statePensionGross:pension.statePensionGross*GV.stateNetOfGrossFactor);
+        // La Renteninformation oficial de la Deutsche Rentenversicherung también informa el importe en
+        // BRUTO (antes de KV/PV y de IRPF) — igual que la estimación por Entgeltpunkte — así que el
+        // mismo factor de conversión a neto debe aplicarse aquí también. Antes solo se aplicaba a la
+        // estimación por puntos y se saltaba precisamente en la vía de mayor confianza (dato oficial),
+        // subestimando la Rentenlücke justo cuando el asesor tenía el dato más fiable.
+        pension.statePension=known?(pension.statePensionGross*GV.stateNetOfGrossFactor):0;
         return pension;
       }
       // Objetivo y capital disponible de una persona — el objetivo de sustitución solo aplica al ingreso
@@ -2703,7 +2709,13 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         var target=(ownIncome-contIncome)*TARGET;
         var aporteJub=sit['aporteJubilacion_'+letter]||0;
         var pot=fvAnnuity(aporteJub,PROD_RETURN/12,nM);
-        var priv=pot*PROD_ANN_NET+contIncome;
+        // pot está en euros NOMINALES del año de jubilación (PROD_RETURN es neta de costes/impuestos,
+        // no de inflación) — todo lo demás en este bloque trabaja en euros de HOY (el propio target y
+        // needMonthly lo están), así que hay que deflactar la renta que sale de pot con el mismo
+        // infFactor que luego se usa para volver a proyectarla. Sin esto, priv se comparaba directo
+        // contra needMonthly y la brecha salía subestimada — tanto más cuanto mayor el horizonte y la
+        // rentabilidad asumida. contIncome (alquiler/intereses de HOY) no se toca, ya está en euros de hoy.
+        var priv=(pot*PROD_ANN_NET)/infFactor+contIncome;
         var statePension=pension.statePension, pensionKnown=pension.pensionKnown;
         var needMonthly=0, gap=0, reqCapNom=0, reqCapToday=0, saveM=0;
         if(pensionKnown){
@@ -2773,7 +2785,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // base pillars of the wealth pyramid
     var pillars={
       ahorro:Math.round(s.emergencia),
-      familia:Math.round(groupIns(['insSalud','insIncap','insPflege','insAccidentes'])),
+      familia:Math.round(groupIns(['insSalud','insIncap','insPflege','insAccidentes','insVida'])),
       patrimonio:Math.round(groupIns(['insRC','insHogar','insGebaude','insAuto','insLegal']))
     };
 
@@ -3186,7 +3198,8 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var p=iso.split('-'); if(p.length!==3)return iso;
     return p[2]+'/'+p[1]+'/'+p[0];
   }
-  function avgParts(parts){var t=0;parts.forEach(function(p){t+=p[1];});return parts.length?Math.round(t/parts.length):0;}
+  // parts: [label, score] o [label, score, peso] — peso por defecto 1 (media simple, como antes).
+  function avgParts(parts){var t=0,wsum=0;parts.forEach(function(p){var w=p.length>2?p[2]:1;t+=p[1]*w;wsum+=w;});return wsum?Math.round(t/wsum):0;}
   function levelScores(r){
     var s=r.scores, p=r.pillars;
     var l1=[['Ahorro',p.ahorro],['Tú y tu familia',p.familia],['Patrimonio',p.patrimonio]];
@@ -3204,7 +3217,10 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     }else{
       jubScore=0; // sin plan privado y/o sin ingresos para estimar
     }
-    var l2=[['Plan de Jubilación', Math.round(jubScore)]];
+    // Jubilación pesa el doble que Vivienda en el promedio de Nivel 2: son dos metas independientes con
+    // urgencia distinta, y una media simple dejaba una jubilación resuelta al 100% cayendo a 50% (ámbar)
+    // solo porque el cliente todavía no ha empezado a ahorrar para la vivienda, un objetivo aparte.
+    var l2=[['Plan de Jubilación', Math.round(jubScore), 2]];
     // Vivienda: tener CUALQUIER Bausparvertrag no significa "objetivo cubierto" — un Bausparsumme de
     // 30.000€ no compra una casa. Puntuamos por tamaño del objetivo (frente a 250.000€, precio de
     // referencia mínimo para marcar el 100%; por debajo, proporcional) y por avance dentro de ese
@@ -3459,17 +3475,20 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       ab.innerHTML='<div class="nw-empty">No hay excedente mensual disponible para asignar. El primer objetivo es equilibrar ingresos y gastos.</div>';
     }else{
       var rem=flow, efb=(r.efBase||0), ah=(r.ahorro||0);
-      // Orden de prioridad tipo planificación financiera (CFP):
-      var a1=Math.min(rem,Math.max(1*efb-ah,0)); rem-=a1;                                    // 1. colchón inicial (1 mes)
-      var card=(r.cardPay||0), a2=0;
-      if(card>0 && (r.deuda||0)>0){ a2=Math.min(rem,card); rem-=a2; }                        // 2. deuda cara (tarjeta)
-      var efFull=Math.max(6*efb-ah-a1,0), a3=Math.min((ah>=3*efb?rem*0.15:rem*0.5),efFull); rem-=a3;   // 3. fondo de emergencia (suave si ya hay 3 meses)
+      // Orden de prioridad tipo planificación financiera (CFP). La deuda cara va ANTES del colchón
+      // inicial — el propio diagnóstico de abajo la marca como prioridad #1 sobre la liquidez ("suele
+      // salir más a cuenta amortizarla que empezar a ahorrar"); este reparto en euros tiene que
+      // coincidir con eso, no contradecirlo en la misma pantalla.
+      var card=(r.cardPay||0), a1=0;
+      if(card>0 && (r.deuda||0)>0){ a1=Math.min(rem,card); rem-=a1; }                         // 1. deuda cara (tarjeta)
+      var a2=Math.min(rem,Math.max(1*efb-ah,0)); rem-=a2;                                     // 2. colchón inicial (1 mes)
+      var efFull=Math.max(6*efb-ah-a2,0), a3=Math.min((ah>=3*efb?rem*0.15:rem*0.5),efFull); rem-=a3;   // 3. fondo de emergencia (suave si ya hay 3 meses)
       var a4=0; if(r.ret.ready && r.ret.gap>0){ a4=Math.min(rem,r.ret.saveM); rem-=a4; }      // 4. jubilación (Rentenlücke)
       var a5=Math.max(rem,0);                                                                 // 5. inversión / crecimiento
       var invDesc=r.deseaVivienda?'Construir patrimonio y, si procede, ahorrar para la entrada de la vivienda.':'Construir patrimonio a largo plazo.';
       var rows=[
-        ['#b0473a','Colchón inicial',a1,'Un primer mes de gasto total, disponible ya.'],
-        ['#963a2d','Amortizar deuda cara',a2,'Doblar el pago de la tarjeta para saldarla antes.'],
+        ['#963a2d','Amortizar deuda cara',a1,'Doblar el pago de la tarjeta para saldarla antes.'],
+        ['#b0473a','Colchón inicial',a2,'Un primer mes de gasto total, disponible ya.'],
         ['#e3d4ab','Fondo de emergencia',a3,'Completar hasta 3-6 meses de gasto total.'],
         ['#c9a961','Jubilación',a4,'Cerrar la Rentenlücke aprovechando la ventaja fiscal (Rürup).'],
         ['#c9a961','Inversión / crecimiento',a5,invDesc]
@@ -3613,7 +3632,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var adTxt=(r.efBase||0)<=0?'Introduzca gastos y ahorro líquido para evaluar el colchón.':
       ('Colchón de <b>'+meses.toFixed(1)+' meses</b> de gasto total (objetivo 3-6 meses).');
     secs.push({group:'ahorro',tier:'Nivel 1',name:'Ahorro',score:p.ahorro,text:adTxt});
-    var mFam=missingIns(['insSalud','insIncap','insAccidentes']);
+    var mFam=missingIns(['insSalud','insIncap','insAccidentes','insVida']);
     secs.push({group:'familia',tier:'Nivel 1',name:'Tú y tu familia',score:p.familia,
       text:mFam.length?('Falta contratar: <b>'+mFam.map(tL).join(', ')+'</b>.'):pickL('Salud e incapacidad laboral cubiertas.','Health and disability covered.')});
     var mPat=missingIns(['insRC','insHogar','insAuto','insLegal']);
@@ -3902,7 +3921,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var efB=g(rA,'efBase')+g(rB,'efBase');
     var efTarget=6*efB, efMonths=efB>0?ahorro/efB:0, efPct=efTarget>0?Math.min(ahorro/efTarget*100,100):0;
     var efColor=efPct>=100?'var(--green)':efPct>=50?'var(--amber)':'var(--red)';
-    var pa=(rA.ret&&rA.ret.ready)?rA.ret:null, pb=(rB.ret&&rB.ret.ready)?rB.ret:null;
+    // igual que en el resto de vistas (gapTxt, S.12, etc.): "ready" solo dice que hay datos para
+    // proyectar la fecha de jubilación, no que la pensión pública ya se conozca — sin el filtro de
+    // pensionPending, una persona que aún no eligió método de estimación se sumaba con gap≈target
+    // completo (pensión pública tratada como 0€ real en vez de "todavía no se sabe").
+    var pa=(rA.ret&&rA.ret.ready&&!rA.ret.pensionPending)?rA.ret:null, pb=(rB.ret&&rB.ret.ready&&!rB.ret.pensionPending)?rB.ret:null;
     var pTarget=(pa?pa.target:0)+(pb?pb.target:0), pDisp=(pa?pa.statePension+pa.priv:0)+(pb?pb.statePension+pb.priv:0);
     var pGap=(pa?pa.gap:0)+(pb?pb.gap:0), pSave=(pa?pa.saveM:0)+(pb?pb.saveM:0), pCapNom=(pa?pa.reqCapNom:0)+(pb?pb.reqCapNom:0);
     var per=function(a,b){return '<span class="per">'+nA+': '+M(a)+' · '+nB+': '+M(b)+'</span>';};
@@ -4902,14 +4925,17 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       var allocInner;
       if(r.flow<=0){ allocInner='<p style="color:#8a8470">No hay excedente mensual disponible. El primer objetivo es equilibrar ingresos y gastos.</p>'; }
       else {
+        // La deuda cara va ANTES del colchón inicial — buildFinancialPriorities() ya la coloca como
+        // prioridad #1 sobre la liquidez ("suele salir más a cuenta amortizarla que empezar a
+        // ahorrar"); el reparto en euros tiene que coincidir con eso, no contradecirlo en la misma página.
         var rem=r.flow, efb=(r.efBase||0), ah=(r.ahorro||0);
-        var a1=Math.min(rem,Math.max(1*efb-ah,0)); rem-=a1;
-        var card=(r.cardPay||0), a2=0;
-        if(card>0 && (r.deuda||0)>0){ a2=Math.min(rem,card); rem-=a2; }
-        var efFull=Math.max(6*efb-ah-a1,0), a3=Math.min((ah>=3*efb?rem*0.15:rem*0.5),efFull); rem-=a3;
+        var card=(r.cardPay||0), a1=0;
+        if(card>0 && (r.deuda||0)>0){ a1=Math.min(rem,card); rem-=a1; }
+        var a2=Math.min(rem,Math.max(1*efb-ah,0)); rem-=a2;
+        var efFull=Math.max(6*efb-ah-a2,0), a3=Math.min((ah>=3*efb?rem*0.15:rem*0.5),efFull); rem-=a3;
         var a4=0; if(r.ret.ready && r.ret.gap>0){ a4=Math.min(rem,r.ret.saveM); rem-=a4; }
         var a5=Math.max(rem,0);
-        var arows=[['#b0473a','Colchón inicial',a1],['#963a2d','Amortizar deuda cara',a2],['#e3d4ab','Fondo de emergencia',a3],['#c9a961','Jubilación',a4],['#c9a961','Inversión / crecimiento',a5]].filter(function(x){return x[2]>0.5;});
+        var arows=[['#963a2d','Amortizar deuda cara',a1],['#b0473a','Colchón inicial',a2],['#e3d4ab','Fondo de emergencia',a3],['#c9a961','Jubilación',a4],['#c9a961','Inversión / crecimiento',a5]].filter(function(x){return x[2]>0.5;});
         if(!arows.length)arows=[['#c9a961','Inversión / crecimiento',r.flow]];
         var covMissP=missingIns(['insSalud','insIncap','insRC']);
         var covWarnP=covMissP.length?('<p class="sh-note" style="color:#b0473a"><b>Antes de repartir:</b> aún faltan coberturas esenciales ('+covMissP.map(tL).join(', ')+'). Reserve presupuesto para contratarlas junto con este reparto.</p>'):'';
@@ -4961,7 +4987,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       var efB=g(rA,'efBase')+g(rB,'efBase');
       var efTarget=6*efB, efMonths=efB>0?ahorro/efB:0, efPct=efTarget>0?Math.min(ahorro/efTarget*100,100):0;
       var efColor=efPct>=100?'#c9a961':efPct>=50?'#e3d4ab':'#b0473a';
-      var pa=(rA&&rA.ret&&rA.ret.ready)?rA.ret:null, pb=(rB&&rB.ret&&rB.ret.ready)?rB.ret:null;
+      var pa=(rA&&rA.ret&&rA.ret.ready&&!rA.ret.pensionPending)?rA.ret:null, pb=(rB&&rB.ret&&rB.ret.ready&&!rB.ret.pensionPending)?rB.ret:null;
       var pTarget=(pa?pa.target:0)+(pb?pb.target:0), pDisp=(pa?pa.statePension+pa.priv:0)+(pb?pb.statePension+pb.priv:0);
       var pGap=(pa?pa.gap:0)+(pb?pb.gap:0), pSave=(pa?pa.saveM:0)+(pb?pb.saveM:0), pCapNom=(pa?pa.reqCapNom:0)+(pb?pb.reqCapNom:0);
       var perRow=function(lab,a,b,tot){return '<div class="sh-kv"><span>'+lab+'</span><b>'+M(tot)+'</b></div><div style="font-size:8.5pt;color:#8a8470;margin:-4px 0 6px">'+esc(nA)+': '+M(a)+' · '+esc(nB)+': '+M(b)+'</div>';};
@@ -5191,9 +5217,9 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         var r=compute();
         if(!r || !(r.flow>0)) return null;
         var rem=r.flow, efb=(r.efBase||0), ah=(r.ahorro||0);
-        var a1=Math.min(rem,Math.max(1*efb-ah,0)); rem-=a1;
         var card=(r.cardPay||0); if(card>0 && (r.deuda||0)>0){ rem-=Math.min(rem,card); }
-        var efFull=Math.max(6*efb-ah-a1,0); rem-=Math.min((ah>=3*efb?rem*0.15:rem*0.5),efFull);
+        var a2=Math.min(rem,Math.max(1*efb-ah,0)); rem-=a2;
+        var efFull=Math.max(6*efb-ah-a2,0); rem-=Math.min((ah>=3*efb?rem*0.15:rem*0.5),efFull);
         if(r.ret && r.ret.ready && r.ret.gap>0) return Math.round(Math.min(rem, r.ret.saveM));
         return null;
       }catch(e){ return null; }
