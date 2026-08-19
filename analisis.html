@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AORAES · Análisis Financiero Personal</title>
@@ -247,6 +248,11 @@
 
   .goal-count{font-size:12px;letter-spacing:1px;color:var(--gold-soft);background:rgba(201,169,97,.16);border:1px solid rgba(201,169,97,.4);padding:4px 10px;border-radius:20px;font-weight:600}
   .goal-intro{font-size:13px;color:var(--muted);margin:0 0 14px}
+  .prop-preview{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px;padding:14px 18px;background:var(--gold-tint,#f7f1e3);border:1px solid var(--gold-soft,#e3d4ab);border-radius:var(--r-md,10px)}
+  .prop-preview[hidden]{display:none}
+  .prop-preview-item{display:flex;flex-direction:column;gap:2px}
+  .prop-preview-item span{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .prop-preview-item b{font-family:'Fraunces',serif;font-size:15px;color:var(--navy,#14213d)}
   .readonly-val{font-size:14px;color:var(--ink);font-weight:600}
   .pension-path-btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:10px 0 16px}
   @media(max-width:720px){.pension-path-btns{grid-template-columns:1fr}}
@@ -1297,6 +1303,16 @@
       </div>
     </section>
 
+    <section class="card">
+      <div class="card-head"><div><span class="eyebrow">S.12 · Vorschlag</span><h2>Propuesta</h2></div></div>
+      <div class="card-body">
+        <p class="goal-intro">Registre aquí los productos que se van a proponer al cliente, con el aporte recomendado para cada uno. Esta lista alimenta directamente la página "Propuesta" del informe final — es una simulación, no se guarda como dato real del cliente en S.2–S.11.</p>
+        <div class="contract-table" id="contract-propuesta-body"></div>
+        <button type="button" class="cr-add" data-craddition="propuesta">+ Añadir producto a la propuesta</button>
+        <div class="prop-preview" id="prop-preview" hidden></div>
+      </div>
+    </section>
+
   </div>
   <aside class="live-panel" id="live-panel">
     <div class="lp-card">
@@ -1924,7 +1940,9 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     s5:{types:['Rentenversicherung','Lebensversicherung','Basisrente','Riester-Rente','Betriebliche Altersversorgung','Direktversicherung','Ausbildungsvorsorge'],
         fields:['tipo','persona','compania','aportacion','aportFrecuencia']},
     s7:{types:['Cuenta corriente / Girokonto','Cuenta de ahorro / Tagesgeldkonto','Depósito a plazo / Festgeld','Sparbuch / Spareinlage',
-          'Depot de inversión','Fondos de inversión','ETF','Acciones','Criptomonedas','Bausparvertrag','Otros ahorros o inversiones']}
+          'Depot de inversión','Fondos de inversión','ETF','Acciones','Criptomonedas','Bausparvertrag','Otros ahorros o inversiones']},
+    propuesta:{types:['BU (Incapacidad laboral)','Inversión','Basisrente','Pflege (Dependencia)','Seguro de fallecimiento','Bauspar','Seguros patrimoniales','Otro'],
+        fields:['tipo','persona','compania','producto','aportacion','aportFrecuencia']}
   };
   // S.7 · which fields appear once a "Tipo de producto" is chosen — everything else stays hidden.
   // Persona + Tipo are always shown first (see resolveFields). Array items are either a field key
@@ -2921,6 +2939,18 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     renderLive(r);
     renderPensionExplain(r);
     renderTaxEstimate();
+    renderPropuestaPreview(r);
+  }
+  function renderPropuestaPreview(r){
+    var box=$('#prop-preview'); if(!box) return;
+    if(!hasProposal()){ box.hidden=true; return; }
+    var r2=computePerson(buildProposalSnap());
+    if(!r2){ box.hidden=true; return; }
+    box.hidden=false;
+    var gapTxt=function(d){ return (d&&d.ready&&!d.pensionPending)?(eur.format(Math.round(d.gap))+'/mes'):'—'; };
+    box.innerHTML=
+      '<div class="prop-preview-item"><span>Puntuación</span><b>'+r.total+' → '+r2.total+'</b></div>'+
+      '<div class="prop-preview-item"><span>Rentenlücke</span><b>'+gapTxt(r.ret)+' → '+gapTxt(r2.ret)+'</b></div>';
   }
 
   var CONFIDENCE_LABEL={alta:'Confianza alta',media:'Confianza media',baja:'Confianza baja',orientativa:'Aproximación orientativa'};
@@ -3708,7 +3738,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   }
 
   /* ---------- couple mode ---------- */
-  function blankState(){ return {meta:{},fields:{},goals:[],goalPriority:[],tri:{rent:2,flex:1,seg:2},expMode:'cat',pensionMethod:'',hasChildren:false,children:[],contract:{s5:[],s7:[]},customItems:[]}; }
+  function blankState(){ return {meta:{},fields:{},goals:[],goalPriority:[],tri:{rent:2,flex:1,seg:2},expMode:'cat',pensionMethod:'',hasChildren:false,children:[],contract:{s5:[],s7:[],propuesta:[]},customItems:[]}; }
   function personLabel(p){
     var snap = (couple.view===p && p!=='conjunto') ? collectState() : personStore[p];
     var nm = snap && snap.meta ? (snap.meta.m_cliente||'').trim() : '';
@@ -3724,6 +3754,40 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var backup=collectState();
     try{ applyState(snap,true); return compute(); }
     finally{ applyState(backup,true); }
+  }
+  /* ---------- S.12 Propuesta: simulación "qué pasaría si" ----------
+     Los productos propuestos (tabla S.12) no son datos reales del cliente todavía — para comparar
+     antes/después se clona el estado actual con collectState(), se "activan" los productos
+     propuestos sobre esa copia, y se recalcula con computePerson() (backup/restore automático).
+     Nunca se toca compute() ni el estado real: cero riesgo para la ficha S.2-S.11. */
+  function hasProposal(){
+    return getContractRows('propuesta').some(function(row){ return row.tipo || row.producto || (parseFloat(row.aportacion)||0)>0; });
+  }
+  var PROP_INS_MAP={
+    'BU (Incapacidad laboral)':['insIncap'],
+    'Pflege (Dependencia)':['insPflege'],
+    'Seguro de fallecimiento':['insVida'],
+    'Seguros patrimoniales':['insRC','insHogar','insGebaude','insGlas','insLegal','insAuto']
+  };
+  function buildProposalSnap(){
+    var snap=JSON.parse(JSON.stringify(collectState()));
+    snap.contract=snap.contract||{};
+    snap.contract.s5=(snap.contract.s5||[]).slice();
+    snap.contract.s7=(snap.contract.s7||[]).slice();
+    var rows=getContractRows('propuesta').filter(function(row){ return row.tipo || row.producto || (parseFloat(row.aportacion)||0)>0; });
+    rows.forEach(function(row){
+      var persona=row.persona||'A', freq=(row.aportFrecuencia==='anual')?'anual':'mensual', aporte=row.aportacion||0;
+      if(PROP_INS_MAP[row.tipo]){
+        PROP_INS_MAP[row.tipo].forEach(function(key){ snap.fields['ins:'+key]=true; });
+      } else if(row.tipo==='Basisrente'){
+        snap.contract.s5.push({tipo:'Basisrente',persona:persona,compania:row.compania||'Propuesta',aportacion:aporte,aportFrecuencia:freq});
+      } else if(row.tipo==='Inversión'){
+        snap.contract.s7.push({persona:persona,tipo:'Fondos de inversión',entidad:row.compania||'Propuesta',aportacion:aporte,frecuencia:freq,tieneAportacion:true});
+      } else if(row.tipo==='Bauspar'){
+        snap.contract.s7.push({persona:persona,tipo:'Bausparvertrag',entidad:row.compania||'Propuesta',aportacion:aporte,frecuencia:freq,tieneAportacion:true});
+      }
+    });
+    return snap;
   }
   function setCoupleMode(on){
     if(on===couple.on){ return; }
@@ -3854,7 +3918,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   // children rows) are intentionally NOT in this list — dynamic-count rows are collected/restored
   // via their own getContractRows()/renderContractSection() and getChildrenData()/renderChildrenList().
   var PERSIST_ATTRS=['data-gross','data-inc','data-exp','data-exptotal','data-sit','data-prevcomp','data-ins','data-insrev','data-insna',
-    'data-pers'];
+    'data-pers','data-prop'];
   var PERSIST_SEL=PERSIST_ATTRS.map(function(a){return 'input['+a+'],select['+a+'],textarea['+a+']';}).join(',');
   function keyOf(e){
     for(var i=0;i<PERSIST_ATTRS.length;i++){if(e.hasAttribute(PERSIST_ATTRS[i]))return PERSIST_ATTRS[i].slice(5)+':'+e.getAttribute(PERSIST_ATTRS[i]);}
@@ -3870,7 +3934,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     });
     data.hasChildren=!!state.hasChildren;
     data.children=state.hasChildren?getChildrenData():[];
-    data.contract={s5:getContractRows('s5'),s7:getContractRows('s7')};
+    data.contract={s5:getContractRows('s5'),s7:getContractRows('s7'),propuesta:getContractRows('propuesta')};
     Object.keys(CONTRACT_SECTIONS).forEach(function(k){ if(k.indexOf('ins_')===0) data.contract[k]=getContractRows(k); });
     return data;
   }
@@ -3934,6 +3998,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var contract=data.contract||{};
     renderContractSection('s5',contract.s5||[]);
     renderContractSection('s7',contract.s7||[]);
+    renderContractSection('propuesta',contract.propuesta||[]);
     Object.keys(CONTRACT_SECTIONS).forEach(function(k){
       if(k.indexOf('ins_')===0) renderContractSection(k,(contract[k]&&contract[k].length)?contract[k]:[{}]);
     });
@@ -4002,7 +4067,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     document.querySelectorAll('[data-prevcomp]').forEach(function(i){i.value='';});
     document.querySelectorAll('[data-pers]').forEach(function(i){i.value='';});
     renderChildrenYN('no');
-    renderContractSection('s5',[]); renderContractSection('s7',[]);
+    renderContractSection('s5',[]); renderContractSection('s7',[]); renderContractSection('propuesta',[]);
     Object.keys(CONTRACT_SECTIONS).forEach(function(k){ if(k.indexOf('ins_')===0) renderContractSection(k,[{}]); });
     refreshPersonaLabels();
     $('#m_cliente').value=''; $('#m_asesor').value=''; $('#m_fecha_nac').value='';
@@ -4371,6 +4436,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   document.addEventListener('input',function(e){
     var t=e.target, did=false;
     if(t.closest('#contract-s5-body')){ recalcS5(); did=true; }
+    else if(t.closest('#contract-propuesta-body')){ did=true; }
     else if(t.closest('#contract-s7-body')){
       var row7=t.closest('.contract-row');
       if(row7 && t.matches('.cr-tiene-ap')) updateOtrosApVisibility(row7);
@@ -4393,6 +4459,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   });
   document.addEventListener('change',function(e){
     if(e.target.matches('.s7-tipo-select')) onS7TipoChange(e.target);
+    if(e.target.closest('#contract-propuesta-body')) render();
   });
   document.addEventListener('click',function(e){
     var g=e.target.closest('.goal');
@@ -4487,6 +4554,53 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     function cover(inner){PHYS++;return '<div class="sheet cover">'+inner+'</div>';}
     function divider(inner){PHYS++;return '<div class="sheet divider">'+inner+'</div>';}
     function page(sec,inner){PHYS++;return '<div class="sheet"><div class="sh-watermark"><img src="./logo-icon-navy.png" alt=""></div><div class="sheet-head"><span class="sh-brand"><img src="./logo-icon-navy.png" alt="">AORAES</span><span class="sh-sec">'+esc(sec)+'</span></div><div class="sheet-body">'+inner+'</div><div class="sheet-foot"><span>'+pickL('AORAES · Informe para ','AORAES · Report for ')+esc(_footName||cliente||pickL('cliente','client'))+'</span>'+(asesor?('<span>'+pickL('Asesor/a: ','Advisor: ')+esc(asesor)+'</span>'):'')+'<span>'+PHYS+'</span></div></div>';}
+    // Página "Propuesta": se llama una sola vez por informe (nunca por persona en modo pareja, ya
+    // que S.12 es una sola lista compartida del hogar, no algo que se duda entre A y B) — de ahí que
+    // contentPages() la reciba como parámetro opcional en vez de generarla siempre ella misma.
+    function propuestaPages(r){
+      var propRows=getContractRows('propuesta').filter(function(row){ return row.tipo || row.producto || (parseFloat(row.aportacion)||0)>0; });
+      if(!propRows.length) return [];
+      var personaLbl=function(v){ var m=FIELD_META.persona.options.filter(function(o){return o[0]===v;})[0]; return m?m[1]:(v||'—'); };
+      var totalMensual=0;
+      var propBody=propRows.map(function(row){
+        var ap=parseFloat(row.aportacion)||0;
+        var apMensual=(row.aportFrecuencia==='anual')?(ap/12):ap;
+        totalMensual+=apMensual;
+        return '<tr><td><b>'+esc(row.tipo||'—')+'</b>'+(row.producto?('<br><span style="color:#8a8470;font-size:9pt">'+esc(row.producto)+'</span>'):'')+'</td>'+
+          '<td>'+esc(personaLbl(row.persona))+'</td>'+
+          '<td>'+esc(row.compania||'—')+'</td>'+
+          '<td class="num"><b>'+M(ap)+'</b> '+(row.aportFrecuencia==='anual'?pickL('/año','/yr'):pickL('/mes','/mo'))+'</td></tr>';
+      }).join('');
+      var pages=[
+        divider('<div class="dv-num">'+pickL('Recomendación','Recommendation')+'</div><h2>'+pickL('Propuesta','Proposal')+'</h2><p class="dv-sub">'+pickL('Los productos que proponemos y su aportación','The products we propose and their contribution')+'</p>'),
+        page('Propuesta','<div class="sh-eyebrow">'+pickL('Recomendación AORAES','AORAES recommendation')+'</div><h2>'+pickL('Resumen de la propuesta','Proposal summary')+'</h2>'+
+          '<table class="sh-table" style="margin-top:16px"><tbody>'+
+            '<tr style="color:#8a8470;font-size:8.5pt"><td>'+pickL('Producto','Product')+'</td><td>'+pickL('Titular','Holder')+'</td><td>'+pickL('Compañía','Company')+'</td><td class="num">'+pickL('Aporte','Contribution')+'</td></tr>'+
+            propBody+
+          '</tbody></table>'+
+          '<div class="sh-card" style="margin-top:18px;text-align:right"><div class="sh-card-title" style="text-align:right">'+pickL('Aporte mensual total','Total monthly contribution')+'</div><p style="font-family:\'Fraunces\',serif;font-size:22pt;color:#14213d;margin:4px 0 0">'+M(totalMensual)+'</p></div>')
+      ];
+      // Comparativa antes/después — solo en modo un titular (r llega desde contentPages); en modo
+      // pareja S.12 es una sola lista compartida del hogar y no hay un "r" único con el que comparar.
+      if(r){
+        var r2=computePerson(buildProposalSnap());
+        if(r2){
+          var Lp=levelScores(r), Lp2=levelScores(r2);
+          var gapTxt=function(d){ return (d&&d.ready&&!d.pensionPending)?(M(d.gap)+pickL('/mes','/mo')):'—'; };
+          pages.push(page('Propuesta','<div class="sh-eyebrow">'+pickL('Comparativa','Comparison')+'</div><h2>'+pickL('Antes y después de la propuesta','Before and after the proposal')+'</h2>'+
+            '<p class="sh-lead">'+pickL('Así queda tu situación si se implementan estos productos:','This is how your situation looks if these products are implemented:')+'</p>'+
+            '<div style="display:flex;gap:22px;align-items:flex-start;margin:12px 0 18px">'+
+              '<div style="flex:1;text-align:center"><div class="sh-card-title">'+pickL('Antes','Before')+'</div>'+pyramidSVG(Lp).replace('width="400"','width="190"')+'<div style="font-family:\'Fraunces\',serif;font-size:19pt;color:'+scoreColor(r.total)+'">'+r.total+'</div></div>'+
+              '<div style="flex:1;text-align:center"><div class="sh-card-title">'+pickL('Después','After')+'</div>'+pyramidSVG(Lp2).replace('width="400"','width="190"')+'<div style="font-family:\'Fraunces\',serif;font-size:19pt;color:'+scoreColor(r2.total)+'">'+r2.total+'</div></div>'+
+            '</div>'+
+            '<div class="sh-grid2" style="grid-template-columns:repeat(2,1fr)">'+
+              kpi(pickL('Rentenlücke antes','Rentenlücke before'),gapTxt(r.ret))+
+              kpi(pickL('Rentenlücke después','Rentenlücke after'),gapTxt(r2.ret))+
+            '</div>'));
+        }
+      }
+      return pages;
+    }
     function donut(segs){
       var tot=segs.reduce(function(s,x){return s+Math.max(x.val,0);},0)||1,off=25,parts='';
       segs.forEach(function(x){var p=Math.max(x.val,0)/tot*100;if(p<=0)return;
@@ -4559,7 +4673,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     }
 
     // ---- per-person content pages (Resumen, Pirámide, Jubilación, Prioridades) ----
-    function contentPages(r){
+    function contentPages(r,includePropuesta){
       var P=[];
       var Lp=levelScores(r);
       var d=r.ret;
@@ -4713,6 +4827,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       // la página de Prioridades ya iba justa de espacio y el aviso podía quedar huérfano, solo, en
       // una hoja casi en blanco al final del PDF — un bloque de tamaño fijo en su propia página nunca
       // puede desbordarse, sin importar cuántos datos tenga el cliente.
+      if(includePropuesta) P=P.concat(propuestaPages(r));
       P.push(page('Aviso legal','<div class="sh-eyebrow">Conclusión · aviso legal</div><h2>Aviso legal</h2>'+
         '<div class="sh-card" style="background:#faf8f2"><p style="font-size:9.5pt;color:#6b7283;line-height:1.5;margin:0">Informe orientativo elaborado a partir de la información facilitada por el cliente. Los cálculos se basan en supuestos (rendimientos, inflación, marcos fiscales) que pueden diferir de la realidad y no garantizan resultado alguno. No constituye asesoramiento legal ni fiscal vinculante ni una oferta. Para decisiones concretas, consulte con un profesional cualificado. AORAES no asume responsabilidad por la exactitud de los datos aportados ni por las decisiones tomadas a partir de este documento.</p></div>'+
         '<p style="font-family:\'Fraunces\',serif;font-size:12pt;color:#14213d;margin-top:16px">'+(asesor?(esc(asesor)+' · '):'')+'AORAES</p>'));
@@ -4800,10 +4915,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       S=S.concat(pagesB);
       S.push(divider('<div class="cv-for">Sección 3 de 3</div><h1>Conjunto</h1><p style="color:#8a8470">Consolidado de la pareja</p>'));
       S=S.concat(conjuntoPages(rA,rB,cliA,cliB));
+      S=S.concat(propuestaPages());
     } else {
       _footName=cliente;
       S.push(cover(coverInner(cliente,edad)));
-      S=S.concat(contentPages(r));
+      S=S.concat(contentPages(r,true));
     }
     $('#informe-pages').innerHTML=S.join('');
   }
