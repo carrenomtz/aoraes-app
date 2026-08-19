@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AORAES · Análisis Financiero Personal</title>
@@ -4914,7 +4915,14 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       S=S.concat(pagesB);
       S.push(divider('<div class="cv-for">Sección 3 de 3</div><h1>Conjunto</h1><p style="color:#8a8470">Consolidado de la pareja</p>'));
       S=S.concat(conjuntoPages(rA,rB,cliA,cliB));
+      // S.12 se guarda por persona (personStore.p1/p2) aunque conceptualmente es una sola lista del
+      // hogar — sin este merge, el informe solo mostraba la propuesta de quien estuviera activo en el
+      // DOM al pulsar "Informe PDF" y perdía en silencio lo que se hubiera introducido para la otra persona.
+      var propA=(personStore.p1&&personStore.p1.contract&&personStore.p1.contract.propuesta)||[];
+      var propB=(personStore.p2&&personStore.p2.contract&&personStore.p2.contract.propuesta)||[];
+      renderContractSection('propuesta',propA.concat(propB));
       S=S.concat(propuestaPages());
+      renderContractSection('propuesta',(snapBackup.contract&&snapBackup.contract.propuesta)||[]);
     } else {
       _footName=cliente;
       S.push(cover(coverInner(cliente,edad)));
