@@ -1357,12 +1357,250 @@
         else if(win.applyLang) win.applyLang(lang);
       }catch(e){}
     }
+    /* ---------- Traducción del panel propio (shell) ----------
+       Misma técnica que ya usa analisis.html: se camina el DOM real y se traduce cada nodo de texto
+       buscando su "plantilla" (con los números incrustados sustituidos por {0},{1}...) en un
+       diccionario ES→idioma. Así funciona igual de bien en el HTML estático que en listas
+       generadas por JS (cartera, Asesores, notificaciones) sin tener que tocar cada render(). Un
+       MutationObserver vuelve a traducir cualquier nodo nuevo mientras el idioma no sea español. */
+    var SHELL_NUMRE=/\d+(?:[.,\/:]\d+)*/g;
+    function shellDetok(tpl,nums){ return tpl.replace(/\{(\d+)\}/g,function(_,i){ return nums[+i]!=null?nums[+i]:('{'+i+'}'); }); }
+    function shellLookup(core,map){
+      var nums=[]; var tpl=core.replace(SHELL_NUMRE,function(m){ nums.push(m); return '{'+(nums.length-1)+'}'; });
+      if(Object.prototype.hasOwnProperty.call(map,tpl)) return shellDetok(map[tpl],nums);
+      return null;
+    }
+    function translateShellStr(s,map){
+      if(s==null) return s; var str=String(s).replace(/[     ]/g,' ');
+      var m=str.match(/^(\s*)([\s\S]*?)(\s*)$/); var lead=m[1],core=m[2],trail=m[3];
+      if(!core) return s;
+      var tr=shellLookup(core,map);
+      return tr==null ? s : (lead+tr+trail);
+    }
+    var SHELL_I18N_REV=null, SHELL_I18N_DE_REV=null;
+    function shellRevMap(map){ var r={}; for(var k in map){ var v=map[k]; if(!(v in r)) r[v]=k; } return r; }
+    function translateShellEl(root,map){
+      if(!root) return; map=map||SHELL_I18N_EN;
+      try{
+        var w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false), n, list=[];
+        while(n=w.nextNode()) list.push(n);
+        list.forEach(function(tn){ var v=tn.nodeValue; if(!v||!/\S/.test(v)) return; var t=translateShellStr(v,map); if(t!==v) tn.nodeValue=t; });
+        root.querySelectorAll && ['placeholder','title','aria-label'].forEach(function(attr){
+          root.querySelectorAll('['+attr+']').forEach(function(e){ var o=e.getAttribute(attr),t=translateShellStr(o,map); if(t!==o) e.setAttribute(attr,t); });
+        });
+      }catch(e){}
+    }
+    var _shellMo=null;
+    function shellStartObserver(){
+      if(!window.MutationObserver||_shellMo) return;
+      _shellMo=new MutationObserver(function(muts){
+        if(SHELL_LANG!=='en'&&SHELL_LANG!=='de') return;
+        _shellMo.disconnect();
+        var m=(SHELL_LANG==='de')?SHELL_I18N_DE:SHELL_I18N_EN;
+        muts.forEach(function(mu){
+          if(mu.type==='childList'){
+            mu.addedNodes.forEach(function(nd){
+              if(nd.nodeType===1) translateShellEl(nd,m);
+              else if(nd.nodeType===3){ var t=translateShellStr(nd.nodeValue,m); if(t!==nd.nodeValue) nd.nodeValue=t; }
+            });
+          } else if(mu.type==='characterData'){
+            var t2=translateShellStr(mu.target.nodeValue,m); if(t2!==mu.target.nodeValue) mu.target.nodeValue=t2;
+          }
+        });
+        _shellMo.observe(document.body,{childList:true,subtree:true,characterData:true});
+      });
+      _shellMo.observe(document.body,{childList:true,subtree:true,characterData:true});
+    }
+    function shellStopObserver(){ if(_shellMo){ _shellMo.disconnect(); _shellMo=null; } }
+    var SHELL_LANG='es';
+    var SHELL_I18N_EN={
+      'AORAES · Herramientas del asesor':'AORAES · Advisor Tools',
+      'Departamento Español':'Spanish Department',
+      'Inicio':'Home','Análisis & CRM':'Analysis & CRM','Comparador de jubilación':'Retirement Comparator',
+      'Preguntas médicas':'Medical Questions','Asesores':'Advisors',
+      'Idioma':'Language','Español':'Spanish','English':'English','Deutsch':'German',
+      'Notificaciones':'Notifications','Abrir ficha del cliente activo':"Open active client's file",
+      'Quitar cliente activo':'Remove active client','Cerrar sesión':'Sign out',
+      'Análisis financiero y CRM':'Financial Analysis & CRM',
+      'Panel del asesor':'Advisor panel','Tu cartera de clientes':'Your client portfolio',
+      '+ Nuevo cliente':'+ New client','Buscar clientes':'Search clients',
+      'Buscar por nombre, etiqueta o asesor…':'Search by name, tag or advisor…',
+      'Filtrar por estado':'Filter by status','Todos los estados':'All statuses','Ordenar clientes':'Sort clients',
+      'Orden: más recientes':'Sort: most recent','Orden: próxima revisión':'Sort: next review',
+      'Orden: puntuación':'Sort: score','Orden: nombre (A–Z)':'Sort: name (A–Z)',
+      'Herramientas':'Tools','Abrir Análisis & CRM':'Open Analysis & CRM',
+      'Abrir Comparador de jubilación':'Open Retirement Comparator','Abrir Preguntas médicas':'Open Medical Questions',
+      'Abre un cliente para ver su recorrido y la propuesta consolidada. Los datos se guardan en este dispositivo desde el módulo de Análisis.':'Open a client to see their journey and consolidated proposal. Data is saved on this device from the Analysis module.',
+      'cliente':'client','clientes':'clients','en cartera':'in portfolio',
+      'revisión':'review','revisiónes':'reviews','vencida':'overdue','vencidas':'overdue',
+      'salud':'low','financiera baja':'financial health',
+      'flujo':'negative','mensual negativo':'monthly flow',
+      'propuesta':'proposal','propuestas':'proposals','en curso':'in progress',
+      'Aún no tienes clientes guardados.':"You don't have any saved clients yet.",
+      'Crea el primero para empezar tu cartera.':'Create the first one to start your portfolio.',
+      'Sin resultados para los filtros actuales.':'No results for the current filters.',
+      'No se pudo construir la cartera (dato antiguo o con forma inesperada en alguna ficha). Revisa la consola y avísanos para corregirlo.':"Couldn't build the portfolio (old data or unexpected shape in a client file). Check the console and let us know so we can fix it.",
+      'No se pudo mostrar esta ficha (dato con forma inesperada).':"Couldn't display this file (unexpected data shape).",
+      'Abrir ficha':'Open file','Análisis':'Analysis','Jubilación':'Retirement','Médico':'Medical','Pareja':'Couple',
+      'guardado {0}':'saved {0}','Ahorro objetivo {0}/mes':'Savings target {0}/mo',
+      'Revisión: {0}':'Review: {0}','Próx. revisión: {0}':'Next review: {0}',
+      'Vencida':'Overdue','Hoy':'Today','En {0} día':'In {0} day','En {0} días':'In {0} days',
+      'hace instantes':'just now','hace {0} min':'{0} min ago','hace {0} h':'{0} h ago',
+      'Prospecto':'Prospect','Contactado':'Contacted','Análisis pendiente':'Analysis pending',
+      'Análisis en curso':'Analysis in progress','Propuesta enviada':'Proposal sent','En implementación':'Implementing',
+      'Cliente activo':'Active client','Inactivo':'Inactive',
+      'Administración':'Administration','↻ Actualizar':'↻ Refresh',
+      '"Restringir acceso" nunca borra la cartera de un asesor — solo le quita su propio acceso. Tú sigues viendo y editando sus clientes en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar". Solo "Borrar cuenta" (⋮) elimina datos, y pide confirmarlo escribiendo el correo.':'"Restrict access" never deletes an advisor\'s portfolio — it only removes their own access. You still see and edit their clients under "View portfolio", and can restore their access anytime with "Approve". Only "Delete account" (⋮) removes data, and asks you to confirm by typing their email.',
+      'Cargando asesores…':'Loading advisors…','La nube no está lista todavía.':"The cloud isn't ready yet.",
+      'Todavía no hay asesores registrados.':'No advisors registered yet.',
+      'No se pudo cargar la lista. Revisa la consola.':"Couldn't load the list. Check the console.",
+      'Pendiente':'Pending','Aprobado':'Approved','Restringido':'Restricted',
+      'Admin':'Admin','(tú)':'(you)','{0} cliente':'{0} client','{0} clientes':'{0} clients',
+      'Solicitado {0}':'Requested {0}','Opciones':'Options',
+      '✓ Aprobar':'✓ Approve','↺ Dejar de ver esta cartera':'↺ Stop viewing this portfolio',
+      '👁 Ver cartera':'👁 View portfolio','Restringir acceso al asesor':"Restrict advisor's access",
+      'Rechazar solicitud':'Reject request','🗑 Borrar cuenta…':'🗑 Delete account…',
+      'este asesor':'this advisor',
+      '¿Restringir el acceso de {0}?\n\nYa no podrá entrar a su cuenta, pero sus clientes NO se borran — tú los sigues viendo y editando en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar".':'Restrict access for {0}?\n\nThey will no longer be able to sign in, but their clients are NOT deleted — you still see and edit them under "View portfolio", and can restore their access anytime with "Approve".',
+      '¿Rechazar la solicitud de acceso de {0}? Todavía no tiene ningún cliente guardado, así que no hay nada que perder — puedes aprobarlo más adelante si cambias de opinión.':"Reject the access request from {0}? They don't have any clients saved yet, so there's nothing to lose — you can approve them later if you change your mind.",
+      'Esto borra PERMANENTEMENTE el perfil y todos los clientes de "{0}" — no se puede deshacer.\n\nPara confirmar, escribe su correo exacto:':'This PERMANENTLY deletes the profile and all clients of "{0}" — this cannot be undone.\n\nTo confirm, type their exact email:',
+      'El correo no coincide — no se borró nada.':"The email doesn't match — nothing was deleted.",
+      'No se pudo borrar. Revisa la consola.':"Couldn't delete. Check the console.",
+      'Solicitudes de acceso':'Access requests','Clientes nuevos':'New clients',
+      'Pendiente de aprobación':'Pending approval','Aprobar':'Approve',
+      'No hay solicitudes pendientes.':'No pending requests.','Sin actividad reciente.':'No recent activity.',
+      'Ir a aoraes.de':'Go to aoraes.de','Correo':'Email','Contraseña':'Password',
+      'Repetir contraseña':'Repeat password','Mostrar contraseña':'Show password','Ocultar contraseña':'Hide password',
+      'Entrar':'Sign in','Crear cuenta':'Create account',
+      '¿Primera vez? Crea tu cuenta':'First time? Create your account',
+      '¿Ya tienes cuenta? Inicia sesión':'Already have an account? Sign in','Conectando…':'Connecting…',
+      'Las contraseñas no coinciden — revísalas.':"Passwords don't match — check them.",
+      'No se pudo continuar. Revisa el correo y la contraseña.':"Couldn't continue. Check the email and password.",
+      'Ese correo ya tiene una cuenta — inicia sesión en vez de crear una nueva.':'That email already has an account — sign in instead of creating a new one.',
+      'Correo no válido.':'Invalid email.','La contraseña necesita al menos 6 caracteres.':'Password needs at least 6 characters.',
+      'Contraseña incorrecta.':'Incorrect password.',
+      'No hay cuenta con ese correo — crea una nueva.':'No account with that email — create a new one.',
+      'Tu cuenta está pendiente de autorización.':'Your account is pending authorization.',
+      'El responsable del equipo debe aprobar tu acceso antes de que puedas ver tu cartera. Esta pantalla se actualizará sola en cuanto te aprueben — no hace falta que recargues.':"The team lead needs to approve your access before you can see your portfolio. This screen will update on its own once you're approved — no need to reload.",
+      'Tu solicitud de acceso fue rechazada.':'Your access request was rejected.',
+      'Si crees que es un error, contacta con el responsable del equipo.':'If you think this is a mistake, contact the team lead.',
+      '👁 Viendo la cartera de {0} (modo administrador)':"👁 Viewing {0}'s portfolio (admin mode)",
+      'Volver a mi cartera':'Back to my portfolio',
+      'Novedades':"What's new",'Esto es lo que hemos ido construyendo':"Here's what we've been building",
+      'Ver todo':'See all','Nuevo':'New','Mejora':'Improvement','Corrección':'Fix','Base':'Foundation',
+      'La carpeta Clientes necesita Google Chrome (no disponible en este navegador).':'The Clients folder needs Google Chrome (not available in this browser).',
+      'Los datos se guardan en este dispositivo. Puedes además respaldarlos en una carpeta Clientes real.':'Data is saved on this device. You can also back it up to a real Clients folder.',
+      'Configurar carpeta Clientes':'Set up Clients folder','✓ Sincronizado con la carpeta Clientes.':'✓ Synced with the Clients folder.',
+      'Cambiar carpeta':'Change folder','⚠ Sin acceso a la carpeta Clientes.':'⚠ No access to the Clients folder.',
+      'Reactivar acceso':'Re-enable access','⚠ No se pudo acceder a la carpeta Clientes.':"⚠ Couldn't access the Clients folder.",
+      'Reintentar':'Retry',
+      '{0} años':'{0} years old','jubilación {0}':'retirement {0}','{0} €/mes':'€{0}/mo',
+      '{0} €/mes sugerido a jubilación':'€{0}/mo suggested at retirement','50% Rürup · 50% Privatrente':'50% Rürup · 50% Private pension',
+      'Cargado desde el CRM: {0}':'Loaded from CRM: {0}','Guardar solución en la ficha':'Save solution to file',
+      '✓ Guardada · estado → Propuesta':'✓ Saved · status → Proposal','✓ Guardada en la ficha':'✓ Saved to file',
+      'No se pudo leer el escenario':"Couldn't read the scenario",'Deshacer':'Undo','Cerrar':'Close'
+    };
+    var SHELL_I18N_DE={
+      'AORAES · Herramientas del asesor':'AORAES · Berater-Tools','Departamento Español':'Spanische Abteilung',
+      'Inicio':'Start','Análisis & CRM':'Analyse & CRM','Comparador de jubilación':'Renten-Vergleich',
+      'Preguntas médicas':'Gesundheitsfragen','Asesores':'Berater',
+      'Idioma':'Sprache','Español':'Spanisch','English':'Englisch','Deutsch':'Deutsch',
+      'Notificaciones':'Benachrichtigungen','Abrir ficha del cliente activo':'Akte des aktiven Kunden öffnen',
+      'Quitar cliente activo':'Aktiven Kunden entfernen','Cerrar sesión':'Abmelden',
+      'Análisis financiero y CRM':'Finanzanalyse & CRM',
+      'Panel del asesor':'Berater-Panel','Tu cartera de clientes':'Deine Kundenkartei',
+      '+ Nuevo cliente':'+ Neuer Kunde','Buscar clientes':'Kunden suchen',
+      'Buscar por nombre, etiqueta o asesor…':'Suche nach Name, Tag oder Berater…',
+      'Filtrar por estado':'Nach Status filtern','Todos los estados':'Alle Status','Ordenar clientes':'Kunden sortieren',
+      'Orden: más recientes':'Sortierung: neueste','Orden: próxima revisión':'Sortierung: nächste Überprüfung',
+      'Orden: puntuación':'Sortierung: Bewertung','Orden: nombre (A–Z)':'Sortierung: Name (A–Z)',
+      'Herramientas':'Werkzeuge','Abrir Análisis & CRM':'Analyse & CRM öffnen',
+      'Abrir Comparador de jubilación':'Renten-Vergleich öffnen','Abrir Preguntas médicas':'Gesundheitsfragen öffnen',
+      'Abre un cliente para ver su recorrido y la propuesta consolidada. Los datos se guardan en este dispositivo desde el módulo de Análisis.':'Öffne einen Kunden, um seinen Verlauf und den konsolidierten Vorschlag zu sehen. Die Daten werden über das Analyse-Modul auf diesem Gerät gespeichert.',
+      'cliente':'Kunde','clientes':'Kunden','en cartera':'in Kartei',
+      'revisión':'Überprüfung','revisiónes':'Überprüfungen','vencida':'überfällig','vencidas':'überfällig',
+      'salud':'niedrige','financiera baja':'finanzielle Gesundheit',
+      'flujo':'negativer','mensual negativo':'Monatsfluss',
+      'propuesta':'Vorschlag','propuestas':'Vorschläge','en curso':'in Bearbeitung',
+      'Aún no tienes clientes guardados.':'Du hast noch keine gespeicherten Kunden.',
+      'Crea el primero para empezar tu cartera.':'Lege den ersten an, um deine Kartei zu starten.',
+      'Sin resultados para los filtros actuales.':'Keine Ergebnisse für die aktuellen Filter.',
+      'No se pudo construir la cartera (dato antiguo o con forma inesperada en alguna ficha). Revisa la consola y avísanos para corregirlo.':'Die Kartei konnte nicht aufgebaut werden (alte Daten oder unerwartetes Format in einer Akte). Bitte Konsole prüfen und uns Bescheid geben.',
+      'No se pudo mostrar esta ficha (dato con forma inesperada).':'Diese Akte konnte nicht angezeigt werden (unerwartetes Datenformat).',
+      'Abrir ficha':'Akte öffnen','Análisis':'Analyse','Jubilación':'Rente','Médico':'Medizinisch','Pareja':'Paar',
+      'guardado {0}':'gespeichert {0}','Ahorro objetivo {0}/mes':'Sparziel {0}/Monat',
+      'Revisión: {0}':'Überprüfung: {0}','Próx. revisión: {0}':'Nächste Überprüfung: {0}',
+      'Vencida':'Überfällig','Hoy':'Heute','En {0} día':'In {0} Tag','En {0} días':'In {0} Tagen',
+      'hace instantes':'gerade eben','hace {0} min':'vor {0} Min.','hace {0} h':'vor {0} Std.',
+      'Prospecto':'Interessent','Contactado':'Kontaktiert','Análisis pendiente':'Analyse ausstehend',
+      'Análisis en curso':'Analyse läuft','Propuesta enviada':'Vorschlag gesendet','En implementación':'In Umsetzung',
+      'Cliente activo':'Aktiver Kunde','Inactivo':'Inaktiv',
+      'Administración':'Verwaltung','↻ Actualizar':'↻ Aktualisieren',
+      '"Restringir acceso" nunca borra la cartera de un asesor — solo le quita su propio acceso. Tú sigues viendo y editando sus clientes en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar". Solo "Borrar cuenta" (⋮) elimina datos, y pide confirmarlo escribiendo el correo.':'"Zugriff einschränken" löscht nie die Kartei eines Beraters — es entzieht nur dessen eigenen Zugriff. Du siehst und bearbeitest seine Kunden weiterhin über "Kartei ansehen" und kannst den Zugriff jederzeit mit "Genehmigen" wiederherstellen. Nur "Konto löschen" (⋮) entfernt Daten und verlangt zur Bestätigung die Eingabe der E-Mail-Adresse.',
+      'Cargando asesores…':'Berater werden geladen…','La nube no está lista todavía.':'Die Cloud ist noch nicht bereit.',
+      'Todavía no hay asesores registrados.':'Noch keine Berater registriert.',
+      'No se pudo cargar la lista. Revisa la consola.':'Liste konnte nicht geladen werden. Konsole prüfen.',
+      'Pendiente':'Ausstehend','Aprobado':'Genehmigt','Restringido':'Eingeschränkt',
+      'Admin':'Admin','(tú)':'(du)','{0} cliente':'{0} Kunde','{0} clientes':'{0} Kunden',
+      'Solicitado {0}':'Angefragt {0}','Opciones':'Optionen',
+      '✓ Aprobar':'✓ Genehmigen','↺ Dejar de ver esta cartera':'↺ Diese Kartei nicht mehr ansehen',
+      '👁 Ver cartera':'👁 Kartei ansehen','Restringir acceso al asesor':'Zugriff des Beraters einschränken',
+      'Rechazar solicitud':'Anfrage ablehnen','🗑 Borrar cuenta…':'🗑 Konto löschen…',
+      'este asesor':'diesen Berater',
+      '¿Restringir el acceso de {0}?\n\nYa no podrá entrar a su cuenta, pero sus clientes NO se borran — tú los sigues viendo y editando en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar".':'Zugriff für {0} einschränken?\n\nDie Person kann sich nicht mehr anmelden, aber ihre Kunden werden NICHT gelöscht — du siehst und bearbeitest sie weiterhin über "Kartei ansehen" und kannst den Zugriff jederzeit mit "Genehmigen" wiederherstellen.',
+      '¿Rechazar la solicitud de acceso de {0}? Todavía no tiene ningún cliente guardado, así que no hay nada que perder — puedes aprobarlo más adelante si cambias de opinión.':'Zugriffsanfrage von {0} ablehnen? Es sind noch keine Kunden gespeichert, es gibt also nichts zu verlieren — du kannst die Person später noch genehmigen, falls du es dir anders überlegst.',
+      'Esto borra PERMANENTEMENTE el perfil y todos los clientes de "{0}" — no se puede deshacer.\n\nPara confirmar, escribe su correo exacto:':'Dies löscht PERMANENT das Profil und alle Kunden von "{0}" — das kann nicht rückgängig gemacht werden.\n\nTippe zur Bestätigung die genaue E-Mail-Adresse ein:',
+      'El correo no coincide — no se borró nada.':'Die E-Mail stimmt nicht überein — es wurde nichts gelöscht.',
+      'No se pudo borrar. Revisa la consola.':'Löschen fehlgeschlagen. Konsole prüfen.',
+      'Solicitudes de acceso':'Zugriffsanfragen','Clientes nuevos':'Neue Kunden',
+      'Pendiente de aprobación':'Genehmigung ausstehend','Aprobar':'Genehmigen',
+      'No hay solicitudes pendientes.':'Keine ausstehenden Anfragen.','Sin actividad reciente.':'Keine kürzliche Aktivität.',
+      'Ir a aoraes.de':'Zu aoraes.de','Correo':'E-Mail','Contraseña':'Passwort',
+      'Repetir contraseña':'Passwort wiederholen','Mostrar contraseña':'Passwort anzeigen','Ocultar contraseña':'Passwort verbergen',
+      'Entrar':'Anmelden','Crear cuenta':'Konto erstellen',
+      '¿Primera vez? Crea tu cuenta':'Zum ersten Mal hier? Konto erstellen',
+      '¿Ya tienes cuenta? Inicia sesión':'Schon ein Konto? Anmelden','Conectando…':'Verbinden…',
+      'Las contraseñas no coinciden — revísalas.':'Passwörter stimmen nicht überein — bitte prüfen.',
+      'No se pudo continuar. Revisa el correo y la contraseña.':'Fortfahren nicht möglich. E-Mail und Passwort prüfen.',
+      'Ese correo ya tiene una cuenta — inicia sesión en vez de crear una nueva.':'Für diese E-Mail existiert bereits ein Konto — bitte anmelden statt ein neues zu erstellen.',
+      'Correo no válido.':'Ungültige E-Mail.','La contraseña necesita al menos 6 caracteres.':'Das Passwort muss mindestens 6 Zeichen haben.',
+      'Contraseña incorrecta.':'Falsches Passwort.',
+      'No hay cuenta con ese correo — crea una nueva.':'Kein Konto mit dieser E-Mail — bitte ein neues erstellen.',
+      'Tu cuenta está pendiente de autorización.':'Dein Konto wartet auf Freischaltung.',
+      'El responsable del equipo debe aprobar tu acceso antes de que puedas ver tu cartera. Esta pantalla se actualizará sola en cuanto te aprueben — no hace falta que recargues.':'Der Teamverantwortliche muss deinen Zugriff genehmigen, bevor du deine Kartei sehen kannst. Dieser Bildschirm aktualisiert sich automatisch, sobald du genehmigt wirst — kein Neuladen nötig.',
+      'Tu solicitud de acceso fue rechazada.':'Deine Zugriffsanfrage wurde abgelehnt.',
+      'Si crees que es un error, contacta con el responsable del equipo.':'Falls du denkst, das ist ein Fehler, wende dich an den Teamverantwortlichen.',
+      '👁 Viendo la cartera de {0} (modo administrador)':'👁 Kartei von {0} wird angezeigt (Admin-Modus)',
+      'Volver a mi cartera':'Zurück zu meiner Kartei',
+      'Novedades':'Neuigkeiten','Esto es lo que hemos ido construyendo':'Das haben wir zuletzt gebaut',
+      'Ver todo':'Alles anzeigen','Nuevo':'Neu','Mejora':'Verbesserung','Corrección':'Korrektur','Base':'Basis',
+      'La carpeta Clientes necesita Google Chrome (no disponible en este navegador).':'Der Kundenordner benötigt Google Chrome (in diesem Browser nicht verfügbar).',
+      'Los datos se guardan en este dispositivo. Puedes además respaldarlos en una carpeta Clientes real.':'Die Daten werden auf diesem Gerät gespeichert. Du kannst sie zusätzlich in einem echten Kundenordner sichern.',
+      'Configurar carpeta Clientes':'Kundenordner einrichten','✓ Sincronizado con la carpeta Clientes.':'✓ Mit dem Kundenordner synchronisiert.',
+      'Cambiar carpeta':'Ordner ändern','⚠ Sin acceso a la carpeta Clientes.':'⚠ Kein Zugriff auf den Kundenordner.',
+      'Reactivar acceso':'Zugriff erneut aktivieren','⚠ No se pudo acceder a la carpeta Clientes.':'⚠ Zugriff auf den Kundenordner fehlgeschlagen.',
+      'Reintentar':'Erneut versuchen',
+      '{0} años':'{0} Jahre','jubilación {0}':'Rente {0}','{0} €/mes':'{0} €/Monat',
+      '{0} €/mes sugerido a jubilación':'{0} €/Monat empfohlen bis zur Rente','50% Rürup · 50% Privatrente':'50% Rürup · 50% Privatrente',
+      'Cargado desde el CRM: {0}':'Aus dem CRM geladen: {0}','Guardar solución en la ficha':'Lösung in der Akte speichern',
+      '✓ Guardada · estado → Propuesta':'✓ Gespeichert · Status → Vorschlag','✓ Guardada en la ficha':'✓ In der Akte gespeichert',
+      'No se pudo leer el escenario':'Szenario konnte nicht gelesen werden','Deshacer':'Rückgängig','Cerrar':'Schließen'
+    };
+
     function setAppLang(lang){
       if(lang!=='en'&&lang!=='de') lang='es';
       try{ localStorage.setItem(APP_LANG_KEY,lang); }catch(e){}
       document.querySelectorAll('#lang-switch-top [data-lang], #auth-topbar-langs [data-lang]').forEach(function(b){ b.classList.toggle('active',b.getAttribute('data-lang')===lang); });
       for(var k in MOD){ if(MOD[k].el && MOD[k].ready) applyLangToFrame(MOD[k].el.contentWindow,k,lang); }
       for(var k2 in wsFrames){ if(wsFrames[k2].el && wsFrames[k2].ready) applyLangToFrame(wsFrames[k2].el.contentWindow,k2,lang); }
+      SHELL_LANG=lang;
+      shellStopObserver();
+      if(!SHELL_I18N_REV) SHELL_I18N_REV=shellRevMap(SHELL_I18N_EN);
+      if(!SHELL_I18N_DE_REV) SHELL_I18N_DE_REV=shellRevMap(SHELL_I18N_DE);
+      if(lang==='en') translateShellEl(document.body, SHELL_I18N_EN);
+      else if(lang==='de') translateShellEl(document.body, SHELL_I18N_DE);
+      else { translateShellEl(document.body, SHELL_I18N_REV); translateShellEl(document.body, SHELL_I18N_DE_REV); }
+      if(lang==='en'||lang==='de') shellStartObserver();
     }
     document.getElementById('lang-switch-top').addEventListener('click', function(e){
       var b=e.target.closest('[data-lang]'); if(b) setAppLang(b.getAttribute('data-lang'));
