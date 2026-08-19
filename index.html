@@ -58,6 +58,32 @@
   a{color:inherit}
 
   /* ---------- app bar ---------- */
+  .auth-gate{
+    position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(168deg,#182746 0%,var(--navy-deep) 100%); padding:20px;
+  }
+  .auth-gate[hidden]{display:none}
+  .auth-box{width:100%; max-width:360px; background:var(--surface); border-radius:18px; padding:34px 30px; text-align:center; box-shadow:0 30px 70px rgba(13,22,38,.35)}
+  .auth-logo{height:38px; width:auto; margin:0 auto 10px}
+  .auth-box h1{font-family:'Fraunces',serif; font-size:24px; color:var(--navy); margin:0 0 2px; letter-spacing:.02em}
+  .auth-sub{font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin:0 0 22px}
+  .auth-box form{display:flex; flex-direction:column; gap:4px; text-align:left}
+  .auth-box label{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-top:10px}
+  .auth-box input{font:inherit; font-size:14.5px; padding:10px 12px; border:1.5px solid var(--line,#e2ddd0); border-radius:9px; background:#fff; color:var(--ink)}
+  .auth-box input:focus{outline:none; border-color:var(--navy)}
+  .auth-err{font-size:12.5px; color:#b0473a; background:rgba(176,71,58,.08); border:1px solid rgba(176,71,58,.25); border-radius:8px; padding:8px 10px; margin-top:10px}
+  .auth-err[hidden]{display:none}
+  #auth-submit{margin-top:16px; font:inherit; font-weight:700; font-size:14px; padding:11px; border:none; border-radius:9px; background:var(--navy); color:#fff; cursor:pointer}
+  #auth-submit:hover{background:var(--navy-deep)}
+  #auth-submit:disabled{opacity:.6; cursor:default}
+  .auth-toggle{display:block; width:100%; margin-top:16px; background:none; border:none; font:inherit; font-size:12.5px; color:var(--navy-2); cursor:pointer; text-decoration:underline}
+  .auth-status{margin-top:14px; font-size:11.5px; color:var(--faint)}
+  .auth-status[hidden]{display:none}
+  .signout-btn{
+    font:inherit; font-size:12.5px; font-weight:600; color:#c9d3e6; background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:7px 13px; cursor:pointer; flex:0 0 auto;
+  }
+  .signout-btn:hover{background:rgba(255,255,255,.12); color:#fff}
   .appbar{
     position:sticky; top:0; z-index:30; flex:0 0 auto;
     display:flex; align-items:center; gap:16px; height:62px; padding:0 clamp(14px,3vw,30px);
@@ -364,6 +390,24 @@
 </style>
 </head>
 <body>
+  <div class="auth-gate" id="auth-gate">
+    <div class="auth-box">
+      <img class="auth-logo" src="./logo-icon-gold.png" alt="" aria-hidden="true">
+      <h1>AORAES</h1>
+      <p class="auth-sub">Panel del asesor</p>
+      <form id="auth-form">
+        <label for="auth-email">Correo</label>
+        <input type="email" id="auth-email" autocomplete="username" required>
+        <label for="auth-pass">Contraseña</label>
+        <input type="password" id="auth-pass" autocomplete="current-password" required minlength="6">
+        <div class="auth-err" id="auth-err" hidden></div>
+        <button type="submit" id="auth-submit">Entrar</button>
+      </form>
+      <button type="button" class="auth-toggle" id="auth-toggle">¿Primera vez? Crea tu cuenta</button>
+      <div class="auth-status" id="auth-status">Conectando…</div>
+    </div>
+  </div>
+
   <div class="appbar">
     <div class="brand"><img class="brand-icon" src="./logo-icon-gold.png" alt="" aria-hidden="true"><div class="brand-text"><span class="brand-mark">AORAES</span><span class="brand-sub">Departamento Español</span></div></div>
     <div class="active-chip" id="active-chip" role="button" tabindex="0" aria-label="Abrir ficha del cliente activo"><span class="ac-dot"></span><span class="ac-name" id="ac-name"></span><button class="ac-x" id="ac-x" title="Quitar cliente activo" aria-label="Quitar cliente activo">&#10005;</button></div>
@@ -373,6 +417,7 @@
       <button type="button" data-go="jubilacion">Comparador de jubilación</button>
       <button type="button" data-go="medico">Preguntas médicas</button>
     </nav>
+    <button type="button" class="signout-btn" id="signout-btn" title="Cerrar sesión">Cerrar sesión</button>
   </div>
 
   <main class="scr home" id="home">
@@ -422,6 +467,108 @@
     <div class="frame-stage" id="frame-stage"></div>
   </div>
 
+  <!-- ---------- Firebase: login + sincronización en la nube ----------
+       Módulo aparte (ES module, sin build step, vía CDN) porque el resto de la app es JS
+       clásico. Expone window.AORAES_CLOUD para que el script principal (y analisis.html /
+       preguntas-medicas.html cuando corran embebidos) puedan guardar/leer sin conocer Firebase
+       directamente. El apiKey de este bloque NO es secreto — Firebase lo diseña para vivir en
+       el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut }
+      from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot }
+      from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    var firebaseConfig = {
+      apiKey: "AIzaSyD0ebHDdzqa6SEsgeovSX2WfuVt8pLQ9tI",
+      authDomain: "aoraes-crm.firebaseapp.com",
+      projectId: "aoraes-crm",
+      storageBucket: "aoraes-crm.firebasestorage.app",
+      messagingSenderId: "941821530861",
+      appId: "1:941821530861:web:bba84762bd1f2e85f9f2e4",
+      measurementId: "G-Q5YC90K8NF"
+    };
+    var fbApp = initializeApp(firebaseConfig);
+    var auth = getAuth(fbApp);
+    var db = getFirestore(fbApp);
+    var currentUid = null, unsubClients = null;
+
+    function clientsCol(){ return collection(db, 'users', currentUid, 'clients'); }
+
+    window.AORAES_CLOUD = {
+      ready: false,
+      uid: null,
+      // guarda/actualiza el documento completo de un cliente (id, record, solution, medico, exportedAt)
+      syncClient: function(payload){
+        if(!currentUid || !payload || !payload.id) return Promise.resolve();
+        return setDoc(doc(clientsCol(), payload.id), payload).catch(function(e){ console.error('AORAES cloud: fallo al guardar', e); });
+      },
+      removeClient: function(id){
+        if(!currentUid || !id) return Promise.resolve();
+        return deleteDoc(doc(clientsCol(), id)).catch(function(e){ console.error('AORAES cloud: fallo al borrar', e); });
+      }
+    };
+
+    function startListening(){
+      if(unsubClients) unsubClients();
+      unsubClients = onSnapshot(clientsCol(), function(snap){
+        var byId = {};
+        snap.forEach(function(d){ byId[d.id] = d.data(); });
+        window.dispatchEvent(new CustomEvent('aoraes-cloud-update', {detail: byId}));
+      }, function(err){ console.error('AORAES cloud: fallo al escuchar cambios', err); });
+    }
+
+    var gateEl, statusEl;
+    onAuthStateChanged(auth, function(user){
+      gateEl = gateEl || document.getElementById('auth-gate');
+      statusEl = statusEl || document.getElementById('auth-status');
+      if(user){
+        currentUid = user.uid;
+        window.AORAES_CLOUD.uid = user.uid;
+        window.AORAES_CLOUD.ready = true;
+        gateEl.hidden = true;
+        startListening();
+        window.dispatchEvent(new CustomEvent('aoraes-signed-in', {detail:{uid:user.uid}}));
+      } else {
+        currentUid = null;
+        window.AORAES_CLOUD.uid = null;
+        window.AORAES_CLOUD.ready = false;
+        if(unsubClients){ unsubClients(); unsubClients=null; }
+        gateEl.hidden = false;
+        statusEl.hidden = true;
+        window.dispatchEvent(new CustomEvent('aoraes-signed-out'));
+      }
+    });
+
+    var isSignup = false;
+    document.getElementById('auth-toggle').addEventListener('click', function(){
+      isSignup = !isSignup;
+      document.getElementById('auth-submit').textContent = isSignup ? 'Crear cuenta' : 'Entrar';
+      this.textContent = isSignup ? '¿Ya tienes cuenta? Inicia sesión' : '¿Primera vez? Crea tu cuenta';
+      document.getElementById('auth-err').hidden = true;
+    });
+    document.getElementById('auth-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      var email = document.getElementById('auth-email').value.trim();
+      var pass = document.getElementById('auth-pass').value;
+      var errEl = document.getElementById('auth-err');
+      var btn = document.getElementById('auth-submit');
+      errEl.hidden = true; btn.disabled = true;
+      var action = isSignup ? createUserWithEmailAndPassword : signInWithEmailAndPassword;
+      action(auth, email, pass).catch(function(err){
+        var msg = 'No se pudo continuar. Revisa el correo y la contraseña.';
+        if(err.code==='auth/email-already-in-use') msg='Ese correo ya tiene una cuenta — inicia sesión en vez de crear una nueva.';
+        else if(err.code==='auth/invalid-email') msg='Correo no válido.';
+        else if(err.code==='auth/weak-password') msg='La contraseña necesita al menos 6 caracteres.';
+        else if(err.code==='auth/wrong-password'||err.code==='auth/invalid-credential') msg='Contraseña incorrecta.';
+        else if(err.code==='auth/user-not-found') msg='No hay cuenta con ese correo — crea una nueva.';
+        errEl.textContent = msg; errEl.hidden = false;
+      }).finally(function(){ btn.disabled = false; });
+    });
+    document.getElementById('signout-btn').addEventListener('click', function(){ signOut(auth); });
+  </script>
+
   <script>
   (function(){
     var CRM_STATUS={prospecto:{l:'Prospecto',c:'#6c6d76'},contactado:{l:'Contactado',c:'#e3d4ab'},analisis_pendiente:{l:'Análisis pendiente',c:'#9aa3b5'},analisis:{l:'Análisis en curso',c:'#c9a961'},propuesta:{l:'Propuesta enviada',c:'#3a5077'},implementacion:{l:'En implementación',c:'#b0473a'},cliente:{l:'Cliente activo',c:'#5e8a5e'},inactivo:{l:'Inactivo',c:'#9aa3b5'}};
@@ -437,7 +584,45 @@
     function eur(n){ return (n==null||isNaN(n))?'—':EUR.format(Math.round(n)); }
 
     var CLIENTS_KEY='aoraes_clients_v1', ACTIVE_KEY='aoraes_active_client';
-    function readClients(){ try{ return JSON.parse(localStorage.getItem(CLIENTS_KEY))||[]; }catch(e){ return []; } }
+    /* ---------- Nube (Firebase) ----------
+       readClients() sigue siendo síncrona (la usa media app sin esperar promesas): mientras no
+       ha llegado el primer snapshot de Firestore, lee localStorage como siempre; en cuanto llega
+       (evento aoraes-cloud-update, disparado por el módulo Firebase de arriba), pasa a leer de
+       ahí — así cada guardado en OTRO dispositivo se refleja aquí solo, sin recargar la página. */
+    var _preLoginClientsRaw=localStorage.getItem(CLIENTS_KEY);
+    var _cloudClientsById=null, _migrationDone=false;
+    function readClients(){
+      if(_cloudClientsById) return Object.keys(_cloudClientsById).map(function(k){ return _cloudClientsById[k].record; });
+      try{ return JSON.parse(localStorage.getItem(CLIENTS_KEY))||[]; }catch(e){ return []; }
+    }
+    function migrateLocalClientsToCloud(cloudById){
+      // clientes que ya estaban en este navegador ANTES de iniciar sesión (o de crear la cuenta)
+      // y que todavía no existen en la nube se suben una sola vez, para no perder nada al activar
+      // el login. Si el cliente ya existe en la nube, no se pisa (la nube manda).
+      if(_migrationDone) return; _migrationDone=true;
+      var localArr; try{ localArr=JSON.parse(_preLoginClientsRaw)||[]; }catch(e){ localArr=[]; }
+      if(!localArr.length || !window.AORAES_CLOUD) return;
+      var sols; try{ sols=JSON.parse(localStorage.getItem(SOLUTIONS_KEY))||{}; }catch(e){ sols={}; }
+      var meds; try{ meds=JSON.parse(localStorage.getItem(MED_BY_CLIENT_KEY))||{}; }catch(e){ meds={}; }
+      localArr.forEach(function(rec){
+        if(!rec || !rec.id || cloudById[rec.id]) return;
+        window.AORAES_CLOUD.syncClient({ id:rec.id, record:rec, solution:sols[rec.id]||null, medico:meds[rec.id]||null, exportedAt:new Date().toISOString() });
+      });
+    }
+    window.addEventListener('aoraes-cloud-update', function(e){
+      var byId=e.detail||{}, firstLoad=(_cloudClientsById===null);
+      _cloudClientsById=byId;
+      try{ localStorage.setItem(CLIENTS_KEY, JSON.stringify(Object.keys(byId).map(function(k){ return byId[k].record; }))); }catch(err){}
+      try{
+        var sols={}, meds={};
+        Object.keys(byId).forEach(function(k){ if(byId[k].solution) sols[k]=byId[k].solution; if(byId[k].medico) meds[k]=byId[k].medico; });
+        localStorage.setItem(SOLUTIONS_KEY, JSON.stringify(sols));
+        localStorage.setItem(MED_BY_CLIENT_KEY, JSON.stringify(meds));
+      }catch(err){}
+      if(firstLoad) migrateLocalClientsToCloud(byId);
+      if(typeof renderCockpit==='function') renderCockpit();
+    });
+    window.addEventListener('aoraes-signed-out', function(){ _cloudClientsById=null; _migrationDone=false; });
     function findClient(id){ return readClients().filter(function(c){return c.id===id;})[0]||null; }
     function getActive(){ try{ return localStorage.getItem(ACTIVE_KEY)||null; }catch(e){ return null; } }
     function setActive(id){ try{ if(id)localStorage.setItem(ACTIVE_KEY,id); else localStorage.removeItem(ACTIVE_KEY); }catch(e){} updateActiveChip(); }
@@ -507,13 +692,16 @@
       return { id:id, record:rec, solution:getSolution(id)||null, medico:medico, exportedAt:new Date().toISOString() };
     }
     function writeClientFile(id){
+      var payload=clientPayload(id);
+      if(payload && window.AORAES_CLOUD) window.AORAES_CLOUD.syncClient(payload);
       if(!clientesDirHandle || clientesDirStatus!=='ok') return Promise.resolve();
-      var payload=clientPayload(id); if(!payload) return Promise.resolve();
+      if(!payload) return Promise.resolve();
       return clientesDirHandle.getFileHandle(id+'.json',{create:true}).then(function(fh){
         return fh.createWritable().then(function(w){ return w.write(JSON.stringify(payload,null,2)).then(function(){ return w.close(); }); });
       }).catch(function(e){ console.error('AORAES: fallo al escribir el archivo del cliente',id,e); });
     }
     function removeClientFile(id){
+      if(window.AORAES_CLOUD) window.AORAES_CLOUD.removeClient(id);
       if(!clientesDirHandle || clientesDirStatus!=='ok') return Promise.resolve();
       return clientesDirHandle.removeEntry(id+'.json').catch(function(e){ /* ya no existe u otro fallo menor: no es crítico */ });
     }
