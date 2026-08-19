@@ -3788,8 +3788,12 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   function computePerson(snap){
     if(!snap) return null;
     var backup=collectState();
-    try{ applyState(snap,true); return compute(); }
-    finally{ applyState(backup,true); }
+    // compute() nunca lee #contract-propuesta-body, así que este backup/restore no necesita tocarlo —
+    // sin skipPropuesta, cada tecla escrita en S.12 disparaba render() → renderPropuestaPreview() →
+    // computePerson() → applyState() aquí, que reconstruía la tabla entera (incluida la fila que se
+    // estaba editando) y perdía el foco tras el primer carácter.
+    try{ applyState(snap,true,true); return compute(); }
+    finally{ applyState(backup,true,true); }
   }
   /* ---------- S.12 Propuesta: simulación "qué pasaría si" ----------
      Los productos propuestos (tabla S.12) no son datos reales del cliente todavía — para comparar
@@ -3981,7 +3985,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     Object.keys(CONTRACT_SECTIONS).forEach(function(k){ if(k.indexOf('ins_')===0) data.contract[k]=getContractRows(k); });
     return data;
   }
-  function applyState(data, silent){
+  function applyState(data, silent, skipPropuesta){
     data=data||{};
     var meta=data.meta||{}, fields=data.fields||{};
     ['m_cliente','m_asesor','m_fecha','m_fecha_nac','f-sit-renteInfoFecha-A','f-sit-renteInfoFecha-B'].forEach(function(id){var e=$('#'+id);if(e)e.value=meta[id]||'';});
@@ -4041,7 +4045,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var contract=data.contract||{};
     renderContractSection('s5',contract.s5||[]);
     renderContractSection('s7',contract.s7||[]);
-    renderContractSection('propuesta', couple.on ? propuestaShared : (contract.propuesta||[]));
+    if(!skipPropuesta) renderContractSection('propuesta', couple.on ? propuestaShared : (contract.propuesta||[]));
     Object.keys(CONTRACT_SECTIONS).forEach(function(k){
       if(k.indexOf('ins_')===0) renderContractSection(k,(contract[k]&&contract[k].length)?contract[k]:[{}]);
     });
