@@ -1163,7 +1163,7 @@
     <section class="card">
       <div class="card-head"><div><span class="eyebrow">S.5 · Altersversorgung</span><h2>Previsión privada para la jubilación</h2></div></div>
       <div class="card-body">
-        <p class="goal-intro">Registre cada contrato (jubilación o previsión para menores/Ausbildungsvorsorge). La Rentenlücke se calcula automáticamente a partir de estos datos y de la Renteninformation (S.10). En Betriebliche Altersversorgung y Direktversicherung, indique solo la aportación propia del cliente (Entgeltumwandlung) — el 15% de aporte obligatorio del empleador (desde 2019) se suma solo, no lo incluya usted mismo. En Riester-Rente, indique también solo la aportación propia: la Grundzulage (175€/año) y la Kinderzulage por cada hijo registrado en S.8 (300€/año si nació en 2008 o después, 185€ si nació antes) se suman automáticamente al titular A.</p>
+        <p class="goal-intro">Registre cada contrato (jubilación o previsión para menores/Ausbildungsvorsorge). La Rentenlücke se calcula automáticamente a partir de estos datos y de la Renteninformation (S.10). En Betriebliche Altersversorgung y Direktversicherung, indique solo la aportación propia del cliente (Entgeltumwandlung) — el 15% de aporte obligatorio del empleador (desde 2019) se suma solo, no lo incluya usted mismo. En Riester-Rente, indique también solo la aportación propia: la Grundzulage (175€/año) y la Kinderzulage por cada hijo registrado en S.8 (300€/año si nació en 2008 o después, 185€ si nació antes) se suman automáticamente al titular A — completas si la aportación alcanza el 4% del sueldo bruto (S.9) menos la Zulage, si no, proporcionalmente.</p>
         <div class="contract-table" id="contract-s5-body"></div>
         <button type="button" class="cr-add" data-craddition="s5">+ Añadir contrato</button>
         <div class="cat-label">Supuestos de jubilación</div>
@@ -2288,20 +2288,30 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   // por titular con contrato Riester, más una Kinderzulage por cada hijo (300€ si nació en 2008 o
   // después, 185€ si nació antes). Por defecto la Kinderzulage la cobra el titular "A" (así funciona
   // sin solicitud expresa de traspaso) — si en un caso real correspondiera a "B", es una simplificación
-  // a tener en cuenta. Simplificación básica adicional: se asume que el aporte propio ya alcanza el
-  // mínimo exigido (Sockelbetrag 60€/año) para cobrar la Zulage completa, sin recalcular el 4% del
-  // sueldo bruto del año anterior — la recomendación estándar de un asesor ya apunta a ese mínimo.
+  // a tener en cuenta.
+  // Para cobrar la Zulage COMPLETA hace falta aportar al menos el Mindesteigenbeitrag: el 4% del
+  // sueldo bruto sujeto a la Rentenversicherung del año anterior, menos la Zulage ya concedida, con
+  // suelo en el Sockelbetrag (60€/año). Si se aporta menos, la Zulage se reduce en la misma
+  // proporción (p.ej. aportar el 80% del mínimo exigido da el 80% de la Zulage) — verificado contra
+  // dos ejemplos resueltos del guion oficial (30.000€ bruto → mínimo exacto de 1.025€/año).
+  // Se reutiliza el sueldo bruto ya introducido en S.9 (Ingresos); sin ese dato, el mínimo exigido cae
+  // directo al Sockelbetrag (idéntico a asumir que el aporte ya alcanza el mínimo).
   var RIESTER_GRUNDZULAGE=175, RIESTER_KINDERZULAGE_NEW=300, RIESTER_KINDERZULAGE_OLD=185, RIESTER_SOCKELBETRAG=60;
-  function riesterZulageMonthly(persona){
-    var total=RIESTER_GRUNDZULAGE;
+  function riesterZulageMonthly(persona, montoAnual){
+    var zulageFull=RIESTER_GRUNDZULAGE;
     if(persona==='A'){
       getChildrenData().forEach(function(c){
         var year=c.fechaNacimiento?parseInt(c.fechaNacimiento.slice(0,4),10):0;
         if(!year) return;
-        total+=(year>=2008)?RIESTER_KINDERZULAGE_NEW:RIESTER_KINDERZULAGE_OLD;
+        zulageFull+=(year>=2008)?RIESTER_KINDERZULAGE_NEW:RIESTER_KINDERZULAGE_OLD;
       });
     }
-    return total/12;
+    var brutoEl=document.querySelector('[data-gross="salarioBruto_'+persona+'"]');
+    var pagasEl=document.querySelector('[data-gross="numPagas_'+persona+'"]');
+    var brutoAnual=(brutoEl?parseFloat(brutoEl.value)||0:0)*((pagasEl&&parseFloat(pagasEl.value))||12);
+    var minimoExigido=Math.max(RIESTER_SOCKELBETRAG, 0.04*brutoAnual-zulageFull);
+    var ratio=minimoExigido>0?Math.min(montoAnual/minimoExigido,1):1;
+    return (zulageFull*ratio)/12;
   }
   function recalcS5(){
     var rows=getContractRows('s5'), aporte=0, aporteA=0, aporteB=0, tieneJub=false, tieneMenores=false, menoresComp='';
@@ -2310,7 +2320,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       var monto=parseFloat(r.aportacion)||0;
       if(r.aportFrecuencia==='anual') monto=monto/12; // el asesor puede indicar el importe como aporte anual
       if(BAV_TYPES.indexOf(r.tipo)>=0) monto*=(1+BAV_EMPLOYER_MATCH);
-      if(r.tipo==='Riester-Rente' && monto*12>=RIESTER_SOCKELBETRAG) monto+=riesterZulageMonthly(r.persona);
+      if(r.tipo==='Riester-Rente') monto+=riesterZulageMonthly(r.persona,monto*12);
       if(r.tipo==='Ausbildungsvorsorge'){ tieneMenores=true; if(!menoresComp && r.compania) menoresComp=r.compania; }
       else {
         aporte+=monto; if(monto>0||r.compania) tieneJub=true;
