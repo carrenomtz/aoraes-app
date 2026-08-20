@@ -1947,6 +1947,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     sumaAsegurada:{label:'Suma asegurada (Deckungssumme)',kind:'euro'},
     nivelCobertura:{label:'Nivel de cobertura',kind:'select',options:[['haftpflicht','Solo Haftpflicht (obligatorio)'],['teilkasko','+ Teilkasko'],['vollkasko','+ Vollkasko']]},
     grundsumme:{label:'Suma básica de invalidez (Grundsumme)',kind:'euro'},
+    wohnflaeche:{label:'Superficie de la vivienda (m²)',kind:'number'},
     bausparsumme:{label:'Bausparsumme',kind:'euro'},
     saldo:{label:'Saldo / valor actual',kind:'euro'},
     aportacion:{label:'Aportación periódica (opcional)',kind:'euro'},
@@ -2048,6 +2049,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // dentro de Hogar/Edificio. En vez de crear un seguro nuevo, se pregunta aquí mismo si el contrato
     // ya la incluye; solo registra el dato, no cambia la puntuación (mantenerlo simple).
     if(key==='insHogar'||key==='insGebaude') fields=fields.concat(['elemental']);
+    // Hogar: el guion oficial DBBV exige mínimo 650€/m² de superficie para evitar Unterversicherung
+    // (infraseguro) — por debajo, el asegurador recorta la indemnización proporcionalmente aunque el
+    // contrato exista. La tarifa moderna "Wohnflächenmodell" (sin suma fija, la que trae la póliza real
+    // que revisamos) evita esto por diseño — por eso "suma asegurada" es opcional aquí.
+    if(key==='insHogar') fields=fields.concat(['wohnflaeche','sumaAsegurada']);
     CONTRACT_SECTIONS[sec]={fields:fields};
     return '<div class="ins-row">'+
       '<label class="chk ins-have"><input type="checkbox" data-ins="'+key+'"><span>'+insLabel[key]+'</span></label>'+
@@ -2648,6 +2654,21 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       if(!(totIncome>0)) return 0;
       return Math.min(grundsumme/(totIncome*ACCIDENTES_ADEQUACY_MULTIPLE),1);
     }
+    // Hogar (insHogar): mínimo 650€ por m² de superficie para evitar Unterversicherung (el guion
+    // oficial DBBV lo exige para poder pactar el Unterversicherungsverzicht). Si el contrato usa la
+    // tarifa moderna "Wohnflächenmodell" (sin suma fija — la de la póliza real que revisamos) el
+    // infraseguro no puede darse por diseño, así que basta con la superficie, sin exigir una suma.
+    var HOGAR_ADEQUACY_PER_SQM=650;
+    function hogarCoverageCredit(){
+      var rows=getContractRows(insSectionKey('insHogar')), any=false, wohnflaeche=0, suma=0;
+      rows.forEach(function(r){
+        if(r.wohnflaeche!==undefined&&String(r.wohnflaeche).trim()!==''){ any=true; wohnflaeche=Math.max(wohnflaeche,parseFloat(r.wohnflaeche)||0); }
+        if(r.sumaAsegurada!==undefined&&String(r.sumaAsegurada).trim()!=='') suma=Math.max(suma,parseFloat(r.sumaAsegurada)||0);
+      });
+      if(!any||!(wohnflaeche>0)) return 1; // sin dato de superficie todavía: comportamiento previo
+      if(!(suma>0)) return 1; // Wohnflächenmodell: sin suma fija, infraseguro no aplica por diseño
+      return Math.min(suma/(wohnflaeche*HOGAR_ADEQUACY_PER_SQM),1);
+    }
     // weighted insurance coverage (respecting "No aplica"); weight 0 = not scored
     function groupIns(keys){
       var num=0,den=0;
@@ -2658,7 +2679,8 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         den+=w;
         var have=document.querySelector('[data-ins="'+k+'"]');
         if(!(have&&have.checked)) return;
-        num += (k==='insIncap') ? w*buCoverageCredit() : (k==='insRC') ? w*rcCoverageCredit() : (k==='insAccidentes') ? w*accidentesCoverageCredit() : w;
+        var credit=(k==='insIncap')?buCoverageCredit():(k==='insRC')?rcCoverageCredit():(k==='insAccidentes')?accidentesCoverageCredit():(k==='insHogar')?hogarCoverageCredit():1;
+        num += w*credit;
       });
       return den>0?num/den*100:100;
     }
