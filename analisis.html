@@ -1942,6 +1942,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     beneficioMensual:{label:'Renta mensual asegurada (si queda incapacitado)',kind:'euro'},
     elemental:{label:'¿Incluye daños por fenómenos naturales (inundación, terremoto)?',kind:'checkbox'},
     sumaAsegurada:{label:'Suma asegurada (Deckungssumme)',kind:'euro'},
+    nivelCobertura:{label:'Nivel de cobertura',kind:'select',options:[['haftpflicht','Solo Haftpflicht (obligatorio)'],['teilkasko','+ Teilkasko'],['vollkasko','+ Vollkasko']]},
     bausparsumme:{label:'Bausparsumme',kind:'euro'},
     saldo:{label:'Saldo / valor actual',kind:'euro'},
     aportacion:{label:'Aportación periódica (opcional)',kind:'euro'},
@@ -2032,6 +2033,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // basta con tenerla, importa si cubre lo suficiente — por eso solo aquí se pide el importe.
     if(key==='insIncap') fields=fields.concat(['beneficioMensual']);
     if(key==='insRC') fields=fields.concat(['sumaAsegurada']);
+    // Auto: la Haftpflicht es obligatoria por ley y ya viene con mínimos altos (7,5M personas/1,3M
+    // cosas/50.000€ patrimonio), así que no hace falta puntuarla como RC — pero si el coche del
+    // cliente no tiene Teil-/Vollkasko, sus propios daños (robo, choque en culpa propia...) no están
+    // cubiertos en absoluto. Solo se registra, no cambia la puntuación (depende del valor del coche).
+    if(key==='insAuto') fields=fields.concat(['nivelCobertura']);
     // Elementarschaden (inundación, terremoto...) casi nunca es una póliza aparte — viene como añadido
     // dentro de Hogar/Edificio. En vez de crear un seguro nuevo, se pregunta aquí mismo si el contrato
     // ya la incluye; solo registra el dato, no cambia la puntuación (mantenerlo simple).
