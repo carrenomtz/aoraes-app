@@ -1230,11 +1230,27 @@
     function fmtRequested(ts){
       try{ var d=ts&&ts.toDate?ts.toDate():null; if(!d)return ''; return 'Solicitado '+relTime(d.toISOString()); }catch(e){ return ''; }
     }
+    var asesoresTimeoutId=null;
     function renderAsesores(){
       var listEl=document.getElementById('asesores-list');
       listEl.innerHTML='<div class="ase-empty">Cargando asesores…</div>';
+      if(asesoresTimeoutId){ clearTimeout(asesoresTimeoutId); asesoresTimeoutId=null; }
       if(!window.AORAES_CLOUD||!window.AORAES_CLOUD.listAdvisors){ listEl.innerHTML='<div class="ase-empty">La nube no está lista todavía.</div>'; return; }
+      // Sin este timeout, una conexión lenta o inestable (típico en móvil con poca cobertura) deja el
+      // "Cargando asesores…" girando para siempre: la petición a Firestore no falla, solo no llega
+      // nunca, y sin rechazo el .catch() de abajo no se dispara. Con el timeout, a los 12s se muestra
+      // un error claro con el mismo botón "↻ Actualizar" para reintentar. Se guarda en una variable
+      // compartida (no local) para poder cancelarlo si el usuario pulsa "Actualizar" otra vez antes
+      // de que salte — si no, un refresco rápido podía dejar el mensaje de timeout de la llamada
+      // anterior pisando el resultado bueno de la nueva.
+      var timedOut=false;
+      var timeoutId=asesoresTimeoutId=setTimeout(function(){
+        timedOut=true;
+        listEl.innerHTML='<div class="ase-empty">La conexión está tardando demasiado. Comprueba tu red y pulsa "↻ Actualizar".</div>';
+      }, 12000);
       window.AORAES_CLOUD.listAdvisors().then(function(list){
+        if(timedOut) return null;
+        clearTimeout(timeoutId);
         list.sort(function(a,b){ var oa=a.status==='pending'?0:1, ob=b.status==='pending'?0:1; if(oa!==ob)return oa-ob; return (a.email||'').localeCompare(b.email||''); });
         if(!list.length){ listEl.innerHTML='<div class="ase-empty">Todavía no hay asesores registrados.</div>'; return; }
         return Promise.all(list.map(function(p){
@@ -1272,7 +1288,12 @@
 
           return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+esc(p.email||p.uid)+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+'</div><div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+'</div><div class="ase-acts">'+menu+'</div></div>';
         }).join('')+'</div>';
-      }).catch(function(e){ console.error('AORAES: fallo al listar asesores',e); listEl.innerHTML='<div class="ase-empty">No se pudo cargar la lista. Revisa la consola.</div>'; });
+      }).catch(function(e){
+        clearTimeout(timeoutId);
+        if(timedOut) return;
+        console.error('AORAES: fallo al listar asesores',e);
+        listEl.innerHTML='<div class="ase-empty">No se pudo cargar la lista. Revisa la consola.</div>';
+      });
     }
     document.getElementById('asesores-refresh').addEventListener('click', renderAsesores);
     document.getElementById('asesores-list').addEventListener('click', function(e){
@@ -1488,6 +1509,7 @@
       'Cargando asesores…':'Loading advisors…','La nube no está lista todavía.':"The cloud isn't ready yet.",
       'Todavía no hay asesores registrados.':'No advisors registered yet.',
       'No se pudo cargar la lista. Revisa la consola.':"Couldn't load the list. Check the console.",
+      'La conexión está tardando demasiado. Comprueba tu red y pulsa "↻ Actualizar".':'The connection is taking too long. Check your network and tap "↻ Refresh".',
       'Pendiente':'Pending','Aprobado':'Approved','Restringido':'Restricted',
       'Admin':'Admin','(tú)':'(you)','{0} cliente':'{0} client','{0} clientes':'{0} clients',
       'Solicitado {0}':'Requested {0}','Opciones':'Options',
@@ -1579,6 +1601,7 @@
       'Cargando asesores…':'Berater werden geladen…','La nube no está lista todavía.':'Die Cloud ist noch nicht bereit.',
       'Todavía no hay asesores registrados.':'Noch keine Berater registriert.',
       'No se pudo cargar la lista. Revisa la consola.':'Liste konnte nicht geladen werden. Konsole prüfen.',
+      'La conexión está tardando demasiado. Comprueba tu red y pulsa "↻ Actualizar".':'Die Verbindung dauert zu lange. Prüfen Sie Ihr Netzwerk und tippen Sie auf "↻ Aktualisieren".',
       'Pendiente':'Ausstehend','Aprobado':'Genehmigt','Restringido':'Eingeschränkt',
       'Admin':'Admin','(tú)':'(du)','{0} cliente':'{0} Kunde','{0} clientes':'{0} Kunden',
       'Solicitado {0}':'Angefragt {0}','Opciones':'Optionen',
