@@ -1930,7 +1930,10 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   // fallecimiento podía marcar "familia" al 100% con solo salud+incapacidad+dependencia, aunque su
   // familia se quedara sin ingresos ni hipoteca cubierta si él/ella faltara. Ahora pesa igual que las
   // demás coberturas esenciales.
-  var insWeight={insSalud:2,insIncap:2,insPflege:2,insVida:2,insRC:2,insAuto:1,insHogar:1,insGebaude:1,insGlas:0,insAccidentes:0,insLegal:0,insViaje:0};
+  // insAccidentes ya no pesa 0: el guion oficial de Unfallversicherung da una Faustformel concreta
+  // para juzgar si la Grundsumme es adecuada (ver accidentesCoverageCredit), así que deja de ser
+  // "cobertura menor sin criterio de suficiencia" y pasa al mismo nivel que Auto/Hogar/Gebäude.
+  var insWeight={insSalud:2,insIncap:2,insPflege:2,insVida:2,insRC:2,insAuto:1,insHogar:1,insGebaude:1,insGlas:0,insAccidentes:1,insLegal:0,insViaje:0};
   // generic repeatable contract-row config — must be defined before insRow()/insGroup() run (below)
   var FIELD_META={
     tipo:{label:'Tipo de producto',kind:'type'},
@@ -1943,6 +1946,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     elemental:{label:'¿Incluye daños por fenómenos naturales (inundación, terremoto)?',kind:'checkbox'},
     sumaAsegurada:{label:'Suma asegurada (Deckungssumme)',kind:'euro'},
     nivelCobertura:{label:'Nivel de cobertura',kind:'select',options:[['haftpflicht','Solo Haftpflicht (obligatorio)'],['teilkasko','+ Teilkasko'],['vollkasko','+ Vollkasko']]},
+    grundsumme:{label:'Suma básica de invalidez (Grundsumme)',kind:'euro'},
     bausparsumme:{label:'Bausparsumme',kind:'euro'},
     saldo:{label:'Saldo / valor actual',kind:'euro'},
     aportacion:{label:'Aportación periódica (opcional)',kind:'euro'},
@@ -2029,10 +2033,12 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   function insRow(key){
     var sec=insSectionKey(key);
     var fields=INS_HOUSEHOLD[key]?['compania','producto','tarifa']:['persona','compania','producto','tarifa'];
-    // BU y RC son las coberturas donde el importe asegurado cambia la puntuación (ver groupIns): no
-    // basta con tenerla, importa si cubre lo suficiente — por eso solo aquí se pide el importe.
+    // BU, RC y Accidentes son las coberturas donde el importe asegurado cambia la puntuación (ver
+    // groupIns): no basta con tenerla, importa si cubre lo suficiente — por eso solo aquí se pide el
+    // importe.
     if(key==='insIncap') fields=fields.concat(['beneficioMensual']);
     if(key==='insRC') fields=fields.concat(['sumaAsegurada']);
+    if(key==='insAccidentes') fields=fields.concat(['grundsumme']);
     // Auto: la Haftpflicht es obligatoria por ley y ya viene con mínimos altos (7,5M personas/1,3M
     // cosas/50.000€ patrimonio), así que no hace falta puntuarla como RC — pero si el coche del
     // cliente no tiene Teil-/Vollkasko, sus propios daños (robo, choque en culpa propia...) no están
@@ -2630,6 +2636,18 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       if(!any) return 1;
       return Math.min(suma/RC_ADEQUACY_THRESHOLD,1);
     }
+    // Accidentes (insAccidentes): Faustformel del guion oficial DBBV de Unfallversicherung — la
+    // Grundsumme (suma básica de invalidez) debería ser al menos 44 veces el ingreso neto mensual del
+    // hogar. Se suma la Grundsumme de todas las filas (puede haber una por persona); por debajo del
+    // umbral, crédito proporcional.
+    var ACCIDENTES_ADEQUACY_MULTIPLE=44;
+    function accidentesCoverageCredit(){
+      var rows=getContractRows(insSectionKey('insAccidentes')), any=false, grundsumme=0;
+      rows.forEach(function(r){ var v=r.grundsumme; if(v!==undefined&&String(v).trim()!==''){ any=true; grundsumme+=parseFloat(v)||0; } });
+      if(!any) return 1;
+      if(!(totIncome>0)) return 0;
+      return Math.min(grundsumme/(totIncome*ACCIDENTES_ADEQUACY_MULTIPLE),1);
+    }
     // weighted insurance coverage (respecting "No aplica"); weight 0 = not scored
     function groupIns(keys){
       var num=0,den=0;
@@ -2640,7 +2658,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         den+=w;
         var have=document.querySelector('[data-ins="'+k+'"]');
         if(!(have&&have.checked)) return;
-        num += (k==='insIncap') ? w*buCoverageCredit() : (k==='insRC') ? w*rcCoverageCredit() : w;
+        num += (k==='insIncap') ? w*buCoverageCredit() : (k==='insRC') ? w*rcCoverageCredit() : (k==='insAccidentes') ? w*accidentesCoverageCredit() : w;
       });
       return den>0?num/den*100:100;
     }
