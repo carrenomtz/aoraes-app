@@ -1946,6 +1946,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     elemental:{label:'¿Incluye daños por fenómenos naturales (inundación, terremoto)?',kind:'checkbox'},
     sumaAsegurada:{label:'Suma asegurada (Deckungssumme)',kind:'euro'},
     nivelCobertura:{label:'Nivel de cobertura',kind:'select',options:[['haftpflicht','Solo Haftpflicht (obligatorio)'],['teilkasko','+ Teilkasko'],['vollkasko','+ Vollkasko']]},
+    modeloGebaeude:{label:'Modelo de tarifa',kind:'select',options:[['wohnflaeche','Wohnflächenmodell (por superficie, sin suma fija)'],['wert1914','Versicherungssumme 1914 (suma fija clásica)'],['','No lo sé']]},
+    rsPrivat:{label:'¿Incluye Privat-Rechtsschutz (vida privada, contratos, impuestos)?',kind:'checkbox'},
+    rsBeruf:{label:'¿Incluye Berufs-Rechtsschutz (conflictos laborales, despido)?',kind:'checkbox'},
+    rsVerkehr:{label:'¿Incluye Verkehrs-Rechtsschutz (como conductor, peatón, ciclista)?',kind:'checkbox'},
+    rsWohnung:{label:'¿Incluye Wohnungs-/Haus-Rechtsschutz (vivienda, alquiler)?',kind:'checkbox'},
     grundsumme:{label:'Suma básica de invalidez (Grundsumme)',kind:'euro'},
     wohnflaeche:{label:'Superficie de la vivienda (m²)',kind:'number'},
     bausparsumme:{label:'Bausparsumme',kind:'euro'},
@@ -2054,6 +2059,18 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // contrato exista. La tarifa moderna "Wohnflächenmodell" (sin suma fija, la que trae la póliza real
     // que revisamos) evita esto por diseño — por eso "suma asegurada" es opcional aquí.
     if(key==='insHogar') fields=fields.concat(['wohnflaeche','sumaAsegurada']);
+    // Edificio (insGebaude): el guion oficial DBBV distingue el mismo Wohnflächenmodell sin suma fija
+    // (infraseguro imposible por diseño) del modelo clásico "Versicherungssumme 1914", cuya suma
+    // adecuada depende del Baupreisindex (índice oficial de precios de construcción, publicado por el
+    // Statistisches Bundesamt y actualizado cada trimestre) — no hay un umbral fijo que se pueda
+    // codificar aquí con fiabilidad, así que el dato queda informativo, sin cambiar la puntuación.
+    if(key==='insGebaude') fields=fields.concat(['modeloGebaeude']);
+    // Jurídica (insLegal): el guion oficial DBBV insiste en que "tiene Rechtsschutz" no basta — son 4
+    // módulos independientes (Privat/Beruf/Verkehr/Wohnung) y el cliente puede tener, por ejemplo, solo
+    // Verkehrs-RS (muy común) y creerse cubierto también en un despido (Berufs-RS) o un conflicto de
+    // alquiler (Wohnungs-RS) sin estarlo. Se registra qué módulos trae para detectar ese hueco; no
+    // cambia la puntuación (no hay un umbral de "suma adecuada" para Rechtsschutz).
+    if(key==='insLegal') fields=fields.concat(['rsPrivat','rsBeruf','rsVerkehr','rsWohnung']);
     CONTRACT_SECTIONS[sec]={fields:fields};
     return '<div class="ins-row">'+
       '<label class="chk ins-have"><input type="checkbox" data-ins="'+key+'"><span>'+insLabel[key]+'</span></label>'+
