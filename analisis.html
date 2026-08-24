@@ -2232,6 +2232,10 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var body=$('#contract-'+section+'-body'); if(!body) return arr;
     body.querySelectorAll('.contract-row').forEach(function(rowEl){
       var o={};
+      // Campos guardados en la ficha que esta versión de la app ya no dibuja (ver
+      // renderContractSection): se arrastran tal cual para que quitar un campo del formulario NUNCA
+      // borre ese dato de las fichas ya guardadas. Van primero para que cualquier input real los pise.
+      if(rowEl._carriedFields) Object.keys(rowEl._carriedFields).forEach(function(k){ o[k]=rowEl._carriedFields[k]; });
       rowEl.querySelectorAll('[data-contract]').forEach(function(e){
         var f=e.getAttribute('data-contract').split(':').slice(2).join(':');
         o[f]=(e.type==='checkbox')?e.checked:e.value;
@@ -2258,10 +2262,20 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     body.innerHTML=rows.map(function(row,i){return renderContractRowHTML(section,i,row);}).join('');
     rows.forEach(function(row,i){
       var rowEl=body.querySelector('.contract-row[data-row-idx="'+i+'"]'); if(!rowEl) return;
+      var carried=null;
       Object.keys(row).forEach(function(f){
-        var e=rowEl.querySelector('[data-contract="'+section+':'+i+':'+f+'"]'); if(!e) return;
+        var e=rowEl.querySelector('[data-contract="'+section+':'+i+':'+f+'"]');
+        if(!e){
+          // El dato existe en la ficha guardada pero esta versión ya no tiene ese campo en pantalla
+          // (p. ej. "Compañía" en S.5, o "Producto"/"Tarifa" en los seguros). Sin esto, abrir la ficha
+          // y pulsar Guardar lo borraba para siempre y en silencio. Se conserva para que el dato
+          // sobreviva y siga estando si algún día se vuelve a mostrar el campo.
+          if(row[f]!==''&&row[f]!=null&&row[f]!==false){ (carried=carried||{})[f]=row[f]; }
+          return;
+        }
         if(e.type==='checkbox') e.checked=!!row[f]; else e.value=row[f]||'';
       });
+      if(carried) rowEl._carriedFields=carried;
       if(section==='s7'){
         updateOtrosApVisibility(rowEl);
         updateFreqVisibility(rowEl);
@@ -2296,8 +2310,13 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var rows=getContractRows(section), oldData=rows[idx]||{}, newTipo=selectEl.value;
     oldData.tipo=prevTipo; // getContractRows() already reflects the new <select> value — restore the old one for comparison
     var newFields=resolveFields(section,{tipo:newTipo}).map(function(f){return Array.isArray(f)?f[0]:f;});
+    // Los campos arrastrados (guardados en la ficha pero que esta versión ya no dibuja, ver
+    // renderContractSection) no pertenecen al esquema de ningún tipo: se conservan siempre y no se
+    // anuncian en el aviso — avisar de perder un campo que el asesor no ve solo confunde.
+    var rowElT=selectEl.closest('.contract-row');
+    var carriedT=(rowElT&&rowElT._carriedFields)||{};
     var willLose=Object.keys(oldData).filter(function(f){
-      if(f==='tipo'||f==='persona'||newFields.indexOf(f)>=0) return false;
+      if(f==='tipo'||f==='persona'||newFields.indexOf(f)>=0||carriedT[f]!==undefined) return false;
       var v=oldData[f]; return v!==''&&v!==false&&v!=null;
     });
     if(willLose.length){
@@ -2305,7 +2324,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       var ok=confirm('Al cambiar el tipo de producto se perderán estos datos ya introducidos:\n\n'+labels.join('\n')+'\n\n¿Continuar?');
       if(!ok){ selectEl.value=prevTipo; return; }
     }
-    var kept={}; Object.keys(oldData).forEach(function(f){ if(f==='persona'||newFields.indexOf(f)>=0) kept[f]=oldData[f]; });
+    var kept={}; Object.keys(oldData).forEach(function(f){ if(f==='persona'||newFields.indexOf(f)>=0||carriedT[f]!==undefined) kept[f]=oldData[f]; });
     kept.tipo=newTipo; rows[idx]=kept;
     renderContractSection(section,rows);
   }
