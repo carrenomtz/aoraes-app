@@ -790,7 +790,7 @@
           var arr=[];
           snap.forEach(function(d){
             var data=d.data()||{}; var rec=data.record||{};
-            if(rec._generic) return;
+            if(rec._generic || rec.analysis_type==='BUSINESS') return;
             var ownerUid = d.ref.parent.parent ? d.ref.parent.parent.id : null;
             arr.push({ clientId:d.id, ownerUid:ownerUid, name:rec.name||'—', createdAt:rec.createdAt||null });
           });
@@ -965,6 +965,10 @@
       if(_cloudClientsById) return Object.keys(_cloudClientsById).map(function(k){ return _cloudClientsById[k].record; });
       try{ return JSON.parse(localStorage.getItem(CLIENTS_KEY))||[]; }catch(e){ return []; }
     }
+    // Las empresas (analysis_type BUSINESS, ver analisis.html) comparten almacén con las personas
+    // pero NUNCA su listado: el cockpit es de personas y abrir ahí una empresa la cargaría en el
+    // formulario privado. Las fichas anteriores a este campo no lo llevan y son personas.
+    function isBusinessRec(c){ return !!c && c.analysis_type==='BUSINESS'; }
     function migrateLocalClientsToCloud(cloudById){
       // clientes que ya estaban en este navegador ANTES de iniciar sesión (o de crear la cuenta)
       // y que todavía no existen en la nube se suben una sola vez, para no perder nada al activar
@@ -2189,7 +2193,7 @@
       }
     }
     function renderCockpitInner(){
-      var arr=readClients().filter(function(c){ return !c._generic; }), activeId=getActive();
+      var arr=readClients().filter(function(c){ return !c._generic && !isBusinessRec(c); }), activeId=getActive();
       var overdue=0, low=0, neg=0, proposals=0;
       arr.forEach(function(c){
         try{ var cm=c.crm||{}; var rs=reviewState(cm.review); if(rs&&rs.cls==='overdue')overdue++; if(typeof c.score==='number'&&c.score<40)low++; if(typeof c.flow==='number'&&c.flow<0)neg++; var st0=cm.status||'prospecto'; if(st0==='propuesta'||st0==='implementacion')proposals++; }
