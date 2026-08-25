@@ -97,6 +97,11 @@
   #auth-submit:hover{background:var(--navy-deep)}
   #auth-submit:disabled{opacity:.6; cursor:default}
   .auth-toggle{display:block; width:100%; margin-top:16px; background:none; border:none; font:inherit; font-size:12.5px; color:var(--navy-2); cursor:pointer; text-decoration:underline}
+  .auth-forgot{display:block; width:100%; margin-top:12px; background:none; border:none; font:inherit;
+    font-size:12.5px; color:var(--faint); cursor:pointer; text-decoration:underline}
+  .auth-forgot:hover{color:var(--navy-2)}
+  .auth-ok{font-size:12.5px; color:#5e8a5e; background:rgba(94,138,94,.08); border:1px solid rgba(94,138,94,.28);
+    border-radius:8px; padding:8px 10px; margin-top:10px}
   .auth-status{margin-top:14px; font-size:11.5px; color:var(--faint)}
   .auth-status[hidden]{display:none}
   .signout-btn{
@@ -553,8 +558,10 @@
           <button type="button" class="auth-eye" id="auth-eye2" aria-label="Mostrar contraseña" title="Mostrar contraseña">👁</button>
         </div>
         <div class="auth-err" id="auth-err" hidden></div>
+        <div class="auth-ok" id="auth-ok" hidden></div>
         <button type="submit" id="auth-submit">Entrar</button>
       </form>
+      <button type="button" class="auth-forgot" id="auth-forgot">¿Olvidaste tu contraseña?</button>
       <button type="button" class="auth-toggle" id="auth-toggle">¿Primera vez? Crea tu cuenta</button>
       <div class="auth-status" id="auth-status">Conectando…</div>
     </div>
@@ -679,7 +686,7 @@
        el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut }
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, collectionGroup, query, where, orderBy, limit as fsLimit, getDocs, onSnapshot, serverTimestamp }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
@@ -866,6 +873,8 @@
       document.getElementById('auth-pass2-wrap').hidden = !isSignup;
       document.getElementById('auth-pass2-label').hidden = !isSignup;
       document.getElementById('auth-pass2').required = isSignup;
+      document.getElementById('auth-forgot').hidden = isSignup;
+      document.getElementById('auth-ok').hidden = true;
       if(!isSignup) document.getElementById('auth-pass2').value = '';
     });
     function wireEye(btnId, inputId){
@@ -886,6 +895,7 @@
       var errEl = document.getElementById('auth-err');
       var btn = document.getElementById('auth-submit');
       errEl.hidden = true;
+      document.getElementById('auth-ok').hidden = true;
       if(isSignup && pass !== document.getElementById('auth-pass2').value){
         errEl.textContent = 'Las contraseñas no coinciden — revísalas.'; errEl.hidden = false; return;
       }
@@ -899,6 +909,34 @@
         else if(err.code==='auth/wrong-password'||err.code==='auth/invalid-credential') msg='Contraseña incorrecta.';
         else if(err.code==='auth/user-not-found') msg='No hay cuenta con ese correo — crea una nueva.';
         errEl.textContent = msg; errEl.hidden = false;
+      }).finally(function(){ btn.disabled = false; });
+    });
+    // Recuperar contraseña: Firebase envía el enlace por correo. A propósito NO se distingue entre
+    // "no existe esa cuenta" y "enviado" — decirlo permitiría a cualquiera averiguar qué correos
+    // están registrados en la herramienta. El asesor ve siempre el mismo mensaje.
+    document.getElementById('auth-forgot').addEventListener('click', function(){
+      var email = document.getElementById('auth-email').value.trim();
+      var errEl = document.getElementById('auth-err'), okEl = document.getElementById('auth-ok');
+      var btn = this;
+      errEl.hidden = true; okEl.hidden = true;
+      if(!email){
+        errEl.textContent = 'Escribe primero tu correo y vuelve a pulsar.';
+        errEl.hidden = false;
+        document.getElementById('auth-email').focus();
+        return;
+      }
+      btn.disabled = true;
+      sendPasswordResetEmail(auth, email).catch(function(err){
+        // el correo mal escrito sí se avisa: es un fallo del propio usuario, no filtra nada
+        if(err && err.code==='auth/invalid-email'){
+          errEl.textContent = 'Correo no válido.'; errEl.hidden = false; okEl.hidden = true;
+          return 'shown';
+        }
+        console.error('AORAES: fallo al enviar el correo de recuperación', err);
+      }).then(function(r){
+        if(r==='shown') return;
+        okEl.textContent = 'Si existe una cuenta con ese correo, te hemos enviado un enlace para restablecer la contraseña. Revisa también la carpeta de spam.';
+        okEl.hidden = false;
       }).finally(function(){ btn.disabled = false; });
     });
     document.getElementById('signout-btn').addEventListener('click', function(){ signOut(auth); });
@@ -1537,6 +1575,9 @@
       'Ir a aoraes.de':'Go to aoraes.de','Correo':'Email','Contraseña':'Password',
       'Repetir contraseña':'Repeat password','Mostrar contraseña':'Show password','Ocultar contraseña':'Hide password',
       'Entrar':'Sign in','Crear cuenta':'Create account',
+      '¿Olvidaste tu contraseña?':'Forgot your password?',
+      'Escribe primero tu correo y vuelve a pulsar.':'Enter your email first, then tap again.',
+      'Si existe una cuenta con ese correo, te hemos enviado un enlace para restablecer la contraseña. Revisa también la carpeta de spam.':'If an account exists for that email, we have sent a link to reset the password. Check your spam folder too.',
       '¿Primera vez? Crea tu cuenta':'First time? Create your account',
       '¿Ya tienes cuenta? Inicia sesión':'Already have an account? Sign in','Conectando…':'Connecting…',
       'Las contraseñas no coinciden — revísalas.':"Passwords don't match — check them.",
@@ -1629,6 +1670,9 @@
       'Ir a aoraes.de':'Zu aoraes.de','Correo':'E-Mail','Contraseña':'Passwort',
       'Repetir contraseña':'Passwort wiederholen','Mostrar contraseña':'Passwort anzeigen','Ocultar contraseña':'Passwort verbergen',
       'Entrar':'Anmelden','Crear cuenta':'Konto erstellen',
+      '¿Olvidaste tu contraseña?':'Passwort vergessen?',
+      'Escribe primero tu correo y vuelve a pulsar.':'Geben Sie zuerst Ihre E-Mail-Adresse ein und tippen Sie erneut.',
+      'Si existe una cuenta con ese correo, te hemos enviado un enlace para restablecer la contraseña. Revisa también la carpeta de spam.':'Falls ein Konto mit dieser E-Mail-Adresse besteht, haben wir einen Link zum Zurücksetzen des Passworts gesendet. Prüfen Sie auch den Spam-Ordner.',
       '¿Primera vez? Crea tu cuenta':'Zum ersten Mal hier? Konto erstellen',
       '¿Ya tienes cuenta? Inicia sesión':'Schon ein Konto? Anmelden','Conectando…':'Verbinden…',
       'Las contraseñas no coinciden — revísalas.':'Passwörter stimmen nicht überein — bitte prüfen.',
@@ -1668,9 +1712,13 @@
       shellStopObserver();
       if(!SHELL_I18N_REV) SHELL_I18N_REV=shellRevMap(SHELL_I18N_EN);
       if(!SHELL_I18N_DE_REV) SHELL_I18N_DE_REV=shellRevMap(SHELL_I18N_DE);
+      // Se vuelve siempre al español base antes de traducir: los mapas solo traducen DESDE español,
+      // así que sin este paso ir de alemán a inglés (o al revés) dejaba el texto en el idioma
+      // anterior — solo funcionaban ES→EN y ES→DE. Mismo arreglo que en analisis.html.
+      translateShellEl(document.body, SHELL_I18N_REV);
+      translateShellEl(document.body, SHELL_I18N_DE_REV);
       if(lang==='en') translateShellEl(document.body, SHELL_I18N_EN);
       else if(lang==='de') translateShellEl(document.body, SHELL_I18N_DE);
-      else { translateShellEl(document.body, SHELL_I18N_REV); translateShellEl(document.body, SHELL_I18N_DE_REV); }
       if(lang==='en'||lang==='de') shellStartObserver();
     }
     document.getElementById('lang-switch-top').addEventListener('click', function(e){
