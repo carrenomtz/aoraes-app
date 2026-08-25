@@ -365,6 +365,9 @@
      Vive en .toolbar, que va sobre fondo claro: mismos colores que el conmutador Análisis/Reporte
      justo encima (.view-switch/.vs-btn), no los de una barra oscura. */
   .scope-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:2px}
+  /* sin esto, el display:flex de arriba gana al [hidden]{display:none} del navegador y la barra se
+     veía igualmente — con los nombres aún vacíos, porque solo se rellenan cuando se muestra */
+  .scope-bar[hidden]{display:none}
   /* dorado oscuro de la propia paleta: el #a8842f de los eyebrows no llega al contraste mínimo
      sobre el marfil del panel, y esta etiqueta es texto pequeño en mayúsculas */
   .scope-lab{font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;
