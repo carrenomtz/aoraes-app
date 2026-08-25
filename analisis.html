@@ -2187,6 +2187,15 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   // indicado se asume compartida, para no penalizar fichas guardadas antes de que esto existiera.
   // Regla única usada tanto por la puntuación (groupIns) como por el texto (missingIns): si cada una
   // aplicara la suya, la pirámide y el diagnóstico se contradirían.
+  // Un seguro de vida protege a quien depende económicamente del cliente. Sin hijos no hay a quién
+  // dejarle ese capital, así que no tenerlo no es una carencia y no debe restar. Si aun así lo tiene
+  // contratado, sí suma: no se le quita mérito por estar de más cubierto.
+  function insSinNecesidad(k){
+    if(k!=='insVida') return false;
+    if(state.hasChildren) return false;
+    var have=document.querySelector('[data-ins="insVida"]');
+    return !(have&&have.checked);
+  }
   function insAppliesToScope(k){
     if(scope==='AMBOS'||INS_HOUSEHOLD[k]) return true;
     return getContractRows(insSectionKey(k)).some(function(row){
@@ -2937,6 +2946,16 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       if(!(suma>0)) return 1; // Wohnflächenmodell: sin suma fija, infraseguro no aplica por diseño
       return Math.min(suma/(wohnflaeche*HOGAR_ADEQUACY_PER_SQM),1);
     }
+    // Suelo del pilar Patrimonio cuando la RC está cubierta (ver comentario en pillars).
+    var PATRIMONIO_RC_FLOOR=80;
+    function patrimonioRcFloor(){
+      var na=document.querySelector('[data-insna="insRC"]');
+      if(na&&na.checked) return 0;                       // marcada "no aplica": sin suelo
+      var have=document.querySelector('[data-ins="insRC"]');
+      if(!(have&&have.checked)) return 0;                // sin RC no hay suelo que valga
+      if(!insAppliesToScope('insRC')) return 0;
+      return PATRIMONIO_RC_FLOOR*rcCoverageCredit();
+    }
     // weighted insurance coverage (respecting "No aplica"); weight 0 = not scored
     function groupIns(keys){
       var num=0,den=0;
@@ -2944,6 +2963,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         var w=insWeight[k]||0; if(w===0)return;
         var na=document.querySelector('[data-insna="'+k+'"]');
         if(na&&na.checked)return;
+        if(insSinNecesidad(k)) return;
         den+=w;
         var have=document.querySelector('[data-ins="'+k+'"]');
         if(!(have&&have.checked)) return;
@@ -2962,6 +2982,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       if((insWeight[k]||0)===0)return;
       var na=document.querySelector('[data-insna="'+k+'"]');
       if(na&&na.checked)return;
+      if(insSinNecesidad(k))return;
       insTotal++;
       var have=document.querySelector('[data-ins="'+k+'"]');
       if(have&&have.checked)insCount++;
@@ -3199,7 +3220,13 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var pillars={
       ahorro:Math.round(s.emergencia),
       familia:Math.round(groupIns(['insSalud','insIncap','insPflege','insAccidentes','insVida'])),
-      patrimonio:Math.round(groupIns(['insRC','insHogar','insGebaude','insAuto','insLegal']))
+      // La RC es de otra categoría: la responsabilidad es ILIMITADA por ley, así que es el único
+      // riesgo patrimonial que puede arruinar a un cliente. Perder el mobiliario en un incendio es
+      // grave; responder de un daño millonario es terminal. Por eso, con la RC cubierta el pilar ya
+      // parte en verde y el resto (hogar, auto, edificio) solo lo completa — con un peso más no se
+      // conseguía: para que la RC sola llegara a 80 habría que darle un peso de 12 contra 1.
+      // El suelo respeta rcCoverageCredit, así que una Deckungssumme baja lo baja en proporción.
+      patrimonio:Math.round(Math.max(patrimonioRcFloor(), groupIns(['insRC','insHogar','insGebaude','insAuto','insLegal'])))
     };
 
     var sTag=scopedSit(sit,'tagesgeldSaldo'), sEtf=scopedSit(sit,'etfSaldo');
@@ -3959,6 +3986,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       if((insWeight[k]||0)===0)return;
       var na=document.querySelector('[data-insna="'+k+'"]');
       if(na&&na.checked)return;
+      if(insSinNecesidad(k))return;   // no se pide lo que este cliente no necesita
       var have=document.querySelector('[data-ins="'+k+'"]');
       if(!(have&&have.checked)||!insAppliesToScope(k))miss.push(insLabel[k]);
     });
