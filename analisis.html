@@ -4223,8 +4223,15 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
      antes/después se clona el estado actual con collectState(), se "activan" los productos
      propuestos sobre esa copia, y se recalcula con computePerson() (backup/restore automático).
      Nunca se toca compute() ni el estado real: cero riesgo para la ficha S.2-S.11. */
+  // Una fila de propuesta pertenece a su titular; "Ambos" (o sin indicar) es de los dos. Misma regla
+  // que ya rige seguros y contratos, para que el informe individual no le enseñe a uno lo del otro.
+  function propRowInScope(row){
+    if(scope==='AMBOS') return true;
+    var p=row.persona;
+    return !p || p==='Ambos' || p===scope;
+  }
   function hasProposal(){
-    return getContractRows('propuesta').some(function(row){ return row.tipo || row.producto || (parseFloat(row.aportacion)||0)>0 || (parseFloat(row.garantia)||0)>0; });
+    return getContractRows('propuesta').some(function(row){ return propRowInScope(row) && (row.tipo || row.producto || (parseFloat(row.aportacion)||0)>0 || (parseFloat(row.garantia)||0)>0); });
   }
   // construido a partir de `insurances` (arriba) para que cada tipo de propuesta con cobertura
   // propia (RC, Hausrat, Glas, Unfall...) mueva su casilla exacta en la simulación — nunca todas a la vez.
@@ -4258,7 +4265,14 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         return o;
       }
       if(PROP_INS_MAP[row.tipo]){
-        PROP_INS_MAP[row.tipo].forEach(function(key){ snap.fields['ins:'+key]=true; });
+        PROP_INS_MAP[row.tipo].forEach(function(key){
+          var yaLoTenia=(snap.fields['ins:'+key]===true);
+          snap.fields['ins:'+key]=true;
+          // Un seguro que aún no existe se marca con el titular de la propuesta. Sin esto, la fila
+          // vacía que hay por defecto no lleva titular, se lee como "compartido" y el "después" de
+          // Ana acababa incluyendo un seguro propuesto solo para Luis.
+          if(!yaLoTenia) snap.contract['ins_'+key]=[{persona:persona,compania:'Propuesta'}];
+        });
       } else if(row.tipo==='Basisrente'){
         snap.contract.s5.push(s5Row('Basisrente'));
       } else if(row.tipo==='Vermögensaufbau (renta vitalicia con fondos)'){
@@ -5223,7 +5237,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // que S.12 es una sola lista compartida del hogar, no algo que se duda entre A y B) — de ahí que
     // contentPages() la reciba como parámetro opcional en vez de generarla siempre ella misma.
     function propuestaPages(r){
-      var propRows=getContractRows('propuesta').filter(function(row){ return row.tipo || row.producto || (parseFloat(row.aportacion)||0)>0 || (parseFloat(row.garantia)||0)>0; });
+      var propRows=getContractRows('propuesta').filter(function(row){ return propRowInScope(row) && (row.tipo || row.producto || (parseFloat(row.aportacion)||0)>0 || (parseFloat(row.garantia)||0)>0); });
       if(!propRows.length) return [];
       var personaLbl=function(v){ var m=FIELD_META.persona.options.filter(function(o){return o[0]===v;})[0]; return m?m[1]:(v||'—'); };
       var totalMensual=0, totalRentaEst=0, totalCapitalEst=0, hayCobertura=false, hayEstimado=false;
