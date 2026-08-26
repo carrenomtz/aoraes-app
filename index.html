@@ -276,6 +276,21 @@
   .cock-new:hover{background:var(--navy-deep); transform:translateY(-1px); box-shadow:var(--sh-3)}
   .cock-new:active{transform:translateY(0)}
 
+  /* Impulsos: lista corta con nombre + motivo real (no un número), para que el asesor sepa a
+     quién llamar y por qué antes de mirar la cartera completa. Se oculta sola si no hay nada que
+     avisar — nada de una tarjeta vacía diciendo "todo bien". */
+  .cock-impulsos{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:16px 18px; margin-bottom:18px; box-shadow:var(--sh-1)}
+  .ci-head{margin-bottom:12px}
+  .ci-eyebrow{font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--gold-deep); font-weight:700}
+  .ci-head h2{font-family:'Fraunces',serif; font-size:17px; color:var(--navy); margin:4px 0 0}
+  .ci-list{display:flex; flex-direction:column; gap:2px}
+  .ci-item{display:flex; align-items:center; gap:11px; padding:9px 8px; border-radius:var(--r-sm); cursor:pointer; text-align:left; width:100%; background:none; border:0; font:inherit; transition:background .14s var(--ease)}
+  .ci-item:hover{background:var(--surface-soft)}
+  .ci-dot{flex:0 0 auto; width:7px; height:7px; border-radius:50%}
+  .ci-dot.hi{background:var(--red)} .ci-dot.mid{background:var(--amber)} .ci-dot.lo{background:var(--gold)}
+  .ci-name{font-weight:700; color:var(--navy); font-size:13.5px; flex:0 0 auto}
+  .ci-reason{color:var(--muted); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+
   .cock-insights{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:22px}
   .ins{
     position:relative; display:flex; align-items:center; gap:13px;
@@ -620,11 +635,16 @@
     <button type="button" id="viewing-back">Volver a mi cartera</button>
   </div>
 
+  <iframe id="impulsos-frame" src="./analisis.html" style="display:none" aria-hidden="true" tabindex="-1"></iframe>
   <main class="scr home" id="home">
     <div class="cock">
       <div class="cock-head">
         <div><span class="cock-eyebrow">Panel del asesor</span><h1>Tu cartera de clientes</h1></div>
         <button type="button" class="cock-new" id="cock-new">+ Nuevo cliente</button>
+      </div>
+      <div class="cock-impulsos" id="cock-impulsos" hidden>
+        <div class="ci-head"><span class="ci-eyebrow">Antes de mirar la cartera entera</span><h2>A quién llamar hoy</h2></div>
+        <div class="ci-list" id="ci-list"></div>
       </div>
       <div class="cock-insights" id="cock-insights"></div>
       <div class="cock-toolbar">
@@ -2249,8 +2269,76 @@
         if(listEl) listEl.innerHTML='<div class="cock-empty">No se pudo construir la cartera (dato antiguo o con forma inesperada en alguna ficha). Revisa la consola y avísanos para corregirlo.</div>';
       }
     }
+    /* ---------- Impulsos ----------
+       Una lista corta de a quién llamar y por qué, no solo un número. Reaprovecha
+       aoraesClientSummary() del propio motor de analisis.html (Rentenlücke, puntuación...) en vez
+       de recalcular nada aquí; para poder preguntarle por CUALQUIER cliente sin abrir su ficha, se
+       carga una instancia oculta y sin cliente propio de analisis.html (#impulsos-frame) — la
+       función ya busca el id en localStorage por su cuenta, así que una sola instancia basta para
+       toda la cartera. */
+    var _impulsosFrameReady=false, _impulsosPendingArr=null;
+    function ensureImpulsosFrame(){
+      var f=document.getElementById('impulsos-frame'); if(!f || _impulsosFrameReady) return;
+      f.addEventListener('load',function(){
+        _impulsosFrameReady=true;
+        if(_impulsosPendingArr) renderImpulsos(_impulsosPendingArr);
+      });
+    }
+    var EN_PROCESO_STATUS={propuesta:1,implementacion:1,cliente:1};
+    function buildImpulsos(arr){
+      var f=document.getElementById('impulsos-frame'), cw=f&&f.contentWindow;
+      var items=[];
+      arr.forEach(function(c){
+        var reasons=[];
+        var cm=c.crm||{}, rv=reviewState(cm.review);
+        if(rv && rv.cls==='overdue'){
+          // reviewState() colapsa cualquier atraso a la palabra genérica "Vencida"; aquí sí interesan
+          // los días concretos, así que se calculan aparte en vez de tirar de ese texto.
+          var diffDias=Math.round((new Date()-new Date(cm.review+'T00:00:00'))/86400000);
+          reasons.push({sev:2,txt:'revisión vencida hace '+diffDias+' día'+(diffDias===1?'':'s')});
+        }
+        if(typeof c.flow==='number' && c.flow<0) reasons.push({sev:2,txt:'flujo mensual negativo'});
+        else if(typeof c.score==='number' && c.score<40) reasons.push({sev:1,txt:'salud financiera baja'});
+        if(cw && cw.aoraesClientSummary && !EN_PROCESO_STATUS[cm.status||'prospecto']){
+          var s=null; try{ s=cw.aoraesClientSummary(c.id); }catch(e){}
+          if(s && s.retirement && s.retirement.gap>0){
+            if(s.retirement.years!=null && s.retirement.years<=5)
+              reasons.push({sev:4,txt:'le quedan '+s.retirement.years+' años para jubilarse y va por detrás de su objetivo'});
+            else
+              reasons.push({sev:3,txt:'brecha de jubilación de '+eur(s.retirement.gap)+'/mes sin propuesta activa'});
+          }
+        }
+        if(!reasons.length) return;
+        reasons.sort(function(a,b){return b.sev-a.sev;});
+        items.push({id:c.id,name:c.name||'Cliente',reason:reasons[0].txt,sev:reasons[0].sev});
+      });
+      items.sort(function(a,b){return b.sev-a.sev;});
+      return items.slice(0,6);
+    }
+    function renderImpulsos(arr){
+      var box=document.getElementById('cock-impulsos'), listBox=document.getElementById('ci-list');
+      if(!box||!listBox) return;
+      if(!_impulsosFrameReady){ _impulsosPendingArr=arr; ensureImpulsosFrame(); box.hidden=true; return; }
+      var items=buildImpulsos(arr);
+      if(!items.length){ box.hidden=true; listBox.innerHTML=''; return; }
+      box.hidden=false;
+      listBox.innerHTML=items.map(function(it){
+        var dot=it.sev>=3?'hi':(it.sev===2?'mid':'lo');
+        return '<button type="button" class="ci-item" data-ws="'+esc(it.id)+'"><span class="ci-dot '+dot+'"></span><span class="ci-name">'+esc(it.name)+'</span><span class="ci-reason">'+esc(it.reason)+'</span></button>';
+      }).join('');
+    }
+    var _ciWired=false;
+    function wireImpulsosClicks(){
+      if(_ciWired) return; _ciWired=true;
+      var listBox=document.getElementById('ci-list'); if(!listBox) return;
+      listBox.addEventListener('click',function(e){
+        var it=e.target.closest('[data-ws]'); if(it) openWorkspace(it.getAttribute('data-ws'));
+      });
+    }
     function renderCockpitInner(){
       var arr=readClients().filter(function(c){ return !c._generic && !isBusinessRec(c); }), activeId=getActive();
+      wireImpulsosClicks();
+      renderImpulsos(arr);
       var overdue=0, low=0, neg=0, proposals=0;
       arr.forEach(function(c){
         try{ var cm=c.crm||{}; var rs=reviewState(cm.review); if(rs&&rs.cls==='overdue')overdue++; if(typeof c.score==='number'&&c.score<40)low++; if(typeof c.flow==='number'&&c.flow<0)neg++; var st0=cm.status||'prospecto'; if(st0==='propuesta'||st0==='implementacion')proposals++; }
