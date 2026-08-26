@@ -72,6 +72,11 @@
 
   .titleband{padding:30px clamp(18px,4vw,46px) 8px;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
   .titleband h1{font-size:clamp(26px,4vw,38px)}
+  .client-heading{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px}
+  .client-heading-name{font-size:clamp(20px,3vw,27px);color:var(--navy)}
+  .status-pill{appearance:none;-webkit-appearance:none;-moz-appearance:none;border:1px solid;
+    border-radius:999px;padding:6px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+    background-color:transparent}
   .titleband p{color:var(--muted);max-width:640px;margin:8px 0 0}
   .toolbar{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
   .toolbar-btns{display:flex;gap:9px;flex-wrap:wrap}
@@ -1137,7 +1142,11 @@
   <div class="titleband-text">
     <span class="eyebrow">Documento confidencial</span>
     <h1>Análisis Financiero Personal</h1>
-    <p>Introduzca los datos del cliente. El flujo de caja y la puntuación se calculan en tiempo real.</p>
+    <p id="tb-hint">Introduzca los datos del cliente. El flujo de caja y la puntuación se calculan en tiempo real.</p>
+    <div class="client-heading" id="client-heading" hidden>
+      <h2 class="client-heading-name" id="client-heading-name"></h2>
+      <select id="crm-status-quick" class="status-pill" aria-label="Estado del cliente"></select>
+    </div>
   </div>
   <div class="toolbar no-print">
     <button class="btn btn-back" id="back-clients">← Volver a clientes</button>
@@ -4640,6 +4649,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   }
   function clearForm(){
     $('#m_reunion').value='';
+    $('#crm-status-quick').value='prospecto'; recolorStatusPill();
     document.querySelectorAll('input[type=number]').forEach(function(i){i.value='';});
     document.querySelectorAll('input[type=checkbox]').forEach(function(i){i.checked=false;});
     document.querySelectorAll('[data-pers]').forEach(function(i){i.value='';});
@@ -4658,6 +4668,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     refreshPersonaLabels();
     $('#m_cliente').value=''; $('#m_asesor').value=''; $('#m_fecha_nac').value='';
     $('#m_fecha').value=new Date().toISOString().slice(0,10);
+    updateClientHeading();
     var rifA=$('#f-sit-renteInfoFecha-A'); if(rifA) rifA.value='';
     var rifB=$('#f-sit-renteInfoFecha-B'); if(rifB) rifB.value='';
     var ej=document.querySelector('[data-sit="edadJub"]'); if(ej) ej.value='67';
@@ -4684,6 +4695,27 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     cliente:{l:'Cliente activo',c:'#5e8a5e'},
     inactivo:{l:'Inactivo',c:'#9aa3b5'}
   };
+  // Nombre grande + estado con color en la cabecera, en vez del texto genérico de bienvenida —
+  // solo aparece en cuanto hay un nombre de cliente; con la ficha vacía se ve el aviso de siempre.
+  function buildStatusPillOptions(){
+    var sel=$('#crm-status-quick'); if(!sel || sel.options.length) return;
+    Object.keys(CRM_STATUS).forEach(function(k){
+      var o=document.createElement('option'); o.value=k; o.textContent=CRM_STATUS[k].l; sel.appendChild(o);
+    });
+  }
+  function recolorStatusPill(){
+    var sel=$('#crm-status-quick'); if(!sel) return;
+    var st=CRM_STATUS[sel.value]||CRM_STATUS.prospecto;
+    sel.style.background=st.c+'1f'; sel.style.color=st.c; sel.style.borderColor=st.c+'66';
+  }
+  function updateClientHeading(){
+    var name=(($('#m_cliente')||{}).value||'').trim();
+    var hint=$('#tb-hint'), box=$('#client-heading');
+    if(!hint||!box) return;
+    if(!name){ hint.hidden=false; box.hidden=true; return; }
+    hint.hidden=true; box.hidden=false;
+    $('#client-heading-name').textContent=name;
+  }
   function crmContact(){
     // Persona A is the primary contact for CRM purposes
     return {email:((document.querySelector('[data-pers="email_A"]')||{}).value)||'', phone:((document.querySelector('[data-pers="telefono_A"]')||{}).value)||''};
@@ -4780,6 +4812,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var c=Object.assign(defaultCRM(), prevCrm||{});
     var ct=crmContact(); if(ct.email)c.email=ct.email; if(ct.phone)c.phone=ct.phone;
     c.meetingDate=($('#m_reunion')||{}).value||'';
+    c.status=($('#crm-status-quick')||{}).value||'prospecto';
     rec.crm=c;
     var idx=-1;
     for(var i=0;i<arr.length;i++){if(arr[i].id===rec.id){idx=i;break;}}
@@ -4946,6 +4979,8 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     if(recType(rec)===EMP_TYPE){ openEmpresa(id); return; }
     currentId=id;
     $('#m_reunion').value=(rec.crm&&rec.crm.meetingDate)||'';
+    $('#crm-status-quick').value=(rec.crm&&rec.crm.status)||'prospecto';
+    recolorStatusPill(); updateClientHeading();
     // Un dato antiguo o con forma inesperada en la ficha no debe dejar al asesor atascado en el
     // listado sin explicación: si algo falla al aplicar los datos, se registra el error y aun así
     // se muestra la ficha del cliente (aunque algún campo no se haya podido rellenar).
@@ -5197,7 +5232,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     }
     if(t.matches('[data-inc$="_B"],[data-gross$="_B"],[data-pers$="_B"]')||(t.matches('[data-contract]')&&/:persona$/.test(t.getAttribute('data-contract')||''))) updatePersonBDim();
     if(t.matches('[data-pers="nombre_A"],[data-pers="nombre_B"]')){ refreshPersonaLabels(); maybeAutofillClienteName(); }
-    if(t.id==='m_cliente'){ syncNombreAFromCliente(); did=true; }
+    if(t.id==='m_cliente'){ syncNombreAFromCliente(); updateClientHeading(); did=true; }
     if(t.matches('[data-pers="fechaNacimiento_A"]')){ syncHeaderDOB(); did=true; }
     if(t.matches('[data-pers="estadoCivil_A"]')) did=true; // afecta al Ehegattensplitting de la fiscalidad estimada (S.9)
     if(t.matches('[data-child$=":fechaNacimiento"]')){ validateChildDOB(t); recalcS5(); did=true; } // la Kinderzulage de Riester depende de la fecha de nacimiento
@@ -5795,6 +5830,8 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     if(opt.getAttribute('data-newtype')===EMP_TYPE){ newEmpresa(); }
     else { newAnalysis(); showScreen('workspace'); }
   });
+  buildStatusPillOptions(); recolorStatusPill();
+  var _cs=$('#crm-status-quick'); if(_cs) _cs.addEventListener('change', recolorStatusPill);
   var _sc=$('#scope-tabs'); if(_sc)_sc.addEventListener('click',function(e){
     var b=e.target.closest&&e.target.closest('[data-scope]'); if(!b) return;
     scope=b.getAttribute('data-scope');
