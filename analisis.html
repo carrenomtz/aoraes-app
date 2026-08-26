@@ -533,8 +533,12 @@
   .cs-mark{font-family:'Fraunces',sans-serif;font-size:22px;font-weight:800;letter-spacing:1px;color:#ffffff}
   .cs-sub{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-soft)}
   .cs-top-actions{display:flex;gap:10px;flex-wrap:wrap}
-  .lang-switch{display:inline-flex;align-items:center;background:var(--ivory);border:1px solid var(--line);border-radius:9px;overflow:hidden}
-  .lang-switch button{border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--muted);padding:7px 12px;cursor:pointer;transition:.13s}
+  /* Pastilla activa flotando dentro de una pista, con un margen visible alrededor (no pegada al
+     borde exterior): el radio exterior es el interior + el hueco (8+3=11), para que las dos curvas
+     queden concéntricas en vez de que el bloque activo se vea recortado en ángulo recto por dentro
+     de un contorno redondeado. */
+  .lang-switch{display:inline-flex;align-items:center;gap:2px;background:var(--ivory);border:1px solid var(--line);border-radius:11px;padding:3px}
+  .lang-switch button{border:none;background:transparent;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--muted);padding:6px 11px;cursor:pointer;transition:background .15s ease,color .15s ease}
   .lang-switch button:hover{color:var(--navy)}
   .lang-switch button.active{background:var(--navy);color:#ffffff}
   .lang-switch-ws{margin-left:8px}
