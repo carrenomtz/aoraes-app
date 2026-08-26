@@ -280,16 +280,32 @@
      quién llamar y por qué antes de mirar la cartera completa. Se oculta sola si no hay nada que
      avisar — nada de una tarjeta vacía diciendo "todo bien". */
   .cock-impulsos{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:16px 18px; margin-bottom:18px; box-shadow:var(--sh-1)}
-  .ci-head{margin-bottom:12px}
+  .ci-head{margin-bottom:12px; display:block}
   .ci-eyebrow{font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--gold-deep); font-weight:700}
-  .ci-head h2{font-family:'Fraunces',serif; font-size:17px; color:var(--navy); margin:4px 0 0}
-  .ci-list{display:flex; flex-direction:column; gap:2px}
+  .ci-title{display:block; font-family:'Fraunces',serif; font-size:17px; color:var(--navy); margin:4px 0 0}
+  .ci-list{display:flex; flex-direction:column; gap:2px; margin-top:12px}
+  .ci-row{display:flex; align-items:center; gap:10px; padding:8px 8px; border-radius:var(--r-sm); transition:background .14s var(--ease)}
+  .ci-row:hover{background:var(--surface-soft)}
   .ci-item{display:flex; align-items:center; gap:11px; padding:9px 8px; border-radius:var(--r-sm); cursor:pointer; text-align:left; width:100%; background:none; border:0; font:inherit; transition:background .14s var(--ease)}
   .ci-item:hover{background:var(--surface-soft)}
+  .ci-open{display:flex; align-items:center; gap:11px; background:none; border:0; font:inherit; cursor:pointer; flex:1 1 auto; min-width:0; text-align:left; padding:0}
   .ci-dot{flex:0 0 auto; width:7px; height:7px; border-radius:50%}
   .ci-dot.hi{background:var(--red)} .ci-dot.mid{background:var(--amber)} .ci-dot.lo{background:var(--gold)}
   .ci-name{font-weight:700; color:var(--navy); font-size:13.5px; flex:0 0 auto}
   .ci-reason{color:var(--muted); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+  .ci-quick{display:flex; gap:6px; flex:0 0 auto}
+  .ci-qbtn{font-family:inherit; font-size:11px; font-weight:600; padding:5px 10px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--muted); cursor:pointer; white-space:nowrap; transition:background .14s var(--ease), border-color .14s var(--ease), color .14s var(--ease)}
+  .ci-qbtn:hover{border-color:var(--gold-soft); color:var(--navy)}
+  .ci-qbtn.ok{border-color:rgba(94,138,94,.4); color:#5e8a5e}
+  .ci-qbtn.ok:hover{background:rgba(94,138,94,.1)}
+  /* Sección plegable de brechas: cerrada por defecto, se abre con un clic en su cabecera nativa */
+  .cock-gaps{padding:0}
+  .cock-gaps[open]{padding:16px 18px}
+  .cock-gaps summary{padding:16px 18px; cursor:pointer; list-style:none}
+  .cock-gaps summary::-webkit-details-marker{display:none}
+  .cock-gaps summary::after{content:"▾"; float:right; color:var(--muted); font-size:12px; transform:translateY(2px)}
+  .cock-gaps[open] summary::after{content:"▴"}
+  .cock-gaps[open] summary{padding-bottom:4px}
 
   .cock-insights{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:22px}
   .ins{
@@ -642,9 +658,9 @@
         <div><span class="cock-eyebrow">Panel del asesor</span><h1>Tu cartera de clientes</h1></div>
         <button type="button" class="cock-new" id="cock-new">+ Nuevo cliente</button>
       </div>
-      <div class="cock-impulsos" id="cock-impulsos" hidden>
-        <div class="ci-head"><span class="ci-eyebrow">Antes de mirar la cartera entera</span><h2>A quién llamar hoy</h2></div>
-        <div class="ci-list" id="ci-list"></div>
+      <div class="cock-impulsos" id="cock-reuniones" hidden>
+        <div class="ci-head"><span class="ci-eyebrow">Antes de mirar la cartera entera</span><span class="ci-title">Próximas reuniones</span></div>
+        <div class="ci-list" id="cr-list"></div>
       </div>
       <div class="cock-insights" id="cock-insights"></div>
       <div class="cock-toolbar">
@@ -653,6 +669,10 @@
         <select id="cock-sort" aria-label="Ordenar clientes"><option value="saved">Orden: más recientes</option><option value="review">Orden: próxima revisión</option><option value="score">Orden: puntuación</option><option value="name">Orden: nombre (A–Z)</option></select>
       </div>
       <div class="cock-list" id="cock-list"></div>
+      <details class="cock-impulsos cock-gaps" id="cock-gaps" hidden>
+        <summary class="ci-head"><span class="ci-eyebrow">Ver también</span><span class="ci-title">Oportunidades por brecha de jubilación</span></summary>
+        <div class="ci-list" id="ci-list"></div>
+      </details>
     </div>
     <div class="cock-tools">
       <span class="ct-lbl">Herramientas</span>
@@ -2316,7 +2336,10 @@
       return items.slice(0,6);
     }
     function renderImpulsos(arr){
-      var box=document.getElementById('cock-impulsos'), listBox=document.getElementById('ci-list');
+      // Sección secundaria y plegable (#cock-gaps es un <details>): se oculta entera sin nada que
+      // avisar, y si hay algo, aparece cerrada — un clic en su cabecera la despliega. No compite con
+      // Próximas reuniones por la atención de primera vista.
+      var box=document.getElementById('cock-gaps'), listBox=document.getElementById('ci-list');
       if(!box||!listBox) return;
       if(!_impulsosFrameReady){ _impulsosPendingArr=arr; ensureImpulsosFrame(); box.hidden=true; return; }
       var items=buildImpulsos(arr);
@@ -2327,6 +2350,57 @@
         return '<button type="button" class="ci-item" data-ws="'+esc(it.id)+'"><span class="ci-dot '+dot+'"></span><span class="ci-name">'+esc(it.name)+'</span><span class="ci-reason">'+esc(it.reason)+'</span></button>';
       }).join('');
     }
+    /* ---------- Próximas reuniones ----------
+       El panel principal: no cuántos clientes hay, sino a quién ver y cuándo, tal como el asesor lo
+       anotó en su propia ficha (campo "Próxima reunión" en Análisis financiero, o desde la Ficha del
+       cliente). Cada fila deja marcar el desenlace con un clic — "Ya es cliente" / "Solo
+       interesado" — sin abrir nada: eso avanza su estado y limpia la fecha, así que la fila
+       desaparece sola una vez resuelta. */
+    function buildReuniones(arr){
+      var items=[];
+      arr.forEach(function(c){
+        var cm=c.crm||{}, d=cm.meetingDate;
+        if(!d) return;
+        var rs=reviewState(d); if(!rs) return;
+        items.push({id:c.id,name:c.name||'Cliente',date:d,label:rs.txt,cls:rs.cls});
+      });
+      items.sort(function(a,b){ return a.date<b.date?-1:(a.date>b.date?1:0); });
+      return items.slice(0,8);
+    }
+    function renderReuniones(arr){
+      var box=document.getElementById('cock-reuniones'), listBox=document.getElementById('cr-list');
+      if(!box||!listBox) return;
+      var items=buildReuniones(arr);
+      if(!items.length){ box.hidden=true; listBox.innerHTML=''; return; }
+      box.hidden=false;
+      listBox.innerHTML=items.map(function(it){
+        var dot=it.cls==='overdue'?'hi':(it.cls==='today'||it.cls==='soon'?'mid':'lo');
+        return '<div class="ci-row">'+
+          '<span class="ci-dot '+dot+'"></span>'+
+          '<button type="button" class="ci-open" data-ws="'+esc(it.id)+'"><span class="ci-name">'+esc(it.name)+'</span><span class="ci-reason">'+esc(it.label)+'</span></button>'+
+          '<span class="ci-quick">'+
+            '<button type="button" class="ci-qbtn ok" data-id="'+esc(it.id)+'" data-status="cliente">✓ Ya es cliente</button>'+
+            '<button type="button" class="ci-qbtn" data-id="'+esc(it.id)+'" data-status="contactado">○ Solo interesado</button>'+
+          '</span>'+
+        '</div>';
+      }).join('');
+    }
+    // Se guarda directo en localStorage (nunca vía readClients(), que puede devolver el caché de la
+    // nube todavía sin este cambio) — el mismo criterio que ya se aplicó a la fuga de datos de S.12.
+    function quickSetStatus(id,status){
+      var arr=readLocalClientsRaw();
+      for(var i=0;i<arr.length;i++){
+        if(arr[i].id===id){
+          var cm=Object.assign({status:'prospecto'},arr[i].crm||{});
+          cm.status=status; cm.meetingDate=''; // la reunión ya se resolvió, deja de ser "próxima"
+          arr[i].crm=cm;
+          break;
+        }
+      }
+      try{ localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr)); }catch(e){}
+      writeClientFile(id);
+      renderCockpitInner();
+    }
     var _ciWired=false;
     function wireImpulsosClicks(){
       if(_ciWired) return; _ciWired=true;
@@ -2334,10 +2408,17 @@
       listBox.addEventListener('click',function(e){
         var it=e.target.closest('[data-ws]'); if(it) openWorkspace(it.getAttribute('data-ws'));
       });
+      var crBox=document.getElementById('cr-list'); if(!crBox) return;
+      crBox.addEventListener('click',function(e){
+        var q=e.target.closest('[data-status]');
+        if(q){ quickSetStatus(q.getAttribute('data-id'), q.getAttribute('data-status')); return; }
+        var it=e.target.closest('[data-ws]'); if(it) openWorkspace(it.getAttribute('data-ws'));
+      });
     }
     function renderCockpitInner(){
       var arr=readClients().filter(function(c){ return !c._generic && !isBusinessRec(c); }), activeId=getActive();
       wireImpulsosClicks();
+      renderReuniones(arr);
       renderImpulsos(arr);
       var overdue=0, low=0, neg=0, proposals=0;
       arr.forEach(function(c){

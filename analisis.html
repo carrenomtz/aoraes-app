@@ -1127,6 +1127,7 @@
     <div class="head-field"><label for="m_cliente">Cliente</label><input id="m_cliente" placeholder="Nombre, o Persona A y Persona B"></div>
     <div class="head-field"><label for="m_asesor">Asesor/a</label><input id="m_asesor" placeholder="Nombre"></div>
     <div class="head-field"><label for="m_fecha">Fecha</label><input id="m_fecha" type="date"></div>
+    <div class="head-field"><label for="m_reunion">Próxima reunión</label><input id="m_reunion" type="date"></div>
     <!-- Fecha de nacimiento ya no se pide aquí: se toma automáticamente de Persona A (S.11) para no duplicar el dato -->
     <input id="m_fecha_nac" type="hidden">
   </div>
@@ -4638,6 +4639,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     el.classList.toggle('field-invalid',!!bad);
   }
   function clearForm(){
+    $('#m_reunion').value='';
     document.querySelectorAll('input[type=number]').forEach(function(i){i.value='';});
     document.querySelectorAll('input[type=checkbox]').forEach(function(i){i.checked=false;});
     document.querySelectorAll('[data-pers]').forEach(function(i){i.value='';});
@@ -4777,6 +4779,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var prevCrm=(loadClients().filter(function(c){return c.id===rec.id;})[0]||{}).crm;
     var c=Object.assign(defaultCRM(), prevCrm||{});
     var ct=crmContact(); if(ct.email)c.email=ct.email; if(ct.phone)c.phone=ct.phone;
+    c.meetingDate=($('#m_reunion')||{}).value||'';
     rec.crm=c;
     var idx=-1;
     for(var i=0;i<arr.length;i++){if(arr[i].id===rec.id){idx=i;break;}}
@@ -4942,6 +4945,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // su propia pantalla, sea cual sea la vía de entrada.
     if(recType(rec)===EMP_TYPE){ openEmpresa(id); return; }
     currentId=id;
+    $('#m_reunion').value=(rec.crm&&rec.crm.meetingDate)||'';
     // Un dato antiguo o con forma inesperada en la ficha no debe dejar al asesor atascado en el
     // listado sin explicación: si algo falla al aplicar los datos, se registra el error y aun así
     // se muestra la ficha del cliente (aunque algún campo no se haya podido rellenar).
