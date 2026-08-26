@@ -5193,6 +5193,27 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   document.addEventListener('input',function(e){
     if(e.target.matches('input[type=number],input[type=checkbox],#m_fecha_nac')) render();
   });
+
+  /* ---------- Guardado automático ----------
+     Cada 5 minutos: si se ha escrito algo desde el último guardado (manual o automático) Y la ficha
+     abierta ya existe (currentId/empId asignado por un guardado manual previo), se guarda sola en
+     silencio, con el mismo Guardar de siempre — así también se beneficia del arreglo de la subida a
+     la nube. No crea fichas nuevas por sí solo: un análisis todavía sin el primer Guardar manual no
+     se autoguarda, para no generar un registro fantasma solo por haber escrito en una prueba.
+     "Se ha escrito algo" se detecta con la misma delegación 'input'/'change' de arriba, en captura,
+     así que cualquier campo del formulario lo marca sin tener que enumerarlos uno a uno. */
+  var _dirtySinceSave=false;
+  document.addEventListener('input',function(){ _dirtySinceSave=true; },true);
+  document.addEventListener('change',function(){ _dirtySinceSave=true; },true);
+  function autosaveTick(){
+    if(!_dirtySinceSave) return;
+    _dirtySinceSave=false;
+    var esVisible=$('#empresa-screen')&&$('#empresa-screen').style.display==='block';
+    var clientesVisible=$('#clients-screen')&&$('#clients-screen').style.display==='block';
+    if(empId && esVisible) saveEmpresa();
+    else if(currentId && !clientesVisible && !esVisible) saveCurrent();
+  }
+  setInterval(autosaveTick, 5*60*1000);
   document.addEventListener('change',function(e){
     if(e.target.matches('.tipo-reflow-select')) onContractTipoChange(e.target);
     if(e.target.closest('#contract-propuesta-body')) render();
