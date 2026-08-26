@@ -1098,8 +1098,17 @@
       else if(status==='denied'){ el.textContent='⚠ Sin acceso a la carpeta Clientes.'; act.hidden=false; act.textContent='Reactivar acceso'; }
       else { el.textContent='⚠ No se pudo acceder a la carpeta Clientes.'; act.hidden=false; act.textContent='Reintentar'; }
     }
+    // Lee SIEMPRE de localStorage, nunca de _cloudClientsById (el caché en memoria de Firestore).
+    // clientPayload() empaqueta lo que se acaba de guardar AQUÍ para subirlo a la nube — si leyera del
+    // caché, que todavía no ha recibido este guardado (llega con retraso, tras un round-trip real a
+    // Firestore), subiría la versión ANTERIOR al cambio que se acaba de hacer. Y el eco de esa subida
+    // (el propio listener de aoraes-cloud-update) reescribe luego localStorage con esa misma versión
+    // vieja, borrando en silencio lo que se acababa de guardar. Root cause de "se me borran las
+    // propuestas": pasaba en cualquier guardado, no solo en S.12, en cuanto la nube ya llevaba un
+    // rato conectada (que es la mayoría de la sesión, no un caso raro).
+    function readLocalClientsRaw(){ try{ return JSON.parse(localStorage.getItem(CLIENTS_KEY))||[]; }catch(e){ return []; } }
     function clientPayload(id){
-      var rec=findClient(id); if(!rec) return null;
+      var rec=readLocalClientsRaw().filter(function(c){return c.id===id;})[0]; if(!rec) return null;
       var medico=null; try{ var m=JSON.parse(localStorage.getItem(MED_BY_CLIENT_KEY))||{}; medico=m[id]||null; }catch(e){}
       return { id:id, record:rec, solution:getSolution(id)||null, medico:medico, exportedAt:new Date().toISOString() };
     }
@@ -1120,12 +1129,12 @@
     window.aoraesMirrorClients=function(ids){ (ids||[]).forEach(function(id){ writeClientFile(id); }); };
     window.aoraesRemoveMirroredClient=function(id){ removeClientFile(id); };
     function bulkExportToClientesDir(){
-      var arr=readClients();
+      var arr=readLocalClientsRaw();
       return Promise.all(arr.map(function(c){ return writeClientFile(c.id); }));
     }
     function mergeImportedClient(payload){
       if(!payload || !payload.id || !payload.record) return;
-      var arr=readClients(), idx=-1;
+      var arr=readLocalClientsRaw(), idx=-1;
       for(var i=0;i<arr.length;i++){ if(arr[i].id===payload.id){ idx=i; break; } }
       var existing=idx>=0?arr[idx]:null;
       var existingTime=existing?new Date(existing.savedAt||0).getTime():0;
@@ -1198,7 +1207,7 @@
     var CRM_PIPELINE_ORDER=['prospecto','contactado','analisis_pendiente','analisis','propuesta','implementacion','cliente'];
     function advanceStatusToPropuesta(id){
       try{
-        var arr=readClients(), changed=false;
+        var arr=readLocalClientsRaw(), changed=false;
         for(var i=0;i<arr.length;i++){ if(arr[i].id===id){
           var cm=arr[i].crm||{}; var st=cm.status||'prospecto';
           var stIdx=CRM_PIPELINE_ORDER.indexOf(st), propIdx=CRM_PIPELINE_ORDER.indexOf('propuesta');
@@ -1834,7 +1843,7 @@
     function ensureGenericInmuebleRec(){
       if(findClient('aoraes_generic')) return;
       var rec={ id:'aoraes_generic', name:'Proyecto genérico', _generic:true, inmueble:defaultInmueble(), savedAt:new Date().toISOString() };
-      var arr=readClients(); arr.unshift(rec);
+      var arr=readLocalClientsRaw(); arr.unshift(rec);
       try{ localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr)); }catch(e){}
       if(_cloudClientsById) _cloudClientsById[rec.id]={ id:rec.id, record:rec, solution:null, medico:null, exportedAt:new Date().toISOString() };
       writeClientFile('aoraes_generic');
@@ -2131,7 +2140,7 @@
     }
     function persistInmueble(){
       if(!wsId||!wsRec||!wsRec.inmueble) return;
-      var arr=readClients();
+      var arr=readLocalClientsRaw();
       for(var i=0;i<arr.length;i++){
         if(arr[i].id===wsId){ arr[i].inmueble=wsRec.inmueble; arr[i].savedAt=new Date().toISOString(); break; }
       }
@@ -2371,7 +2380,7 @@
       var gs=e.target.closest('#ws-generic-save-client'); if(gs){
         var targetId=getActive();
         if(targetId && targetId!=='aoraes_generic' && wsRec && wsRec.inmueble){
-          var arr=readClients(), idx=-1;
+          var arr=readLocalClientsRaw(), idx=-1;
           for(var i=0;i<arr.length;i++){ if(arr[i].id===targetId){ idx=i; break; } }
           if(idx>=0){
             arr[idx].inmueble=wsRec.inmueble; arr[idx].savedAt=new Date().toISOString();
