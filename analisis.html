@@ -538,6 +538,14 @@
   .lang-switch button:hover{color:var(--navy)}
   .lang-switch button.active{background:var(--navy);color:#ffffff}
   .lang-switch-ws{margin-left:8px}
+  /* En las cabeceras de Cartera de clientes y Análisis empresarial (.cs-top es fondo navy), el
+     mismo relleno marfil de arriba queda como un bloque pegado encima en vez de integrado en la
+     barra — se adapta a un contorno translúcido, con la pestaña activa en dorado (mismo lenguaje
+     visual que ya usa el resto de la app sobre fondo oscuro, p. ej. Análisis/Reporte). */
+  .cs-top .lang-switch{background:rgba(255,255,255,.08);border-color:rgba(230,216,178,.35)}
+  .cs-top .lang-switch button{color:rgba(255,255,255,.7)}
+  .cs-top .lang-switch button:hover{color:#fff}
+  .cs-top .lang-switch button.active{background:var(--gold);color:var(--navy)}
   .cs-top .btn-ghost{background:transparent;border:1px solid rgba(227,212,171,.45);color:var(--ivory)}
   .cs-top .btn-ghost:hover{background:rgba(255,255,255,.10);border-color:var(--gold-soft)}
   .cs-inner{max-width:1080px;margin:0 auto;padding:26px clamp(18px,4vw,46px) 60px}
