@@ -1890,11 +1890,44 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     oldAgePensionTypeFactor:1.0,
     basisPensionLimitSingle:30826,
     basisPensionLimitJoint:61652,
-    // Aproximación propia (no forma parte de una única fuente oficial) para poder comparar la
-    // pensión pública -bruta- con un objetivo definido en euros netos: descuenta el efecto conjunto
-    // del seguro médico/de dependencia obligatorios sobre la pensión y de su tributación parcial.
-    stateNetOfGrossFactor:0.85
+    // Cuota de Krankenversicherung der Rentner (KVdR) + Pflegeversicherung que paga el propio
+    // jubilado — la Deutsche Rentenversicherung sí subvenciona la mitad de la cuota general de KV
+    // (como haría un empleador) pero NO la Pflegeversicherung, que el jubilado paga entera. Cifra de
+    // referencia para un Pflichtmitglied GKV sin hijos: 7,3% (mitad del 14,6% general) + ~1,25%
+    // (mitad del Zusatzbeitrag medio, ~2,5%) + ~3,4% de Pflegeversicherung ≈ 11,9%. No cubre PKV,
+    // afiliación voluntaria, ni el recargo/descuento de Pflege por hijos — revisar cada año.
+    retireeHealthCareContribRate:0.119,
+    // Deducción fija por gastos vinculados a la pensión (Werbungskosten-Pauschbetrag für Renten,
+    // §9a EStG) antes de aplicar el Besteuerungsanteil a la base imponible.
+    pensionWerbungskostenPauschale:102
   };
+  // Besteuerungsanteil: el % de la pensión pública que tributa NO depende del año actual, sino del
+  // año en que el cliente se jubila (queda fijado de por vida para esa cohorte). Calendario legal:
+  // 50% en 2005, +2%/año hasta 80% en 2020, +1%/año hasta 82% en 2022, y +0,5%/año desde 2023
+  // (Wachstumschancengesetz) hasta llegar al 100% en 2058. 84% en 2026, verificado también contra
+  // el temario DBBV revisado en esta sesión.
+  function besteuerungsanteilForYear(year){
+    var y=Math.round(year);
+    if(y<=2005) return 0.50;
+    if(y<=2020) return 0.50+0.02*(y-2005);
+    if(y<=2022) return 0.80+0.01*(y-2020);
+    if(y>=2058) return 1.00;
+    return 0.82+0.005*(y-2022);
+  }
+  // Pensión pública neta real: base imponible = Besteuerungsanteil del año de jubilación × pensión
+  // bruta anual, menos el Werbungskosten-Pauschbetrag; de ahí sale el impuesto con la misma fórmula
+  // ya verificada de S.9. La cuota de KVdR/Pflege se descuenta aparte porque no tributa igual que
+  // el IRPF ni escala con él. Sustituye al antiguo factor plano del 85% (ver commit): ese fijo
+  // sobreestimaba la pensión neta cuanto más alta era —y con ello subestimaba la Rentenlücke—
+  // porque el impuesto real es progresivo y el 85% no lo es.
+  function netStatePensionAnnual(brutoAnual,retirementYear){
+    if(!(brutoAnual>0)) return 0;
+    var ba=besteuerungsanteilForYear(retirementYear);
+    var zve=Math.max(0,brutoAnual*ba-AORAES_GERMANY_VALUES.pensionWerbungskostenPauschale);
+    var steuer=einkommensteuer2026(zve);
+    var kvPv=brutoAnual*AORAES_GERMANY_VALUES.retireeHealthCareContribRate;
+    return Math.max(0,brutoAnual-steuer-kvPv);
+  }
   function monthsBetween(fromDate,toDate){
     var m=(toDate.getFullYear()-fromDate.getFullYear())*12+(toDate.getMonth()-fromDate.getMonth());
     if(toDate.getDate()<fromDate.getDate()) m--;
@@ -3120,11 +3153,14 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         pension.confidence=confidence; pension.accessFactor=accessFactor; pension.yearsUntilRetirement=yearsUntilRetirement;
         pension.regularAge=getRegularRetirementAge(dobP); pension.ready=true; pension.pensionKnown=known;
         // La Renteninformation oficial de la Deutsche Rentenversicherung también informa el importe en
-        // BRUTO (antes de KV/PV y de IRPF) — igual que la estimación por Entgeltpunkte — así que el
-        // mismo factor de conversión a neto debe aplicarse aquí también. Antes solo se aplicaba a la
-        // estimación por puntos y se saltaba precisamente en la vía de mayor confianza (dato oficial),
+        // BRUTO (antes de KV/PV y de IRPF) — igual que la estimación por Entgeltpunkte — así que la
+        // misma conversión a neto debe aplicarse aquí también. Antes solo se aplicaba a la estimación
+        // por puntos y se saltaba precisamente en la vía de mayor confianza (dato oficial),
         // subestimando la Rentenlücke justo cuando el asesor tenía el dato más fiable.
-        pension.statePension=known?(pension.statePensionGross*GV.stateNetOfGrossFactor):0;
+        // statePensionGross es MENSUAL (así lo espera y lo muestra el resto de la app); la fórmula de
+        // impuestos trabaja sobre base ANUAL, así que se convierte de ida y vuelta aquí dentro.
+        pension.retirementYear=selDate.getFullYear();
+        pension.statePension=known?(netStatePensionAnnual(pension.statePensionGross*12,pension.retirementYear)/12):0;
         return pension;
       }
       // Objetivo y capital disponible de una persona — el objetivo de sustitución solo aplica al ingreso
@@ -3493,7 +3529,8 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     if(!p.pensionKnown){ boxEl.style.display='none'; return; }
     boxEl.style.display='';
     boxEl.innerHTML='<b>Cómo se calculó ·</b> <b>'+(CONFIDENCE_LABEL[p.confidence]||'')+'</b><b>:</b> '+pensionExplainText(p)+
-      ' <span>Entgeltpunkte totales:</span> <b>'+p.totalPoints.toFixed(2)+'</b> · <span>Rentenwert:</span> <b>'+AORAES_GERMANY_VALUES.currentPensionValue.toFixed(2)+' €</b> · <span>Zugangsfaktor:</span> <b>'+p.accessFactor.toFixed(3)+'</b> · <span>Pensión pública bruta mensual estimada:</span> <b>'+eur.format(Math.round(p.statePensionGross))+'</b>. <span>Parámetros de cálculo: Alemania, valores</span> '+AORAES_GERMANY_VALUES.referenceYear+'.';
+      ' <span>Entgeltpunkte totales:</span> <b>'+p.totalPoints.toFixed(2)+'</b> · <span>Rentenwert:</span> <b>'+AORAES_GERMANY_VALUES.currentPensionValue.toFixed(2)+' €</b> · <span>Zugangsfaktor:</span> <b>'+p.accessFactor.toFixed(3)+'</b> · <span>Pensión pública bruta mensual estimada:</span> <b>'+eur.format(Math.round(p.statePensionGross))+'</b>. <span>Parámetros de cálculo: Alemania, valores</span> '+AORAES_GERMANY_VALUES.referenceYear+'.'+
+      ' <span>Pensión pública NETA mensual estimada:</span> <b>'+eur.format(Math.round(p.statePension))+'</b> <span>— descuenta el impuesto real según el Besteuerungsanteil de su año de jubilación ('+p.retirementYear+': '+Math.round(besteuerungsanteilForYear(p.retirementYear)*100)+'%) y la cuota de KVdR/Pflegeversicherung del jubilado. Asume afiliación obligatoria en la GKV, sin hijos y sin Kirchensteuer — un caso distinto (PKV, afiliación voluntaria) puede variar.</span>';
   }
   function renderPensionExplain(r){
     renderPensionExplainFor('A',r.ret&&r.ret.A&&r.ret.A.pension);
