@@ -1599,6 +1599,9 @@
       'Plan de jubilación guardado':'Saved retirement plan','Producto':'Product','Aportación':'Contribution',
       'Capital estimado al jubilarte':'Estimated capital at retirement','Renta mensual estimada':'Estimated monthly pension',
       'Abrir en el comparador de jubilación →':'Open in retirement comparator →',
+      'Estado':'Status','Próxima revisión':'Next review','Etiquetas':'Tags','Notas':'Notes','Guardado':'Saved',
+      'Sin notas. Edita la ficha en el módulo de Análisis.':'No notes. Edit the file in the Analysis module.',
+      'Editar ficha en Análisis →':'Edit file in Analysis →',
       'Notificaciones':'Notifications','Abrir ficha del cliente activo':"Open active client's file",
       'Quitar cliente activo':'Remove active client','Cerrar sesión':'Sign out',
       'Análisis financiero y CRM':'Financial Analysis & CRM',
@@ -1747,6 +1750,10 @@
       'Plan de jubilación guardado':'Gespeicherter Altersvorsorgeplan','Producto':'Produkt','Aportación':'Beitrag',
       'Capital estimado al jubilarte':'Geschätztes Kapital bei Renteneintritt','Renta mensual estimada':'Geschätzte monatliche Rente',
       'Abrir en el comparador de jubilación →':'Im Renten-Vergleich öffnen →',
+      // Tarjeta "Estado y seguimiento" / "Notas" — huecos preexistentes detectados al revisar el punto 2.
+      'Estado':'Status','Próxima revisión':'Nächste Überprüfung','Etiquetas':'Tags','Notas':'Notizen','Guardado':'Gespeichert',
+      'Sin notas. Edita la ficha en el módulo de Análisis.':'Keine Notizen. Bearbeiten Sie die Akte im Analyse-Modul.',
+      'Editar ficha en Análisis →':'Akte in Analyse bearbeiten →',
       'Quitar cliente activo':'Aktiven Kunden entfernen','Cerrar sesión':'Abmelden',
       'Análisis financiero y CRM':'Finanzanalyse & CRM',
       'Panel del asesor':'Berater-Panel','Tu cartera de clientes':'Deine Kundenkartei',
@@ -2229,7 +2236,7 @@
       var mesesHastaRefi=mesesEntreFechas(todayISO(),fr);
       var saldoAtRefi=saldoEnFecha(refi,fr);
       return '<div class="ws-field"><span class="k">Saldo pendiente hoy</span><span class="v">'+eur(rem.saldoPendiente)+'</span></div>'+
-        '<div class="ws-field"><span class="k">Años hasta refinanciar</span><span class="v">'+(mesesHastaRefi/12).toFixed(1)+'</span></div>'+
+        '<div class="ws-field"><span class="k">Años hasta refinanciar</span><span class="v">'+fmtAnos(mesesHastaRefi)+'</span></div>'+
         '<div class="ws-field"><span class="k">Saldo estimado en esa fecha</span><span class="v">'+eur(saldoAtRefi)+'</span></div>';
     }
     function fmtAnos(meses){
