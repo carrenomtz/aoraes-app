@@ -506,15 +506,25 @@
   .inm-suf{position:absolute; right:11px; top:50%; transform:translateY(-50%); font-size:11.5px; color:var(--muted); font-weight:600; pointer-events:none}
   .inm-precio{max-width:280px; margin-bottom:18px}
   .inm-precio .inm-inp{font-size:16px}
-  .inm-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:18px}
+  .inm-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin-bottom:18px}
   @media(max-width:900px){.inm-grid{grid-template-columns:1fr}}
+  .inm-strategy{display:inline-flex; gap:3px; background:var(--surface-soft); border:1px solid var(--line); border-radius:999px; padding:3px; margin-bottom:14px}
+  .inm-strategy button{font-family:inherit; font-size:12.5px; font-weight:700; color:var(--muted); background:transparent; border:0; border-radius:999px; padding:7px 16px; cursor:pointer; transition:.14s}
+  .inm-strategy button:hover{color:var(--navy)}
+  .inm-strategy button.active{background:var(--navy); color:#ffffff}
   .inm-card{background:var(--surface-soft); border:1px solid var(--line); border-radius:var(--r-md); padding:15px}
   .inm-card h4{font-family:'Fraunces',sans-serif; font-weight:600; font-size:14px; color:var(--navy); margin-bottom:10px}
   .inm-note{font-size:11.5px; color:var(--muted); margin:-4px 0 11px; line-height:1.4}
   .inm-quick{display:flex; flex-wrap:wrap; gap:6px; margin:-3px 0 11px}
   .inm-quick button{font-family:inherit; font-size:12px; font-weight:700; color:var(--navy); background:var(--surface); border:1px solid var(--gold-soft); border-radius:999px; padding:5px 12px; cursor:pointer; transition:.14s}
   .inm-quick button:hover{background:var(--gold-tint); border-color:var(--gold)}
-  .inm-results{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  .inm-results{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px}
+  .inm-time{margin-top:11px; padding-top:10px; border-top:1px solid var(--line-soft)}
+  .inm-time-lab{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:5px}
+  .inm-time-lab b{color:var(--navy); font-variant-numeric:var(--tab)}
+  .inm-time-bar{height:7px; border-radius:999px; background:var(--surface-soft); overflow:hidden}
+  .inm-time-bar span{display:block; height:100%; background:var(--gold); border-radius:999px}
+  .inm-time-bar.risk span{background:var(--amber)}
   @media(max-width:900px){.inm-results{grid-template-columns:1fr}}
   .inm-res-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:15px; box-shadow:var(--sh-1)}
   .inm-res-card h5{font-family:'Fraunces',sans-serif; font-weight:600; font-size:13.5px; color:var(--navy); margin-bottom:9px}
@@ -2024,7 +2034,12 @@
       var comision=precio*(cfg.comision||0)/100;
       var costeTotal=precio+interesTotalPrestamo+comision-interesGanadoAhorro;
       var tasaEfectiva=effectiveAnnualRate(capitalPrestamo-comision,cuotaPrestamo,mesesPrestamo);
-      return {objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0};
+      // Duración real de cada camino hasta terminar de pagar del todo: ahorro (si lo hay) + el
+      // plazo del préstamo que sigue después — la comparación de tiempo que pide verse tan clara
+      // como la de precio (p. ej. "3,5 + 10 años" frente a "30 años").
+      var mesesAhorroEfectivo=(pct>0)?mesesAhorro:0;
+      var mesesTotal=mesesAhorroEfectivo+mesesPrestamo;
+      return {objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal};
     }
     function isoDateYearsAgo(years){
       var d=new Date(); d.setFullYear(d.getFullYear()-years);
@@ -2101,6 +2116,14 @@
         ['compra:Comprar','refi:Refinanciar'].map(function(p){var a=p.split(':');var on=(a[0]===modo);return '<button type="button" data-inm-mode="'+a[0]+'"'+(on?' class="active"':'')+' aria-pressed="'+(on?'true':'false')+'">'+a[1]+'</button>';}).join('')+
       '</div>';
     }
+    // Una sola estrategia Bausparvertrag a la vez frente al banco (no las dos fusionadas): deja
+    // sitio a la tarjeta para la línea de tiempo y el resto de detalle, y el propio botón ya
+    // enseña los años de cada una — la primera diferencia que el cliente ve, antes de mirar nada más.
+    function inmuebleStrategyToggle(activeKey,opts){
+      return '<div class="inm-strategy" role="tablist" aria-label="Estrategia Bausparvertrag a comparar">'+
+        opts.map(function(o){var on=(o.key===activeKey);return '<button type="button" data-inm-strategy="'+o.key+'"'+(on?' class="active"':'')+' aria-pressed="'+(on?'true':'false')+'">'+esc(o.label)+'</button>';}).join('')+
+      '</div>';
+    }
     function inmuebleRefiCurrentCard(refi){
       return '<div class="inm-card"><h4>Tu crédito actual</h4><p class="inm-note">Cuéntanos del crédito que el cliente ya tiene.</p>'+
         inmuebleOptField('refiActual','importeOriginal','¿Cuánto pidió prestado originalmente?',refi.importeOriginal,'1000','€','min="0"')+
@@ -2127,23 +2150,42 @@
         '<div class="ws-field"><span class="k">Años hasta refinanciar</span><span class="v">'+(mesesHastaRefi/12).toFixed(1)+'</span></div>'+
         '<div class="ws-field"><span class="k">Saldo estimado en esa fecha</span><span class="v">'+eur(saldoAtRefi)+'</span></div>';
     }
+    function fmtAnos(meses){
+      var s=(Math.round((meses/12)*10)/10).toString().replace('.',',');
+      return s+(s==='1'?' año':' años');
+    }
+    // La barra de tiempo, no solo el número: el mismo objetivo que la comparación de precio —
+    // que el cliente lo vea de un vistazo, sin tener que leer las cifras. "risk" marca el banco
+    // directo porque su certeza de tipo durante TODO el plazo es el caso favorable, no lo habitual
+    // (ver aviso de Zinsbindung/Anschlussfinanzierung en la cabecera del bloque).
+    function inmuebleTimeRow(r,maxMeses,isBanco){
+      var pctWidth=maxMeses>0?Math.max(4,Math.round(r.mesesTotal/maxMeses*100)):0;
+      var detalle=(r.mesesAhorro>0)
+        ?(fmtAnos(r.mesesAhorro)+' de ahorro + '+fmtAnos(r.mesesPrestamo)+' de préstamo')
+        :(fmtAnos(r.mesesPrestamo)+' de préstamo');
+      return '<div class="inm-time"><div class="inm-time-lab"><span>Tiempo total hasta terminar de pagar</span><b>'+fmtAnos(r.mesesTotal)+'</b></div>'+
+        '<div class="inm-time-bar'+(isBanco?' risk':'')+'"><span style="width:'+pctWidth+'%"></span></div>'+
+        '<div class="inm-time-lab"><span>'+detalle+'</span></div></div>';
+    }
     function inmuebleRefiResultsHTML(refi){
       var rem=calcRefiRemaining(refi);
       var fr=fechaRefiEfectiva(refi);
       var mesesHastaRefi=mesesEntreFechas(todayISO(),fr);
       var anosDisponibles=mesesHastaRefi/12;
       var saldoAtRefi=saldoEnFecha(refi,fr);
+      var estKey=(refi.estrategia==='refiB')?'refiB':'refiA';
+      var estCfg=(estKey==='refiB')?refi.b:refi.a;
+      var estTitle=(estKey==='refiB')?'Badenia · opción acelerada':'Badenia · opción clásica';
       // Si la fecha de refinanciación cae después de que el crédito original ya se habría
       // terminado de pagar solo, no se sigue pagando cuota en ese tramo — se limita al tiempo
       // que el crédito original realmente sigue vivo.
       var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
       var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,plazoPrestamo:refi.banco.plazoPrestamo,comision:refi.banco.comision});
-      var rA=calcInmuebleOption(saldoAtRefi,{pct:refi.a.pct,anios:anosDisponibles,interesAhorro:refi.a.interesAhorro,interesPrestamo:refi.a.interesPrestamo,plazoPrestamo:refi.a.plazoPrestamo,comision:refi.a.comision});
-      var rB=calcInmuebleOption(saldoAtRefi,{pct:refi.b.pct,anios:anosDisponibles,interesAhorro:refi.b.interesAhorro,interesPrestamo:refi.b.interesPrestamo,plazoPrestamo:refi.b.plazoPrestamo,comision:refi.b.comision});
+      var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,plazoPrestamo:estCfg.plazoPrestamo,comision:estCfg.comision});
       var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
-      var costeAAbs=costeMientrasTanto+rA.costeTotal;
-      var costeBAbs=costeMientrasTanto+rB.costeTotal;
-      var mejorEsA=costeAAbs<=costeBAbs;
+      var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
+      var mejorEsEst=costeEstAbs<=costeBancoAbs;
+      var maxMeses=Math.max(rBanco.mesesTotal,rEst.mesesTotal,1);
       function baseRow(){
         return '<div class="inm-res-card"><h5>Tu crédito actual</h5>'+
           '<div class="inm-res-line"><span>Cuota actual</span><b>'+eur(rem.cuotaOriginal)+'/mes</b></div>'+
@@ -2151,7 +2193,7 @@
           '<div class="inm-res-line total"><span>Coste total restante</span><b>'+eur(rem.costeTotalSeguirIgual)+'</b></div>'+
         '</div>';
       }
-      function row(title,r,costeAbs,destacar){
+      function row(title,r,costeAbs,destacar,isBanco){
         var ahorroVs=rem.costeTotalSeguirIgual-costeAbs;
         return '<div class="inm-res-card"><h5>'+(destacar?'★ ':'')+esc(title)+'</h5>'+
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
@@ -2160,14 +2202,18 @@
           (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(costeAbs)+'</b></div>'+
           '<div class="inm-res-line save '+(ahorroVs>=0?'pos':'neg')+'"><span>'+(ahorroVs>=0?'Ahorras vs. seguir igual':'Más caro que seguir igual')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>'+
+          inmuebleTimeRow(r,maxMeses,isBanco)+
         '</div>';
       }
-      return '<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false)+
-        row('Badenia · '+(refi.a.pct||0)+'% ahorro',rA,costeAAbs,mejorEsA)+
-        row('Badenia · '+(refi.b.pct||0)+'% ahorro',rB,costeBAbs,!mejorEsA)+'</div>';
+      return '<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+
+        row(estTitle,rEst,costeEstAbs,mejorEsEst,false)+'</div>';
     }
     function inmuebleResultsHTML(precio,inm){
-      var ra=calcInmuebleOption(precio,inm.a), rb=calcInmuebleOption(precio,inm.b), rk=calcInmuebleOption(precio,inm.banco);
+      var estKey=(inm.estrategia==='b')?'b':'a';
+      var estCfg=(estKey==='b')?inm.b:inm.a;
+      var estTitle=(estKey==='b')?('Bausparvertrag · '+(inm.b.pct||0)+'% en '+(inm.b.anios||0)+' años'):('Bausparvertrag · '+(inm.a.pct||0)+'% ahorro');
+      var rEst=calcInmuebleOption(precio,estCfg), rk=calcInmuebleOption(precio,inm.banco);
+      var maxMeses=Math.max(rEst.mesesTotal,rk.mesesTotal,1);
       function row(title,r,isBanco){
         var ahorroVs=isBanco?null:(rk.costeTotal-r.costeTotal);
         return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
@@ -2177,9 +2223,10 @@
           (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(r.costeTotal)+'</b></div>'+
           (ahorroVs!=null?'<div class="inm-res-line save '+(ahorroVs>=0?'pos':'neg')+'"><span>'+(ahorroVs>=0?'Ahorras vs. banco':'Más caro que el banco')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>':'')+
+          inmuebleTimeRow(r,maxMeses,isBanco)+
           '</div>';
       }
-      return '<div class="inm-results">'+row('Bausparvertrag · '+(inm.a.pct||0)+'% ahorro',ra,false)+row('Bausparvertrag · '+(inm.b.pct||0)+'% en '+(inm.b.anios||0)+' años',rb,false)+row('Banco directo',rk,true)+'</div>';
+      return '<div class="inm-results">'+row(estTitle,rEst,false)+row('Banco directo',rk,true)+'</div>';
     }
     function normalizeInmueble(rec){
       if(!rec.inmueble) rec.inmueble=defaultInmueble();
@@ -2190,23 +2237,37 @@
       if(!inm.refi.b) inm.refi.b=def.refi.b;
       if(!inm.refi.banco) inm.refi.banco=def.refi.banco;
       if(!inm.refi.fechaRefi) inm.refi.fechaRefi=def.refi.fechaRefi;
+      // Qué estrategia Bausparvertrag se compara contra el banco — solo una a la vez, para no
+      // apretar tres tarjetas y dejar sitio a la línea de tiempo y demás detalle por tarjeta.
+      if(inm.estrategia!=='a'&&inm.estrategia!=='b') inm.estrategia='a';
+      if(inm.refi.estrategia!=='refiA'&&inm.refi.estrategia!=='refiB') inm.refi.estrategia='refiA';
       return inm;
     }
     function inmuebleBlock(rec){
       var inm=normalizeInmueble(rec);
       var body=(inm.modo==='refi')
-        ? '<div class="inm-grid">'+
+        ? inmuebleStrategyToggle(inm.refi.estrategia,[
+            {key:'refiA',label:'Opción clásica ('+String(inm.refi.a.anios!=null?inm.refi.a.anios:inm.a.anios).replace('.',',')+' años)'},
+            {key:'refiB',label:'Opción acelerada ('+String(inm.refi.b.anios!=null?inm.refi.b.anios:inm.b.anios).replace('.',',')+' años)'}
+          ])+
+          '<div class="inm-grid">'+
             inmuebleRefiCurrentCard(inm.refi)+
             inmuebleOptionCard('refiBanco','Refinanciar con banco',inm.refi.banco,'A tipo de mercado, sobre el saldo pendiente.')+
-            inmuebleOptionCard('refiA','Badenia · opción clásica',inm.refi.a,'Ahorro en paralelo hasta la fecha de refinanciación.')+
-            inmuebleOptionCard('refiB','Badenia · opción acelerada',inm.refi.b,'Ahorro en paralelo hasta la fecha de refinanciación.')+
+            (inm.refi.estrategia==='refiA'
+              ?inmuebleOptionCard('refiA','Badenia · opción clásica',inm.refi.a,'Ahorro en paralelo hasta la fecha de refinanciación.')
+              :inmuebleOptionCard('refiB','Badenia · opción acelerada',inm.refi.b,'Ahorro en paralelo hasta la fecha de refinanciación.'))+
           '</div>'+
           '<div id="inm-results-wrap">'+inmuebleRefiResultsHTML(inm.refi)+'</div>'
         : '<label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
+          inmuebleStrategyToggle(inm.estrategia,[
+            {key:'a',label:'Opción clásica ('+String(inm.a.anios).replace('.',',')+' años)'},
+            {key:'b',label:'Opción acelerada ('+String(inm.b.anios).replace('.',',')+' años)'}
+          ])+
           '<div class="inm-grid">'+
-            inmuebleOptionCard('a','Bausparvertrag · opción clásica',inm.a)+
-            inmuebleOptionCard('b','Bausparvertrag · opción acelerada',inm.b)+
-            inmuebleOptionCard('banco','Banco directo',inm.banco,'Sin fase de ahorro: se financia el 100% desde el inicio.')+
+            (inm.estrategia==='a'
+              ?inmuebleOptionCard('a','Bausparvertrag · opción clásica',inm.a)
+              :inmuebleOptionCard('b','Bausparvertrag · opción acelerada',inm.b))+
+            inmuebleOptionCard('banco','Banco directo',inm.banco,'Sin fase de ahorro: se financia el 100% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.')+
           '</div>'+
           '<div id="inm-results-wrap">'+inmuebleResultsHTML(inm.precio,inm)+'</div>';
       return '<div class="ws-card"><h3>Proyecto inmobiliario</h3>'+
@@ -2215,6 +2276,7 @@
           ?'Compara seguir con el crédito actual, refinanciar con banco a tipo de mercado, o refinanciar con Badenia a un tipo fijo sobre el saldo pendiente. Cálculo orientativo con amortización estándar.'
           :'Compara financiar la compra con un Bausparvertrag (fase de ahorro a interés casi nulo + préstamo a tipo fijo pactado hoy) frente a una hipoteca bancaria directa a tipo de mercado. Cálculo orientativo con amortización estándar; la Bausparkasse asigna el préstamo real según su propio algoritmo colectivo, que puede variar el plazo de ahorro.')+'</p>'+
         '<p class="inm-eff-note">El <b>interés efectivo del préstamo</b> ya descuenta la comisión de apertura sobre lo que el cliente recibe de verdad — es el mismo cálculo (interés actuarial/IRR) que exige la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.</p>'+
+        (inm.modo!=='refi'?'<p class="inm-eff-note">Una hipoteca bancaria alemana casi nunca fija el tipo para todo el plazo: lo normal es una <b>Zinsbindung</b> de 10-15 años, tras la cual el saldo pendiente (<b>Restschuld</b>) se refinancia al tipo que haya entonces (<b>Anschlussfinanzierung</b>). La certeza de tipo durante todo el plazo que muestra "Banco directo" aquí es el caso favorable — coméntalo con el cliente si su horizonte real es más largo que la Zinsbindung que le ofrecerán.</p>':'')+
         body+
       '</div>';
     }
@@ -2594,6 +2656,14 @@
         if(!wsRec) return;
         normalizeInmueble(wsRec).modo=md.getAttribute('data-inm-mode');
         var sec=document.getElementById('sec-inmueble'); if(sec) sec.innerHTML=inmuebleBlock(wsRec);
+        scheduleInmuebleSave();
+        return;
+      }
+      var st=e.target.closest('[data-inm-strategy]'); if(st){
+        if(!wsRec) return;
+        var inmSt=normalizeInmueble(wsRec), key=st.getAttribute('data-inm-strategy');
+        if(key==='refiA'||key==='refiB') inmSt.refi.estrategia=key; else inmSt.estrategia=key;
+        var sec2=document.getElementById('sec-inmueble'); if(sec2) sec2.innerHTML=inmuebleBlock(wsRec);
         scheduleInmuebleSave();
         return;
       }
