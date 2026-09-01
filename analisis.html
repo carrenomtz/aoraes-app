@@ -5525,16 +5525,6 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       }
       return pages;
     }
-    function donut(segs){
-      var tot=segs.reduce(function(s,x){return s+Math.max(x.val,0);},0)||1,off=25,parts='';
-      segs.forEach(function(x){var p=Math.max(x.val,0)/tot*100;if(p<=0)return;
-        parts+='<circle cx="21" cy="21" r="15.9155" fill="none" stroke="'+x.color+'" stroke-width="6" stroke-dasharray="'+p.toFixed(2)+' '+(100-p).toFixed(2)+'" stroke-dashoffset="'+off.toFixed(2)+'"></circle>';
-        off=(off-p+100)%100;});
-      return '<svg width="150" height="150" viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="#efeada" stroke-width="6"/>'+parts+'</svg>';
-    }
-    function legend(segs,tot){return '<div class="sh-legend">'+segs.filter(function(x){return x.val>0;}).map(function(x){
-      return '<span class="it"><span class="sw" style="background:'+x.color+'"></span>'+x.label+' · <b>'+M(x.val)+'</b> ('+Math.round(x.val/(tot||1)*100)+'%)</span>';}).join('')+'</div>';}
-
     var S=[];
     var pctR=function(x){return Math.round((x||0)*100)+'%';};
     function pyramidSVG(L){
