@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow">
 <title>AORAES · Herramientas del asesor</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -169,10 +169,6 @@
   .ase-badge.rechazado{background:#fbeae6; color:var(--red); border-color:#e7c3bb}
   .ase-badge.admin{background:var(--navy); color:#fff; border-color:var(--navy)}
   .ase-acts{display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:0 0 auto}
-  .ase-act{font-family:inherit; font-size:12px; font-weight:600; min-height:34px; padding:0 13px; border-radius:var(--r-sm); cursor:pointer; border:1px solid; white-space:nowrap}
-  .ase-act.ok{background:#eaf2ec; color:#4f7358; border-color:#cfe3d4} .ase-act.ok:hover{background:#dcebe0}
-  .ase-act.view{background:var(--surface); color:var(--navy); border-color:var(--gold-soft)} .ase-act.view:hover{background:var(--gold-tint)}
-  .ase-act:disabled{opacity:.5; cursor:default}
   .ase-count{font-size:11.5px; color:var(--faint); margin-top:3px}
   .ase-menu-wrap{position:relative; flex:0 0 auto}
   .ase-menu-btn{
@@ -440,13 +436,6 @@
   @keyframes fade{from{opacity:0} to{opacity:1}}
   .ws-lead{color:var(--muted); font-size:13.5px; margin:0 0 18px; max-width:62ch}
 
-  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:12px; margin-bottom:20px}
-  .kpi{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:15px 17px; box-shadow:var(--sh-1)}
-  .kpi-lbl{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700}
-  .kpi-val{font-family:'Fraunces',sans-serif; font-weight:600; font-size:23px; color:var(--navy); margin-top:6px; line-height:1.1; font-variant-numeric:var(--tab)}
-  .kpi-val.pos{color:var(--green)} .kpi-val.neg{color:var(--red)}
-  .kpi-sub{font-size:11.5px; color:var(--muted); margin-top:4px; font-variant-numeric:var(--tab)}
-
   .ws-cta{display:inline-flex; align-items:center; gap:8px; background:var(--navy); color:#ffffff; border:0; font-family:inherit; font-weight:600; font-size:13px; min-height:42px; padding:0 18px; border-radius:var(--r-md); cursor:pointer; transition:background .16s var(--ease), transform .16s var(--ease)}
   .ws-cta:hover{background:var(--navy-deep); transform:translateY(-1px)} .ws-cta:active{transform:translateY(0)}
   .ws-cta:disabled{opacity:.6; cursor:default; transform:none}
@@ -456,43 +445,6 @@
   .ws-card h3{font-size:16px; margin-bottom:11px}
   .ws-field{display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line-soft); font-size:13.5px}
   .ws-field:last-child{border-bottom:0} .ws-field .k{color:var(--muted)} .ws-field .v{color:var(--ink); font-weight:600; text-align:right; font-variant-numeric:var(--tab)}
-  .ws-skel{color:var(--muted); font-size:13px; padding:14px 16px; background:var(--surface-soft); border:1px solid var(--line-soft); border-radius:var(--r-md); position:relative; overflow:hidden}
-  .ws-skel::after{content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(201,169,97,.10),transparent); transform:translateX(-100%); animation:shimmer 1.4s infinite}
-  @media (prefers-reduced-motion:reduce){.ws-skel::after{animation:none}}
-  @keyframes shimmer{to{transform:translateX(100%)}}
-
-  /* proposal — the signature one-pager */
-  #proposal-doc{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:clamp(24px,4vw,44px); box-shadow:var(--sh-2)}
-  .pd-head{position:relative; padding-bottom:16px; margin-bottom:20px; border-bottom:1px solid var(--navy)}
-  .pd-head::after{content:""; position:absolute; left:0; bottom:-1px; width:64px; height:3px; background:var(--gold)}
-  .pd-brand{font-family:'Fraunces',sans-serif; font-weight:700; font-size:19px; color:var(--navy); letter-spacing:.01em}
-  .pd-brand span{color:var(--gold-deep); font-size:12.5px; font-weight:600; letter-spacing:.02em}
-  .pd-title{font-family:'Fraunces',sans-serif; font-weight:600; font-size:26px; color:var(--navy); margin-top:9px}
-  .pd-sub{color:var(--muted); font-size:13px; margin-top:4px; font-variant-numeric:var(--tab)}
-  .pd-verdict{background:var(--gold-tint); border-left:3px solid var(--gold); border-radius:0 var(--r-sm) var(--r-sm) 0; padding:14px 17px; margin-bottom:20px; font-size:14px; line-height:1.5}
-  .pd-verdict b{color:var(--navy)}
-  .pd-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; margin-bottom:20px}
-  .pd-cell{background:var(--surface); padding:14px 16px}
-  .pd-cell .k{font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700}
-  .pd-cell .v{font-family:'Fraunces',sans-serif; font-weight:600; font-size:20px; color:var(--navy); margin-top:5px; font-variant-numeric:var(--tab)}
-  .pd-cell .v.pos{color:var(--green)} .pd-cell .v.neg{color:var(--red)}
-  .pd-cell .s{font-size:11px; color:var(--muted); margin-top:3px}
-  .pd-sec{margin-bottom:20px}
-  .pd-sec h4{font-family:'Fraunces',sans-serif; font-weight:600; font-size:16px; color:var(--navy); margin-bottom:11px; padding-bottom:7px; border-bottom:1px solid var(--line); position:relative}
-  .pd-sec h4::after{content:""; position:absolute; left:0; bottom:-1px; width:30px; height:2px; background:var(--gold)}
-  .pd-cols{display:grid; grid-template-columns:1fr 1fr; gap:20px}
-  @media(max-width:620px){.pd-cols{grid-template-columns:1fr}}
-  .pd-list{list-style:none; margin:0; padding:0}
-  .pd-list li{position:relative; padding:7px 0 7px 24px; font-size:13.5px; line-height:1.45; border-bottom:1px solid var(--line-soft)}
-  .pd-list li:last-child{border-bottom:0}
-  .pd-list.prio li::before{content:"→"; position:absolute; left:0; color:var(--gold-deep); font-weight:700}
-  .pd-list.str li::before{content:"✓"; position:absolute; left:0; color:var(--green); font-weight:700}
-  .pd-foot{margin-top:22px; padding-top:15px; border-top:1px solid var(--line); font-size:10.5px; color:var(--faint); line-height:1.6}
-  .fire-bar{height:9px; background:var(--line); border-radius:999px; overflow:hidden; margin:6px 0 9px}
-  .fire-fill{height:100%; background:linear-gradient(90deg,var(--gold-deep),var(--gold)); border-radius:999px; transition:width .5s var(--ease)}
-  @media (prefers-reduced-motion:reduce){.fire-fill{transition:none}}
-  .fire-cap{font-size:11px; color:var(--muted); line-height:1.5}
-  .ws-print{margin-top:16px}
   .seg-notes{white-space:pre-wrap; font-size:13.5px; color:var(--ink); background:var(--surface-soft); border:1px solid var(--line-soft); border-radius:var(--r-sm); padding:13px 15px; min-height:50px; line-height:1.55}
 
   /* proyecto inmobiliario */
@@ -577,16 +529,6 @@
   .bb-close{flex:0 0 auto; background:transparent; border:0; color:var(--muted); font-size:15px; cursor:pointer; padding:4px 6px; line-height:1; border-radius:5px}
   .bb-close:hover{color:var(--ink)}
 
-  /* ---------- print: only the proposal ---------- */
-  @media print{
-    body.print-mode .appbar, body.print-mode #home, body.print-mode #frames, body.print-mode .ws-back, body.print-mode .ws-stepper, body.print-mode .ws-print{display:none !important}
-    body.print-mode #workspace{display:block !important; overflow:visible}
-    body.print-mode .ws{max-width:none; padding:0}
-    body.print-mode .ws-head, body.print-mode .ws-sec:not(.print-target){display:none !important}
-    body.print-mode .ws-sec.print-target{display:block !important; animation:none}
-    body.print-mode #proposal-doc{box-shadow:none; border:0; border-radius:0; padding:0}
-    @page{margin:15mm}
-  }
 </style>
 </head>
 <body>
