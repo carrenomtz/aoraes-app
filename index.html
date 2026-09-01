@@ -2139,8 +2139,13 @@
     // "acelerada" tenía MÁS años que la "clásica" (5 contra 3,5): confundía porque el nombre
     // prometía velocidad que el dato no cumplía. El % ahorrado es lo único que de verdad define
     // cada estrategia — los años son solo un dato editable, no una promesa del nombre.
-    function inmuebleEstNombre(cfg){
-      return (cfg.pct||0)+'% ahorro ('+String(cfg.anios).replace('.',',')+' años)';
+    // En Comprar, cada estrategia tiene su propio cfg.anios (editable). En Refinanciar, refi.a/refi.b
+    // no tienen "anios" propio — los años de ahorro son los que quedan hasta la fecha de
+    // refinanciación, calculados aparte — así que aquí se puede forzar con aniosOverride en vez de
+    // leer un campo que en refi simplemente no existe (por eso salía "undefined años").
+    function inmuebleEstNombre(cfg,aniosOverride){
+      var anios=aniosOverride!=null?aniosOverride:cfg.anios;
+      return (cfg.pct||0)+'% ahorro ('+String(Math.round(anios*10)/10).replace('.',',')+' años)';
     }
     // Una sola estrategia Bausparvertrag a la vez frente al banco (no las dos fusionadas): deja
     // sitio a la tarjeta para la línea de tiempo y el resto de detalle, y el propio botón ya
@@ -2259,6 +2264,35 @@
         '<path d="'+path(ptsEst)+'" fill="none" stroke="var(--navy)" stroke-width="2.5"/>'+
         '</svg>';
     }
+    // Versión de la curva para Refinanciar: antes de la fecha de refinanciación el crédito ACTUAL
+    // sigue vivo para las dos opciones por igual (misma cuota, mismo saldo) — la diferencia es que
+    // en la estrategia Badenia el ahorro corre EN PARALELO a esos pagos (no después, como en
+    // Comprar), así que lo que de verdad queda por pagar es el saldo del crédito menos lo ya
+    // ahorrado. En "Refinanciar con banco" no hay esa fase de ahorro, así que su línea hasta la
+    // fecha de refinanciación es sencillamente el crédito actual amortizándose solo.
+    function inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rNew,cfgNew,tieneAhorroParalelo){
+      var paso=3,puntos=[];
+      var rateAhorroM=(cfgNew.interesAhorro||0)/100/12;
+      var totalMeses=mesesHastaRefi+rNew.mesesPrestamo;
+      for(var t=0;t<=totalMeses;t+=paso){
+        var pendiente;
+        if(t<=mesesHastaRefi){
+          var tCredito=Math.min(t,rem.mesesRestantes);
+          var saldoCredito=balanceTrasMeses(rem.saldoPendiente,refi.interesOriginal,rem.cuotaOriginal,tCredito);
+          var ahorroAcum=0;
+          if(tieneAhorroParalelo){
+            ahorroAcum=Math.abs(rateAhorroM)<1e-9?rNew.cuotaAhorro*t:rNew.cuotaAhorro*((Math.pow(1+rateAhorroM,t)-1)/rateAhorroM);
+            ahorroAcum=Math.min(ahorroAcum,rNew.objetivoAhorro);
+          }
+          pendiente=saldoCredito-ahorroAcum;
+        }else{
+          pendiente=balanceTrasMeses(rNew.capitalPrestamo,cfgNew.interesPrestamo,rNew.cuotaPrestamo,t-mesesHastaRefi);
+        }
+        puntos.push({meses:t,pendiente:Math.max(0,pendiente)});
+      }
+      if(puntos.length===0||puntos[puntos.length-1].meses<totalMeses) puntos.push({meses:totalMeses,pendiente:0});
+      return puntos;
+    }
     function inmuebleRefiResultsHTML(refi){
       var rem=calcRefiRemaining(refi);
       var fr=fechaRefiEfectiva(refi);
@@ -2267,7 +2301,7 @@
       var saldoAtRefi=saldoEnFecha(refi,fr);
       var estKey=(refi.estrategia==='refiB')?'refiB':'refiA';
       var estCfg=(estKey==='refiB')?refi.b:refi.a;
-      var estTitle='Badenia · '+inmuebleEstNombre(estCfg);
+      var estTitle='Badenia · '+inmuebleEstNombre(estCfg,anosDisponibles);
       // Si la fecha de refinanciación cae después de que el crédito original ya se habría
       // terminado de pagar solo, no se sigue pagando cuota en ese tramo — se limita al tiempo
       // que el crédito original realmente sigue vivo.
@@ -2298,7 +2332,14 @@
           inmuebleCertRow(r,refi.banco.zinsbindung,isBanco)+
         '</div>';
       }
-      return '<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+
+      var ptsBanco=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rBanco,refi.banco,false);
+      var ptsEst=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rEst,estCfg,true);
+      var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
+        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--red)"></i>Refinanciar con banco</span></div></div>'+
+        inmuebleCurvaSVG(rem.saldoPendiente,ptsEst,ptsBanco,mesesHastaRefi)+
+        '<p class="inm-curve-note">La línea de puntos dorada marca la fecha de refinanciación. Hasta entonces, las dos siguen pagando el crédito actual — en la opción Badenia, el ahorro corre en paralelo y ya descuenta de lo pendiente; en refinanciar con banco no hay ahorro previo.</p>'+
+        '</div>';
+      return curva+'<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+
         row(estTitle,rEst,costeEstAbs,mejorEsEst,false)+'</div>';
     }
     function inmuebleResultsHTML(precio,inm){
@@ -2349,17 +2390,21 @@
     }
     function inmuebleBlock(rec){
       var inm=normalizeInmueble(rec);
+      // Años de ahorro en Refinanciar: no son un dato propio de cada estrategia, son los que quedan
+      // hasta la fecha de refinanciación — se calculan una vez aquí para nombrar el selector y las
+      // tarjetas de entrada igual que hace inmuebleRefiResultsHTML con las de resultado.
+      var refiAniosDisp=inm.modo==='refi'?(mesesEntreFechas(todayISO(),fechaRefiEfectiva(inm.refi))/12):0;
       var body=(inm.modo==='refi')
         ? inmuebleStrategyToggle(inm.refi.estrategia,[
-            {key:'refiA',label:inmuebleEstNombre(inm.refi.a)},
-            {key:'refiB',label:inmuebleEstNombre(inm.refi.b)}
+            {key:'refiA',label:inmuebleEstNombre(inm.refi.a,refiAniosDisp)},
+            {key:'refiB',label:inmuebleEstNombre(inm.refi.b,refiAniosDisp)}
           ])+
           '<div class="inm-grid">'+
             inmuebleRefiCurrentCard(inm.refi)+
             inmuebleOptionCard('refiBanco','Refinanciar con banco',inm.refi.banco,'A tipo de mercado, sobre el saldo pendiente.')+
             (inm.refi.estrategia==='refiA'
-              ?inmuebleOptionCard('refiA','Badenia · '+inmuebleEstNombre(inm.refi.a),inm.refi.a,'Ahorro en paralelo hasta la fecha de refinanciación.')
-              :inmuebleOptionCard('refiB','Badenia · '+inmuebleEstNombre(inm.refi.b),inm.refi.b,'Ahorro en paralelo hasta la fecha de refinanciación.'))+
+              ?inmuebleOptionCard('refiA','Badenia · '+inmuebleEstNombre(inm.refi.a,refiAniosDisp),inm.refi.a,'Ahorro en paralelo hasta la fecha de refinanciación.')
+              :inmuebleOptionCard('refiB','Badenia · '+inmuebleEstNombre(inm.refi.b,refiAniosDisp),inm.refi.b,'Ahorro en paralelo hasta la fecha de refinanciación.'))+
           '</div>'+
           '<div id="inm-results-wrap">'+inmuebleRefiResultsHTML(inm.refi)+'</div>'
         : '<label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
