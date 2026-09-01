@@ -540,6 +540,8 @@
   .inm-curve-legend i{width:14px; height:2.5px; border-radius:2px; display:inline-block}
   .inm-curve-svg{width:100%; height:auto; display:block}
   .inm-curve-note{font-size:10.5px; color:var(--faint); line-height:1.45; margin-top:6px}
+  .inm-headline{background:var(--navy); color:rgba(255,255,255,.92); border-radius:var(--r-md); padding:16px 20px; margin-bottom:14px; font-size:14.5px; line-height:1.55; box-shadow:var(--sh-1)}
+  .inm-headline b{color:var(--gold-soft)}
   @media(max-width:900px){.inm-results{grid-template-columns:1fr}}
   .inm-res-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:15px; box-shadow:var(--sh-1)}
   .inm-res-card h5{font-family:'Fraunces',sans-serif; font-weight:600; font-size:13.5px; color:var(--navy); margin-bottom:9px}
@@ -2239,13 +2241,30 @@
       if(puntos.length===0||puntos[puntos.length-1].meses<r.mesesTotal) puntos.push({meses:r.mesesTotal,pendiente:0});
       return puntos;
     }
+    // Banco directo/refinanciar con banco NO es un peligro — es la otra opción financiera legítima —
+    // así que ya no se dibuja en rojo (leía como "alarma"); usa el dorado oscuro de marca. Y dos
+    // líneas bajando solas no cuentan nada: se añaden dos avisos con la cifra exacta en el momento
+    // en que el Bausparvertrag termina de pagar (cuánto le falta al banco justo entonces) y una
+    // franja sombreada de ahí en adelante — la ventaja ya conseguida, en positivo, no la deuda.
     function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst){
-      var W=600,H=220,padL=44,padR=10,padT=10,padB=24;
+      var W=600,H=232,padL=44,padR=10,padT=20,padB=24;
       var maxMeses=Math.max(ptsEst[ptsEst.length-1].meses,ptsBanco[ptsBanco.length-1].meses,1);
       var maxY=Math.max(precio,1);
+      var colorBanco='var(--gold-deep)';
       function px(m){ return padL+(m/maxMeses)*(W-padL-padR); }
       function py(v){ return padT+(1-(v/maxY))*(H-padT-padB); }
       function path(pts){ return pts.map(function(p,i){ return (i===0?'M':'L')+px(p.meses).toFixed(1)+','+py(p.pendiente).toFixed(1); }).join(' '); }
+      function valorEn(pts,meses){
+        for(var i=1;i<pts.length;i++){
+          if(pts[i].meses>=meses){
+            var a=pts[i-1],b=pts[i];
+            if(b.meses===a.meses) return b.pendiente;
+            var f=(meses-a.meses)/(b.meses-a.meses);
+            return a.pendiente+(b.pendiente-a.pendiente)*f;
+          }
+        }
+        return pts[pts.length-1].pendiente;
+      }
       var gridY=[0,0.25,0.5,0.75,1].map(function(f){
         var v=maxY*f, yy=py(v);
         return '<line x1="'+padL+'" y1="'+yy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+yy.toFixed(1)+'" stroke="var(--line-soft)" stroke-width="1"/>'+
@@ -2258,10 +2277,30 @@
           '<text x="'+xx.toFixed(1)+'" y="'+(H-padB+13)+'" font-size="9" fill="var(--faint)" text-anchor="middle">'+a+'</text>';
       }
       var marca=mesesAhorroEst>0?'<line x1="'+px(mesesAhorroEst).toFixed(1)+'" y1="'+padT+'" x2="'+px(mesesAhorroEst).toFixed(1)+'" y2="'+(H-padB)+'" stroke="var(--gold)" stroke-width="1" stroke-dasharray="3,3"/>':'';
+      // Franja "ya lo tienes pagado": desde que el Bausparvertrag llega a cero hasta el final del
+      // banco, el hueco entre las dos líneas es la ventaja ya conseguida — se sombrea en dorado
+      // suave bajo la curva del banco, no se resalta la del banco como si fuera el problema.
+      var finEst=ptsEst[ptsEst.length-1].meses, area='', callout='';
+      if(finEst<maxMeses-1){
+        var yBase=py(0);
+        var poly=[px(finEst).toFixed(1)+','+yBase.toFixed(1)];
+        ptsBanco.filter(function(p){return p.meses>=finEst;}).forEach(function(p){ poly.push(px(p.meses).toFixed(1)+','+py(p.pendiente).toFixed(1)); });
+        poly.push(px(maxMeses).toFixed(1)+','+yBase.toFixed(1));
+        area='<polygon points="'+poly.join(' ')+'" fill="var(--gold)" fill-opacity="0.13"/>';
+        var yBancoAhi=valorEn(ptsBanco,finEst);
+        callout='<circle cx="'+px(finEst).toFixed(1)+'" cy="'+yBase.toFixed(1)+'" r="3.5" fill="var(--navy)"/>'+
+          '<text x="'+px(finEst).toFixed(1)+'" y="'+(yBase-8).toFixed(1)+'" font-size="10" font-weight="700" fill="var(--navy)" text-anchor="middle">Pagado</text>'+
+          '<circle cx="'+px(finEst).toFixed(1)+'" cy="'+py(yBancoAhi).toFixed(1)+'" r="3.5" fill="'+colorBanco+'"/>'+
+          // eur() usa Intl.NumberFormat, que en es-ES separa el número del símbolo con un espacio
+          // de NO separación (U+00A0) — un .replace(' €','') con espacio normal no lo detecta y
+          // dejaba el símbolo duplicado ("112.356 € € aún"). \s sí cubre el NBSP.
+          '<text x="'+px(finEst).toFixed(1)+'" y="'+(py(yBancoAhi)-8).toFixed(1)+'" font-size="10" font-weight="700" fill="'+colorBanco+'" text-anchor="middle">'+eur(yBancoAhi).replace(/\s*€/,'')+' € aún</text>';
+      }
       return '<svg viewBox="0 0 '+W+' '+H+'" class="inm-curve-svg" role="img" aria-label="Cuánto queda por pagar, comparado en el tiempo">'+
-        gridY+gridX+marca+
-        '<path d="'+path(ptsBanco)+'" fill="none" stroke="var(--red)" stroke-width="2.5"/>'+
+        area+gridY+gridX+marca+
+        '<path d="'+path(ptsBanco)+'" fill="none" stroke="'+colorBanco+'" stroke-width="2.5"/>'+
         '<path d="'+path(ptsEst)+'" fill="none" stroke="var(--navy)" stroke-width="2.5"/>'+
+        callout+
         '</svg>';
     }
     // Versión de la curva para Refinanciar: antes de la fecha de refinanciación el crédito ACTUAL
@@ -2292,6 +2331,17 @@
       }
       if(puntos.length===0||puntos[puntos.length-1].meses<totalMeses) puntos.push({meses:totalMeses,pendiente:0});
       return puntos;
+    }
+    // La frase que junta precio + tiempo + certeza en una sola línea, arriba de todo — para que el
+    // cliente se lleve la comparación completa sin tener que leer las tres tarjetas. No asume que
+    // la opción destacada siempre gana: si en la configuración concreta sale más cara o más lenta,
+    // lo dice igual, solo cambia la palabra (ahorras/cuesta, antes/más).
+    function inmuebleFraseResumen(etiqueta,euros,mesesDif,certMesesEst,totalMesesEst,certMesesBanco,totalMesesBanco){
+      var fPrecio=euros>=0?('ahorras <b>'+eur(Math.abs(euros))+'</b>'):('cuesta <b>'+eur(Math.abs(euros))+'</b> más');
+      var fTiempo=mesesDif>=0?('terminas de pagar <b>'+fmtAnos(Math.abs(mesesDif))+'</b> antes'):('tardas <b>'+fmtAnos(Math.abs(mesesDif))+'</b> más');
+      var certEstTxt=certMesesEst>=totalMesesEst?'<b>todo el plazo</b>':('<b>'+fmtAnos(certMesesEst)+' de '+fmtAnos(totalMesesEst)+'</b>');
+      var certBancoTxt=certMesesBanco>=totalMesesBanco?'todo el plazo':(fmtAnos(certMesesBanco)+' de '+fmtAnos(totalMesesBanco));
+      return '<div class="inm-headline">Con '+etiqueta+' '+fPrecio+', '+fTiempo+', y tu cuota está garantizada '+certEstTxt+' — con el banco, solo '+certBancoTxt+'.</div>';
     }
     function inmuebleRefiResultsHTML(refi){
       var rem=calcRefiRemaining(refi);
@@ -2335,11 +2385,16 @@
       var ptsBanco=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rBanco,refi.banco,false);
       var ptsEst=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rEst,estCfg,true);
       var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
-        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--red)"></i>Refinanciar con banco</span></div></div>'+
+        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>Refinanciar con banco</span></div></div>'+
         inmuebleCurvaSVG(rem.saldoPendiente,ptsEst,ptsBanco,mesesHastaRefi)+
-        '<p class="inm-curve-note">La línea de puntos dorada marca la fecha de refinanciación. Hasta entonces, las dos siguen pagando el crédito actual — en la opción Badenia, el ahorro corre en paralelo y ya descuenta de lo pendiente; en refinanciar con banco no hay ahorro previo.</p>'+
+        '<p class="inm-curve-note">La línea de puntos dorada marca la fecha de refinanciación. Hasta entonces, las dos siguen pagando el crédito actual — en la opción Badenia, el ahorro corre en paralelo y ya descuenta de lo pendiente. La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
         '</div>';
-      return curva+'<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+
+      // Tiempo total desde HOY, no solo desde la refinanciación — rNew.mesesTotal no vale tal cual
+      // para el banco porque no incluye la espera hasta refinanciar (su fase de ahorro es 0).
+      var totalDesdeHoyEst=mesesHastaRefi+rEst.mesesPrestamo, totalDesdeHoyBanco=mesesHastaRefi+rBanco.mesesPrestamo;
+      var frase=inmuebleFraseResumen('la opción Badenia',costeBancoAbs-costeEstAbs,totalDesdeHoyBanco-totalDesdeHoyEst,
+        rEst.mesesPrestamo,rEst.mesesPrestamo,Math.min((refi.banco.zinsbindung||0)*12,rBanco.mesesPrestamo),rBanco.mesesPrestamo);
+      return frase+curva+'<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+
         row(estTitle,rEst,costeEstAbs,mejorEsEst,false)+'</div>';
     }
     function inmuebleResultsHTML(precio,inm){
@@ -2363,11 +2418,13 @@
       }
       var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg), ptsBanco=inmuebleCurvaSaldo(precio,rk,inm.banco);
       var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
-        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--red)"></i>Banco directo</span></div></div>'+
+        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>Banco directo</span></div></div>'+
         inmuebleCurvaSVG(precio,ptsEst,ptsBanco,rEst.mesesAhorro)+
-        (rEst.mesesAhorro>0?'<p class="inm-curve-note">La línea de puntos dorada marca la Zuteilung — el momento en que termina el ahorro y arranca el préstamo del Bausparvertrag.</p>':'')+
+        '<p class="inm-curve-note">'+(rEst.mesesAhorro>0?'La línea de puntos dorada marca la Zuteilung — el momento en que termina el ahorro y arranca el préstamo del Bausparvertrag. ':'')+'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
         '</div>';
-      return curva+'<div class="inm-results">'+row(estTitle,rEst,false)+row('Banco directo',rk,true)+'</div>';
+      var frase=inmuebleFraseResumen('el Bausparvertrag',rk.costeTotal-rEst.costeTotal,rk.mesesTotal-rEst.mesesTotal,
+        rEst.mesesPrestamo,rEst.mesesPrestamo,Math.min((inm.banco.zinsbindung||0)*12,rk.mesesPrestamo),rk.mesesPrestamo);
+      return frase+curva+'<div class="inm-results">'+row(estTitle,rEst,false)+row('Banco directo',rk,true)+'</div>';
     }
     function normalizeInmueble(rec){
       if(!rec.inmueble) rec.inmueble=defaultInmueble();
