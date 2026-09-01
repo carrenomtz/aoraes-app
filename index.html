@@ -525,6 +525,9 @@
   .inm-res-line.save{border-bottom:0}
   .inm-res-line.save.pos b{color:var(--green)}
   .inm-res-line.save.neg b{color:var(--red)}
+  .inm-res-line.inm-eff b{color:var(--amber)}
+  .inm-eff-hint{color:var(--faint); font-weight:400}
+  .inm-eff-note{font-size:11px; color:var(--faint); line-height:1.5; margin:-6px 0 16px}
   .inm-mode{display:inline-flex; gap:3px; background:var(--surface-soft); border:1px solid var(--line); border-radius:999px; padding:3px; margin-bottom:14px}
   .inm-mode button{font-family:inherit; font-size:12.5px; font-weight:700; color:var(--muted); background:transparent; border:0; border-radius:999px; padding:7px 16px; cursor:pointer; transition:.14s}
   .inm-mode button:hover{color:var(--navy)}
@@ -1964,12 +1967,42 @@
     /* ---------- Proyecto inmobiliario: Bausparvertrag vs. banco directo ----------
        Cálculo orientativo con amortización estándar (anualidad francesa). La asignación real
        del préstamo en un Bausparvertrag depende del algoritmo colectivo interno de la
-       Bausparkasse (Zuteilung), no replicable con exactitud fuera de su sistema. */
+       Bausparkasse (Zuteilung) — con su Regelsparbeitrag fijo en ‰ de la Bausparsumme y su
+       Tilgungsbeitrag decreciente en vez de una cuota constante — así que esto no replica ese
+       mecanismo interno; es un modelo genérico de amortización para comparar escenarios. */
     function annuityQuota(principal,annualRatePct,months){
       var r=(annualRatePct||0)/100/12;
       if(months<=0) return 0;
       if(Math.abs(r)<1e-9) return principal/months;
       return principal*r/(1-Math.pow(1+r,-months));
+    }
+    // Interés efectivo anual del préstamo (Effektiver Jahreszins, el que exige declarar la
+    // PAngV alemana junto al nominal): la tasa que iguala lo que el cliente REALMENTE recibe
+    // (el capital menos la comisión de apertura, que se descuenta como un Disagio/
+    // Bearbeitungsgebühr) con el valor presente de las cuotas que paga — el mismo método
+    // actuarial (IRR) que exige la normativa, no una aproximación distinta.
+    // annuityQuota ya trata el nominal como Nominalzins alemán (tipo anual / 12 = tipo mensual,
+    // sin componer); al recomponer ese mismo tipo mensual en un efectivo anual compuesto, incluso
+    // SIN comisión el efectivo sale un pelín por encima del nominal (p. ej. 3,50% → 3,56%) — no es
+    // un error de este cálculo, es la misma diferencia estructural nominal/efectivo que aparece en
+    // cualquier oferta bancaria real. Con comisión, la diferencia crece más.
+    function effectiveAnnualRate(netDisbursed,payment,months){
+      if(!(netDisbursed>0) || !(payment>0) || months<=0) return null;
+      function npv(monthlyRate){
+        var pv=netDisbursed;
+        for(var t=1;t<=months;t++) pv-=payment/Math.pow(1+monthlyRate,t);
+        return pv;
+      }
+      var lo=-0.9/12, hi=2/12, flo=npv(lo), fhi=npv(hi);
+      if(flo*fhi>0) return null; // caso degenerado: no hay raíz en el rango de seguridad
+      var mid=0;
+      for(var i=0;i<80;i++){
+        mid=(lo+hi)/2;
+        var fm=npv(mid);
+        if(Math.abs(fm)<1e-6) break;
+        if((flo<0)===(fm<0)){ lo=mid; flo=fm; } else { hi=mid; }
+      }
+      return Math.pow(1+mid,12)-1; // anualización compuesta, la misma convención que la Anlage zu §6 PAngV
     }
     function savingsQuota(target,annualRatePct,months){
       var r=(annualRatePct||0)/100/12;
@@ -1990,7 +2023,8 @@
       var interesTotalPrestamo=Math.max(0,cuotaPrestamo*mesesPrestamo-capitalPrestamo);
       var comision=precio*(cfg.comision||0)/100;
       var costeTotal=precio+interesTotalPrestamo+comision-interesGanadoAhorro;
-      return {objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal};
+      var tasaEfectiva=effectiveAnnualRate(capitalPrestamo-comision,cuotaPrestamo,mesesPrestamo);
+      return {objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0};
     }
     function isoDateYearsAgo(years){
       var d=new Date(); d.setFullYear(d.getFullYear()-years);
@@ -2123,6 +2157,7 @@
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
           '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
+          (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(costeAbs)+'</b></div>'+
           '<div class="inm-res-line save '+(ahorroVs>=0?'pos':'neg')+'"><span>'+(ahorroVs>=0?'Ahorras vs. seguir igual':'Más caro que seguir igual')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>'+
         '</div>';
@@ -2139,6 +2174,7 @@
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
           '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
+          (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(r.costeTotal)+'</b></div>'+
           (ahorroVs!=null?'<div class="inm-res-line save '+(ahorroVs>=0?'pos':'neg')+'"><span>'+(ahorroVs>=0?'Ahorras vs. banco':'Más caro que el banco')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>':'')+
           '</div>';
@@ -2178,6 +2214,7 @@
         '<p class="ws-lead">'+(inm.modo==='refi'
           ?'Compara seguir con el crédito actual, refinanciar con banco a tipo de mercado, o refinanciar con Badenia a un tipo fijo sobre el saldo pendiente. Cálculo orientativo con amortización estándar.'
           :'Compara financiar la compra con un Bausparvertrag (fase de ahorro a interés casi nulo + préstamo a tipo fijo pactado hoy) frente a una hipoteca bancaria directa a tipo de mercado. Cálculo orientativo con amortización estándar; la Bausparkasse asigna el préstamo real según su propio algoritmo colectivo, que puede variar el plazo de ahorro.')+'</p>'+
+        '<p class="inm-eff-note">El <b>interés efectivo del préstamo</b> ya descuenta la comisión de apertura sobre lo que el cliente recibe de verdad — es el mismo cálculo (interés actuarial/IRR) que exige la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.</p>'+
         body+
       '</div>';
     }
