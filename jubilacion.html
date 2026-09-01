@@ -1944,6 +1944,22 @@ async function generatePDF(lang){
       nextTitle:'Próximos pasos',nextSub:'Hablemos de tu plan',
       n1:'Revisar tu situación fiscal exacta',n2:'Elegir nivel de protección',n3:'Confirmar tu plan y empezar',
       disclaimer:'Cálculo orientativo · Rentabilidad bruta del 6% · Consulta a un Steuerberater.',
+      riesterEye:'Además',
+      riesterTitle:'¿Tienes también derecho a Riester-Rente?',
+      riesterSub:'Un fomento estatal aparte del Rürup: Zulage directa y, si tu tipo marginal lo justifica, una desgravación adicional en la declaración.',
+      riesterZulageL:'Grundzulage + Kinderzulage',
+      riesterKidsNote:'{0} hijo(s) con Kinderzulage',
+      riesterNoKidsNote:'sin hijos con Kinderzulage',
+      riesterEffL:'Zulage efectiva',
+      riesterMetNote:'del Mindesteigenbeitrag',
+      riesterExtraL:'Desgravación adicional',
+      riesterGuenstigerYes:'Günstigerprüfung, tipo marginal {0}%',
+      riesterGuenstigerNo:'la Zulage ya supera la desgravación',
+      riesterTotalL:'Fomento estatal total',
+      riesterTotalNote:'Zulage + desgravación, al año',
+      riesterCapEye:'Capital adicional al jubilarte',
+      riesterCapNote:'Reinvirtiendo el fomento anual al {0}% durante {1} años.',
+      riesterDisclaimer:'Cálculo orientativo asumiendo derecho directo a la Riester y Kinderzulage de 300 € por hijo nacido desde 2008. No sustituye a la declaración real ni a la certificación del producto — consulta a un Steuerberater.',
     },
     de:{
       brand:'AORAES',
@@ -1989,6 +2005,22 @@ async function generatePDF(lang){
       nextTitle:'Nächste Schritte',nextSub:'Lass uns über deinen Plan sprechen',
       n1:'Deine genaue steuerliche Situation prüfen',n2:'Schutzniveau wählen',n3:'Plan bestätigen und starten',
       disclaimer:'Orientierungsrechnung · 6% Bruttorendite · Bitte Steuerberater konsultieren.',
+      riesterEye:'Außerdem',
+      riesterTitle:'Haben Sie auch Anspruch auf eine Riester-Rente?',
+      riesterSub:'Eine staatliche Förderung neben dem Rürup: direkte Zulage und, wenn Ihr Grenzsteuersatz es rechtfertigt, eine zusätzliche Steuerersparnis über die Steuererklärung.',
+      riesterZulageL:'Grundzulage + Kinderzulage',
+      riesterKidsNote:'{0} Kind(er) mit Kinderzulage',
+      riesterNoKidsNote:'ohne Kinder mit Kinderzulage',
+      riesterEffL:'Effektive Zulage',
+      riesterMetNote:'des Mindesteigenbeitrags',
+      riesterExtraL:'Zusätzliche Steuerersparnis',
+      riesterGuenstigerYes:'Günstigerprüfung, Grenzsteuersatz {0}%',
+      riesterGuenstigerNo:'die Zulage übersteigt bereits die Steuerersparnis',
+      riesterTotalL:'Staatliche Förderung insgesamt',
+      riesterTotalNote:'Zulage + Steuerersparnis, pro Jahr',
+      riesterCapEye:'Zusätzliches Kapital bei Renteneintritt',
+      riesterCapNote:'Bei Reinvestition der jährlichen Förderung zu {0}% über {1} Jahre.',
+      riesterDisclaimer:'Orientierende Berechnung unter der Annahme eines unmittelbaren Förderanspruchs und einer Kinderzulage von 300 € je Kind, geboren ab 2008. Ersetzt nicht die tatsächliche Steuererklärung oder die Produktzertifizierung — fragen Sie einen Steuerberater.',
     }
   };
 
@@ -2087,6 +2119,31 @@ async function generatePDF(lang){
   });
   txt(C.slate);font('helvetica','italic',7.5);
   doc.text(t.disclaimer,15,195,{maxWidth:260});
+
+  // ---- PAGE 3B: RIESTER (fomento estatal adicional) ----
+  doc.addPage();
+  header(t.riesterEye,t.riesterTitle,t.riesterSub,false);
+  const rst=calcRiester();
+  const rCards=[
+    {l:t.riesterZulageL,v:eur0(rst.zulageBase),n:rst.kids>0?t.riesterKidsNote.replace('{0}',rst.kids):t.riesterNoKidsNote},
+    {l:t.riesterEffL,v:eur0(rst.zulage),n:Math.round(rst.metRatio*100)+'% '+t.riesterMetNote},
+    {l:t.riesterExtraL,v:(rst.extraRefund>0?'+':'')+eur0(rst.extraRefund),n:rst.extraRefund>0?t.riesterGuenstigerYes.replace('{0}',Math.round(rst.taxRate*100)):t.riesterGuenstigerNo},
+    {l:t.riesterTotalL,v:eur0(rst.beneficioAnual),n:t.riesterTotalNote},
+  ];
+  const rw=(W-30-10*3)/4;
+  rCards.forEach((c,i)=>{
+    const cx=15+i*(rw+10);
+    card(cx,55,rw,60,C.white,C.mist);
+    txt(C.goldD);font('helvetica','bold',7.5);doc.text(c.l.toUpperCase(),cx+6,66,{maxWidth:rw-12});
+    txt(C.navy);font('helvetica','bold',15);doc.text(c.v,cx+6,84,{maxWidth:rw-12});
+    txt(C.slate);font('helvetica','normal',7.5);doc.text(c.n,cx+6,97,{maxWidth:rw-12});
+  });
+  card(15,127,W-30,45,C.midnight,C.gold);
+  txt(C.goldL);font('helvetica','bold',9);doc.text(t.riesterCapEye.toUpperCase(),22,140);
+  txt(C.white);font('helvetica','bold',26);doc.text(eur0(rst.capitalAdicional),22,157);
+  txt([185,196,214]);font('helvetica','normal',9);
+  doc.text(t.riesterCapNote.replace('{0}',S.ret).replace('{1}',rst.years),22,165,{maxWidth:250});
+  txt(C.slate);font('helvetica','italic',7.5);doc.text(t.riesterDisclaimer,15,192,{maxWidth:260});
 
   // ---- PAGE 4: VS ETF ----
   doc.addPage();
