@@ -2527,6 +2527,11 @@
         '<div class="ws-body" id="ws-summary-body">'+
           '<section class="ws-sec active" id="sec-inmueble" role="tabpanel" data-sec="inmueble">'+inmuebleBlock(rec)+'</section>'+
         '</div></div>';
+      // Traducción explícita en vez de confiar solo en el MutationObserver: este render es la
+      // primera pantalla que ve el asesor tras pulsar "Proyecto inmobiliario" en el modo sin
+      // cliente, y a veces la única mutación del arranque llegaba al observer antes de que
+      // shellStartObserver() terminara de reconectarlo, dejando el botón "Volver" sin traducir.
+      if(SHELL_LANG==='en'||SHELL_LANG==='de') translateShellEl(document.getElementById('ws-content'), SHELL_LANG==='de'?SHELL_I18N_DE:SHELL_I18N_EN);
     }
     function renderWorkspaceInner(rec,s){
       if(rec._generic){ renderGenericInmuebleWorkspace(rec); return; }
