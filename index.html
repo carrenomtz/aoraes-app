@@ -532,6 +532,14 @@
   .inm-cert-bar .cert{display:block; height:100%; background:var(--green)}
   .inm-cert-bar .uncert{display:block; height:100%; background:repeating-linear-gradient(135deg,var(--line-strong),var(--line-strong) 3px,transparent 3px,transparent 7px)}
   .inm-cert-note{font-size:10.5px; color:var(--faint); line-height:1.45; margin-top:5px}
+  .inm-curve-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:16px 18px; margin-bottom:14px; box-shadow:var(--sh-1)}
+  .inm-curve-head{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px; margin-bottom:8px}
+  .inm-curve-head h5{font-family:'Fraunces',sans-serif; font-weight:600; font-size:13.5px; color:var(--navy)}
+  .inm-curve-legend{display:flex; gap:14px; font-size:11px; color:var(--muted)}
+  .inm-curve-legend span{display:inline-flex; align-items:center; gap:5px}
+  .inm-curve-legend i{width:14px; height:2.5px; border-radius:2px; display:inline-block}
+  .inm-curve-svg{width:100%; height:auto; display:block}
+  .inm-curve-note{font-size:10.5px; color:var(--faint); line-height:1.45; margin-top:6px}
   @media(max-width:900px){.inm-results{grid-template-columns:1fr}}
   .inm-res-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:15px; box-shadow:var(--sh-1)}
   .inm-res-card h5{font-family:'Fraunces',sans-serif; font-weight:600; font-size:13.5px; color:var(--navy); margin-bottom:9px}
@@ -2205,6 +2213,52 @@
         '<div class="inm-cert-bar"><span class="cert" style="width:'+pctCert+'%"></span><span class="uncert" style="width:'+(100-pctCert)+'%"></span></div>'+
         '<div class="inm-cert-note">'+nota+'</div></div>';
     }
+    // Cuánto le queda al cliente por pagar hasta ser dueño del 100% — durante el ahorro, precio
+    // menos lo ahorrado hasta ese momento (interés compuesto sobre las cuotas ya hechas); una vez
+    // arranca el préstamo, capital menos lo ya amortizado. Reutiliza balanceTrasMeses, la misma
+    // fórmula que ya usa Refinanciar para el saldo pendiente — no es un cálculo nuevo, es el mismo
+    // aplicado mes a mes en vez de a una única fecha.
+    function inmuebleCurvaSaldo(precio,r,cfg){
+      var paso=3, puntos=[];
+      var rateAhorroM=(cfg.interesAhorro||0)/100/12;
+      for(var t=0;t<=r.mesesTotal;t+=paso){
+        var pendiente;
+        if(r.mesesAhorro>0 && t<=r.mesesAhorro){
+          var ahorroAcum=Math.abs(rateAhorroM)<1e-9?r.cuotaAhorro*t:r.cuotaAhorro*((Math.pow(1+rateAhorroM,t)-1)/rateAhorroM);
+          pendiente=precio-Math.min(ahorroAcum,r.objetivoAhorro);
+        }else{
+          pendiente=balanceTrasMeses(r.capitalPrestamo,cfg.interesPrestamo,r.cuotaPrestamo,t-r.mesesAhorro);
+        }
+        puntos.push({meses:t,pendiente:Math.max(0,pendiente)});
+      }
+      if(puntos.length===0||puntos[puntos.length-1].meses<r.mesesTotal) puntos.push({meses:r.mesesTotal,pendiente:0});
+      return puntos;
+    }
+    function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst){
+      var W=600,H=220,padL=44,padR=10,padT=10,padB=24;
+      var maxMeses=Math.max(ptsEst[ptsEst.length-1].meses,ptsBanco[ptsBanco.length-1].meses,1);
+      var maxY=Math.max(precio,1);
+      function px(m){ return padL+(m/maxMeses)*(W-padL-padR); }
+      function py(v){ return padT+(1-(v/maxY))*(H-padT-padB); }
+      function path(pts){ return pts.map(function(p,i){ return (i===0?'M':'L')+px(p.meses).toFixed(1)+','+py(p.pendiente).toFixed(1); }).join(' '); }
+      var gridY=[0,0.25,0.5,0.75,1].map(function(f){
+        var v=maxY*f, yy=py(v);
+        return '<line x1="'+padL+'" y1="'+yy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+yy.toFixed(1)+'" stroke="var(--line-soft)" stroke-width="1"/>'+
+          '<text x="'+(padL-6)+'" y="'+(yy+3).toFixed(1)+'" font-size="9" fill="var(--faint)" text-anchor="end">'+Math.round(v/1000)+'k</text>';
+      }).join('');
+      var maxAnios=Math.ceil(maxMeses/12), stepAnios=maxAnios<=10?2:(maxAnios<=20?5:10), gridX='';
+      for(var a=0;a<=maxAnios;a+=stepAnios){
+        var xx=px(a*12);
+        gridX+='<line x1="'+xx.toFixed(1)+'" y1="'+padT+'" x2="'+xx.toFixed(1)+'" y2="'+(H-padB)+'" stroke="var(--line-soft)" stroke-width="1"/>'+
+          '<text x="'+xx.toFixed(1)+'" y="'+(H-padB+13)+'" font-size="9" fill="var(--faint)" text-anchor="middle">'+a+'</text>';
+      }
+      var marca=mesesAhorroEst>0?'<line x1="'+px(mesesAhorroEst).toFixed(1)+'" y1="'+padT+'" x2="'+px(mesesAhorroEst).toFixed(1)+'" y2="'+(H-padB)+'" stroke="var(--gold)" stroke-width="1" stroke-dasharray="3,3"/>':'';
+      return '<svg viewBox="0 0 '+W+' '+H+'" class="inm-curve-svg" role="img" aria-label="Cuánto queda por pagar, comparado en el tiempo">'+
+        gridY+gridX+marca+
+        '<path d="'+path(ptsBanco)+'" fill="none" stroke="var(--red)" stroke-width="2.5"/>'+
+        '<path d="'+path(ptsEst)+'" fill="none" stroke="var(--navy)" stroke-width="2.5"/>'+
+        '</svg>';
+    }
     function inmuebleRefiResultsHTML(refi){
       var rem=calcRefiRemaining(refi);
       var fr=fechaRefiEfectiva(refi);
@@ -2266,7 +2320,13 @@
           inmuebleCertRow(r,inm.banco.zinsbindung,isBanco)+
           '</div>';
       }
-      return '<div class="inm-results">'+row(estTitle,rEst,false)+row('Banco directo',rk,true)+'</div>';
+      var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg), ptsBanco=inmuebleCurvaSaldo(precio,rk,inm.banco);
+      var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
+        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--red)"></i>Banco directo</span></div></div>'+
+        inmuebleCurvaSVG(precio,ptsEst,ptsBanco,rEst.mesesAhorro)+
+        (rEst.mesesAhorro>0?'<p class="inm-curve-note">La línea de puntos dorada marca la Zuteilung — el momento en que termina el ahorro y arranca el préstamo del Bausparvertrag.</p>':'')+
+        '</div>';
+      return curva+'<div class="inm-results">'+row(estTitle,rEst,false)+row('Banco directo',rk,true)+'</div>';
     }
     function normalizeInmueble(rec){
       if(!rec.inmueble) rec.inmueble=defaultInmueble();
