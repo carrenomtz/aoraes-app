@@ -1596,6 +1596,9 @@
       'Preguntas médicas':'Medical Questions','Asesores':'Advisors',
       'Idioma':'Language','Español':'Spanish','English':'English','Deutsch':'German',
       '← Volver a la cartera':'← Back to portfolio',
+      'Plan de jubilación guardado':'Saved retirement plan','Producto':'Product','Aportación':'Contribution',
+      'Capital estimado al jubilarte':'Estimated capital at retirement','Renta mensual estimada':'Estimated monthly pension',
+      'Abrir en el comparador de jubilación →':'Open in retirement comparator →',
       'Notificaciones':'Notifications','Abrir ficha del cliente activo':"Open active client's file",
       'Quitar cliente activo':'Remove active client','Cerrar sesión':'Sign out',
       'Análisis financiero y CRM':'Financial Analysis & CRM',
@@ -1741,6 +1744,9 @@
       'La línea de puntos dorada marca la fecha de refinanciación. Hasta entonces, las dos siguen pagando el crédito actual — en la opción Badenia, el ahorro corre en paralelo y ya descuenta de lo pendiente. La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.':'Die goldene gepunktete Linie markiert den Umschuldungstermin. Bis dahin zahlen beide Optionen den aktuellen Kredit weiter — bei der Badenia-Option läuft das Ansparen parallel und wird bereits von der Restschuld abgezogen. Die schattierte Fläche zeigt den Vorteil, den Sie bereits erreicht haben, sobald Sie fertig bezahlt haben.',
       'Modo del proyecto inmobiliario':'Modus des Immobilienprojekts','Estrategia Bausparvertrag a comparar':'Zu vergleichende Bausparvertrag-Strategie',
       'Cuánto queda por pagar, comparado en el tiempo':'Wie viel noch zu zahlen ist, im Zeitverlauf verglichen',
+      'Plan de jubilación guardado':'Gespeicherter Altersvorsorgeplan','Producto':'Produkt','Aportación':'Beitrag',
+      'Capital estimado al jubilarte':'Geschätztes Kapital bei Renteneintritt','Renta mensual estimada':'Geschätzte monatliche Rente',
+      'Abrir en el comparador de jubilación →':'Im Renten-Vergleich öffnen →',
       'Quitar cliente activo':'Aktiven Kunden entfernen','Cerrar sesión':'Abmelden',
       'Análisis financiero y CRM':'Finanzanalyse & CRM',
       'Panel del asesor':'Berater-Panel','Tu cartera de clientes':'Deine Kundenkartei',
@@ -2588,12 +2594,27 @@
       var cm=rec.crm||{}, contact=[cm.email,cm.phone].filter(Boolean).join(' · ');
 
       // Seguimiento
+      // El escenario de jubilación se guarda (saveSolution, vía el banner "Guardar en la ficha"
+      // del comparador) y se sincroniza a la nube, pero hasta ahora no se mostraba en ningún sitio
+      // de la ficha — quedaba guardado a ciegas. Se muestra aquí en Seguimiento, con acceso directo
+      // de vuelta al comparador para revisar o actualizar el escenario.
+      var sol=getSolution(rec.id);
+      var jubCard=sol?(
+        '<div class="ws-card"><h3>Plan de jubilación guardado</h3>'+
+        '<div class="ws-field"><span class="k">Producto</span><span class="v">'+esc(sol.product||'—')+'</span></div>'+
+        '<div class="ws-field"><span class="k">Aportación</span><span class="v">'+eur(sol.monthly)+'/mes</span></div>'+
+        '<div class="ws-field"><span class="k">Capital estimado al jubilarte</span><span class="v">'+eur(sol.capital)+'</span></div>'+
+        '<div class="ws-field"><span class="k">Renta mensual estimada</span><span class="v">'+eur(sol.monthlyPension)+'/mes</span></div>'+
+        '<div class="ws-field"><span class="k">Guardado</span><span class="v">'+(sol.savedAt?relTime(sol.savedAt):'—')+'</span></div>'+
+        '<button type="button" class="ws-cta ghost" data-deep="jubilacion">Abrir en el comparador de jubilación →</button>'+
+        '</div>'
+      ):'';
       var seg='<div class="ws-card"><h3>Estado y seguimiento</h3>'+
         '<div class="ws-field"><span class="k">Estado</span><span class="v">'+st.l+'</span></div>'+
         '<div class="ws-field"><span class="k">Próxima revisión</span><span class="v">'+(rs?(rs.cls==='overdue'?'Vencida':rs.txt):'—')+'</span></div>'+
         '<div class="ws-field"><span class="k">Etiquetas</span><span class="v">'+(esc(cm.tags||'—'))+'</span></div>'+
         '<div class="ws-field"><span class="k">Guardado</span><span class="v">'+(rec.savedAt?relTime(rec.savedAt):'—')+'</span></div>'+
-        '</div><div class="ws-card"><h3>Notas</h3><div class="seg-notes">'+(esc(cm.notes||'').trim()||'Sin notas. Edita la ficha en el módulo de Análisis.')+'</div></div>'+
+        '</div>'+jubCard+'<div class="ws-card"><h3>Notas</h3><div class="seg-notes">'+(esc(cm.notes||'').trim()||'Sin notas. Edita la ficha en el módulo de Análisis.')+'</div></div>'+
         '<button type="button" class="ws-cta ghost" data-deep="analisis">Editar ficha en Análisis →</button>';
 
       // Perfil — ficha general + todos los datos personales de S.10 (Persona A y, si aplica, B)
