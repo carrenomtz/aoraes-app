@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+<title>AORAES · Plan Futuro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#14213d">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --midnight:#0e1830; --navy:#14213d; --navy-soft:#3a5077;
+  --gold:#c9a961; --gold-light:#e3d4ab; --gold-deep:#a8842f;
+  --gold-glow:rgba(196,160,90,.16);
+  --ivory:#ffffff; --cream:#f3efe6; --white:#ffffff;
+  --ink:#14213d; --slate:#6c6d76; --mist:#e8e3d6;
+  --sage:#4f7358; --sage-soft:#eaf2ec; --clay:#b0473a;
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --mono:'DM Mono',ui-monospace,monospace;
+  --shadow:0 1px 3px rgba(20,33,61,.06),0 8px 30px rgba(20,33,61,.06);
+  --shadow-lg:0 4px 12px rgba(20,33,61,.08),0 24px 60px rgba(13,23,41,.14);
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.nav{position:sticky;top:0;z-index:50;background:rgba(13,23,41,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(196,160,90,.22);display:flex;align-items:center;padding:.85rem 2rem;gap:1rem}
+.nav-logo{font-family:var(--serif);font-size:1.35rem;font-weight:700;color:var(--gold);letter-spacing:.14em}
+.nav-sep{width:1px;height:18px;background:rgba(255,255,255,.18)}
+.nav-tag{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:.9rem}
+.nav-client{font-size:.8rem;color:rgba(255,255,255,.6)}
+.nav-client b{color:var(--gold-light);font-weight:500}
+
+.hero{background:radial-gradient(120% 100% at 15% 0%,#1a2a47 0%,var(--midnight) 60%);color:#ffffff;padding:2.5rem 2rem 3rem;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-10%;top:-30%;width:50%;height:160%;background:radial-gradient(closest-side,var(--gold-glow),transparent 70%);pointer-events:none}
+.hero-grid{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:340px 1fr;gap:2.5rem;align-items:stretch;position:relative;z-index:2}
+@media(max-width:880px){.hero-grid{grid-template-columns:1fr;gap:1.75rem}}
+
+.controls-eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem}
+.controls-eyebrow::before{content:"";width:18px;height:1px;background:var(--gold)}
+.ctrl{margin-bottom:1.2rem}
+.ctrl-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.45rem}
+.ctrl-label .lbl{font-size:.8rem;color:rgba(255,255,255,.62)}
+.ctrl-label .val{font-family:var(--mono);font-size:.9rem;color:#ffffff;font-weight:500}
+.val-wrap{display:inline-flex;align-items:center;gap:.3rem}
+.val-input{width:5.2em;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);border-radius:6px;color:#ffffff;font-family:var(--mono);font-size:.9rem;font-weight:500;text-align:right;padding:.15rem .45rem;-moz-appearance:textfield}
+.val-input::-webkit-outer-spin-button,.val-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.val-input:hover{border-color:rgba(255,255,255,.4)}
+.val-input:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.14)}
+.val-unit{font-family:var(--mono);font-size:.9rem;color:#ffffff;font-weight:500}
+.ctrl input[type=range]{width:100%;height:2px;-webkit-appearance:none;appearance:none;background:rgba(255,255,255,.18);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);border:2px solid var(--midnight);box-shadow:0 0 0 1px var(--gold),0 2px 8px rgba(0,0,0,.4);transition:transform .15s}
+.ctrl input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18)}
+.ctrl input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--gold);border:2px solid var(--midnight);cursor:pointer}
+.hero-toggle{display:flex;border:1px solid rgba(255,255,255,.18);border-radius:8px;overflow:hidden}
+.hero-toggle button{flex:1;padding:.5rem;font-size:.78rem;border:none;background:transparent;cursor:pointer;font-family:var(--sans);color:rgba(255,255,255,.6);transition:all .15s}
+.hero-toggle button.active{background:var(--gold);color:var(--midnight);font-weight:600}
+
+.result{background:linear-gradient(155deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(196,160,90,.28);border-radius:20px;padding:2.25rem 2.5rem;display:flex;flex-direction:column;justify-content:center;box-shadow:0 30px 80px rgba(0,0,0,.3)}
+.result-eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:.4rem}
+.result-eyebrow b{color:var(--gold-light);font-weight:500}
+.result-main{font-family:var(--serif);font-size:clamp(3rem,7vw,4.75rem);font-weight:600;line-height:1;color:#ffffff;letter-spacing:-.02em;margin-bottom:.3rem}
+.result-main .cur{color:var(--gold);font-size:.62em;vertical-align:.06em;margin-left:.12em}
+.result-sub{font-size:.86rem;color:rgba(255,255,255,.55);margin-bottom:1.75rem}
+.result-divider{height:1px;background:linear-gradient(90deg,var(--gold),rgba(196,160,90,.1) 60%,transparent);margin-bottom:1.5rem}
+.hero-breakdown{display:flex;flex-direction:column;gap:.35rem;margin-top:.2rem;font-size:.82rem;color:rgba(255,255,255,.68)}
+.hero-breakdown b{color:#ffffff;font-family:var(--mono);font-weight:500}
+.hero-disclaimer{font-size:.68rem;color:rgba(255,255,255,.4);margin-top:1.5rem;line-height:1.45}
+.fase2-teaser{display:flex;align-items:center;justify-content:space-between;gap:1.25rem;margin-top:1.6rem;padding-top:1.4rem;border-top:1px solid rgba(196,160,90,.25);cursor:pointer;transition:opacity .15s}
+.fase2-teaser:hover{opacity:.8}
+.fase2-teaser-title{font-family:var(--serif);font-size:1.05rem;font-weight:600;color:var(--gold-light);line-height:1.3}
+.fase2-teaser-sub{font-family:var(--mono);font-size:.66rem;letter-spacing:.05em;color:rgba(255,255,255,.5);margin-top:.35rem}
+.fase2-teaser svg{width:14px;height:14px;color:var(--gold);flex:0 0 auto;transition:transform .2s}
+.fase2-teaser.open svg{transform:rotate(180deg)}
+#fase2-wrap{display:none}
+#fase2-wrap.open{display:block}
+
+.section{max-width:1180px;margin:0 auto;padding:3.5rem 2rem}
+.section-head{margin-bottom:2rem;max-width:640px}
+.section-eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:.65rem;display:flex;align-items:center;gap:.5rem}
+.section-eyebrow::before{content:"";width:20px;height:1px;background:var(--gold)}
+.section-title{font-family:var(--serif);font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;color:var(--navy);line-height:1.15;letter-spacing:-.01em}
+.section-lede{font-size:1rem;color:var(--slate);margin-top:.7rem}
+
+.chart-card{background:var(--white);border:1px solid var(--mist);border-radius:18px;padding:1.75rem;box-shadow:var(--shadow)}
+.chart-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem}
+.chart-legend{display:flex;gap:1.25rem;flex-wrap:wrap}
+.cl{display:flex;align-items:center;gap:.45rem;font-size:.78rem;color:var(--slate)}
+.cl-swatch{width:14px;height:3px;border-radius:2px}
+.chart-wrap{position:relative;height:300px}
+
+.effort-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:1.5rem;align-items:center;margin-bottom:1.75rem}
+@media(max-width:760px){.effort-grid{grid-template-columns:1fr;gap:1rem}}
+.effort-card{background:var(--white);border:1px solid var(--mist);border-radius:16px;padding:1.75rem;box-shadow:var(--shadow)}
+.effort-card.accent{background:linear-gradient(160deg,var(--navy),var(--midnight));border-color:transparent;color:#ffffff}
+.ec-label{font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);margin-bottom:.6rem}
+.effort-card.accent .ec-label{color:var(--gold-light)}
+.ec-value{font-family:var(--serif);font-size:2.5rem;font-weight:600;line-height:1;color:var(--navy)}
+.effort-card.accent .ec-value{color:#ffffff}
+.ec-value .cur{color:var(--gold);font-size:.6em}
+.ec-note{font-size:.82rem;color:var(--slate);margin-top:.55rem}
+.effort-card.accent .ec-note{color:rgba(255,255,255,.6)}
+.effort-arrow{display:flex;flex-direction:column;align-items:center;gap:.4rem;color:var(--gold)}
+.effort-arrow .mult{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--gold-deep)}
+.effort-arrow svg{width:32px;height:32px}
+@media(max-width:760px){.effort-arrow svg{transform:rotate(90deg)}}
+.subsidy-pill{display:inline-flex;align-items:center;gap:.5rem;background:var(--sage-soft);color:var(--sage);border-radius:30px;padding:.5rem 1rem;font-size:.82rem;font-weight:500;margin-top:1.5rem}
+.subsidy-pill svg{width:15px;height:15px;flex:0 0 auto}
+.subsidy-pill b{font-family:var(--mono);font-weight:500}
+
+.more{border:1px solid var(--mist);border-radius:16px;background:var(--white);overflow:hidden;transition:border-color .15s}
+.more[open]{border-color:var(--cream)}
+.more>summary{list-style:none;cursor:pointer;padding:1.15rem 1.5rem;display:flex;align-items:center;gap:1rem}
+.more>summary::-webkit-details-marker{display:none}
+.more-eyebrow{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:.2rem}
+.more-summary-txt{font-family:var(--serif);font-size:1.08rem;font-weight:600;color:var(--navy)}
+.more>summary:hover .more-summary-txt{color:var(--gold-deep)}
+.more-chevron{margin-left:auto;width:16px;height:16px;color:var(--slate);transition:transform .2s;flex-shrink:0}
+.more[open] .more-chevron{transform:rotate(180deg)}
+.more-inner{padding:.4rem 1.5rem 1.6rem}
+.bd-foot{font-size:.76rem;color:var(--slate);line-height:1.55;margin-top:1rem}
+
+.prot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-top:.25rem}
+.prot-card{background:var(--white);border:1px solid var(--mist);border-radius:14px;padding:1.4rem;box-shadow:var(--shadow)}
+.prot-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(150deg,var(--navy),var(--navy-soft));display:flex;align-items:center;justify-content:center;margin-bottom:.9rem}
+.prot-icon svg{width:19px;height:19px;color:var(--gold)}
+.prot-name{font-family:var(--serif);font-size:1.05rem;font-weight:600;color:var(--navy);margin-bottom:.35rem;line-height:1.25}
+.prot-desc{font-size:.86rem;color:var(--slate);line-height:1.6}
+
+.milestone-list{list-style:none;display:flex;flex-direction:column;gap:.6rem;margin:1.25rem 0 1.5rem}
+.milestone-list li{display:flex;align-items:flex-start;gap:.7rem;font-size:.9rem;color:var(--ink)}
+.milestone-dot{width:7px;height:7px;border-radius:50%;background:var(--gold);flex:0 0 auto;margin-top:.5rem}
+
+.note-card{background:var(--navy);color:#ffffff;border-radius:18px;padding:2rem 2.25rem;display:flex;gap:1.25rem;align-items:flex-start;max-width:1180px;margin:0 auto 3rem}
+.note-card>svg{width:24px;height:24px;color:var(--gold);flex-shrink:0;margin-top:.15rem}
+.note-title{font-family:var(--serif);font-size:1.15rem;font-weight:600;margin-bottom:.5rem;color:var(--gold-light)}
+.note-body{font-size:.9rem;color:rgba(255,255,255,.72);line-height:1.65}
+.note-body b{color:var(--gold-light);font-weight:500}
+
+.foot{background:var(--midnight);color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.72rem;font-family:var(--mono);line-height:1.7}
+.foot b{color:var(--gold);opacity:.8}
+.lang-switch button.active{background:var(--gold,#c9a961);color:#14213d}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">AORAES</div>
+  <div class="nav-sep"></div>
+  <div class="nav-tag">Plan Futuro</div>
+  <div class="nav-right"><div class="nav-client">Preparado para <b id="nav-client">tu cliente</b></div>
+    <div class="lang-switch" style="display:inline-flex;align-items:center;border:1px solid rgba(201,169,97,.45);border-radius:9px;overflow:hidden;margin-left:12px">
+      <button type="button" data-lang="es" style="border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;color:inherit;padding:6px 11px;cursor:pointer">ES</button>
+      <button type="button" data-lang="de" style="border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;color:inherit;padding:6px 11px;cursor:pointer">DE</button>
+    </div></div>
+</nav>
+
+<header class="hero">
+  <div class="hero-grid">
+    <div class="controls">
+      <div class="controls-eyebrow">Tu hijo/a</div>
+      <div class="ctrl">
+        <div class="ctrl-label"><span class="lbl">Edad actual</span><span class="val" id="v-childage">2 años</span></div>
+        <input type="range" id="s-childage" min="0" max="15" value="2">
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-label"><span class="lbl">Edad objetivo</span><span class="val" id="v-targetage">18 años</span></div>
+        <input type="range" id="s-targetage" min="16" max="30" value="18">
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-label"><span class="lbl">Aportación mensual</span><span class="val-wrap"><input type="number" class="val-input" id="v-monthly" min="25" max="500" step="5" value="75"><span class="val-unit">€</span></span></div>
+        <input type="range" id="s-monthly" min="25" max="500" step="5" value="75">
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-label" style="margin-bottom:.5rem"><span class="lbl">Incremento anual de la aportación</span></div>
+        <div class="hero-toggle" id="dynamik-toggle">
+          <button data-dyn="0">Fija</button>
+          <button data-dyn="3">3 % / año</button>
+          <button class="active" data-dyn="6">6 % / año</button>
+        </div>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-label" style="margin-bottom:.5rem"><span class="lbl">Escenario de evolución anual media</span></div>
+        <div class="hero-toggle" id="scenario-toggle">
+          <button data-scn="4">Conservador · 4 %</button>
+          <button class="active" data-scn="6">Equilibrado · 6 %</button>
+          <button data-scn="8">Dinámico · 8 %</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="result">
+      <div class="result-eyebrow">A LOS <b id="r-targetage">18</b> AÑOS TU HIJO/A PODRÍA TENER</div>
+      <div class="result-main"><span id="r-capital">0</span><span class="cur">€</span></div>
+      <div class="result-sub">capital acumulado estimado</div>
+      <div class="result-divider"></div>
+      <div class="hero-breakdown" id="hero-breakdown"></div>
+      <div class="hero-disclaimer">Escenarios ilustrativos de evolución media anual, no una garantía de rentabilidad futura. Cálculo orientativo; no constituye asesoramiento fiscal ni una promesa de resultado.</div>
+      <div class="fase2-teaser" id="fase2-toggle">
+        <div>
+          <div class="fase2-teaser-title">Así se construye esta protección</div>
+          <div class="fase2-teaser-sub">Ahorro · si a ti te pasara algo · el derecho a protegerse más adelante</div>
+        </div>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div id="fase2-wrap">
+
+<section class="section">
+  <div class="section-head">
+    <div class="section-eyebrow">01 · Así crece el capital</div>
+    <h2 class="section-title">Pones poco, se acumula mucho</h2>
+    <p class="section-lede">Tu aportación mensual, con el incremento anual (Dynamik) y el interés compuesto, se convierte con los años en un capital muy superior a lo que efectivamente pones de tu bolsillo.</p>
+  </div>
+  <div class="effort-grid">
+    <div class="effort-card">
+      <div class="ec-label">De tu bolsillo</div>
+      <div class="ec-value"><span id="e-contributed">0</span><span class="cur"> €</span></div>
+      <div class="ec-note"><span id="e-monthly-note">75 €</span> al mes durante <span id="e-years">16</span> años, subiendo cada año</div>
+    </div>
+    <div class="effort-arrow">
+      <div class="mult" id="e-mult">×0</div>
+      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 16h20M20 9l7 7-7 7"/></svg>
+    </div>
+    <div class="effort-card accent">
+      <div class="ec-label">Capital estimado</div>
+      <div class="ec-value"><span id="e-final">0</span><span class="cur"> €</span></div>
+      <div class="ec-note" id="e-gain-note">Un crecimiento de 0 €</div>
+    </div>
+  </div>
+  <div style="text-align:center">
+    <div class="subsidy-pill">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1v14M3 5l5-4 5 4M3 11l5 4 5-4"/></svg>
+      La aportación sube un <b id="e-dyn-rate">6 %</b> cada año automáticamente — así el plan no pierde fuerza frente a la inflación, sin que tengas que acordarte de subirla tú.
+    </div>
+  </div>
+  <div class="chart-card" style="margin-top:1.75rem">
+    <div class="chart-top">
+      <div class="chart-legend">
+        <div class="cl"><span class="cl-swatch" style="background:var(--gold)"></span>Capital estimado</div>
+        <div class="cl"><span class="cl-swatch" style="background:#94a3b8"></span>Aportado</div>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="growth-chart"></canvas></div>
+  </div>
+</section>
+
+<section class="section" style="padding-block:1.4rem">
+  <details class="more" id="prot-details">
+    <summary>
+      <div>
+        <div class="more-eyebrow">02 · Si a ti te pasara algo</div>
+        <div class="more-summary-txt">El plan de tu hijo/a sigue construyéndose, pase lo que pase contigo</div>
+      </div>
+      <svg class="more-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+    </summary>
+    <div class="more-inner">
+      <p class="section-lede" style="margin-bottom:1.1rem">El objetivo de tu hijo/a no debería depender de que a ti te siga yendo bien. Por eso el plan incluye, desde el principio, protección para quien paga.</p>
+      <div class="prot-grid">
+        <div class="prot-card">
+          <div class="prot-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l5 2v4c0 3.5-2.2 6.5-5 8-2.8-1.5-5-4.5-5-8V3l5-2z"/></svg></div>
+          <div class="prot-name">Si no puedes seguir trabajando</div>
+          <div class="prot-desc">Si quedas incapacitado para trabajar, dejamos de cobrarte la aportación — pero el plan sigue recibiendo el dinero cada mes, exactamente como si tú siguieras pagando.</div>
+        </div>
+        <div class="prot-card">
+          <div class="prot-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l5 2v4c0 3.5-2.2 6.5-5 8-2.8-1.5-5-4.5-5-8V3l5-2z"/></svg></div>
+          <div class="prot-name">Si faltas</div>
+          <div class="prot-desc">Si falleces, ocurre lo mismo: el plan sigue financiado hasta que tu hijo/a llegue a la edad objetivo, sin que nadie tenga que aportar nada más de su bolsillo.</div>
+        </div>
+      </div>
+      <p class="bd-foot">Esta protección va incluida en la estructura del propio plan — no es un seguro aparte que haya que gestionar por separado.</p>
+    </div>
+  </details>
+</section>
+
+<section class="section" style="padding-block:1.4rem">
+  <details class="more" id="bu-details">
+    <summary>
+      <div>
+        <div class="more-eyebrow">03 · El derecho a protegerse, ya reservado</div>
+        <div class="more-summary-txt">Hoy le reservas a tu hijo/a el derecho a ampliar su propia protección</div>
+      </div>
+      <svg class="more-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+    </summary>
+    <div class="more-inner">
+      <p class="section-lede" style="margin-bottom:.5rem">Mientras tu hijo/a está sano/a, este plan le reserva el derecho a contratar más adelante su propia cobertura de incapacidad, sin un nuevo examen médico — para que un problema de salud futuro no le cierre esa puerta.</p>
+      <ul class="milestone-list" id="milestone-list">
+        <li><span class="milestone-dot"></span>10º cumpleaños</li>
+        <li><span class="milestone-dot"></span>Cambio de tipo de colegio</li>
+        <li><span class="milestone-dot"></span>Inicio de Bachillerato / Sekundarstufe 2</li>
+        <li><span class="milestone-dot"></span>Inicio de formación profesional o universidad</li>
+        <li><span class="milestone-dot"></span>Primer empleo</li>
+        <li><span class="milestone-dot"></span>30º cumpleaños</li>
+      </ul>
+      <p class="bd-foot">El derecho se reserva ahora; el coste real de esa cobertura se calcula el día que se ejerce, según la edad y el importe elegido entonces.</p>
+    </div>
+  </details>
+</section>
+
+<div class="note-card">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+  <div>
+    <div class="note-title">Con total transparencia</div>
+    <div class="note-body" id="note-body">Los cálculos de esta pantalla son estimaciones orientativas de crecimiento con interés compuesto, no una garantía de rentabilidad. La protección frente a incapacidad o fallecimiento de quien paga, y el derecho de tu hijo/a a ampliar su cobertura más adelante, forman parte de la estructura del plan — sus condiciones exactas se detallan en la documentación contractual.</div>
+  </div>
+</div>
+
+</div>
+
+<footer class="foot">AORAES · Departamento Español · Plan Futuro para hijos<br><b>Cálculo orientativo, sin validez contractual.</b></footer>
+
+<script>
+window.I18N_DE_FUT = {"Tu hijo/a":"Ihr Kind","Edad actual":"Aktuelles Alter","Edad objetivo":"Zielalter","Aportación mensual":"Monatlicher Beitrag","Incremento anual de la aportación":"Jährliche Beitragssteigerung","Fija":"Fest","3 % / año":"3 % / Jahr","6 % / año":"6 % / Jahr","Escenario de evolución anual media":"Szenario der durchschnittlichen jährlichen Entwicklung","Conservador · 4 %":"Konservativ · 4 %","Equilibrado · 6 %":"Ausgewogen · 6 %","Dinámico · 8 %":"Dynamisch · 8 %","A LOS":"MIT","AÑOS TU HIJO/A PODRÍA TENER":"JAHREN KÖNNTE IHR KIND HABEN","capital acumulado estimado":"geschätztes angespartes Kapital","Escenarios ilustrativos de evolución media anual, no una garantía de rentabilidad futura. Cálculo orientativo; no constituye asesoramiento fiscal ni una promesa de resultado.":"Illustrative Szenarien einer durchschnittlichen jährlichen Entwicklung, keine Garantie künftiger Rendite. Orientierende Berechnung; keine Steuerberatung und kein Ergebnisversprechen.","Así se construye esta protección":"So entsteht dieser Schutz","Ahorro · si a ti te pasara algo · el derecho a protegerse más adelante":"Sparen · falls Ihnen etwas zustößt · das Recht auf späteren Schutz","01 · Así crece el capital":"01 · So wächst das Kapital","Pones poco, se acumula mucho":"Sie zahlen wenig ein, es wird viel","Tu aportación mensual, con el incremento anual (Dynamik) y el interés compuesto, se convierte con los años en un capital muy superior a lo que efectivamente pones de tu bolsillo.":"Ihr monatlicher Beitrag verwandelt sich mit der jährlichen Steigerung (Dynamik) und dem Zinseszins über die Jahre in ein deutlich höheres Kapital, als Sie tatsächlich einzahlen.","De tu bolsillo":"Aus Ihrer Tasche","al mes durante":"pro Monat über","años, subiendo cada año":"Jahre, jährlich steigend","Capital estimado":"Geschätztes Kapital","Un crecimiento de 0 €":"Ein Wachstum von 0 €","cada año automáticamente — así el plan no pierde fuerza frente a la inflación, sin que tengas que acordarte de subirla tú.":"jedes Jahr automatisch — so verliert der Plan nicht an Kraft gegenüber der Inflation, ohne dass Sie daran denken müssen.","La aportación sube un":"Der Beitrag steigt um","Aportado":"Eingezahlt","02 · Si a ti te pasara algo":"02 · Falls Ihnen etwas zustößt","El plan de tu hijo/a sigue construyéndose, pase lo que pase contigo":"Der Plan Ihres Kindes wächst weiter, was auch immer mit Ihnen geschieht","El objetivo de tu hijo/a no debería depender de que a ti te siga yendo bien. Por eso el plan incluye, desde el principio, protección para quien paga.":"Das Ziel Ihres Kindes sollte nicht davon abhängen, dass es Ihnen weiterhin gut geht. Deshalb enthält der Plan von Anfang an einen Schutz für die zahlende Person.","Si no puedes seguir trabajando":"Wenn Sie nicht mehr arbeiten können","Si quedas incapacitado para trabajar, dejamos de cobrarte la aportación — pero el plan sigue recibiendo el dinero cada mes, exactamente como si tú siguieras pagando.":"Wenn Sie berufsunfähig werden, erheben wir keinen Beitrag mehr von Ihnen — der Plan erhält aber weiterhin jeden Monat das Geld, genau als würden Sie weiter einzahlen.","Si faltas":"Falls Sie fehlen","Si falleces, ocurre lo mismo: el plan sigue financiado hasta que tu hijo/a llegue a la edad objetivo, sin que nadie tenga que aportar nada más de su bolsillo.":"Falls Sie versterben, passiert dasselbe: Der Plan bleibt bis zum Zielalter Ihres Kindes finanziert, ohne dass jemand weiter aus eigener Tasche einzahlen muss.","Esta protección va incluida en la estructura del propio plan — no es un seguro aparte que haya que gestionar por separado.":"Dieser Schutz ist Teil der Struktur des Plans selbst — keine separate Versicherung, die eigens verwaltet werden muss.","03 · El derecho a protegerse, ya reservado":"03 · Das Recht auf späteren Schutz, schon gesichert","Hoy le reservas a tu hijo/a el derecho a ampliar su propia protección":"Heute sichern Sie Ihrem Kind das Recht, seinen eigenen Schutz zu erweitern","Mientras tu hijo/a está sano/a, este plan le reserva el derecho a contratar más adelante su propia cobertura de incapacidad, sin un nuevo examen médico — para que un problema de salud futuro no le cierre esa puerta.":"Solange Ihr Kind gesund ist, sichert dieser Plan ihm das Recht, später eine eigene Berufsunfähigkeitsabsicherung ohne erneute Gesundheitsprüfung abzuschließen — damit ein zukünftiges Gesundheitsproblem diese Tür nicht verschließt.","10º cumpleaños":"10. Geburtstag","Cambio de tipo de colegio":"Wechsel der Schulform","Inicio de Bachillerato / Sekundarstufe 2":"Beginn der Sekundarstufe II","Inicio de formación profesional o universidad":"Beginn einer Ausbildung oder eines Studiums","Primer empleo":"Erste berufliche Tätigkeit","30º cumpleaños":"30. Geburtstag","El derecho se reserva ahora; el coste real de esa cobertura se calcula el día que se ejerce, según la edad y el importe elegido entonces.":"Das Recht wird jetzt gesichert; die tatsächlichen Kosten dieser Absicherung werden am Tag der Ausübung berechnet, je nach Alter und dann gewähltem Betrag.","Con total transparencia":"Mit voller Transparenz","Los cálculos de esta pantalla son estimaciones orientativas de crecimiento con interés compuesto, no una garantía de rentabilidad. La protección frente a incapacidad o fallecimiento de quien paga, y el derecho de tu hijo/a a ampliar su cobertura más adelante, forman parte de la estructura del plan — sus condiciones exactas se detallan en la documentación contractual.":"Die Berechnungen auf diesem Bildschirm sind orientierende Schätzungen des Kapitalwachstums mit Zinseszins, keine Renditegarantie. Der Schutz bei Berufsunfähigkeit oder Tod der zahlenden Person sowie das Recht Ihres Kindes, seinen Schutz später zu erweitern, sind Teil der Struktur des Plans — die genauen Bedingungen sind in den Vertragsunterlagen festgelegt.","AORAES · Departamento Español · Plan Futuro para hijos":"AORAES · Spanische Abteilung · Zukunftsplan für Kinder","Cálculo orientativo, sin validez contractual.":"Orientierende Berechnung, ohne vertragliche Gültigkeit.","Preparado para":"Erstellt für","tu cliente":"Ihr Kunde","{0} años":"{0} Jahre","Aportado:":"Eingezahlt:","Crecimiento estimado:":"Geschätztes Wachstum:","Escenario:":"Szenario:","{0} % anual":"{0} % jährlich","Incremento anual:":"Jährliche Steigerung:","{0} % / año":"{0} % / Jahr","Horizonte:":"Zeithorizont:","Un crecimiento de {0} €":"Ein Wachstum von {0} €"};
+(function(){
+  var MAP=window.I18N_DE_FUT, REV=(function(){var r={};for(var k in MAP){if(!(MAP[k] in r))r[MAP[k]]=k;}return r;})();
+  var lang=(function(){try{return localStorage.getItem('aoraes_lang')||'es';}catch(e){return 'es';}})();
+  var NUMRE=/\d+(?:[.,\/:]\d+)*/g;
+  function _detok(t,n){return t.replace(/\{(\d+)\}/g,function(_,i){return n[+i]!=null?n[+i]:('{'+i+'}');});}
+  function _lookup(core,map){var nums=[];var tpl=core.replace(NUMRE,function(m){nums.push(m);return '{'+(nums.length-1)+'}';});
+    if(Object.prototype.hasOwnProperty.call(map,tpl))return _detok(map[tpl],nums);
+    if(Object.prototype.hasOwnProperty.call(map,core))return map[core];
+    return null;}
+  function trStr(s,map){if(s==null)return s;var str=String(s).replace(/[   ]/g,' ');
+    var m=str.match(/^(\s*)([\s\S]*?)(\s*)$/);if(!m[2])return s;var t=_lookup(m[2],map);return t==null?s:(m[1]+t+m[3]);}
+  function trEl(root,map){if(!root)return;try{
+    var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null,false),n,l=[];while(n=w.nextNode())l.push(n);
+    l.forEach(function(tn){var v=tn.nodeValue;if(!v||!/\S/.test(v))return;var t=trStr(v,map);if(t!==v)tn.nodeValue=t;});
+    root.querySelectorAll&&root.querySelectorAll('[title]').forEach(function(e){var o=e.getAttribute('title'),t=trStr(o,map);if(t!==o)e.setAttribute('title',t);});
+  }catch(e){}}
+  var mo=null;
+  function startObs(){if(!window.MutationObserver||mo)return;
+    mo=new MutationObserver(function(ms){if(lang!=='de'){return;}mo.disconnect();
+      ms.forEach(function(mu){if(mu.type==='childList'){mu.addedNodes.forEach(function(nd){
+        if(nd.nodeType===1)trEl(nd,MAP);else if(nd.nodeType===3){var t=trStr(nd.nodeValue,MAP);if(t!==nd.nodeValue)nd.nodeValue=t;}});}
+        else if(mu.type==='characterData'){var t=trStr(mu.target.nodeValue,MAP);if(t!==mu.target.nodeValue)mu.target.nodeValue=t;}});
+      mo.observe(document.body,{childList:true,subtree:true,characterData:true});});
+    mo.observe(document.body,{childList:true,subtree:true,characterData:true});}
+  function stopObs(){if(mo){mo.disconnect();mo=null;}}
+  window.applyLang=function(l){
+    lang=(l==='de')?'de':'es';
+    try{localStorage.setItem('aoraes_lang',lang);}catch(e){}
+    stopObs();
+    if(lang==='de'){trEl(document.body,MAP);startObs();}else{trEl(document.body,REV);}
+    document.querySelectorAll('[data-lang]').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-lang')===lang);});
+    try{document.documentElement.setAttribute('lang',lang);}catch(e){}
+  };
+  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-lang]');if(b){window.applyLang(b.getAttribute('data-lang'));}});
+  function boot(){ if(lang==='de'){ setTimeout(function(){window.applyLang('de');},60); }
+    document.querySelectorAll('[data-lang]').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-lang')===lang);}); }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
+<script>
+const S={childAge:2,targetAge:18,monthly:75,dynamik:6,ret:6,capital0:0};
+const $=id=>document.getElementById(id);
+const eur=n=>new Intl.NumberFormat('de-DE',{maximumFractionDigits:0}).format(Math.round(n));
+const eurc=n=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+
+// Vermögensaufbau con Dynamik: la aportación mensual sube un % fijo una vez al año (igual que el
+// Antrag real de "Mein Zukunftsplan" — Dynamik del 2º al último año), aplicado sobre interés compuesto
+// mensual simple. Sin fiscalidad ni tarifa de producto: es un cálculo genérico de acumulación.
+function fvDynamik(capital0,monthlyStart,dynamikPct,ratePct,years){
+  const r=ratePct/100/12;
+  let c=capital0||0, contributed=0, monthly=monthlyStart||0;
+  const totalMonths=Math.round(years*12);
+  for(let m=0;m<totalMonths;m++){
+    c=c*(1+r)+monthly; contributed+=monthly;
+    if((m+1)%12===0) monthly=monthly*(1+(dynamikPct||0)/100);
+  }
+  return {capital:Math.max(0,c),contributed};
+}
+function calcPlan(){
+  const years=Math.max(1,S.targetAge-S.childAge);
+  const d=fvDynamik(S.capital0,S.monthly,S.dynamik,S.ret,years);
+  const growth=Math.max(0,d.capital-d.contributed-(S.capital0||0));
+  return {years,capitalEst:d.capital,contributed:d.contributed,growth};
+}
+
+function countUp(el,to,dur=900){
+  const from=parseFloat(el.dataset.v||'0')||0;el.dataset.v=to;
+  if(window.matchMedia('(prefers-reduced-motion:reduce)').matches){el.textContent=eur(to);return;}
+  const t0=performance.now();
+  function f(now){const p=Math.min((now-t0)/dur,1);const e=1-Math.pow(1-p,3);el.textContent=eur(from+(to-from)*e);if(p<1)requestAnimationFrame(f);}
+  requestAnimationFrame(f);
+}
+
+let chart=null;
+function renderChart(){
+  const canvas=$('growth-chart');
+  if(!canvas||typeof Chart==='undefined')return;
+  const years=Math.max(1,S.targetAge-S.childAge);
+  const labels=[],cap=[],aport=[];
+  for(let y=0;y<=years;y++){
+    labels.push(y===0?'Hoy':(y===years?'Objetivo':(S.childAge+y)));
+    const d=fvDynamik(S.capital0,S.monthly,S.dynamik,S.ret,y);
+    cap.push(Math.round(d.capital)); aport.push(Math.round(d.contributed));
+  }
+  const ctx=canvas.getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,0,300);
+  grad.addColorStop(0,'rgba(196,160,90,.35)');grad.addColorStop(1,'rgba(196,160,90,.02)');
+  if(chart)chart.destroy();
+  chart=new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'Capital estimado',data:cap,borderColor:'#c9a961',backgroundColor:grad,fill:true,tension:.4,pointRadius:0,borderWidth:3,pointHoverRadius:5,pointHoverBackgroundColor:'#c9a961'},
+    {label:'Aportado',data:aport,borderColor:'#94a3b8',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,borderWidth:1.5,borderDash:[5,4]}
+  ]},options:{
+    responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#14213d',titleColor:'#e3d4ab',bodyColor:'#ffffff',titleFont:{family:'DM Mono',size:11},bodyFont:{family:'DM Sans',size:12},padding:12,cornerRadius:8,displayColors:false,
+      callbacks:{title:i=>i[0].label==='Hoy'?'Hoy':i[0].label==='Objetivo'?'Al llegar al objetivo':`Edad ${i[0].label}`,label:c=>`${c.dataset.label}: ${eurc(c.parsed.y)}`}}},
+    scales:{x:{ticks:{font:{family:'DM Mono',size:10},color:'#94a3b8',maxTicksLimit:8},grid:{display:false},border:{color:'#e8e3d6'}},
+      y:{ticks:{font:{family:'DM Mono',size:10},color:'#94a3b8',callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v},grid:{color:'#f0ede6'},border:{display:false}}}
+  }});
+}
+
+function render(){
+  $('v-childage').textContent=S.childAge+' años';
+  $('v-targetage').textContent=S.targetAge+' años';
+  if(document.activeElement!==$('v-monthly'))$('v-monthly').value=Math.round(S.monthly);
+  document.querySelectorAll('#dynamik-toggle button').forEach(b=>{b.classList.toggle('active',parseFloat(b.getAttribute('data-dyn'))===S.dynamik);});
+  document.querySelectorAll('#scenario-toggle button').forEach(b=>{b.classList.toggle('active',parseFloat(b.getAttribute('data-scn'))===S.ret);});
+
+  const p=calcPlan();
+  $('r-targetage').textContent=S.targetAge;
+  countUp($('r-capital'),p.capitalEst);
+  $('hero-breakdown').innerHTML=
+    '<div>Aportado: <b>'+eurc(p.contributed)+'</b></div>'+
+    '<div>Crecimiento estimado: <b>'+eurc(p.growth)+'</b></div>'+
+    '<div>Escenario: <b>'+S.ret+' % anual</b></div>'+
+    '<div>Incremento anual: <b>'+S.dynamik+' % / año</b></div>'+
+    '<div>Horizonte: <b>'+p.years+' años</b></div>';
+
+  countUp($('e-contributed'),p.contributed);
+  countUp($('e-final'),p.capitalEst);
+  $('e-monthly-note').textContent=S.monthly+' €';
+  $('e-years').textContent=p.years;
+  $('e-mult').textContent='×'+(p.contributed>0?(p.capitalEst/p.contributed).toFixed(1):'0');
+  $('e-gain-note').textContent='Un crecimiento de '+eurc(p.growth);
+  $('e-dyn-rate').textContent=S.dynamik+' %';
+
+  renderChart();
+}
+
+function bindRange(id,key,after){$(id).addEventListener('input',e=>{
+  let v=parseFloat(e.target.value);
+  if(key==='childAge'&&v>=S.targetAge)v=S.targetAge-1;
+  if(key==='targetAge'&&v<=S.childAge)v=S.childAge+1;
+  S[key]=v;if(after)after();render();
+});}
+bindRange('s-childage','childAge');
+bindRange('s-targetage','targetAge');
+bindRange('s-monthly','monthly');
+
+$('v-monthly').addEventListener('input',e=>{
+  const v=parseFloat(e.target.value); if(isNaN(v))return; S.monthly=v; render();
+});
+$('v-monthly').addEventListener('change',e=>{
+  const lo=parseFloat($('s-monthly').min), hi=parseFloat($('s-monthly').max);
+  let v=parseFloat(e.target.value); if(isNaN(v))v=S.monthly;
+  v=Math.min(hi,Math.max(lo,v)); S.monthly=v; e.target.value=v; $('s-monthly').value=v; render();
+});
+
+document.querySelectorAll('#dynamik-toggle button').forEach(b=>{
+  b.addEventListener('click',()=>{S.dynamik=parseFloat(b.getAttribute('data-dyn'));render();});
+});
+document.querySelectorAll('#scenario-toggle button').forEach(b=>{
+  b.addEventListener('click',()=>{S.ret=parseFloat(b.getAttribute('data-scn'));render();});
+});
+$('fase2-toggle').addEventListener('click',()=>{
+  $('fase2-toggle').classList.toggle('open');
+  $('fase2-wrap').classList.toggle('open');
+});
+
+const cs=document.createElement('script');
+cs.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+cs.onload=()=>render();
+document.head.appendChild(cs);
+render();
+</script>
+</body>
+</html>

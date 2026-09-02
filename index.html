@@ -594,6 +594,7 @@
         <button type="button" data-go="home" class="active">Inicio</button>
         <button type="button" data-go="analisis">Análisis &amp; CRM</button>
         <button type="button" data-go="jubilacion">Comparador de jubilación</button>
+        <button type="button" data-go="ninos">Plan Futuro</button>
         <button type="button" data-go="medico">Preguntas médicas</button>
         <button type="button" id="nav-inmueble">Proyecto inmobiliario</button>
         <button type="button" data-go="asesores" id="nav-asesores" hidden>Asesores</button>
@@ -652,6 +653,7 @@
       <span class="ct-lbl">Herramientas</span>
       <button type="button" class="ct-link" data-go="analisis">Abrir Análisis &amp; CRM</button>
       <button type="button" class="ct-link" data-go="jubilacion">Abrir Comparador de jubilación</button>
+      <button type="button" class="ct-link" data-go="ninos">Abrir Plan Futuro</button>
       <button type="button" class="ct-link" data-go="medico">Abrir Preguntas médicas</button>
     </div>
     <div class="cock-note">Abre un cliente para ver su recorrido y la propuesta consolidada. Los datos se guardan en este dispositivo desde el módulo de Análisis.</div>
@@ -1233,7 +1235,7 @@
       }catch(e){ return false; }
     }
 
-    var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false} };
+    var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, ninos:{url:'./plan-futuro.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false} };
     var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames'), asesoresScr=document.getElementById('asesores');
     var stage=document.getElementById('frame-stage'), sw=document.getElementById('switch'), banner=document.getElementById('bridge-banner');
     var insEl=document.getElementById('cock-insights'), listEl=document.getElementById('cock-list');
@@ -1250,7 +1252,7 @@
     function ensureFrame(view){
       if(MOD[view].el) return MOD[view].el;
       var f=document.createElement('iframe'); f.src=MOD[view].url;
-      f.title=(view==='analisis')?'Análisis financiero y CRM':(view==='jubilacion'?'Comparador de jubilación':'Preguntas médicas');
+      f.title=(view==='analisis')?'Análisis financiero y CRM':(view==='jubilacion'?'Comparador de jubilación':(view==='ninos'?'Plan Futuro':'Preguntas médicas'));
       f.addEventListener('load',function(){
         MOD[view].ready=true;
         if(view==='analisis'){ if(pendingOpen){ var o=pendingOpen; pendingOpen=null; try{o();}catch(e){} } if(pendingSummary){ var s=pendingSummary; pendingSummary=null; try{s();}catch(e){} } }
