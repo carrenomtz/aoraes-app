@@ -197,7 +197,7 @@
     color:#ffffff; border-bottom:1px solid #20304f;
     box-shadow:0 1px 0 rgba(201,169,97,.25), 0 10px 30px rgba(13,22,38,.22);
   }
-  .brand{display:flex; align-items:center; gap:10px; margin-right:auto; min-width:0}
+  .brand{display:flex; align-items:center; gap:10px; margin-right:auto; flex-shrink:0}
   .brand-icon{height:26px; width:auto; flex:0 0 auto; display:block}
   .brand-text{display:flex; flex-direction:column; line-height:1; min-width:0}
   .brand-mark{font-family:'Fraunces',sans-serif; font-weight:700; font-size:21px; letter-spacing:.04em; color:var(--gold-soft)}
@@ -303,7 +303,9 @@
   .cock-gaps[open] summary::after{content:"▴"}
   .cock-gaps[open] summary{padding-bottom:4px}
 
-  .cock-insights{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:22px}
+  .cock-insights{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:22px}
+  @media(max-width:900px){.cock-insights{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:560px){.cock-insights{grid-template-columns:repeat(2,1fr)}}
   .ins{
     position:relative; display:flex; align-items:center; gap:13px;
     background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:14px 16px; box-shadow:var(--sh-1);
