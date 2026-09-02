@@ -180,6 +180,10 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
         <input type="range" id="s-monthly" min="25" max="500" step="5" value="75">
       </div>
       <div class="ctrl">
+        <div class="ctrl-label"><span class="lbl">Capital ya acumulado (opcional)</span><span class="val-wrap"><input type="number" class="val-input" id="v-capital0" min="0" max="50000" step="500" value="0"><span class="val-unit">€</span></span></div>
+        <input type="range" id="s-capital0" min="0" max="50000" step="500" value="0">
+      </div>
+      <div class="ctrl">
         <div class="ctrl-label" style="margin-bottom:.5rem"><span class="lbl">Incremento anual de la aportación</span></div>
         <div class="hero-toggle" id="dynamik-toggle">
           <button data-dyn="0">Fija</button>
@@ -203,7 +207,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
       <div class="result-sub">capital acumulado estimado</div>
       <div class="result-divider"></div>
       <div class="hero-breakdown" id="hero-breakdown"></div>
-      <div class="hero-disclaimer">Escenarios ilustrativos de evolución media anual, no una garantía de rentabilidad futura. Cálculo orientativo; no constituye asesoramiento fiscal ni una promesa de resultado.</div>
+      <div class="hero-disclaimer">Escenarios ilustrativos de evolución media anual, no una garantía de rentabilidad futura. La cifra es el valor estimado del plan a esa edad, no necesariamente un importe disponible en efectivo sin condiciones. Cálculo orientativo; no constituye asesoramiento fiscal ni una promesa de resultado.</div>
       <div class="fase2-teaser" id="fase2-toggle">
         <div>
           <div class="fase2-teaser-title">Así se construye esta protección</div>
@@ -227,7 +231,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
     <div class="effort-card">
       <div class="ec-label">De tu bolsillo</div>
       <div class="ec-value"><span id="e-contributed">0</span><span class="cur"> €</span></div>
-      <div class="ec-note"><span id="e-monthly-note">75 €</span> al mes durante <span id="e-years">16</span> años, subiendo cada año</div>
+      <div class="ec-note" id="e-monthly-note">Desde 75 € al mes, durante 16 años</div>
     </div>
     <div class="effort-arrow">
       <div class="mult" id="e-mult">×0</div>
@@ -240,9 +244,9 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
     </div>
   </div>
   <div style="text-align:center">
-    <div class="subsidy-pill">
+    <div class="subsidy-pill" id="dyn-pill">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1v14M3 5l5-4 5 4M3 11l5 4 5-4"/></svg>
-      La aportación sube un <b id="e-dyn-rate">6 %</b> cada año automáticamente — así el plan no pierde fuerza frente a la inflación, sin que tengas que acordarte de subirla tú.
+      <span id="dyn-pill-text">La aportación sube un <b id="e-dyn-rate">6 %</b> cada año automáticamente — así el plan no pierde fuerza frente a la inflación, sin que tengas que acordarte de subirla tú.</span>
     </div>
   </div>
   <div class="chart-card" style="margin-top:1.75rem">
@@ -274,7 +278,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
           <div class="prot-desc">Si quedas incapacitado para trabajar, dejamos de cobrarte la aportación — pero el plan sigue recibiendo el dinero cada mes, exactamente como si tú siguieras pagando.</div>
         </div>
         <div class="prot-card">
-          <div class="prot-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l5 2v4c0 3.5-2.2 6.5-5 8-2.8-1.5-5-4.5-5-8V3l5-2z"/></svg></div>
+          <div class="prot-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14C8 14 2 9.7 2 5.7A3 3 0 0 1 8 4.3A3 3 0 0 1 14 5.7C14 9.7 8 14 8 14Z"/></svg></div>
           <div class="prot-name">Si faltas</div>
           <div class="prot-desc">Si falleces, ocurre lo mismo: el plan sigue financiado hasta que tu hijo/a llegue a la edad objetivo, sin que nadie tenga que aportar nada más de su bolsillo.</div>
         </div>
@@ -312,7 +316,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
   <div>
     <div class="note-title">Con total transparencia</div>
-    <div class="note-body" id="note-body">Los cálculos de esta pantalla son estimaciones orientativas de crecimiento con interés compuesto, no una garantía de rentabilidad. La protección frente a incapacidad o fallecimiento de quien paga, y el derecho de tu hijo/a a ampliar su cobertura más adelante, forman parte de la estructura del plan — sus condiciones exactas se detallan en la documentación contractual.</div>
+    <div class="note-body" id="note-body">Los cálculos de esta pantalla son estimaciones orientativas del valor del plan con interés compuesto, no una garantía de rentabilidad ni de disponibilidad inmediata en efectivo. La protección frente a incapacidad o fallecimiento de quien paga, y el derecho de tu hijo/a a ampliar su cobertura más adelante, forman parte de la estructura del plan — sus condiciones exactas, incluidas las de disposición del capital, se detallan en la documentación contractual.</div>
   </div>
 </div>
 
@@ -321,7 +325,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 <footer class="foot">AORAES · Departamento Español · Plan Futuro para hijos<br><b>Cálculo orientativo, sin validez contractual.</b></footer>
 
 <script>
-window.I18N_DE_FUT = {"Tu hijo/a":"Ihr Kind","Edad actual":"Aktuelles Alter","Edad objetivo":"Zielalter","Aportación mensual":"Monatlicher Beitrag","Incremento anual de la aportación":"Jährliche Beitragssteigerung","Fija":"Fest","3 % / año":"3 % / Jahr","6 % / año":"6 % / Jahr","Escenario de evolución anual media":"Szenario der durchschnittlichen jährlichen Entwicklung","Conservador · 4 %":"Konservativ · 4 %","Equilibrado · 6 %":"Ausgewogen · 6 %","Dinámico · 8 %":"Dynamisch · 8 %","A LOS":"MIT","AÑOS TU HIJO/A PODRÍA TENER":"JAHREN KÖNNTE IHR KIND HABEN","capital acumulado estimado":"geschätztes angespartes Kapital","Escenarios ilustrativos de evolución media anual, no una garantía de rentabilidad futura. Cálculo orientativo; no constituye asesoramiento fiscal ni una promesa de resultado.":"Illustrative Szenarien einer durchschnittlichen jährlichen Entwicklung, keine Garantie künftiger Rendite. Orientierende Berechnung; keine Steuerberatung und kein Ergebnisversprechen.","Así se construye esta protección":"So entsteht dieser Schutz","Ahorro · si a ti te pasara algo · el derecho a protegerse más adelante":"Sparen · falls Ihnen etwas zustößt · das Recht auf späteren Schutz","01 · Así crece el capital":"01 · So wächst das Kapital","Pones poco, se acumula mucho":"Sie zahlen wenig ein, es wird viel","Tu aportación mensual, con el incremento anual (Dynamik) y el interés compuesto, se convierte con los años en un capital muy superior a lo que efectivamente pones de tu bolsillo.":"Ihr monatlicher Beitrag verwandelt sich mit der jährlichen Steigerung (Dynamik) und dem Zinseszins über die Jahre in ein deutlich höheres Kapital, als Sie tatsächlich einzahlen.","De tu bolsillo":"Aus Ihrer Tasche","al mes durante":"pro Monat über","años, subiendo cada año":"Jahre, jährlich steigend","Capital estimado":"Geschätztes Kapital","Un crecimiento de 0 €":"Ein Wachstum von 0 €","cada año automáticamente — así el plan no pierde fuerza frente a la inflación, sin que tengas que acordarte de subirla tú.":"jedes Jahr automatisch — so verliert der Plan nicht an Kraft gegenüber der Inflation, ohne dass Sie daran denken müssen.","La aportación sube un":"Der Beitrag steigt um","Aportado":"Eingezahlt","02 · Si a ti te pasara algo":"02 · Falls Ihnen etwas zustößt","El plan de tu hijo/a sigue construyéndose, pase lo que pase contigo":"Der Plan Ihres Kindes wächst weiter, was auch immer mit Ihnen geschieht","El objetivo de tu hijo/a no debería depender de que a ti te siga yendo bien. Por eso el plan incluye, desde el principio, protección para quien paga.":"Das Ziel Ihres Kindes sollte nicht davon abhängen, dass es Ihnen weiterhin gut geht. Deshalb enthält der Plan von Anfang an einen Schutz für die zahlende Person.","Si no puedes seguir trabajando":"Wenn Sie nicht mehr arbeiten können","Si quedas incapacitado para trabajar, dejamos de cobrarte la aportación — pero el plan sigue recibiendo el dinero cada mes, exactamente como si tú siguieras pagando.":"Wenn Sie berufsunfähig werden, erheben wir keinen Beitrag mehr von Ihnen — der Plan erhält aber weiterhin jeden Monat das Geld, genau als würden Sie weiter einzahlen.","Si faltas":"Falls Sie fehlen","Si falleces, ocurre lo mismo: el plan sigue financiado hasta que tu hijo/a llegue a la edad objetivo, sin que nadie tenga que aportar nada más de su bolsillo.":"Falls Sie versterben, passiert dasselbe: Der Plan bleibt bis zum Zielalter Ihres Kindes finanziert, ohne dass jemand weiter aus eigener Tasche einzahlen muss.","Esta protección va incluida en la estructura del propio plan — no es un seguro aparte que haya que gestionar por separado.":"Dieser Schutz ist Teil der Struktur des Plans selbst — keine separate Versicherung, die eigens verwaltet werden muss.","03 · El derecho a protegerse, ya reservado":"03 · Das Recht auf späteren Schutz, schon gesichert","Hoy le reservas a tu hijo/a el derecho a ampliar su propia protección":"Heute sichern Sie Ihrem Kind das Recht, seinen eigenen Schutz zu erweitern","Mientras tu hijo/a está sano/a, este plan le reserva el derecho a contratar más adelante su propia cobertura de incapacidad, sin un nuevo examen médico — para que un problema de salud futuro no le cierre esa puerta.":"Solange Ihr Kind gesund ist, sichert dieser Plan ihm das Recht, später eine eigene Berufsunfähigkeitsabsicherung ohne erneute Gesundheitsprüfung abzuschließen — damit ein zukünftiges Gesundheitsproblem diese Tür nicht verschließt.","10º cumpleaños":"10. Geburtstag","Cambio de tipo de colegio":"Wechsel der Schulform","Inicio de Bachillerato / Sekundarstufe 2":"Beginn der Sekundarstufe II","Inicio de formación profesional o universidad":"Beginn einer Ausbildung oder eines Studiums","Primer empleo":"Erste berufliche Tätigkeit","30º cumpleaños":"30. Geburtstag","El derecho se reserva ahora; el coste real de esa cobertura se calcula el día que se ejerce, según la edad y el importe elegido entonces.":"Das Recht wird jetzt gesichert; die tatsächlichen Kosten dieser Absicherung werden am Tag der Ausübung berechnet, je nach Alter und dann gewähltem Betrag.","Con total transparencia":"Mit voller Transparenz","Los cálculos de esta pantalla son estimaciones orientativas de crecimiento con interés compuesto, no una garantía de rentabilidad. La protección frente a incapacidad o fallecimiento de quien paga, y el derecho de tu hijo/a a ampliar su cobertura más adelante, forman parte de la estructura del plan — sus condiciones exactas se detallan en la documentación contractual.":"Die Berechnungen auf diesem Bildschirm sind orientierende Schätzungen des Kapitalwachstums mit Zinseszins, keine Renditegarantie. Der Schutz bei Berufsunfähigkeit oder Tod der zahlenden Person sowie das Recht Ihres Kindes, seinen Schutz später zu erweitern, sind Teil der Struktur des Plans — die genauen Bedingungen sind in den Vertragsunterlagen festgelegt.","AORAES · Departamento Español · Plan Futuro para hijos":"AORAES · Spanische Abteilung · Zukunftsplan für Kinder","Cálculo orientativo, sin validez contractual.":"Orientierende Berechnung, ohne vertragliche Gültigkeit.","Preparado para":"Erstellt für","tu cliente":"Ihr Kunde","{0} años":"{0} Jahre","Aportado:":"Eingezahlt:","Crecimiento estimado:":"Geschätztes Wachstum:","Escenario:":"Szenario:","{0} % anual":"{0} % jährlich","Incremento anual:":"Jährliche Steigerung:","{0} % / año":"{0} % / Jahr","Horizonte:":"Zeithorizont:","Un crecimiento de {0} €":"Ein Wachstum von {0} €"};
+window.I18N_DE_FUT = {"Tu hijo/a":"Ihr Kind","Edad actual":"Aktuelles Alter","Edad objetivo":"Zielalter","Aportación mensual":"Monatlicher Beitrag","Incremento anual de la aportación":"Jährliche Beitragssteigerung","Fija":"Fest","3 % / año":"3 % / Jahr","6 % / año":"6 % / Jahr","Escenario de evolución anual media":"Szenario der durchschnittlichen jährlichen Entwicklung","Conservador · 4 %":"Konservativ · 4 %","Equilibrado · 6 %":"Ausgewogen · 6 %","Dinámico · 8 %":"Dynamisch · 8 %","A LOS":"MIT","AÑOS TU HIJO/A PODRÍA TENER":"JAHREN KÖNNTE IHR KIND HABEN","capital acumulado estimado":"geschätztes angespartes Kapital","Escenarios ilustrativos de evolución media anual, no una garantía de rentabilidad futura. La cifra es el valor estimado del plan a esa edad, no necesariamente un importe disponible en efectivo sin condiciones. Cálculo orientativo; no constituye asesoramiento fiscal ni una promesa de resultado.":"Illustrative Szenarien einer durchschnittlichen jährlichen Entwicklung, keine Garantie künftiger Rendite. Der Betrag ist der geschätzte Wert des Plans in diesem Alter, nicht zwangsläufig ein ohne Bedingungen verfügbarer Bargeldbetrag. Orientierende Berechnung; keine Steuerberatung und kein Ergebnisversprechen.","Así se construye esta protección":"So entsteht dieser Schutz","Ahorro · si a ti te pasara algo · el derecho a protegerse más adelante":"Sparen · falls Ihnen etwas zustößt · das Recht auf späteren Schutz","01 · Así crece el capital":"01 · So wächst das Kapital","Pones poco, se acumula mucho":"Sie zahlen wenig ein, es wird viel","Tu aportación mensual, con el incremento anual (Dynamik) y el interés compuesto, se convierte con los años en un capital muy superior a lo que efectivamente pones de tu bolsillo.":"Ihr monatlicher Beitrag verwandelt sich mit der jährlichen Steigerung (Dynamik) und dem Zinseszins über die Jahre in ein deutlich höheres Kapital, als Sie tatsächlich einzahlen.","De tu bolsillo":"Aus Ihrer Tasche","Capital estimado":"Geschätztes Kapital","Un crecimiento de 0 €":"Ein Wachstum von 0 €","cada año automáticamente — así el plan no pierde fuerza frente a la inflación, sin que tengas que acordarte de subirla tú.":"jedes Jahr automatisch — so verliert der Plan nicht an Kraft gegenüber der Inflation, ohne dass Sie daran denken müssen.","La aportación sube un":"Der Beitrag steigt um","Aportado":"Eingezahlt","02 · Si a ti te pasara algo":"02 · Falls Ihnen etwas zustößt","El plan de tu hijo/a sigue construyéndose, pase lo que pase contigo":"Der Plan Ihres Kindes wächst weiter, was auch immer mit Ihnen geschieht","El objetivo de tu hijo/a no debería depender de que a ti te siga yendo bien. Por eso el plan incluye, desde el principio, protección para quien paga.":"Das Ziel Ihres Kindes sollte nicht davon abhängen, dass es Ihnen weiterhin gut geht. Deshalb enthält der Plan von Anfang an einen Schutz für die zahlende Person.","Si no puedes seguir trabajando":"Wenn Sie nicht mehr arbeiten können","Si quedas incapacitado para trabajar, dejamos de cobrarte la aportación — pero el plan sigue recibiendo el dinero cada mes, exactamente como si tú siguieras pagando.":"Wenn Sie berufsunfähig werden, erheben wir keinen Beitrag mehr von Ihnen — der Plan erhält aber weiterhin jeden Monat das Geld, genau als würden Sie weiter einzahlen.","Si faltas":"Falls Sie fehlen","Si falleces, ocurre lo mismo: el plan sigue financiado hasta que tu hijo/a llegue a la edad objetivo, sin que nadie tenga que aportar nada más de su bolsillo.":"Falls Sie versterben, passiert dasselbe: Der Plan bleibt bis zum Zielalter Ihres Kindes finanziert, ohne dass jemand weiter aus eigener Tasche einzahlen muss.","Esta protección va incluida en la estructura del propio plan — no es un seguro aparte que haya que gestionar por separado.":"Dieser Schutz ist Teil der Struktur des Plans selbst — keine separate Versicherung, die eigens verwaltet werden muss.","03 · El derecho a protegerse, ya reservado":"03 · Das Recht auf späteren Schutz, schon gesichert","Hoy le reservas a tu hijo/a el derecho a ampliar su propia protección":"Heute sichern Sie Ihrem Kind das Recht, seinen eigenen Schutz zu erweitern","Mientras tu hijo/a está sano/a, este plan le reserva el derecho a contratar más adelante su propia cobertura de incapacidad, sin un nuevo examen médico — para que un problema de salud futuro no le cierre esa puerta.":"Solange Ihr Kind gesund ist, sichert dieser Plan ihm das Recht, später eine eigene Berufsunfähigkeitsabsicherung ohne erneute Gesundheitsprüfung abzuschließen — damit ein zukünftiges Gesundheitsproblem diese Tür nicht verschließt.","10º cumpleaños":"10. Geburtstag","Cambio de tipo de colegio":"Wechsel der Schulform","Inicio de Bachillerato / Sekundarstufe 2":"Beginn der Sekundarstufe II","Inicio de formación profesional o universidad":"Beginn einer Ausbildung oder eines Studiums","Primer empleo":"Erste berufliche Tätigkeit","30º cumpleaños":"30. Geburtstag","El derecho se reserva ahora; el coste real de esa cobertura se calcula el día que se ejerce, según la edad y el importe elegido entonces.":"Das Recht wird jetzt gesichert; die tatsächlichen Kosten dieser Absicherung werden am Tag der Ausübung berechnet, je nach Alter und dann gewähltem Betrag.","Con total transparencia":"Mit voller Transparenz","Los cálculos de esta pantalla son estimaciones orientativas del valor del plan con interés compuesto, no una garantía de rentabilidad ni de disponibilidad inmediata en efectivo. La protección frente a incapacidad o fallecimiento de quien paga, y el derecho de tu hijo/a a ampliar su cobertura más adelante, forman parte de la estructura del plan — sus condiciones exactas, incluidas las de disposición del capital, se detallan en la documentación contractual.":"Die Berechnungen auf diesem Bildschirm sind orientierende Schätzungen des Planwerts mit Zinseszins, keine Renditegarantie und keine Garantie für die sofortige Verfügbarkeit in bar. Der Schutz bei Berufsunfähigkeit oder Tod der zahlenden Person sowie das Recht Ihres Kindes, seinen Schutz später zu erweitern, sind Teil der Struktur des Plans — die genauen Bedingungen, einschließlich der Verfügung über das Kapital, sind in den Vertragsunterlagen festgelegt.","AORAES · Departamento Español · Plan Futuro para hijos":"AORAES · Spanische Abteilung · Zukunftsplan für Kinder","Cálculo orientativo, sin validez contractual.":"Orientierende Berechnung, ohne vertragliche Gültigkeit.","Preparado para":"Erstellt für","tu cliente":"Ihr Kunde","{0} años":"{0} Jahre","Aportado:":"Eingezahlt:","Crecimiento estimado:":"Geschätztes Wachstum:","Escenario:":"Szenario:","{0} % anual":"{0} % jährlich","Incremento anual:":"Jährliche Steigerung:","{0} % / año":"{0} % / Jahr","Horizonte:":"Zeithorizont:","Un crecimiento de {0} €":"Ein Wachstum von {0} €","Capital ya acumulado (opcional)":"Bereits angespartes Kapital (optional)","Capital inicial:":"Anfangskapital:","Aportación en el último año:":"Beitrag im letzten Jahr:","/mes":"/Monat","Desde {0} € al mes, subiendo cada año, durante {1} años":"Ab {0} € pro Monat, jährlich steigend, über {1} Jahre","{0} € al mes (aportación fija), durante {1} años":"{0} € pro Monat (fester Beitrag), über {1} Jahre"};
 (function(){
   var MAP=window.I18N_DE_FUT, REV=(function(){var r={};for(var k in MAP){if(!(MAP[k] in r))r[MAP[k]]=k;}return r;})();
   var lang=(function(){try{return localStorage.getItem('aoraes_lang')||'es';}catch(e){return 'es';}})();
@@ -378,13 +382,13 @@ function fvDynamik(capital0,monthlyStart,dynamikPct,ratePct,years){
     c=c*(1+r)+monthly; contributed+=monthly;
     if((m+1)%12===0) monthly=monthly*(1+(dynamikPct||0)/100);
   }
-  return {capital:Math.max(0,c),contributed};
+  return {capital:Math.max(0,c),contributed,finalMonthly:monthly};
 }
 function calcPlan(){
   const years=Math.max(1,S.targetAge-S.childAge);
   const d=fvDynamik(S.capital0,S.monthly,S.dynamik,S.ret,years);
   const growth=Math.max(0,d.capital-d.contributed-(S.capital0||0));
-  return {years,capitalEst:d.capital,contributed:d.contributed,growth};
+  return {years,capitalEst:d.capital,contributed:d.contributed,growth,finalMonthly:d.finalMonthly};
 }
 
 function countUp(el,to,dur=900){
@@ -426,39 +430,44 @@ function render(){
   $('v-childage').textContent=S.childAge+' años';
   $('v-targetage').textContent=S.targetAge+' años';
   if(document.activeElement!==$('v-monthly'))$('v-monthly').value=Math.round(S.monthly);
+  if(document.activeElement!==$('v-capital0'))$('v-capital0').value=Math.round(S.capital0);
   document.querySelectorAll('#dynamik-toggle button').forEach(b=>{b.classList.toggle('active',parseFloat(b.getAttribute('data-dyn'))===S.dynamik);});
   document.querySelectorAll('#scenario-toggle button').forEach(b=>{b.classList.toggle('active',parseFloat(b.getAttribute('data-scn'))===S.ret);});
 
   const p=calcPlan();
   $('r-targetage').textContent=S.targetAge;
   countUp($('r-capital'),p.capitalEst);
-  $('hero-breakdown').innerHTML=
-    '<div>Aportado: <b>'+eurc(p.contributed)+'</b></div>'+
-    '<div>Crecimiento estimado: <b>'+eurc(p.growth)+'</b></div>'+
-    '<div>Escenario: <b>'+S.ret+' % anual</b></div>'+
-    '<div>Incremento anual: <b>'+S.dynamik+' % / año</b></div>'+
-    '<div>Horizonte: <b>'+p.years+' años</b></div>';
+  var rows=[];
+  if(S.capital0>0) rows.push('<div>Capital inicial: <b>'+eurc(S.capital0)+'</b></div>');
+  rows.push('<div>Aportado: <b>'+eurc(p.contributed)+'</b></div>');
+  rows.push('<div>Crecimiento estimado: <b>'+eurc(p.growth)+'</b></div>');
+  rows.push('<div>Escenario: <b>'+S.ret+' % anual</b></div>');
+  rows.push('<div>Incremento anual: <b>'+S.dynamik+' % / año</b></div>');
+  rows.push('<div>Horizonte: <b>'+p.years+' años</b></div>');
+  if(S.dynamik>0) rows.push('<div>Aportación en el último año: <b>'+eurc(p.finalMonthly)+'</b>/mes</div>');
+  $('hero-breakdown').innerHTML=rows.join('');
 
   countUp($('e-contributed'),p.contributed);
   countUp($('e-final'),p.capitalEst);
-  $('e-monthly-note').textContent=S.monthly+' €';
-  $('e-years').textContent=p.years;
+  $('e-monthly-note').textContent=(S.dynamik>0?'Desde ':'')+S.monthly+' € al mes'+(S.dynamik>0?', subiendo cada año':' (aportación fija)')+', durante '+p.years+' años';
   $('e-mult').textContent='×'+(p.contributed>0?(p.capitalEst/p.contributed).toFixed(1):'0');
   $('e-gain-note').textContent='Un crecimiento de '+eurc(p.growth);
   $('e-dyn-rate').textContent=S.dynamik+' %';
+  $('dyn-pill').style.display=S.dynamik>0?'':'none';
 
   renderChart();
 }
 
 function bindRange(id,key,after){$(id).addEventListener('input',e=>{
   let v=parseFloat(e.target.value);
-  if(key==='childAge'&&v>=S.targetAge)v=S.targetAge-1;
-  if(key==='targetAge'&&v<=S.childAge)v=S.childAge+1;
+  if(key==='childAge'&&v>=S.targetAge){v=S.targetAge-1;e.target.value=v;}
+  if(key==='targetAge'&&v<=S.childAge){v=S.childAge+1;e.target.value=v;}
   S[key]=v;if(after)after();render();
 });}
 bindRange('s-childage','childAge');
 bindRange('s-targetage','targetAge');
 bindRange('s-monthly','monthly');
+bindRange('s-capital0','capital0');
 
 $('v-monthly').addEventListener('input',e=>{
   const v=parseFloat(e.target.value); if(isNaN(v))return; S.monthly=v; render();
@@ -467,6 +476,14 @@ $('v-monthly').addEventListener('change',e=>{
   const lo=parseFloat($('s-monthly').min), hi=parseFloat($('s-monthly').max);
   let v=parseFloat(e.target.value); if(isNaN(v))v=S.monthly;
   v=Math.min(hi,Math.max(lo,v)); S.monthly=v; e.target.value=v; $('s-monthly').value=v; render();
+});
+$('v-capital0').addEventListener('input',e=>{
+  const v=parseFloat(e.target.value); if(isNaN(v))return; S.capital0=v; render();
+});
+$('v-capital0').addEventListener('change',e=>{
+  const lo=parseFloat($('s-capital0').min), hi=parseFloat($('s-capital0').max);
+  let v=parseFloat(e.target.value); if(isNaN(v))v=S.capital0;
+  v=Math.min(hi,Math.max(lo,v)); S.capital0=v; e.target.value=v; $('s-capital0').value=v; render();
 });
 
 document.querySelectorAll('#dynamik-toggle button').forEach(b=>{
