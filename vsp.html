@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+<title>AORAES · Seguros patrimoniales (VSP)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#14213d">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --midnight:#0e1830; --navy:#14213d; --navy-soft:#3a5077;
+  --gold:#c9a961; --gold-light:#e3d4ab; --gold-deep:#a8842f;
+  --gold-glow:rgba(196,160,90,.16);
+  --ivory:#ffffff; --cream:#f3efe6; --white:#ffffff;
+  --ink:#14213d; --slate:#6c6d76; --mist:#e8e3d6;
+  --sage:#4f7358; --sage-soft:#eaf2ec; --clay:#b0473a;
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --mono:'DM Mono',ui-monospace,monospace;
+  --shadow:0 1px 3px rgba(20,33,61,.06),0 8px 30px rgba(20,33,61,.06);
+  --shadow-lg:0 4px 12px rgba(20,33,61,.08),0 24px 60px rgba(13,23,41,.14);
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.nav{position:sticky;top:0;z-index:50;background:rgba(13,23,41,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(196,160,90,.22);display:flex;align-items:center;padding:.85rem 2rem;gap:1rem}
+.nav-logo{font-family:var(--serif);font-size:1.35rem;font-weight:700;color:var(--gold);letter-spacing:.14em}
+.nav-sep{width:1px;height:18px;background:rgba(255,255,255,.18)}
+.nav-tag{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:.9rem}
+.nav-client{font-size:.8rem;color:rgba(255,255,255,.6)}
+.nav-client b{color:var(--gold-light);font-weight:500}
+@media(max-width:560px){.nav{padding:.85rem 1rem;flex-wrap:wrap}.nav-client{display:none}}
+
+.hero{background:radial-gradient(120% 100% at 15% 0%,#1a2a47 0%,var(--midnight) 60%);color:#ffffff;padding:2.75rem 2rem 3rem;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-10%;top:-30%;width:50%;height:160%;background:radial-gradient(closest-side,var(--gold-glow),transparent 70%);pointer-events:none}
+.hero-inner{max-width:900px;margin:0 auto;position:relative;z-index:2}
+.hero-eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.9rem;display:flex;align-items:center;gap:.5rem}
+.hero-eyebrow::before{content:"";width:18px;height:1px;background:var(--gold)}
+.hero-title{font-family:var(--serif);font-size:clamp(1.8rem,4vw,2.6rem);font-weight:600;line-height:1.2;letter-spacing:-.01em;margin-bottom:.9rem}
+.hero-lede{font-size:1rem;color:rgba(255,255,255,.72);max-width:640px;line-height:1.65}
+.hero-noprice{display:inline-flex;align-items:center;gap:.5rem;margin-top:1.5rem;padding:.6rem 1rem;border:1px solid rgba(196,160,90,.35);border-radius:10px;font-size:.8rem;color:var(--gold-light);background:rgba(255,255,255,.03)}
+
+.section{max-width:1180px;margin:0 auto;padding:3rem 2rem}
+.section-head{margin-bottom:2rem;max-width:680px}
+.section-eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:.65rem;display:flex;align-items:center;gap:.5rem}
+.section-eyebrow::before{content:"";width:20px;height:1px;background:var(--gold)}
+.section-title{font-family:var(--serif);font-size:clamp(1.5rem,3vw,2rem);font-weight:600;color:var(--navy);line-height:1.2;letter-spacing:-.01em}
+.section-lede{font-size:.96rem;color:var(--slate);margin-top:.65rem}
+
+.vsp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem}
+.vsp-card{background:var(--white);border:1px solid var(--mist);border-radius:18px;padding:1.75rem;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:1.1rem;transition:opacity .2s}
+.vsp-card.inactive{opacity:.6}
+.vsp-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
+.vsp-card-sub{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:.3rem}
+.vsp-card-title{font-family:var(--serif);font-size:1.18rem;font-weight:600;color:var(--navy);line-height:1.25}
+.vsp-switch{position:relative;width:44px;height:25px;flex:0 0 auto;display:inline-block;cursor:pointer}
+.vsp-switch input{opacity:0;width:100%;height:100%;position:absolute;margin:0;cursor:pointer;z-index:2}
+.vsp-switch .track{position:absolute;inset:0;background:#d8d3c4;border-radius:999px;transition:.2s}
+.vsp-switch .thumb{position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:.2s}
+.vsp-switch input:checked ~ .track{background:var(--gold)}
+.vsp-switch input:checked ~ .thumb{transform:translateX(19px)}
+.vsp-switch.small{width:38px;height:22px}
+.vsp-switch.small .thumb{width:16px;height:16px}
+.vsp-switch.small input:checked ~ .thumb{transform:translateX(16px)}
+.vsp-quote{background:var(--sage-soft);border-left:3px solid var(--sage);border-radius:0 10px 10px 0;padding:.9rem 1.1rem;font-size:.85rem;color:var(--ink);line-height:1.55;font-style:italic}
+.vsp-fields{display:flex;flex-direction:column;gap:.95rem}
+.vsp-fields.is-disabled{opacity:.38;pointer-events:none}
+.vf-row{display:flex;flex-direction:column;gap:.4rem}
+.vf-label{font-size:.78rem;color:var(--slate);font-weight:500}
+.vf-row select,.vf-row input[type=text],.vf-row input[type=number]{font-family:var(--sans);font-size:.92rem;padding:.55rem .7rem;border:1px solid var(--mist);border-radius:8px;background:var(--white);color:var(--ink);width:100%}
+.vf-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.vf-toggle-row .vf-label{font-weight:500;color:var(--ink)}
+.vf-note{font-size:.74rem;color:var(--slate);line-height:1.5}
+.vf-inherit{font-size:.83rem;color:var(--ink);background:var(--cream);border-radius:8px;padding:.6rem .8rem}
+
+.vsp-confirm-bar{display:flex;flex-direction:column;align-items:center;gap:.75rem;margin-top:2.5rem;text-align:center}
+.vsp-confirm-btn{background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:var(--midnight);border:none;border-radius:12px;padding:1.05rem 2.1rem;font-family:var(--sans);font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:var(--shadow-lg);transition:transform .15s}
+.vsp-confirm-btn:hover:not(:disabled){transform:translateY(-1px)}
+.vsp-confirm-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.vsp-confirm-note{font-size:.78rem;color:var(--slate)}
+
+#fase2{display:none}
+#fase2.open{display:block}
+.prop-back{display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;color:var(--gold-deep);cursor:pointer;background:none;border:none;font-family:var(--sans);font-weight:600;margin-bottom:1.75rem;padding:0}
+.prop-client{display:flex;flex-wrap:wrap;gap:1.5rem;background:var(--cream);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:2rem}
+.prop-client .pf{display:flex;flex-direction:column;gap:.35rem;min-width:220px;flex:1}
+.prop-client label{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);font-weight:600}
+.prop-client input{font-family:var(--mono);font-size:.92rem;padding:.5rem .65rem;border:1px solid var(--mist);border-radius:8px;background:#fff;color:var(--ink)}
+.prop-ramo{background:var(--white);border:1px solid var(--mist);border-radius:14px;padding:1.4rem 1.5rem;margin-bottom:1.25rem}
+.prop-ramo h4{font-family:var(--serif);font-size:1.05rem;color:var(--navy);margin-bottom:.9rem}
+.prop-ramo .pr-field{display:flex;justify-content:space-between;gap:1rem;padding:.4rem 0;font-size:.85rem;border-bottom:1px solid var(--cream)}
+.prop-ramo .pr-field .k{color:var(--slate)}
+.prop-ramo .pr-field .v{color:var(--ink);font-weight:500;text-align:right}
+.prop-ramo .pr-field:last-of-type{border-bottom:none}
+.prop-premium-row{display:flex;justify-content:space-between;align-items:center;margin-top:1.1rem;padding-top:1.1rem;border-top:1px dashed var(--mist)}
+.prop-premium-row .vf-label{font-weight:600;color:var(--ink)}
+.prop-premium-row .pp-input-wrap{display:flex;align-items:center;gap:.4rem}
+.prop-premium-row input{width:110px;font-family:var(--mono);font-size:1rem;text-align:right;padding:.5rem .6rem;border:1px solid var(--mist);border-radius:8px}
+.prop-total{background:var(--navy);color:#fff;border-radius:16px;padding:1.5rem 1.75rem;display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;flex-wrap:wrap;gap:.75rem}
+.prop-total .lbl{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.prop-total .val{font-family:var(--serif);font-size:2rem;font-weight:600;color:var(--gold-light)}
+.prop-disclaimer{font-size:.76rem;color:var(--slate);line-height:1.55;margin-top:1.1rem}
+.prop-actions{display:flex;gap:1rem;margin-top:1.75rem;flex-wrap:wrap}
+.prop-actions button{font-family:var(--sans);font-size:.85rem;font-weight:600;border-radius:10px;padding:.75rem 1.4rem;cursor:pointer;border:1px solid var(--mist);background:#fff;color:var(--navy)}
+.prop-actions button.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+.note-card{background:var(--navy);color:#ffffff;border-radius:18px;padding:2rem 2.25rem;display:flex;gap:1.25rem;align-items:flex-start;max-width:1180px;margin:0 auto 3rem}
+.note-card>svg{width:24px;height:24px;color:var(--gold);flex-shrink:0;margin-top:.15rem}
+.note-title{font-family:var(--serif);font-size:1.15rem;font-weight:600;margin-bottom:.5rem;color:var(--gold-light)}
+.note-body{font-size:.9rem;color:rgba(255,255,255,.72);line-height:1.65}
+
+.foot{background:var(--midnight);color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.72rem;font-family:var(--mono);line-height:1.7}
+.foot b{color:var(--gold);opacity:.8}
+.lang-switch button.active{background:var(--gold,#c9a961);color:#14213d}
+
+#print-header{display:none}
+@media print{
+  body *{visibility:hidden}
+  #fase2,#fase2 *{visibility:visible}
+  #fase2{position:absolute;left:0;top:0;width:100%;padding:1rem 1.5rem}
+  #print-header{display:block;visibility:visible;margin-bottom:1.5rem}
+  #print-header .ph-logo{font-family:var(--serif);font-weight:700;color:var(--navy);font-size:1.3rem;letter-spacing:.1em}
+  #print-header .ph-sub{font-family:var(--mono);font-size:.7rem;color:var(--slate);margin-top:.2rem}
+  .prop-back,.prop-actions,.vsp-switch{display:none!important}
+  .prop-total{background:#fff;color:var(--navy);border:1px solid var(--mist)}
+  .prop-total .lbl{color:var(--slate)}
+  .prop-total .val{color:var(--navy)}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">AORAES</div>
+  <div class="nav-sep"></div>
+  <div class="nav-tag">Seguros patrimoniales</div>
+  <div class="nav-right"><div class="nav-client">Preparado para <b id="nav-client">tu cliente</b></div>
+    <div class="lang-switch" style="display:inline-flex;align-items:center;border:1px solid rgba(201,169,97,.45);border-radius:9px;overflow:hidden;margin-left:12px">
+      <button type="button" data-lang="es" style="border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;color:inherit;padding:6px 11px;cursor:pointer">ES</button>
+      <button type="button" data-lang="en" style="border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;color:inherit;padding:6px 11px;cursor:pointer">EN</button>
+      <button type="button" data-lang="de" style="border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;color:inherit;padding:6px 11px;cursor:pointer">DE</button>
+    </div></div>
+</nav>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Vermögenssicherungspolice · Generali</div>
+    <h1 class="hero-title">Protección patrimonial a la medida</h1>
+    <p class="hero-lede">Antes de hablar de precio, revisamos juntos qué riesgos patrimoniales tiene sentido cubrir en tu situación real: responsabilidad civil, el contenido de tu vivienda y sus cristales. Activa solo lo que aplique.</p>
+    <div class="hero-noprice">🔒 Sin ningún precio en esta fase — solo el análisis de necesidad</div>
+  </div>
+</header>
+
+<section class="section" id="fase1">
+  <div class="section-head">
+    <div class="section-eyebrow">01 · Análisis de necesidad</div>
+    <h2 class="section-title">Activa los ramos que quieres revisar con el cliente</h2>
+    <p class="section-lede">Cada tarjeta explica en una frase qué cubre. Los campos de configuración solo importan para la tarificación real — no cambian nada del análisis en sí.</p>
+  </div>
+
+  <div class="vsp-grid">
+
+    <div class="vsp-card inactive" id="card-haftpflicht" data-card="haftpflicht">
+      <div class="vsp-card-head">
+        <div><div class="vsp-card-sub">Ramo núcleo</div><div class="vsp-card-title">Privathaftpflicht Optimal</div></div>
+        <label class="vsp-switch"><input type="checkbox" id="tg-haftpflicht"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+      <div class="vsp-quote">Si por un error privado causas un daño a otra persona y eres legalmente responsable, la Haftpflicht evita que ese daño salga de tu patrimonio.</div>
+      <div class="vsp-fields is-disabled" id="fields-haftpflicht">
+        <div class="vf-row"><span class="vf-label">Selbstbehalt (franquicia por siniestro)</span>
+          <select id="v-hf-sb">
+            <option value="0">0 €</option>
+            <option value="150" selected>150 €</option>
+            <option value="300">300 €</option>
+          </select>
+        </div>
+        <div class="vf-row"><span class="vf-label">Lebenssituation</span>
+          <select id="v-hf-sit">
+            <option value="singles">Singles (ohne Kinder)</option>
+            <option value="paare">Paare (ohne Kinder)</option>
+            <option value="familie">Familien/Singles (mit Kindern)</option>
+          </select>
+        </div>
+        <div class="vf-toggle-row"><span class="vf-label">Ausfalldeckung <span class="vf-note" style="display:block">Cubre cuando el responsable del daño no puede pagar</span></span>
+          <label class="vsp-switch small"><input type="checkbox" id="v-hf-ausfall"><span class="track"></span><span class="thumb"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="vsp-card inactive" id="card-hausrat" data-card="hausrat">
+      <div class="vsp-card-head">
+        <div><div class="vsp-card-sub">Ramo núcleo</div><div class="vsp-card-title">Hausrat Optimal</div></div>
+        <label class="vsp-switch"><input type="checkbox" id="tg-hausrat"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+      <div class="vsp-quote" id="hausrat-quote">Si se quema, entra agua, hay robo o ocurre uno de los peligros definidos, Hausrat protege los objetos de la vivienda.</div>
+      <div class="vsp-fields is-disabled" id="fields-hausrat">
+        <div class="vf-row"><span class="vf-label">Wohnart</span>
+          <select id="v-hr-wohnart">
+            <option value="einfamilienhaus">Einfamilienhaus</option>
+            <option value="zweifamilienhaus">Zweifamilienhaus</option>
+            <option value="mehrfamilienhaus" selected>Mehrfamilienhaus</option>
+            <option value="geschaeftshaus">Wohn-/Geschäftshaus</option>
+          </select>
+        </div>
+        <div class="vf-row"><span class="vf-label">Wohnfläche (m²)</span>
+          <input type="number" id="v-hr-flache" min="10" max="500" step="1" value="60">
+        </div>
+        <div class="vf-row"><span class="vf-label">Selbstbehalt (franquicia por siniestro)</span>
+          <select id="v-hr-sb">
+            <option value="0">0 €</option>
+            <option value="150" selected>150 €</option>
+            <option value="300">300 €</option>
+          </select>
+        </div>
+        <div class="vf-toggle-row"><span class="vf-label">Weitere Elementargefahren <span class="vf-note" style="display:block">Inundación, reflujo y otros riesgos naturales adicionales — la prima y el Selbstbehalt pueden depender de la clasificación ZÜRS del domicilio</span></span>
+          <label class="vsp-switch small"><input type="checkbox" id="v-hr-elementar"><span class="track"></span><span class="thumb"></span></label>
+        </div>
+        <div class="vf-toggle-row"><span class="vf-label">Hausrat Optimal XXL <span class="vf-note" id="xxl-note" style="display:block">Amplía a Allgefahrendeckung — ya incluye Fahrrad Plus y Freizeit Plus, no hace falta contratarlos aparte</span></span>
+          <label class="vsp-switch small"><input type="checkbox" id="v-hr-xxl"><span class="track"></span><span class="thumb"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="vsp-card inactive" id="card-glas" data-card="glas">
+      <div class="vsp-card-head">
+        <div><div class="vsp-card-sub">Ramo núcleo</div><div class="vsp-card-title">Haushalt-Glas</div></div>
+        <label class="vsp-switch"><input type="checkbox" id="tg-glas"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+      <div class="vsp-quote">Si se rompe un cristal de la vivienda — ventana, puerta, placa vitrocerámica u otro elemento definido —, Haushalt-Glas cubre su reposición.</div>
+      <div class="vsp-fields is-disabled" id="fields-glas">
+        <div class="vf-inherit" id="glas-inherit">Se cubre la misma vivienda que en Hausrat Optimal (<span id="glas-inherit-wf">60</span> m²).</div>
+        <div id="glas-own" style="display:none;flex-direction:column;gap:.95rem">
+          <div class="vf-row"><span class="vf-label">Versicherungsort (dirección de la vivienda)</span>
+            <input type="text" id="v-gl-addr" placeholder="Calle, número, ciudad, CP" autocomplete="off">
+          </div>
+          <div class="vf-row"><span class="vf-label">Wohnfläche (m²)</span>
+            <input type="number" id="v-gl-flache" min="10" max="500" step="1" value="60">
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="vsp-confirm-bar">
+    <button type="button" class="vsp-confirm-btn" id="btn-confirm" disabled>Confirmar configuración y continuar a la propuesta →</button>
+    <div class="vsp-confirm-note" id="confirm-note">Activa al menos un ramo para continuar.</div>
+  </div>
+</section>
+
+<section class="section" id="fase2">
+  <div id="print-header"><div class="ph-logo">AORAES</div><div class="ph-sub">Propuesta de seguros patrimoniales (VSP) · <span id="ph-date"></span></div></div>
+  <button type="button" class="prop-back" id="btn-back">← Volver a editar la configuración</button>
+  <div class="section-head">
+    <div class="section-eyebrow">02 · Propuesta</div>
+    <h2 class="section-title">Configuración confirmada — añade la prima real</h2>
+    <p class="section-lede">La configuración ya no se edita aquí. Escribe la prima mensual de cada ramo según la tarificación real de Generali; la app solo suma el total.</p>
+  </div>
+
+  <div class="prop-client">
+    <div class="pf"><label>Cliente</label><input type="text" id="v-client-name" readonly></div>
+    <div class="pf"><label>IBAN</label><input type="text" id="v-iban" placeholder="DE.. .... .... .... .... .." autocomplete="off"></div>
+  </div>
+
+  <div id="prop-ramos"></div>
+
+  <div class="prop-total"><span class="lbl">Prima total mensual</span><span class="val" id="prop-total-val">0 €</span></div>
+  <div class="prop-disclaimer">La prima la introduce el asesor a partir de la tarificación real de Generali — la app no calcula precios ni sustituye al Antrag oficial, que se adjunta por separado.</div>
+
+  <div class="prop-actions">
+    <button type="button" class="primary" id="btn-print">🖨 Exportar PDF de la propuesta</button>
+  </div>
+</section>
+
+<div class="note-card">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+  <div>
+    <div class="note-title">Con total transparencia</div>
+    <div class="note-body">Esta pantalla es un análisis de necesidad y una propuesta orientativa, no el Antrag vinculante de Generali. La contratación real, sus condiciones exactas y el precio definitivo se formalizan en el Antrag oficial, que el asesor adjunta por separado.</div>
+  </div>
+</div>
+
+<footer class="foot">AORAES · Departamento Español · Seguros patrimoniales (VSP)<br><b>Análisis orientativo, sin validez contractual.</b></footer>
+
+<script>
+window.I18N_DE_VSP = {"Preparado para":"Erstellt für","tu cliente":"Ihr Kunde","Seguros patrimoniales":"Vermögensschutz","Vermögenssicherungspolice · Generali":"Vermögenssicherungspolice · Generali","Protección patrimonial a la medida":"Maßgeschneiderter Vermögensschutz","Antes de hablar de precio, revisamos juntos qué riesgos patrimoniales tiene sentido cubrir en tu situación real: responsabilidad civil, el contenido de tu vivienda y sus cristales. Activa solo lo que aplique.":"Bevor wir über den Preis sprechen, prüfen wir gemeinsam, welche Vermögensrisiken in Ihrer konkreten Situation sinnvoll abgesichert werden sollten: Haftpflicht, der Inhalt Ihrer Wohnung und deren Glasscheiben. Aktivieren Sie nur, was zutrifft.","🔒 Sin ningún precio en esta fase — solo el análisis de necesidad":"🔒 Kein Preis in dieser Phase — nur die Bedarfsanalyse","01 · Análisis de necesidad":"01 · Bedarfsanalyse","Activa los ramos que quieres revisar con el cliente":"Aktivieren Sie die Sparten, die Sie mit dem Kunden besprechen möchten","Cada tarjeta explica en una frase qué cubre. Los campos de configuración solo importan para la tarificación real — no cambian nada del análisis en sí.":"Jede Karte erklärt in einem Satz, was abgedeckt ist. Die Konfigurationsfelder sind nur für die tatsächliche Tarifierung relevant — sie ändern nichts an der Analyse selbst.","Ramo núcleo":"Kernsparte","Privathaftpflicht Optimal":"Privathaftpflicht Optimal","Si por un error privado causas un daño a otra persona y eres legalmente responsable, la Haftpflicht evita que ese daño salga de tu patrimonio.":"Wenn Sie durch ein privates Versehen jemand anderem einen Schaden zufügen und dafür rechtlich haften, verhindert die Haftpflicht, dass dieser Schaden aus Ihrem Vermögen bezahlt werden muss.","Selbstbehalt (franquicia por siniestro)":"Selbstbehalt (pro Schadenfall)","Lebenssituation":"Lebenssituation","Ausfalldeckung":"Ausfalldeckung","Cubre cuando el responsable del daño no puede pagar":"Greift, wenn der Schadenverursacher nicht zahlen kann","Hausrat Optimal":"Hausrat Optimal","Si se quema, entra agua, hay robo o ocurre uno de los peligros definidos, Hausrat protege los objetos de la vivienda.":"Bei Brand, Leitungswasser, Einbruch oder einer der definierten Gefahren schützt Hausrat die Gegenstände in der Wohnung.","Hausrat XXL da un paso más: protege el contenido ante muchos daños repentinos e imprevistos que una Hausrat normal no cubriría, salvo las exclusiones contractuales.":"Hausrat XXL geht einen Schritt weiter: Sie schützt den Inhalt vor vielen plötzlichen und unvorhergesehenen Schäden, die eine normale Hausrat nicht abdecken würde, vorbehaltlich der vertraglichen Ausschlüsse.","Wohnart":"Wohnart","Wohnfläche (m²)":"Wohnfläche (m²)","Weitere Elementargefahren":"Weitere Elementargefahren","Inundación, reflujo y otros riesgos naturales adicionales — la prima y el Selbstbehalt pueden depender de la clasificación ZÜRS del domicilio":"Überschwemmung, Rückstau und weitere Naturgefahren — Prämie und Selbstbehalt können von der ZÜRS-Einstufung des Wohnorts abhängen","Hausrat Optimal XXL":"Hausrat Optimal XXL","Amplía a Allgefahrendeckung — ya incluye Fahrrad Plus y Freizeit Plus, no hace falta contratarlos aparte":"Erweitert zur Allgefahrendeckung — Fahrrad Plus und Freizeit Plus sind bereits enthalten, eine separate Absicherung ist nicht nötig","Haushalt-Glas":"Haushalt-Glas","Si se rompe un cristal de la vivienda — ventana, puerta, placa vitrocerámica u otro elemento definido —, Haushalt-Glas cubre su reposición.":"Zerbricht eine Glasscheibe der Wohnung — Fenster, Tür, Kochfeld oder ein anderes definiertes Element —, übernimmt Haushalt-Glas den Ersatz.","Se cubre la misma vivienda que en Hausrat Optimal (":"Es wird dieselbe Wohnung wie bei Hausrat Optimal versichert (","Versicherungsort (dirección de la vivienda)":"Versicherungsort (Adresse der Wohnung)","Confirmar configuración y continuar a la propuesta →":"Konfiguration bestätigen und zur Vorschlag übergehen →","Activa al menos un ramo para continuar.":"Aktivieren Sie mindestens eine Sparte, um fortzufahren.","← Volver a editar la configuración":"← Zurück zur Konfiguration","02 · Propuesta":"02 · Vorschlag","Configuración confirmada — añade la prima real":"Konfiguration bestätigt — reale Prämie hinzufügen","La configuración ya no se edita aquí. Escribe la prima mensual de cada ramo según la tarificación real de Generali; la app solo suma el total.":"Die Konfiguration wird hier nicht mehr bearbeitet. Geben Sie die monatliche Prämie jeder Sparte gemäß der tatsächlichen Tarifierung von Generali ein; die App addiert nur die Summe.","Cliente":"Kunde","IBAN":"IBAN","Prima total mensual":"Monatliche Gesamtprämie","La prima la introduce el asesor a partir de la tarificación real de Generali — la app no calcula precios ni sustituye al Antrag oficial, que se adjunta por separado.":"Die Prämie wird vom Berater anhand der tatsächlichen Tarifierung von Generali eingegeben — die App berechnet keine Preise und ersetzt nicht den offiziellen Antrag, der separat beigefügt wird.","🖨 Exportar PDF de la propuesta":"🖨 Vorschlag als PDF exportieren","Con total transparencia":"Mit voller Transparenz","Esta pantalla es un análisis de necesidad y una propuesta orientativa, no el Antrag vinculante de Generali. La contratación real, sus condiciones exactas y el precio definitivo se formalizan en el Antrag oficial, que el asesor adjunta por separado.":"Dieser Bildschirm ist eine Bedarfsanalyse und ein orientierender Vorschlag, nicht der verbindliche Antrag von Generali. Der tatsächliche Vertragsabschluss, die genauen Bedingungen und der endgültige Preis werden im offiziellen Antrag festgelegt, den der Berater separat beifügt.","AORAES · Departamento Español · Seguros patrimoniales (VSP)":"AORAES · Spanische Abteilung · Vermögensschutz (VSP)","Análisis orientativo, sin validez contractual.":"Orientierende Analyse, ohne vertragliche Gültigkeit.","Propuesta de seguros patrimoniales (VSP) · ":"Vorschlag Vermögensschutz (VSP) · ","Sin configurar":"Nicht konfiguriert","Selbstbehalt":"Selbstbehalt","Wertsachen":"Wertsachen","Dirección":"Adresse","IBAN en ficha":"IBAN in Akte"};
+window.I18N_EN_VSP = {"Preparado para":"Prepared for","tu cliente":"your client","Seguros patrimoniales":"Property & liability cover","Vermögenssicherungspolice · Generali":"Vermögenssicherungspolice · Generali","Protección patrimonial a la medida":"Tailored asset protection","Antes de hablar de precio, revisamos juntos qué riesgos patrimoniales tiene sentido cubrir en tu situación real: responsabilidad civil, el contenido de tu vivienda y sus cristales. Activa solo lo que aplique.":"Before talking about price, let's review together which property risks are worth covering in your actual situation: liability, the contents of your home, and its glass. Only turn on what applies.","🔒 Sin ningún precio en esta fase — solo el análisis de necesidad":"🔒 No price at this stage — just the needs analysis","01 · Análisis de necesidad":"01 · Needs analysis","Activa los ramos que quieres revisar con el cliente":"Turn on the lines you want to review with the client","Cada tarjeta explica en una frase qué cubre. Los campos de configuración solo importan para la tarificación real — no cambian nada del análisis en sí.":"Each card explains in one sentence what it covers. The configuration fields only matter for the real pricing later — they don't change anything about the analysis itself.","Ramo núcleo":"Core line","Privathaftpflicht Optimal":"Privathaftpflicht Optimal","Si por un error privado causas un daño a otra persona y eres legalmente responsable, la Haftpflicht evita que ese daño salga de tu patrimonio.":"If a private mistake causes damage to someone else and you're legally liable, Haftpflicht keeps that damage from coming out of your own assets.","Selbstbehalt (franquicia por siniestro)":"Selbstbehalt (deductible per claim)","Lebenssituation":"Lebenssituation","Ausfalldeckung":"Ausfalldeckung","Cubre cuando el responsable del daño no puede pagar":"Covers you when the person responsible for the damage can't pay","Hausrat Optimal":"Hausrat Optimal","Si se quema, entra agua, hay robo o ocurre uno de los peligros definidos, Hausrat protege los objetos de la vivienda.":"If there's a fire, water damage, burglary, or one of the defined perils, Hausrat protects the belongings in the home.","Hausrat XXL da un paso más: protege el contenido ante muchos daños repentinos e imprevistos que una Hausrat normal no cubriría, salvo las exclusiones contractuales.":"Hausrat XXL goes a step further: it protects the contents against many sudden, unforeseen damages a standard Hausrat wouldn't cover, subject to the contractual exclusions.","Wohnart":"Wohnart","Wohnfläche (m²)":"Wohnfläche (m²)","Weitere Elementargefahren":"Weitere Elementargefahren","Inundación, reflujo y otros riesgos naturales adicionales — la prima y el Selbstbehalt pueden depender de la clasificación ZÜRS del domicilio":"Flooding, backwater and other additional natural risks — premium and Selbstbehalt can depend on the home's ZÜRS classification","Hausrat Optimal XXL":"Hausrat Optimal XXL","Amplía a Allgefahrendeckung — ya incluye Fahrrad Plus y Freizeit Plus, no hace falta contratarlos aparte":"Extends to all-risk cover — already includes Fahrrad Plus and Freizeit Plus, no need to add them separately","Haushalt-Glas":"Haushalt-Glas","Si se rompe un cristal de la vivienda — ventana, puerta, placa vitrocerámica u otro elemento definido —, Haushalt-Glas cubre su reposición.":"If a piece of glass in the home breaks — a window, door, ceramic hob, or other defined element — Haushalt-Glas covers its replacement.","Se cubre la misma vivienda que en Hausrat Optimal (":"The same home as in Hausrat Optimal is covered (","Versicherungsort (dirección de la vivienda)":"Versicherungsort (home address)","Confirmar configuración y continuar a la propuesta →":"Confirm configuration and continue to the proposal →","Activa al menos un ramo para continuar.":"Turn on at least one line to continue.","← Volver a editar la configuración":"← Back to edit the configuration","02 · Propuesta":"02 · Proposal","Configuración confirmada — añade la prima real":"Configuration confirmed — add the real premium","La configuración ya no se edita aquí. Escribe la prima mensual de cada ramo según la tarificación real de Generali; la app solo suma el total.":"The configuration is no longer editable here. Enter each line's monthly premium according to Generali's actual pricing; the app only adds up the total.","Cliente":"Client","IBAN":"IBAN","Prima total mensual":"Total monthly premium","La prima la introduce el asesor a partir de la tarificación real de Generali — la app no calcula precios ni sustituye al Antrag oficial, que se adjunta por separado.":"The premium is entered by the advisor based on Generali's real pricing — the app does not calculate prices and does not replace the official Antrag, which is attached separately.","🖨 Exportar PDF de la propuesta":"🖨 Export proposal as PDF","Con total transparencia":"With full transparency","Esta pantalla es un análisis de necesidad y una propuesta orientativa, no el Antrag vinculante de Generali. La contratación real, sus condiciones exactas y el precio definitivo se formalizan en el Antrag oficial, que el asesor adjunta por separado.":"This screen is a needs analysis and an indicative proposal, not Generali's binding Antrag. The actual contract, its exact terms, and the final price are formalized in the official Antrag, which the advisor attaches separately.","AORAES · Departamento Español · Seguros patrimoniales (VSP)":"AORAES · Spanish Department · Property & liability cover (VSP)","Análisis orientativo, sin validez contractual.":"Indicative analysis, not contractually binding.","Propuesta de seguros patrimoniales (VSP) · ":"Property & liability proposal (VSP) · ","Sin configurar":"Not configured","Selbstbehalt":"Selbstbehalt","Wertsachen":"Wertsachen","Dirección":"Address","IBAN en ficha":"IBAN on file"};
+(function(){
+  var MAP_DE=window.I18N_DE_VSP, MAP_EN=window.I18N_EN_VSP;
+  var REV_DE=(function(){var r={};for(var k in MAP_DE){if(!(MAP_DE[k] in r))r[MAP_DE[k]]=k;}return r;})();
+  var REV_EN=(function(){var r={};for(var k in MAP_EN){if(!(MAP_EN[k] in r))r[MAP_EN[k]]=k;}return r;})();
+  var lang=(function(){try{return localStorage.getItem('aoraes_lang')||'es';}catch(e){return 'es';}})();
+  var NUMRE=/\d+(?:[.,\/:]\d+)*/g;
+  function _detok(t,n){return t.replace(/\{(\d+)\}/g,function(_,i){return n[+i]!=null?n[+i]:('{'+i+'}');});}
+  function _lookup(core,map){var nums=[];var tpl=core.replace(NUMRE,function(m){nums.push(m);return '{'+(nums.length-1)+'}';});
+    if(Object.prototype.hasOwnProperty.call(map,tpl))return _detok(map[tpl],nums);
+    if(Object.prototype.hasOwnProperty.call(map,core))return map[core];
+    return null;}
+  function trStr(s,map){if(s==null)return s;var str=String(s).replace(/[\xa0  ]/g,' ');
+    var m=str.match(/^(\s*)([\s\S]*?)(\s*)$/);if(!m[2])return s;var t=_lookup(m[2],map);return t==null?s:(m[1]+t+m[3]);}
+  function trEl(root,map){if(!root)return;try{
+    var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null,false),n,l=[];while(n=w.nextNode())l.push(n);
+    l.forEach(function(tn){var v=tn.nodeValue;if(!v||!/\S/.test(v))return;if(tn.parentElement&&tn.parentElement.closest('.lang-switch'))return;var t=trStr(v,map);if(t!==v)tn.nodeValue=t;});
+    root.querySelectorAll&&root.querySelectorAll('[placeholder]').forEach(function(e){var o=e.getAttribute('placeholder'),t=trStr(o,map);if(t!==o)e.setAttribute('placeholder',t);});
+  }catch(e){}}
+  var mo=null;
+  function startObs(){if(!window.MutationObserver||mo)return;
+    mo=new MutationObserver(function(ms){if(lang!=='de'&&lang!=='en'){return;}mo.disconnect();
+      var M=(lang==='de')?MAP_DE:MAP_EN;
+      ms.forEach(function(mu){if(mu.type==='childList'){mu.addedNodes.forEach(function(nd){
+        if(nd.nodeType===1)trEl(nd,M);else if(nd.nodeType===3){var t=trStr(nd.nodeValue,M);if(t!==nd.nodeValue)nd.nodeValue=t;}});}
+        else if(mu.type==='characterData'){var t=trStr(mu.target.nodeValue,M);if(t!==mu.target.nodeValue)mu.target.nodeValue=t;}});
+      mo.observe(document.body,{childList:true,subtree:true,characterData:true});});
+    mo.observe(document.body,{childList:true,subtree:true,characterData:true});}
+  function stopObs(){if(mo){mo.disconnect();mo=null;}}
+  window.applyLang=function(l){
+    lang=(l==='de'||l==='en')?l:'es';
+    try{localStorage.setItem('aoraes_lang',lang);}catch(e){}
+    stopObs();
+    trEl(document.body,REV_DE);
+    trEl(document.body,REV_EN);
+    if(lang==='de')trEl(document.body,MAP_DE);
+    else if(lang==='en')trEl(document.body,MAP_EN);
+    if(lang==='de'||lang==='en')startObs();
+    document.querySelectorAll('[data-lang]').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-lang')===lang);});
+    try{document.documentElement.setAttribute('lang',lang);}catch(e){}
+  };
+  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-lang]');if(b){window.applyLang(b.getAttribute('data-lang'));}});
+  function boot(){ if(lang==='de'||lang==='en'){ setTimeout(function(){window.applyLang(lang);},60); }
+    document.querySelectorAll('[data-lang]').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-lang')===lang);}); }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
+<script>
+(function(){
+var $=function(id){return document.getElementById(id);};
+var eur=function(n){ n=n||0; return new Intl.NumberFormat('de-DE',{maximumFractionDigits:0}).format(Math.round(n))+' €'; };
+
+var LBL_SB={'0':'0 €','150':'150 €','300':'300 €'};
+var LBL_SIT={singles:'Singles (ohne Kinder)',paare:'Paare (ohne Kinder)',familie:'Familien/Singles (mit Kindern)'};
+var LBL_WOHNART={einfamilienhaus:'Einfamilienhaus',zweifamilienhaus:'Zweifamilienhaus',mehrfamilienhaus:'Mehrfamilienhaus',geschaeftshaus:'Wohn-/Geschäftshaus'};
+
+var R={
+  haftpflicht:{active:false, selbstbehalt:'150', lebenssituation:'singles', ausfall:false, premium:0},
+  hausrat:{active:false, wohnart:'mehrfamilienhaus', flache:60, selbstbehalt:'150', elementar:false, xxl:false, premium:0},
+  glas:{active:false, addr:'', flache:60, premium:0}
+};
+var confirmed=false;
+
+function anyActive(){ return R.haftpflicht.active||R.hausrat.active||R.glas.active; }
+
+function renderFase1(){
+  ['haftpflicht','hausrat','glas'].forEach(function(k){
+    var card=document.getElementById('card-'+k), fields=document.getElementById('fields-'+k);
+    var on=R[k].active;
+    card.classList.toggle('inactive',!on);
+    fields.classList.toggle('is-disabled',!on);
+    fields.querySelectorAll('select,input').forEach(function(el){ el.disabled=!on; });
+  });
+  var glasInherit=$('glas-inherit'), glasOwn=$('glas-own');
+  if(R.hausrat.active){
+    glasInherit.style.display='block'; glasOwn.style.display='none';
+    $('glas-inherit-wf').textContent=R.hausrat.flache;
+  } else {
+    glasInherit.style.display='none'; glasOwn.style.display=(R.glas.active?'flex':'none');
+  }
+  var xxlNote=$('xxl-note');
+  $('btn-confirm').disabled=!anyActive();
+  $('confirm-note').textContent=anyActive()?'':'Activa al menos un ramo para continuar.';
+  if(window.applyLang){ var l=(function(){try{return localStorage.getItem('aoraes_lang')||'es';}catch(e){return 'es';}})(); if(l==='de'||l==='en') setTimeout(function(){window.applyLang(l);},0); }
+}
+
+function bindToggle(toggleId,key){
+  $(toggleId).addEventListener('change',function(e){ R[key].active=e.target.checked; renderFase1(); });
+}
+bindToggle('tg-haftpflicht','haftpflicht');
+bindToggle('tg-hausrat','hausrat');
+bindToggle('tg-glas','glas');
+
+$('v-hf-sb').addEventListener('change',function(e){ R.haftpflicht.selbstbehalt=e.target.value; });
+$('v-hf-sit').addEventListener('change',function(e){ R.haftpflicht.lebenssituation=e.target.value; });
+$('v-hf-ausfall').addEventListener('change',function(e){ R.haftpflicht.ausfall=e.target.checked; });
+
+$('v-hr-wohnart').addEventListener('change',function(e){ R.hausrat.wohnart=e.target.value; });
+$('v-hr-flache').addEventListener('input',function(e){ R.hausrat.flache=parseFloat(e.target.value)||0; if(R.hausrat.active)$('glas-inherit-wf').textContent=R.hausrat.flache; });
+$('v-hr-sb').addEventListener('change',function(e){ R.hausrat.selbstbehalt=e.target.value; });
+$('v-hr-elementar').addEventListener('change',function(e){ R.hausrat.elementar=e.target.checked; });
+$('v-hr-xxl').addEventListener('change',function(e){ R.hausrat.xxl=e.target.checked; });
+
+$('v-gl-addr').addEventListener('input',function(e){ R.glas.addr=e.target.value; });
+$('v-gl-flache').addEventListener('input',function(e){ R.glas.flache=parseFloat(e.target.value)||0; });
+
+function ramoLabel(k){
+  if(k==='haftpflicht')return 'Privathaftpflicht Optimal';
+  if(k==='hausrat')return 'Hausrat Optimal'+(R.hausrat.xxl?' XXL':'');
+  if(k==='glas')return 'Haushalt-Glas';
+}
+
+function buildPropRamos(){
+  var wrap=$('prop-ramos'); var html='';
+  if(R.haftpflicht.active){
+    html+='<div class="prop-ramo" data-ramo="haftpflicht"><h4>'+ramoLabel('haftpflicht')+'</h4>'+
+      '<div class="pr-field"><span class="k">Selbstbehalt</span><span class="v">'+(LBL_SB[R.haftpflicht.selbstbehalt]||R.haftpflicht.selbstbehalt)+'</span></div>'+
+      '<div class="pr-field"><span class="k">Lebenssituation</span><span class="v">'+LBL_SIT[R.haftpflicht.lebenssituation]+'</span></div>'+
+      '<div class="pr-field"><span class="k">Ausfalldeckung</span><span class="v">'+(R.haftpflicht.ausfall?'Sí':'No')+'</span></div>'+
+      '<div class="prop-premium-row"><span class="vf-label">Prima mensual</span><div class="pp-input-wrap"><input type="number" min="0" step="1" data-prem="haftpflicht" value="'+(R.haftpflicht.premium||'')+'"><span>€</span></div></div>'+
+      '</div>';
+  }
+  if(R.hausrat.active){
+    html+='<div class="prop-ramo" data-ramo="hausrat"><h4>'+ramoLabel('hausrat')+'</h4>'+
+      '<div class="pr-field"><span class="k">Wohnart</span><span class="v">'+LBL_WOHNART[R.hausrat.wohnart]+'</span></div>'+
+      '<div class="pr-field"><span class="k">Wohnfläche (m²)</span><span class="v">'+R.hausrat.flache+'</span></div>'+
+      '<div class="pr-field"><span class="k">Selbstbehalt</span><span class="v">'+(LBL_SB[R.hausrat.selbstbehalt]||R.hausrat.selbstbehalt)+'</span></div>'+
+      '<div class="pr-field"><span class="k">Weitere Elementargefahren</span><span class="v">'+(R.hausrat.elementar?'Sí':'No')+'</span></div>'+
+      '<div class="prop-premium-row"><span class="vf-label">Prima mensual</span><div class="pp-input-wrap"><input type="number" min="0" step="1" data-prem="hausrat" value="'+(R.hausrat.premium||'')+'"><span>€</span></div></div>'+
+      '</div>';
+  }
+  if(R.glas.active){
+    var addrLine=R.hausrat.active?('Misma vivienda que Hausrat ('+R.hausrat.flache+' m²)'):(R.glas.addr||'Sin configurar');
+    html+='<div class="prop-ramo" data-ramo="glas"><h4>'+ramoLabel('glas')+'</h4>'+
+      '<div class="pr-field"><span class="k">Dirección</span><span class="v">'+esc(addrLine)+'</span></div>'+
+      '<div class="prop-premium-row"><span class="vf-label">Prima mensual</span><div class="pp-input-wrap"><input type="number" min="0" step="1" data-prem="glas" value="'+(R.glas.premium||'')+'"><span>€</span></div></div>'+
+      '</div>';
+  }
+  wrap.innerHTML=html;
+  wrap.querySelectorAll('[data-prem]').forEach(function(inp){
+    inp.addEventListener('input',function(){
+      var k=inp.getAttribute('data-prem'); R[k].premium=parseFloat(inp.value)||0; updateTotal();
+    });
+  });
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+function updateTotal(){
+  var t=0; if(R.haftpflicht.active)t+=R.haftpflicht.premium||0; if(R.hausrat.active)t+=R.hausrat.premium||0; if(R.glas.active)t+=R.glas.premium||0;
+  $('prop-total-val').textContent=eur(t);
+}
+
+$('btn-confirm').addEventListener('click',function(){
+  if(!anyActive())return;
+  confirmed=true;
+  buildPropRamos();
+  updateTotal();
+  $('ph-date').textContent=new Date().toLocaleDateString('de-DE');
+  document.getElementById('fase1').style.display='none';
+  document.getElementById('fase2').classList.add('open');
+  document.getElementById('fase2').scrollIntoView({behavior:'smooth'});
+});
+$('btn-back').addEventListener('click',function(){
+  confirmed=false;
+  document.getElementById('fase2').classList.remove('open');
+  document.getElementById('fase1').style.display='';
+  document.getElementById('fase1').scrollIntoView({behavior:'smooth'});
+});
+$('btn-print').addEventListener('click',function(){ window.print(); });
+
+renderFase1();
+
+/* ---------- Puente con la ficha del cliente (mismo contrato que jubilacion.html) ---------- */
+window.aoraesApplyClient=function(data){
+  if(!data) return null;
+  var nc=$('nav-client'), ib=$('v-iban');
+  var snap={ name:(nc?nc.textContent:null), iban:(ib?ib.value:null) };
+  if(nc && data.name) nc.textContent=data.name;
+  if(ib && data.iban && !ib.value) ib.value=data.iban;
+  return snap;
+};
+window.aoraesRestore=function(snap){
+  if(!snap) return;
+  var nc=$('nav-client'); if(nc && snap.name!=null) nc.textContent=snap.name;
+  var ib=$('v-iban'); if(ib && snap.iban!=null) ib.value=snap.iban;
+};
+window.aoraesGetScenario=function(){
+  try{
+    if(!confirmed || !anyActive()) return null;
+    var ramos=[]; var total=0;
+    if(R.haftpflicht.active){ ramos.push(ramoLabel('haftpflicht')); total+=R.haftpflicht.premium||0; }
+    if(R.hausrat.active){ ramos.push(ramoLabel('hausrat')); total+=R.hausrat.premium||0; }
+    if(R.glas.active){ ramos.push(ramoLabel('glas')); total+=R.glas.premium||0; }
+    return {
+      ramos:ramos,
+      config:JSON.parse(JSON.stringify(R)),
+      iban:($('v-iban')?$('v-iban').value:'')||null,
+      totalPremium:total,
+      savedAt:new Date().toISOString()
+    };
+  }catch(e){ return null; }
+};
+
+/* Al cargar name/iban vía nav-client, mantener sincronizado v-client-name en Fase 2 */
+(function(){
+  var nc=$('nav-client');
+  if(!nc) return;
+  var mo=new MutationObserver(function(){ var vc=$('v-client-name'); if(vc) vc.value=nc.textContent||''; });
+  mo.observe(nc,{childList:true,characterData:true,subtree:true});
+  var vc=$('v-client-name'); if(vc) vc.value=nc.textContent||'';
+})();
+})();
+</script>
+</body>
+</html>

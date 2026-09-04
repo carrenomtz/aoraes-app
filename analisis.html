@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex, nofollow">
 <title>AORAES · Análisis Financiero Personal</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -1239,6 +1238,7 @@
               <div class="pers-field"><label for="f-pers-profesion_A">Profesión / actividad</label><input id="f-pers-profesion_A" type="text" data-pers="profesion_A"></div>
               <div class="pers-field"><label for="f-pers-steuerId_A">Steuer-ID</label><input id="f-pers-steuerId_A" type="text" data-pers="steuerId_A" placeholder="11 dígitos" maxlength="11"></div>
               <div class="pers-field"><label for="f-pers-fumador_A">¿Fumador?</label><select id="f-pers-fumador_A" data-pers="fumador_A"><option value="">—</option><option>No</option><option>Sí</option></select></div>
+              <div class="pers-field full"><label for="f-pers-iban_A">IBAN</label><input id="f-pers-iban_A" type="text" data-pers="iban_A" placeholder="DE.. .... .... .... .... .." autocomplete="off"></div>
             </div>
           </div>
           <div class="pcol pcol-b" id="pcol-b">
@@ -5737,7 +5737,7 @@ window.aoraesGetClient = function () {
   function num(sel){ var s=v(sel); if(s==='') return null; var n=parseFloat(s.replace(',','.')); return isNaN(n)?null:n; }
   var suggested=null;
   try{ if(typeof window.__aoraesSuggestRetirement==='function') suggested=window.__aoraesSuggestRetirement(); }catch(e){}
-  return { name:name, age:age, retireAge:num('[data-sit="edadJub"]'), monthlyContribution:num('[data-sit="aporteJubilacion"]'), suggestedRetirement:(suggested!=null?Math.round(suggested):null) };
+  return { name:name, age:age, retireAge:num('[data-sit="edadJub"]'), monthlyContribution:num('[data-sit="aporteJubilacion"]'), suggestedRetirement:(suggested!=null?Math.round(suggested):null), iban:v('[data-pers="iban_A"]') };
 };
 </script>
 </body>

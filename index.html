@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="robots" content="noindex, nofollow">
 <title>AORAES · Herramientas del asesor</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -550,6 +549,8 @@
       <h1>AORAES</h1>
       <p class="auth-sub">Panel del asesor</p>
       <form id="auth-form">
+        <label for="auth-name" id="auth-name-label" hidden>Nombre completo</label>
+        <input type="text" id="auth-name" autocomplete="name" hidden>
         <label for="auth-email">Correo</label>
         <input type="email" id="auth-email" autocomplete="username" required>
         <label for="auth-pass">Contraseña</label>
@@ -595,6 +596,7 @@
         <button type="button" data-go="analisis">Análisis &amp; CRM</button>
         <button type="button" data-go="jubilacion">Comparador de jubilación</button>
         <button type="button" data-go="ninos">Plan Futuro</button>
+        <button type="button" data-go="vsp">Seguros patrimoniales</button>
         <button type="button" data-go="medico">Preguntas médicas</button>
         <button type="button" id="nav-inmueble">Proyecto inmobiliario</button>
         <button type="button" data-go="asesores" id="nav-asesores" hidden>Asesores</button>
@@ -654,6 +656,7 @@
       <button type="button" class="ct-link" data-go="analisis">Abrir Análisis &amp; CRM</button>
       <button type="button" class="ct-link" data-go="jubilacion">Abrir Comparador de jubilación</button>
       <button type="button" class="ct-link" data-go="ninos">Abrir Plan Futuro</button>
+      <button type="button" class="ct-link" data-go="vsp">Abrir Seguros patrimoniales</button>
       <button type="button" class="ct-link" data-go="medico">Abrir Preguntas médicas</button>
     </div>
     <div class="cock-note">Abre un cliente para ver su recorrido y la propuesta consolidada. Los datos se guardan en este dispositivo desde el módulo de Análisis.</div>
@@ -723,7 +726,7 @@
     // correo, que puede cambiar) para que perder/cambiar el correo nunca le quite el acceso de admin.
     var ADMIN_UID = 'DMDXyvqfaeQiXfb3pYmoX95vNR82';
 
-    var currentUid = null, currentProfile = null, viewingUid = null;
+    var currentUid = null, currentProfile = null, viewingUid = null, pendingSignupName = null;
     var unsubClients = null, unsubProfile = null, unsubPendingAdvisors = null, unsubRecentClients = null;
 
     function clientsCol(uid){ return collection(db, 'users', uid || viewingUid || currentUid, 'clients'); }
@@ -754,7 +757,21 @@
       },
       approveAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'approved'}).catch(function(e){ console.error('AORAES cloud: fallo al aprobar',e); }); },
       rejectAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'rechazado'}).catch(function(e){ console.error('AORAES cloud: fallo al rechazar',e); }); },
+      updateOwnName: function(name){ if(!currentUid) return Promise.resolve(); return updateDoc(profileDoc(currentUid), {name:name}).catch(function(e){ console.error('AORAES cloud: fallo al guardar el nombre',e); }); },
       countClients: function(uid){ return getDocs(collection(db,'users',uid,'clients')).then(function(snap){ var n=0; snap.forEach(function(d){ var r=(d.data()||{}).record; if(!r||!r._generic) n++; }); return n; }); },
+      // último savedAt entre los clientes del asesor — usado para ordenar la lista de asesores por
+      // quién ha trabajado más recientemente (análisis/actualización de ficha), no alfabéticamente.
+      lastActivity: function(uid){
+        return getDocs(collection(db,'users',uid,'clients')).then(function(snap){
+          var max=null;
+          snap.forEach(function(d){
+            var r=(d.data()||{}).record; if(!r||r._generic) return;
+            var t=r.savedAt?new Date(r.savedAt).getTime():0;
+            if(t && (max==null||t>max)) max=t;
+          });
+          return max;
+        }).catch(function(){ return null; });
+      },
       // Borra el perfil Y todos los clientes del asesor de la nube — no borra su acceso de inicio de
       // sesión (eso necesitaría un backend con permisos de administrador que hoy no existe), pero deja
       // su cuenta sin ningún dato: si vuelve a entrar, arrancaría de cero como un asesor nuevo pendiente.
@@ -828,12 +845,14 @@
       getDoc(pDoc).then(function(snap){
         if(!snap.exists()){
           var bootstrapAdmin = (user.uid === ADMIN_UID);
-          return setDoc(pDoc, {
+          var doc0 = {
             email: user.email,
             role: bootstrapAdmin ? 'admin' : 'advisor',
             status: bootstrapAdmin ? 'approved' : 'pending',
             requestedAt: serverTimestamp()
-          });
+          };
+          if(pendingSignupName){ doc0.name = pendingSignupName; pendingSignupName = null; }
+          return setDoc(pDoc, doc0);
         }
       }).then(function(){
         if(unsubProfile) unsubProfile();
@@ -889,9 +908,12 @@
       document.getElementById('auth-pass2-wrap').hidden = !isSignup;
       document.getElementById('auth-pass2-label').hidden = !isSignup;
       document.getElementById('auth-pass2').required = isSignup;
+      document.getElementById('auth-name').hidden = !isSignup;
+      document.getElementById('auth-name-label').hidden = !isSignup;
+      document.getElementById('auth-name').required = isSignup;
       document.getElementById('auth-forgot').hidden = isSignup;
       document.getElementById('auth-ok').hidden = true;
-      if(!isSignup) document.getElementById('auth-pass2').value = '';
+      if(!isSignup){ document.getElementById('auth-pass2').value = ''; document.getElementById('auth-name').value = ''; }
     });
     function wireEye(btnId, inputId){
       document.getElementById(btnId).addEventListener('click', function(){
@@ -915,6 +937,7 @@
       if(isSignup && pass !== document.getElementById('auth-pass2').value){
         errEl.textContent = 'Las contraseñas no coinciden — revísalas.'; errEl.hidden = false; return;
       }
+      pendingSignupName = isSignup ? document.getElementById('auth-name').value.trim() : null;
       btn.disabled = true;
       var action = isSignup ? createUserWithEmailAndPassword : signInWithEmailAndPassword;
       action(auth, email, pass).catch(function(err){
@@ -1056,8 +1079,31 @@
     function setActive(id){ try{ if(id)localStorage.setItem(ACTIVE_KEY,id); else localStorage.removeItem(ACTIVE_KEY); }catch(e){} updateActiveChip(); }
     var SOLUTIONS_KEY='aoraes_solutions_v1';
     function readSolutions(){ try{ return JSON.parse(localStorage.getItem(SOLUTIONS_KEY))||{}; }catch(e){ return {}; } }
-    function getSolution(id){ var m=readSolutions(); return (id&&m[id])?m[id]:null; }
-    function saveSolution(id,scen){ try{ var m=readSolutions(); m[id]=scen; localStorage.setItem(SOLUTIONS_KEY,JSON.stringify(m)); writeClientFile(id); }catch(e){} }
+    // Cada cliente puede tener una solución guardada por herramienta ({jubilacion:{...}, vsp:{...}}).
+    // Las fichas guardadas antes de este cambio tienen el escenario "plano" directamente en m[id]
+    // (sin sub-claves por tool) — se tratan como la solución legacy de jubilación, sin migrarlas.
+    function isNestedSolution(v){ return !!v && typeof v==='object' && (Object.prototype.hasOwnProperty.call(v,'jubilacion')||Object.prototype.hasOwnProperty.call(v,'vsp')); }
+    function getSolution(id,tool){
+      tool=tool||'jubilacion';
+      var m=readSolutions(), v=id?m[id]:null; if(!v) return null;
+      if(isNestedSolution(v)) return v[tool]||null;
+      return (tool==='jubilacion')?v:null;
+    }
+    function saveSolution(id,scen,tool){
+      tool=tool||'jubilacion';
+      try{
+        var m=readSolutions(), v=m[id];
+        var nested=isNestedSolution(v)?v:(v?{jubilacion:v}:{});
+        nested[tool]=scen; m[id]=nested;
+        localStorage.setItem(SOLUTIONS_KEY,JSON.stringify(m)); writeClientFile(id);
+      }catch(e){}
+    }
+    // Todas las soluciones guardadas de un cliente (todas las herramientas), en forma anidada
+    // {jubilacion:{...}, vsp:{...}} — para exportar/sincronizar sin perder ninguna.
+    function getAllSolutions(id){
+      var m=readSolutions(), v=id?m[id]:null; if(!v) return null;
+      return isNestedSolution(v)?v:{jubilacion:v};
+    }
     var MED_BY_CLIENT_KEY='aoraes_med_by_client_v1';
 
     /* ---------- Carpeta Clientes (respaldo real en disco) ----------
@@ -1126,7 +1172,7 @@
     function clientPayload(id){
       var rec=readLocalClientsRaw().filter(function(c){return c.id===id;})[0]; if(!rec) return null;
       var medico=null; try{ var m=JSON.parse(localStorage.getItem(MED_BY_CLIENT_KEY))||{}; medico=m[id]||null; }catch(e){}
-      return { id:id, record:rec, solution:getSolution(id)||null, medico:medico, exportedAt:new Date().toISOString() };
+      return { id:id, record:rec, solution:getAllSolutions(id)||null, medico:medico, exportedAt:new Date().toISOString() };
     }
     function writeClientFile(id){
       var payload=clientPayload(id);
@@ -1235,13 +1281,13 @@
       }catch(e){ return false; }
     }
 
-    var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, ninos:{url:'./plan-futuro.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false} };
+    var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, ninos:{url:'./plan-futuro.html',el:null,ready:false}, vsp:{url:'./vsp.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false} };
     var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames'), asesoresScr=document.getElementById('asesores');
     var stage=document.getElementById('frame-stage'), sw=document.getElementById('switch'), banner=document.getElementById('bridge-banner');
     var insEl=document.getElementById('cock-insights'), listEl=document.getElementById('cock-list');
     var searchEl=document.getElementById('cock-search'), statusEl=document.getElementById('cock-status'), sortEl=document.getElementById('cock-sort');
     var acChip=document.getElementById('active-chip'), acName=document.getElementById('ac-name');
-    var lastSig=null, pendingApply=null, pendingOpen=null, pendingSummary=null, wsId=null, wsStep='diagnostico', wsRec=null, inmSaveTimer=null, cockQuickFilter=null;
+    var lastSigByView={}, pendingApply=null, pendingOpen=null, pendingSummary=null, wsId=null, wsStep='diagnostico', wsRec=null, inmSaveTimer=null, cockQuickFilter=null;
 
     function setActiveTab(view){ var b=sw.querySelectorAll('button'); for(var i=0;i<b.length;i++)b[i].classList.toggle('active',b[i].getAttribute('data-go')===view); }
     function updateActiveChip(){ var id=getActive(); var rec=id?findClient(id):null; if(rec){ acName.textContent=rec.name||'Cliente'; acChip.classList.add('on'); } else acChip.classList.remove('on'); }
@@ -1252,7 +1298,7 @@
     function ensureFrame(view){
       if(MOD[view].el) return MOD[view].el;
       var f=document.createElement('iframe'); f.src=MOD[view].url;
-      f.title=(view==='analisis')?'Análisis financiero y CRM':(view==='jubilacion'?'Comparador de jubilación':(view==='ninos'?'Plan Futuro':'Preguntas médicas'));
+      f.title=(view==='analisis')?'Análisis financiero y CRM':(view==='jubilacion'?'Comparador de jubilación':(view==='ninos'?'Plan Futuro':(view==='vsp'?'Seguros patrimoniales':'Preguntas médicas')));
       f.addEventListener('load',function(){
         MOD[view].ready=true;
         if(view==='analisis'){ if(pendingOpen){ var o=pendingOpen; pendingOpen=null; try{o();}catch(e){} } if(pendingSummary){ var s=pendingSummary; pendingSummary=null; try{s();}catch(e){} } }
@@ -1263,21 +1309,33 @@
     }
     function callAnalisis(fn,arg){ try{ var f=MOD.analisis.el; if(f&&f.contentWindow&&f.contentWindow[fn]) return f.contentWindow[fn](arg); }catch(e){} return null; }
     function getClient(){ if(!MOD.analisis.el||!MOD.analisis.ready)return null; return callAnalisis('aoraesGetClient'); }
-    function sigOf(c){ return c?[c.name,c.age,c.retireAge,c.monthlyContribution,c.suggestedRetirement].join('|'):null; }
+    function sigOf(c){ return c?[c.name,c.age,c.retireAge,c.monthlyContribution,c.suggestedRetirement,c.iban].join('|'):null; }
     function hideBanner(){ banner.hidden=true; banner.innerHTML=''; }
-    function showBanner(data,snap){
-      var bits=[]; if(data.age!=null)bits.push(data.age+' años'); if(data.retireAge!=null)bits.push('jubilación '+data.retireAge); var mc=(data.suggestedRetirement!=null && data.suggestedRetirement>0)?data.suggestedRetirement:data.monthlyContribution; if(mc!=null)bits.push(Math.round(mc)+' €/mes'+((data.suggestedRetirement!=null && data.suggestedRetirement>0)?' sugerido a jubilación':'')); bits.push('50% Rürup · 50% Privatrente');
+    // view: 'jubilacion' (por defecto) o 'vsp' — cada herramienta puente comparte este mismo banner y
+    // guarda su propia solución en la ficha (saveSolution namespaced por tool, ver más arriba).
+    function showBanner(data,snap,view){
+      view=view||'jubilacion';
+      var bits=[]; if(data.age!=null)bits.push(data.age+' años');
+      if(view==='jubilacion'){
+        if(data.retireAge!=null)bits.push('jubilación '+data.retireAge);
+        var mc=(data.suggestedRetirement!=null && data.suggestedRetirement>0)?data.suggestedRetirement:data.monthlyContribution;
+        if(mc!=null)bits.push(Math.round(mc)+' €/mes'+((data.suggestedRetirement!=null && data.suggestedRetirement>0)?' sugerido a jubilación':''));
+        bits.push('50% Rürup · 50% Privatrente');
+      } else if(view==='vsp'){
+        if(data.iban)bits.push('IBAN en ficha');
+      }
       banner.innerHTML='<div class="bb-inner"><span class="bb-ico">&#8596;</span><span class="bb-txt">Cargado desde el CRM: <b>'+esc(data.name)+'</b>'+(bits.length?' &middot; '+bits.join(' &middot; '):'')+'</span><button type="button" class="bb-save">Guardar solución en la ficha</button><button type="button" class="bb-undo">Deshacer</button><button type="button" class="bb-close" aria-label="Cerrar">&#10005;</button></div>';
       banner.hidden=false;
       var sv=banner.querySelector('.bb-save');
-      if(sv) sv.onclick=function(){ var id=getActive(); if(!id)return; var scen=null; try{ var f=MOD.jubilacion.el; if(f&&f.contentWindow.aoraesGetScenario) scen=f.contentWindow.aoraesGetScenario(); }catch(e){} if(scen){ saveSolution(id,scen); var bumped=advanceStatusToPropuesta(id); sv.textContent=bumped?'✓ Guardada · estado → Propuesta':'✓ Guardada en la ficha'; sv.disabled=true; } else { sv.textContent='No se pudo leer el escenario'; } };
-      banner.querySelector('.bb-undo').onclick=function(){ try{ var f=MOD.jubilacion.el; if(f&&f.contentWindow.aoraesRestore)f.contentWindow.aoraesRestore(snap); }catch(e){} hideBanner(); };
+      if(sv) sv.onclick=function(){ var id=getActive(); if(!id)return; var scen=null; try{ var f=MOD[view].el; if(f&&f.contentWindow.aoraesGetScenario) scen=f.contentWindow.aoraesGetScenario(); }catch(e){} if(scen){ saveSolution(id,scen,view); var bumped=advanceStatusToPropuesta(id); sv.textContent=bumped?'✓ Guardada · estado → Propuesta':'✓ Guardada en la ficha'; sv.disabled=true; } else { sv.textContent='No se pudo leer el escenario'; } };
+      banner.querySelector('.bb-undo').onclick=function(){ try{ var f=MOD[view].el; if(f&&f.contentWindow.aoraesRestore)f.contentWindow.aoraesRestore(snap); }catch(e){} hideBanner(); };
       banner.querySelector('.bb-close').onclick=hideBanner;
     }
-    function maybeBridge(){
-      var c=getClient(), sig=sigOf(c); if(!c||!c.name||sig===lastSig)return;
-      var run=function(){ try{ var f=MOD.jubilacion.el; if(f&&f.contentWindow.aoraesApplyClient){ var snap=f.contentWindow.aoraesApplyClient(c); showBanner(c,snap); lastSig=sig; } }catch(e){} };
-      if(MOD.jubilacion.ready)run(); else pendingApply=run;
+    function maybeBridge(view){
+      view=view||'jubilacion';
+      var c=getClient(), sig=sigOf(c); if(!c||!c.name||sig===lastSigByView[view])return;
+      var run=function(){ try{ var f=MOD[view].el; if(f&&f.contentWindow.aoraesApplyClient){ var snap=f.contentWindow.aoraesApplyClient(c); showBanner(c,snap,view); lastSigByView[view]=sig; } }catch(e){} };
+      if(MOD[view].ready)run(); else pendingApply=run;
     }
 
     function show(view){
@@ -1286,7 +1344,7 @@
       screenTo('frames'); ensureFrame(view);
       for(var j in MOD){ if(MOD[j].el)MOD[j].el.style.display=(j===view)?'block':'none'; }
       setActiveTab(view); if(location.hash.slice(1)!==view)history.replaceState(null,'','#'+view);
-      if(view==='jubilacion')maybeBridge(); else hideBanner();
+      if(view==='jubilacion'||view==='vsp')maybeBridge(view); else hideBanner();
       if(view==='medico')syncMedico();
     }
 
@@ -1318,13 +1376,23 @@
       window.AORAES_CLOUD.listAdvisors().then(function(list){
         if(timedOut) return null;
         clearTimeout(timeoutId);
-        list.sort(function(a,b){ var oa=a.status==='pending'?0:1, ob=b.status==='pending'?0:1; if(oa!==ob)return oa-ob; return (a.email||'').localeCompare(b.email||''); });
         if(!list.length){ listEl.innerHTML='<div class="ase-empty">Todavía no hay asesores registrados.</div>'; return; }
         return Promise.all(list.map(function(p){
-          return window.AORAES_CLOUD.countClients(p.uid).then(function(n){ p._count=n; }).catch(function(){ p._count=null; });
+          return Promise.all([
+            window.AORAES_CLOUD.countClients(p.uid).then(function(n){ p._count=n; }).catch(function(){ p._count=null; }),
+            window.AORAES_CLOUD.lastActivity(p.uid).then(function(t){ p._lastActivity=t; }).catch(function(){ p._lastActivity=null; })
+          ]);
         })).then(function(){ return list; });
       }).then(function(list){
         if(!list) return;
+        // Orden: pendientes primero, luego por actividad más reciente (último análisis/actualización
+        // guardado en la ficha de algún cliente); sin actividad va al final, y a igualdad se desempata
+        // por nombre/email para que el orden no "baile" entre refrescos.
+        list.sort(function(a,b){
+          var oa=a.status==='pending'?0:1, ob=b.status==='pending'?0:1; if(oa!==ob)return oa-ob;
+          var ta=a._lastActivity||0, tb=b._lastActivity||0; if(ta!==tb) return tb-ta;
+          return (a.name||a.email||'').localeCompare(b.name||b.email||'');
+        });
         var viewing=window.AORAES_CLOUD.viewingUid;
         listEl.innerHTML='<div class="ase-list">'+list.map(function(p){
           var isSelf=(p.uid===window.AORAES_CLOUD.uid);
@@ -1353,7 +1421,10 @@
           }
           var menu=(!isSelf && items) ? ('<div class="ase-menu-wrap"><button type="button" class="ase-menu-btn" data-ase-menu-toggle="'+esc(p.uid)+'" aria-label="Opciones" aria-haspopup="true">⋮</button><div class="ase-menu" id="ase-menu-'+esc(p.uid)+'" hidden>'+items+'</div></div>') : '';
 
-          return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+esc(p.email||p.uid)+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+'</div><div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+'</div><div class="ase-acts">'+menu+'</div></div>';
+          var primaryLabel=esc(p.name||p.email||p.uid);
+          var subEmail=(p.name && p.email) ? '<div style="font-size:12px;color:var(--faint);font-weight:500">'+esc(p.email)+'</div>' : '';
+          var editNameBtn=isSelf ? ' <button type="button" data-ase-edit-name="1" style="background:none;border:none;color:var(--faint);cursor:pointer;font-size:12.5px;text-decoration:underline;padding:0">✏️ editar nombre</button>' : '';
+          return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+primaryLabel+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+editNameBtn+'</div>'+subEmail+'<div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+'</div><div class="ase-acts">'+menu+'</div></div>';
         }).join('')+'</div>';
       }).catch(function(e){
         clearTimeout(timeoutId);
@@ -1392,6 +1463,13 @@
       }
       else if(b.hasAttribute('data-ase-view')){ window.AORAES_CLOUD.viewAsAdvisor(b.getAttribute('data-ase-view'), b.getAttribute('data-ase-view-email')); setActive(null); show('home'); }
       else if(b.hasAttribute('data-ase-unview')){ window.AORAES_CLOUD.viewMyOwn(); setActive(null); renderAsesores(); }
+      else if(b.hasAttribute('data-ase-edit-name')){
+        var newName=prompt('¿Cómo quieres que aparezca tu nombre en la lista de asesores?');
+        if(newName===null) return;
+        newName=newName.trim();
+        if(!newName) return;
+        window.AORAES_CLOUD.updateOwnName(newName).then(renderAsesores);
+      }
     });
     document.addEventListener('click', function(e){
       if(e.target.closest('.ase-menu-wrap')) return;
@@ -2562,12 +2640,25 @@
         '<button type="button" class="ws-cta ghost" data-deep="jubilacion">Abrir en el comparador de jubilación →</button>'+
         '</div>'
       ):'';
+      // Propuesta VSP guardada (seguros patrimoniales) — segunda tarjeta independiente, en paralelo
+      // a la de jubilación, leyendo su propio slot namespaced (getSolution(id,'vsp')). Como VSP no
+      // forma parte de wsFrames, el botón abre la herramienta a nivel superior (data-open-tool), no
+      // un paso interno del workspace (data-deep).
+      var solVsp=getSolution(rec.id,'vsp');
+      var vspCard=solVsp?(
+        '<div class="ws-card"><h3>Seguros patrimoniales (VSP) guardados</h3>'+
+        '<div class="ws-field"><span class="k">Ramos configurados</span><span class="v">'+esc((solVsp.ramos||[]).join(', ')||'—')+'</span></div>'+
+        '<div class="ws-field"><span class="k">Prima total</span><span class="v">'+eur(solVsp.totalPremium)+'/mes</span></div>'+
+        '<div class="ws-field"><span class="k">Guardado</span><span class="v">'+(solVsp.savedAt?relTime(solVsp.savedAt):'—')+'</span></div>'+
+        '<button type="button" class="ws-cta ghost" data-open-tool="vsp">Abrir en Seguros patrimoniales →</button>'+
+        '</div>'
+      ):'';
       var seg='<div class="ws-card"><h3>Estado y seguimiento</h3>'+
         '<div class="ws-field"><span class="k">Estado</span><span class="v">'+st.l+'</span></div>'+
         '<div class="ws-field"><span class="k">Próxima revisión</span><span class="v">'+(rs?(rs.cls==='overdue'?'Vencida':rs.txt):'—')+'</span></div>'+
         '<div class="ws-field"><span class="k">Etiquetas</span><span class="v">'+(esc(cm.tags||'—'))+'</span></div>'+
         '<div class="ws-field"><span class="k">Guardado</span><span class="v">'+(rec.savedAt?relTime(rec.savedAt):'—')+'</span></div>'+
-        '</div>'+jubCard+'<div class="ws-card"><h3>Notas</h3><div class="seg-notes">'+(esc(cm.notes||'').trim()||'Sin notas. Edita la ficha en el módulo de Análisis.')+'</div></div>'+
+        '</div>'+jubCard+vspCard+'<div class="ws-card"><h3>Notas</h3><div class="seg-notes">'+(esc(cm.notes||'').trim()||'Sin notas. Edita la ficha en el módulo de Análisis.')+'</div></div>'+
         '<button type="button" class="ws-cta ghost" data-deep="analisis">Editar ficha en Análisis →</button>';
 
       // Perfil — ficha general + todos los datos personales de S.10 (Persona A y, si aplica, B)
@@ -2877,6 +2968,10 @@
       var bk=e.target.closest('#ws-back'); if(bk){ teardownWsFrames(); wsId=null; wsRec=null; show('home'); return; }
       var stp=e.target.closest('.ws-stepper button'); if(stp){ setStep(stp.getAttribute('data-step')); return; }
       var dp=e.target.closest('[data-deep]'); if(dp){ setStep(dp.getAttribute('data-deep')); return; }
+      // A diferencia de data-deep (pasos dentro del propio "workspace"), VSP no forma parte de
+      // wsFrames/WS_TOOL_STEPS (mismo criterio que Plan Futuro): se abre como herramienta de nivel
+      // superior vía show(), que ya hace el puente con el cliente activo (maybeBridge).
+      var ot=e.target.closest('[data-open-tool]'); if(ot){ show(ot.getAttribute('data-open-tool')); return; }
       var sv=e.target.closest('#ws-jub-save'); if(sv){ saveWsSolution(); return; }
       var un=e.target.closest('#ws-jub-undo'); if(un){ undoWsSolution(); return; }
       var rt=e.target.closest('[data-inm-rate]'); if(rt){ var card=rt.closest('.inm-card'); var inp=card&&card.querySelector('[data-inm-field="interesPrestamo"]'); if(inp){ inp.value=rt.getAttribute('data-inm-rate'); inp.dispatchEvent(new Event('input',{bubbles:true})); } return; }
