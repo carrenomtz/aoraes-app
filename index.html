@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow">
 <title>AORAES · Herramientas del asesor</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -759,19 +760,6 @@
       rejectAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'rechazado'}).catch(function(e){ console.error('AORAES cloud: fallo al rechazar',e); }); },
       updateOwnName: function(name){ if(!currentUid) return Promise.resolve(); return updateDoc(profileDoc(currentUid), {name:name}).catch(function(e){ console.error('AORAES cloud: fallo al guardar el nombre',e); }); },
       countClients: function(uid){ return getDocs(collection(db,'users',uid,'clients')).then(function(snap){ var n=0; snap.forEach(function(d){ var r=(d.data()||{}).record; if(!r||!r._generic) n++; }); return n; }); },
-      // último savedAt entre los clientes del asesor — usado para ordenar la lista de asesores por
-      // quién ha trabajado más recientemente (análisis/actualización de ficha), no alfabéticamente.
-      lastActivity: function(uid){
-        return getDocs(collection(db,'users',uid,'clients')).then(function(snap){
-          var max=null;
-          snap.forEach(function(d){
-            var r=(d.data()||{}).record; if(!r||r._generic) return;
-            var t=r.savedAt?new Date(r.savedAt).getTime():0;
-            if(t && (max==null||t>max)) max=t;
-          });
-          return max;
-        }).catch(function(){ return null; });
-      },
       // Borra el perfil Y todos los clientes del asesor de la nube — no borra su acceso de inicio de
       // sesión (eso necesitaría un backend con permisos de administrador que hoy no existe), pero deja
       // su cuenta sin ningún dato: si vuelve a entrar, arrancaría de cero como un asesor nuevo pendiente.
@@ -855,6 +843,10 @@
           return setDoc(pDoc, doc0);
         }
       }).then(function(){
+        // Se registra en cada inicio de sesión (no solo en el alta) para poder ordenar y mostrar
+        // a los asesores por conexión más reciente en vez de por fecha de registro. No se espera
+        // a que termine ni bloquea el resto del flujo si las reglas aún no lo permiten.
+        updateDoc(pDoc, {lastLoginAt: serverTimestamp()}).catch(function(e){ console.error('AORAES cloud: fallo al registrar el último login', e); });
         if(unsubProfile) unsubProfile();
         unsubProfile = onSnapshot(pDoc, function(snap){
           currentProfile = snap.data() || null;
@@ -1352,8 +1344,8 @@
        Solo lo ve el admin (nav-asesores permanece hidden para el resto vía aoraes-profile-update).
        Lee/escribe directo contra window.AORAES_CLOUD — sin duplicar el modelo de datos del módulo Firebase. */
     var STATUS_LABEL={pending:'Pendiente',approved:'Aprobado',rechazado:'Restringido'};
-    function fmtRequested(ts){
-      try{ var d=ts&&ts.toDate?ts.toDate():null; if(!d)return ''; return 'Solicitado '+relTime(d.toISOString()); }catch(e){ return ''; }
+    function fmtLastLogin(ts){
+      try{ var d=ts&&ts.toDate?ts.toDate():null; if(!d)return 'Sin conexión registrada'; return 'Última conexión '+relTime(d.toISOString()); }catch(e){ return ''; }
     }
     var asesoresTimeoutId=null;
     function renderAsesores(){
@@ -1378,19 +1370,18 @@
         clearTimeout(timeoutId);
         if(!list.length){ listEl.innerHTML='<div class="ase-empty">Todavía no hay asesores registrados.</div>'; return; }
         return Promise.all(list.map(function(p){
-          return Promise.all([
-            window.AORAES_CLOUD.countClients(p.uid).then(function(n){ p._count=n; }).catch(function(){ p._count=null; }),
-            window.AORAES_CLOUD.lastActivity(p.uid).then(function(t){ p._lastActivity=t; }).catch(function(){ p._lastActivity=null; })
-          ]);
+          return window.AORAES_CLOUD.countClients(p.uid).then(function(n){ p._count=n; }).catch(function(){ p._count=null; });
         })).then(function(){ return list; });
       }).then(function(list){
         if(!list) return;
-        // Orden: pendientes primero, luego por actividad más reciente (último análisis/actualización
-        // guardado en la ficha de algún cliente); sin actividad va al final, y a igualdad se desempata
-        // por nombre/email para que el orden no "baile" entre refrescos.
+        // Orden: pendientes primero, luego por inicio de sesión más reciente (lastLoginAt, que se
+        // actualiza en cada login — ver ensureProfileAndListen); sin conexión registrada va al final,
+        // y a igualdad se desempata por nombre/email para que el orden no "baile" entre refrescos.
         list.sort(function(a,b){
           var oa=a.status==='pending'?0:1, ob=b.status==='pending'?0:1; if(oa!==ob)return oa-ob;
-          var ta=a._lastActivity||0, tb=b._lastActivity||0; if(ta!==tb) return tb-ta;
+          var ta=(a.lastLoginAt&&a.lastLoginAt.toDate)?a.lastLoginAt.toDate().getTime():0;
+          var tb=(b.lastLoginAt&&b.lastLoginAt.toDate)?b.lastLoginAt.toDate().getTime():0;
+          if(ta!==tb) return tb-ta;
           return (a.name||a.email||'').localeCompare(b.name||b.email||'');
         });
         var viewing=window.AORAES_CLOUD.viewingUid;
@@ -1400,8 +1391,8 @@
           var badges='<span class="ase-badge '+statusCls+'">'+(STATUS_LABEL[p.status]||p.status||'—')+'</span>';
           if(p.role==='admin') badges+=' <span class="ase-badge admin">Admin</span>';
           var countTxt=(p._count==null)?'':(p._count+' cliente'+(p._count===1?'':'s'));
-          var reqTxt=fmtRequested(p.requestedAt);
-          var metaLine=[countTxt,reqTxt].filter(Boolean).join(' · ');
+          var loginTxt=fmtLastLogin(p.lastLoginAt);
+          var metaLine=[countTxt,loginTxt].filter(Boolean).join(' · ');
 
           var items='';
           if(p.status!=='approved') items+='<button type="button" data-ase-approve="'+esc(p.uid)+'">✓ Aprobar</button>';
