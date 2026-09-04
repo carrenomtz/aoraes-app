@@ -82,6 +82,24 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .vf-note{font-size:.74rem;color:var(--slate);line-height:1.5}
 .vf-inherit{font-size:.83rem;color:var(--ink);background:var(--cream);border-radius:8px;padding:.6rem .8rem}
 
+.vsp-riskblock{display:flex;flex-direction:column;gap:.7rem;padding:1rem 1.1rem;background:#fbfaf7;border:1px solid var(--mist);border-radius:12px}
+.vsp-riskblock.is-disabled{opacity:.38;pointer-events:none}
+.vsp-risk-title{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:.1rem}
+.vf-flag-row{display:flex;flex-direction:column;gap:.5rem}
+.vf-flag-row .vf-toggle-row{gap:1rem}
+.vsp-flag{display:none;font-size:.78rem;color:#7a5a12;background:#fdf3dd;border-left:3px solid #d9a441;border-radius:0 8px 8px 0;padding:.55rem .75rem;line-height:1.5}
+.vsp-flag.show{display:block}
+.vsp-excl-list{margin:0;padding-left:1.1rem;font-size:.76rem;color:var(--slate);line-height:1.7}
+.vf-flag-inline{display:inline-block;margin-left:.5rem;width:90px}
+
+.contract-terms{display:flex;flex-wrap:wrap;gap:1.5rem;background:var(--cream);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.5rem}
+.contract-terms .pf{display:flex;flex-direction:column;gap:.35rem;min-width:180px;flex:1}
+.contract-terms label{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);font-weight:600}
+.contract-terms select{font-family:var(--sans);font-size:.92rem;padding:.5rem .65rem;border:1px solid var(--mist);border-radius:8px;background:#fff;color:var(--ink)}
+.prop-total-rows{display:flex;flex-direction:column;gap:.4rem}
+.pt-row{display:flex;justify-content:space-between;font-size:.85rem;color:rgba(255,255,255,.75)}
+.pt-row.pt-final{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--gold-light);margin-top:.4rem;padding-top:.6rem;border-top:1px solid rgba(255,255,255,.18)}
+
 .vsp-confirm-bar{display:flex;flex-direction:column;align-items:center;gap:.75rem;margin-top:2.5rem;text-align:center}
 .vsp-confirm-btn{background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:var(--midnight);border:none;border-radius:12px;padding:1.05rem 2.1rem;font-family:var(--sans);font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:var(--shadow-lg);transition:transform .15s}
 .vsp-confirm-btn:hover:not(:disabled){transform:translateY(-1px)}
@@ -134,6 +152,8 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
   .prop-total{background:#fff;color:var(--navy);border:1px solid var(--mist)}
   .prop-total .lbl{color:var(--slate)}
   .prop-total .val{color:var(--navy)}
+  .pt-row{color:var(--slate)}
+  .pt-row.pt-final{color:var(--navy);border-top-color:var(--mist)}
 }
 </style>
 </head>
@@ -175,6 +195,50 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
         <label class="vsp-switch"><input type="checkbox" id="tg-haftpflicht"><span class="track"></span><span class="thumb"></span></label>
       </div>
       <div class="vsp-quote">Si por un error privado causas un daño a otra persona y eres legalmente responsable, la Haftpflicht evita que ese daño salga de tu patrimonio.</div>
+      <div class="vsp-riskblock is-disabled" id="risk-haftpflicht">
+        <div class="vsp-risk-title">Preguntas clave para el asesor</div>
+        <div class="vf-flag-row">
+          <div class="vf-toggle-row"><span class="vf-label">¿Tiene mascota más allá de un animal pequeño doméstico, o un caballo?</span>
+            <label class="vsp-switch small"><input type="checkbox" id="v-hf-pets"><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="vsp-flag" id="flag-hf-pets">Revisa si necesita Tierhalterhaftpflicht aparte — la Privathaftpflicht no lo cubre.</div>
+        </div>
+        <div class="vf-flag-row">
+          <div class="vf-toggle-row"><span class="vf-label">¿Tiene una embarcación más allá de un bote de remo/inflable?</span>
+            <label class="vsp-switch small"><input type="checkbox" id="v-hf-boat"><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="vsp-flag" id="flag-hf-boat">Revisa si necesita Wassersporthaftpflicht aparte.</div>
+        </div>
+        <div class="vf-flag-row">
+          <div class="vf-toggle-row"><span class="vf-label">¿Trabaja en el sector público (docente, sanidad, policía, Bundeswehr)?</span>
+            <label class="vsp-switch small"><input type="checkbox" id="v-hf-public"><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="vsp-flag" id="flag-hf-public">Considera ofrecer Diensthaftpflicht — cobertura distinta, con frecuencia olvidada.</div>
+        </div>
+        <div class="vf-flag-row">
+          <div class="vf-toggle-row"><span class="vf-label">¿Ingresos por actividad secundaria por cuenta propia superiores a 22.000 €/año?</span>
+            <label class="vsp-switch small"><input type="checkbox" id="v-hf-sideincome"><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="vsp-flag" id="flag-hf-sideincome">Por encima de 22.000 €/año esta actividad queda fuera de la Privathaftpflicht Optimal.</div>
+        </div>
+        <div class="vf-flag-row">
+          <div class="vf-toggle-row"><span class="vf-label">¿Estancia en el extranjero superior a 3 años (5 en Optimal)?</span>
+            <label class="vsp-switch small"><input type="checkbox" id="v-hf-foreign"><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="vsp-flag" id="flag-hf-foreign">La cobertura decae pasado ese plazo — revisa si necesita un acuerdo especial.</div>
+        </div>
+        <div class="vf-flag-row">
+          <div class="vf-row"><span class="vf-label">Presupuesto de proyecto de construcción/reforma (0 = sin proyecto)</span>
+            <input type="number" id="v-hf-building" min="0" step="1000" value="0">
+          </div>
+          <div class="vsp-flag" id="flag-hf-building">Supera el límite de 30.000 € de Bauherrenhaftpflicht incluido — hace falta contratar la cobertura completa aparte, no solo el exceso.</div>
+        </div>
+        <ul class="vsp-excl-list">
+          <li>Benzinklausel: un daño con vehículo, incluso en un aparcamiento privado, no lo cubre la Privathaftpflicht.</li>
+          <li>Objetos prestados: 150 € de franquicia, ~3 meses de cobertura, salvo aparatos médicos o tablets del colegio.</li>
+          <li>El daño entre personas de la misma póliza está excluido.</li>
+        </ul>
+      </div>
       <div class="vsp-fields is-disabled" id="fields-haftpflicht">
         <div class="vf-row"><span class="vf-label">Selbstbehalt (franquicia por siniestro)</span>
           <select id="v-hf-sb">
@@ -187,7 +251,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
           <select id="v-hf-sit">
             <option value="singles">Singles (ohne Kinder)</option>
             <option value="paare">Paare (ohne Kinder)</option>
-            <option value="familie">Familien/Singles (mit Kindern)</option>
+            <option value="familie">Familien/Singles (mit Kindern) — incluye monoparentales</option>
           </select>
         </div>
         <div class="vf-toggle-row"><span class="vf-label">Ausfalldeckung <span class="vf-note" style="display:block">Cubre cuando el responsable del daño no puede pagar</span></span>
@@ -202,6 +266,30 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
         <label class="vsp-switch"><input type="checkbox" id="tg-hausrat"><span class="track"></span><span class="thumb"></span></label>
       </div>
       <div class="vsp-quote" id="hausrat-quote">Si se quema, entra agua, hay robo o ocurre uno de los peligros definidos, Hausrat protege los objetos de la vivienda.</div>
+      <div class="vsp-riskblock is-disabled" id="risk-hausrat">
+        <div class="vsp-risk-title">Preguntas clave para el asesor</div>
+        <div class="vf-flag-row">
+          <div class="vf-row"><span class="vf-label">Valor total de objetos de valor (efectivo, documentos, joyas, etc.)</span>
+            <input type="number" id="v-hr-wertsachen" min="0" step="500" value="0">
+          </div>
+          <div class="vsp-flag" id="flag-hr-wertsachen">Supera el límite general de 50.000 € — puede hacer falta ampliar el límite con medidas de seguridad adicionales.</div>
+          <div class="vf-note">Sublímites reales fuera de caja fuerte: 3.000 € efectivo · 5.000 € documentos · 50.000 € joyas.</div>
+        </div>
+        <div class="vf-flag-row">
+          <div class="vf-toggle-row"><span class="vf-label">¿Tiene bicicleta eléctrica (E-Bike) de valor relevante?</span>
+            <label class="vsp-switch small"><input type="checkbox" id="v-hr-ebike"><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="vf-row" id="wrap-hr-ebikevalue" style="display:none"><span class="vf-label">Valor del E-Bike (€)</span>
+            <input type="number" id="v-hr-ebikevalue" min="0" step="100" value="0">
+          </div>
+          <div class="vsp-flag" id="flag-hr-ebike">Sin Hausrat Optimal XXL, el robo de la bici fuera de casa tiene cobertura limitada — con XXL, cobertura ilimitada.</div>
+        </div>
+        <ul class="vsp-excl-list">
+          <li>Robo de bicicleta fuera de casa no está cubierto por la VHB base — solo con Optimal ilimitado o recargo.</li>
+          <li>Vandalismo solo se cubre tras un allanamiento probado.</li>
+          <li>Elementarschäden excluye expresamente Sturmflut y Grundwasser, aunque suene incluido.</li>
+        </ul>
+      </div>
       <div class="vsp-fields is-disabled" id="fields-hausrat">
         <div class="vf-row"><span class="vf-label">Wohnart</span>
           <select id="v-hr-wohnart">
@@ -213,6 +301,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
         </div>
         <div class="vf-row"><span class="vf-label">Wohnfläche (m²)</span>
           <input type="number" id="v-hr-flache" min="10" max="500" step="1" value="60">
+          <div class="vf-note">Incluye buhardillas o sótanos acondicionados y cualquier ampliación reciente — es la base real del cálculo de la prima.</div>
         </div>
         <div class="vf-row"><span class="vf-label">Selbstbehalt (franquicia por siniestro)</span>
           <select id="v-hr-sb">
@@ -223,6 +312,15 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
         </div>
         <div class="vf-toggle-row"><span class="vf-label">Weitere Elementargefahren <span class="vf-note" style="display:block">Inundación, reflujo y otros riesgos naturales adicionales — la prima y el Selbstbehalt pueden depender de la clasificación ZÜRS del domicilio</span></span>
           <label class="vsp-switch small"><input type="checkbox" id="v-hr-elementar"><span class="track"></span><span class="thumb"></span></label>
+        </div>
+        <div class="vf-row" id="wrap-hr-zurs" style="display:none"><span class="vf-label">Zona ZÜRS del domicilio</span>
+          <select id="v-hr-zurs">
+            <option value="GK1">GK1</option>
+            <option value="GK2">GK2</option>
+            <option value="GK3">GK3</option>
+            <option value="GK4">GK4</option>
+          </select>
+          <div class="vf-note" id="zurs-note">Selbstbehalt sugerido para Elementargefahren en GK1: 500 €.</div>
         </div>
         <div class="vf-toggle-row"><span class="vf-label">Hausrat Optimal XXL <span class="vf-note" id="xxl-note" style="display:block">Amplía a Allgefahrendeckung — ya incluye Fahrrad Plus y Freizeit Plus, no hace falta contratarlos aparte</span></span>
           <label class="vsp-switch small"><input type="checkbox" id="v-hr-xxl"><span class="track"></span><span class="thumb"></span></label>
@@ -236,6 +334,12 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
         <label class="vsp-switch"><input type="checkbox" id="tg-glas"><span class="track"></span><span class="thumb"></span></label>
       </div>
       <div class="vsp-quote">Si se rompe un cristal de la vivienda — ventana, puerta, placa vitrocerámica u otro elemento definido —, Haushalt-Glas cubre su reposición.</div>
+      <div class="vsp-riskblock is-disabled" id="risk-glas">
+        <ul class="vsp-excl-list">
+          <li>Arañazos no están cubiertos — solo roturas de espesor completo.</li>
+          <li>El daño que un cristal roto causa a OTRAS cosas no lo cubre Glas — eso lo cubre Hausrat o Wohngebäude.</li>
+        </ul>
+      </div>
       <div class="vsp-fields is-disabled" id="fields-glas">
         <div class="vf-inherit" id="glas-inherit">Se cubre la misma vivienda que en Hausrat Optimal (<span id="glas-inherit-wf">60</span> m²).</div>
         <div id="glas-own" style="display:none;flex-direction:column;gap:.95rem">
@@ -245,6 +349,48 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
           <div class="vf-row"><span class="vf-label">Wohnfläche (m²)</span>
             <input type="number" id="v-gl-flache" min="10" max="500" step="1" value="60">
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vsp-card inactive" id="card-wohngebaude" data-card="wohngebaude">
+      <div class="vsp-card-head">
+        <div><div class="vsp-card-sub">Extensión para propietarios</div><div class="vsp-card-title">Wohngebäude Optimal</div></div>
+        <label class="vsp-switch"><input type="checkbox" id="tg-wohngebaude"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+      <div class="vsp-quote">A diferencia de Hausrat (el contenido), Wohngebäude protege el edificio mismo — incendio, agua de tuberías, tormenta y granizo, con extensiones opcionales de riesgos naturales.</div>
+      <div class="vsp-riskblock is-disabled" id="risk-wohngebaude">
+        <div class="vsp-risk-title">Preguntas clave para el asesor</div>
+        <div class="vf-flag-row">
+          <div class="vf-toggle-row"><span class="vf-label">¿Tiene instalación fotovoltaica?</span>
+            <label class="vsp-switch small"><input type="checkbox" id="v-wg-pv"><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="vsp-flag" id="flag-wg-pv">La Photovoltaikversicherung no se contrata sola — se añade sobre este contrato de Wohngebäude.</div>
+        </div>
+        <ul class="vsp-excl-list">
+          <li>Wiederherstellungsklausel: pago a valor nuevo solo si se reconstruye en el mismo sitio.</li>
+          <li>Se necesita el consentimiento del acreedor hipotecario para pagar o cancelar la póliza si hay Grundschuld.</li>
+        </ul>
+      </div>
+      <div class="vsp-fields is-disabled" id="fields-wohngebaude">
+        <div class="vf-row"><span class="vf-label">Wohnart</span>
+          <select id="v-wg-wohnart">
+            <option value="einfamilienhaus" selected>Einfamilienhaus</option>
+            <option value="zweifamilienhaus">Zweifamilienhaus</option>
+          </select>
+        </div>
+        <div class="vf-row"><span class="vf-label">Selbstbehalt (franquicia por siniestro)</span>
+          <select id="v-wg-sb">
+            <option value="0">0 €</option>
+            <option value="100" selected>100 €</option>
+            <option value="300">300 €</option>
+          </select>
+        </div>
+        <div class="vf-toggle-row"><span class="vf-label">Weitere Elementargefahren <span class="vf-note" style="display:block">Inundación, reflujo, terremoto — requisito previo para la extensión XXL</span></span>
+          <label class="vsp-switch small"><input type="checkbox" id="v-wg-elementar"><span class="track"></span><span class="thumb"></span></label>
+        </div>
+        <div class="vf-toggle-row"><span class="vf-label">Wohngebäude Optimal XXL <span class="vf-note" style="display:block">Amplía a Allgefahrendeckung, incluye viento por debajo de fuerza 8, vandalismo y torpeza propia</span></span>
+          <label class="vsp-switch small"><input type="checkbox" id="v-wg-xxl"><span class="track"></span><span class="thumb"></span></label>
         </div>
       </div>
     </div>
@@ -271,10 +417,34 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
     <div class="pf"><label>IBAN</label><input type="text" id="v-iban" placeholder="DE.. .... .... .... .... .." autocomplete="off"></div>
   </div>
 
+  <div class="contract-terms">
+    <div class="pf"><label>Duración del contrato</label>
+      <select id="v-contract-years">
+        <option value="3">3 años</option>
+        <option value="5" selected>5 años</option>
+      </select>
+    </div>
+    <div class="pf"><label>Frecuencia de pago</label>
+      <select id="v-payment-freq">
+        <option value="mensual" selected>Mensual</option>
+        <option value="semestral">Semestral</option>
+        <option value="anual">Anual</option>
+      </select>
+    </div>
+  </div>
+
   <div id="prop-ramos"></div>
 
-  <div class="prop-total"><span class="lbl">Prima total mensual</span><span class="val" id="prop-total-val">0 €</span></div>
-  <div class="prop-disclaimer">La prima la introduce el asesor a partir de la tarificación real de Generali — la app no calcula precios ni sustituye al Antrag oficial, que se adjunta por separado.</div>
+  <div class="prop-total">
+    <div class="prop-total-rows">
+      <div class="pt-row"><span>Subtotal</span><span id="pt-subtotal">0 €</span></div>
+      <div class="pt-row"><span id="pt-kundenbonus-lbl">Kundenbonus (0 %)</span><span id="pt-kundenbonus">− 0 €</span></div>
+      <div class="pt-row"><span id="pt-paymentbonus-lbl">Zahlungsbonus (0 %)</span><span id="pt-paymentbonus">− 0 €</span></div>
+      <div class="pt-row" id="pt-surcharge-row" style="display:none"><span id="pt-surcharge-lbl">Recargo por duración (+10 %)</span><span id="pt-surcharge">+ 0 €</span></div>
+      <div class="pt-row pt-final"><span>Total mensual</span><span id="prop-total-val">0 €</span></div>
+    </div>
+  </div>
+  <div class="prop-disclaimer">La prima la introduce el asesor a partir de la tarificación real de Generali — la app no calcula precios ni sustituye al Antrag oficial, que se adjunta por separado. El Kundenbonus, el Zahlungsbonus y el recargo por duración siguen las reglas tarifarias reales de Generali (PK 700).</div>
 
   <div class="prop-actions">
     <button type="button" class="primary" id="btn-print">🖨 Exportar PDF de la propuesta</button>
@@ -292,8 +462,8 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 <footer class="foot">AORAES · Departamento Español · Seguros patrimoniales (VSP)<br><b>Análisis orientativo, sin validez contractual.</b></footer>
 
 <script>
-window.I18N_DE_VSP = {"Preparado para":"Erstellt für","tu cliente":"Ihr Kunde","Seguros patrimoniales":"Vermögensschutz","Vermögenssicherungspolice · Generali":"Vermögenssicherungspolice · Generali","Protección patrimonial a la medida":"Maßgeschneiderter Vermögensschutz","Antes de hablar de precio, revisamos juntos qué riesgos patrimoniales tiene sentido cubrir en tu situación real: responsabilidad civil, el contenido de tu vivienda y sus cristales. Activa solo lo que aplique.":"Bevor wir über den Preis sprechen, prüfen wir gemeinsam, welche Vermögensrisiken in Ihrer konkreten Situation sinnvoll abgesichert werden sollten: Haftpflicht, der Inhalt Ihrer Wohnung und deren Glasscheiben. Aktivieren Sie nur, was zutrifft.","🔒 Sin ningún precio en esta fase — solo el análisis de necesidad":"🔒 Kein Preis in dieser Phase — nur die Bedarfsanalyse","01 · Análisis de necesidad":"01 · Bedarfsanalyse","Activa los ramos que quieres revisar con el cliente":"Aktivieren Sie die Sparten, die Sie mit dem Kunden besprechen möchten","Cada tarjeta explica en una frase qué cubre. Los campos de configuración solo importan para la tarificación real — no cambian nada del análisis en sí.":"Jede Karte erklärt in einem Satz, was abgedeckt ist. Die Konfigurationsfelder sind nur für die tatsächliche Tarifierung relevant — sie ändern nichts an der Analyse selbst.","Ramo núcleo":"Kernsparte","Privathaftpflicht Optimal":"Privathaftpflicht Optimal","Si por un error privado causas un daño a otra persona y eres legalmente responsable, la Haftpflicht evita que ese daño salga de tu patrimonio.":"Wenn Sie durch ein privates Versehen jemand anderem einen Schaden zufügen und dafür rechtlich haften, verhindert die Haftpflicht, dass dieser Schaden aus Ihrem Vermögen bezahlt werden muss.","Selbstbehalt (franquicia por siniestro)":"Selbstbehalt (pro Schadenfall)","Lebenssituation":"Lebenssituation","Ausfalldeckung":"Ausfalldeckung","Cubre cuando el responsable del daño no puede pagar":"Greift, wenn der Schadenverursacher nicht zahlen kann","Hausrat Optimal":"Hausrat Optimal","Si se quema, entra agua, hay robo o ocurre uno de los peligros definidos, Hausrat protege los objetos de la vivienda.":"Bei Brand, Leitungswasser, Einbruch oder einer der definierten Gefahren schützt Hausrat die Gegenstände in der Wohnung.","Hausrat XXL da un paso más: protege el contenido ante muchos daños repentinos e imprevistos que una Hausrat normal no cubriría, salvo las exclusiones contractuales.":"Hausrat XXL geht einen Schritt weiter: Sie schützt den Inhalt vor vielen plötzlichen und unvorhergesehenen Schäden, die eine normale Hausrat nicht abdecken würde, vorbehaltlich der vertraglichen Ausschlüsse.","Wohnart":"Wohnart","Wohnfläche (m²)":"Wohnfläche (m²)","Weitere Elementargefahren":"Weitere Elementargefahren","Inundación, reflujo y otros riesgos naturales adicionales — la prima y el Selbstbehalt pueden depender de la clasificación ZÜRS del domicilio":"Überschwemmung, Rückstau und weitere Naturgefahren — Prämie und Selbstbehalt können von der ZÜRS-Einstufung des Wohnorts abhängen","Hausrat Optimal XXL":"Hausrat Optimal XXL","Amplía a Allgefahrendeckung — ya incluye Fahrrad Plus y Freizeit Plus, no hace falta contratarlos aparte":"Erweitert zur Allgefahrendeckung — Fahrrad Plus und Freizeit Plus sind bereits enthalten, eine separate Absicherung ist nicht nötig","Haushalt-Glas":"Haushalt-Glas","Si se rompe un cristal de la vivienda — ventana, puerta, placa vitrocerámica u otro elemento definido —, Haushalt-Glas cubre su reposición.":"Zerbricht eine Glasscheibe der Wohnung — Fenster, Tür, Kochfeld oder ein anderes definiertes Element —, übernimmt Haushalt-Glas den Ersatz.","Se cubre la misma vivienda que en Hausrat Optimal (":"Es wird dieselbe Wohnung wie bei Hausrat Optimal versichert (","Versicherungsort (dirección de la vivienda)":"Versicherungsort (Adresse der Wohnung)","Confirmar configuración y continuar a la propuesta →":"Konfiguration bestätigen und zur Vorschlag übergehen →","Activa al menos un ramo para continuar.":"Aktivieren Sie mindestens eine Sparte, um fortzufahren.","← Volver a editar la configuración":"← Zurück zur Konfiguration","02 · Propuesta":"02 · Vorschlag","Configuración confirmada — añade la prima real":"Konfiguration bestätigt — reale Prämie hinzufügen","La configuración ya no se edita aquí. Escribe la prima mensual de cada ramo según la tarificación real de Generali; la app solo suma el total.":"Die Konfiguration wird hier nicht mehr bearbeitet. Geben Sie die monatliche Prämie jeder Sparte gemäß der tatsächlichen Tarifierung von Generali ein; die App addiert nur die Summe.","Cliente":"Kunde","IBAN":"IBAN","Prima total mensual":"Monatliche Gesamtprämie","La prima la introduce el asesor a partir de la tarificación real de Generali — la app no calcula precios ni sustituye al Antrag oficial, que se adjunta por separado.":"Die Prämie wird vom Berater anhand der tatsächlichen Tarifierung von Generali eingegeben — die App berechnet keine Preise und ersetzt nicht den offiziellen Antrag, der separat beigefügt wird.","🖨 Exportar PDF de la propuesta":"🖨 Vorschlag als PDF exportieren","Con total transparencia":"Mit voller Transparenz","Esta pantalla es un análisis de necesidad y una propuesta orientativa, no el Antrag vinculante de Generali. La contratación real, sus condiciones exactas y el precio definitivo se formalizan en el Antrag oficial, que el asesor adjunta por separado.":"Dieser Bildschirm ist eine Bedarfsanalyse und ein orientierender Vorschlag, nicht der verbindliche Antrag von Generali. Der tatsächliche Vertragsabschluss, die genauen Bedingungen und der endgültige Preis werden im offiziellen Antrag festgelegt, den der Berater separat beifügt.","AORAES · Departamento Español · Seguros patrimoniales (VSP)":"AORAES · Spanische Abteilung · Vermögensschutz (VSP)","Análisis orientativo, sin validez contractual.":"Orientierende Analyse, ohne vertragliche Gültigkeit.","Propuesta de seguros patrimoniales (VSP) · ":"Vorschlag Vermögensschutz (VSP) · ","Sin configurar":"Nicht konfiguriert","Selbstbehalt":"Selbstbehalt","Wertsachen":"Wertsachen","Dirección":"Adresse","IBAN en ficha":"IBAN in Akte"};
-window.I18N_EN_VSP = {"Preparado para":"Prepared for","tu cliente":"your client","Seguros patrimoniales":"Property & liability cover","Vermögenssicherungspolice · Generali":"Vermögenssicherungspolice · Generali","Protección patrimonial a la medida":"Tailored asset protection","Antes de hablar de precio, revisamos juntos qué riesgos patrimoniales tiene sentido cubrir en tu situación real: responsabilidad civil, el contenido de tu vivienda y sus cristales. Activa solo lo que aplique.":"Before talking about price, let's review together which property risks are worth covering in your actual situation: liability, the contents of your home, and its glass. Only turn on what applies.","🔒 Sin ningún precio en esta fase — solo el análisis de necesidad":"🔒 No price at this stage — just the needs analysis","01 · Análisis de necesidad":"01 · Needs analysis","Activa los ramos que quieres revisar con el cliente":"Turn on the lines you want to review with the client","Cada tarjeta explica en una frase qué cubre. Los campos de configuración solo importan para la tarificación real — no cambian nada del análisis en sí.":"Each card explains in one sentence what it covers. The configuration fields only matter for the real pricing later — they don't change anything about the analysis itself.","Ramo núcleo":"Core line","Privathaftpflicht Optimal":"Privathaftpflicht Optimal","Si por un error privado causas un daño a otra persona y eres legalmente responsable, la Haftpflicht evita que ese daño salga de tu patrimonio.":"If a private mistake causes damage to someone else and you're legally liable, Haftpflicht keeps that damage from coming out of your own assets.","Selbstbehalt (franquicia por siniestro)":"Selbstbehalt (deductible per claim)","Lebenssituation":"Lebenssituation","Ausfalldeckung":"Ausfalldeckung","Cubre cuando el responsable del daño no puede pagar":"Covers you when the person responsible for the damage can't pay","Hausrat Optimal":"Hausrat Optimal","Si se quema, entra agua, hay robo o ocurre uno de los peligros definidos, Hausrat protege los objetos de la vivienda.":"If there's a fire, water damage, burglary, or one of the defined perils, Hausrat protects the belongings in the home.","Hausrat XXL da un paso más: protege el contenido ante muchos daños repentinos e imprevistos que una Hausrat normal no cubriría, salvo las exclusiones contractuales.":"Hausrat XXL goes a step further: it protects the contents against many sudden, unforeseen damages a standard Hausrat wouldn't cover, subject to the contractual exclusions.","Wohnart":"Wohnart","Wohnfläche (m²)":"Wohnfläche (m²)","Weitere Elementargefahren":"Weitere Elementargefahren","Inundación, reflujo y otros riesgos naturales adicionales — la prima y el Selbstbehalt pueden depender de la clasificación ZÜRS del domicilio":"Flooding, backwater and other additional natural risks — premium and Selbstbehalt can depend on the home's ZÜRS classification","Hausrat Optimal XXL":"Hausrat Optimal XXL","Amplía a Allgefahrendeckung — ya incluye Fahrrad Plus y Freizeit Plus, no hace falta contratarlos aparte":"Extends to all-risk cover — already includes Fahrrad Plus and Freizeit Plus, no need to add them separately","Haushalt-Glas":"Haushalt-Glas","Si se rompe un cristal de la vivienda — ventana, puerta, placa vitrocerámica u otro elemento definido —, Haushalt-Glas cubre su reposición.":"If a piece of glass in the home breaks — a window, door, ceramic hob, or other defined element — Haushalt-Glas covers its replacement.","Se cubre la misma vivienda que en Hausrat Optimal (":"The same home as in Hausrat Optimal is covered (","Versicherungsort (dirección de la vivienda)":"Versicherungsort (home address)","Confirmar configuración y continuar a la propuesta →":"Confirm configuration and continue to the proposal →","Activa al menos un ramo para continuar.":"Turn on at least one line to continue.","← Volver a editar la configuración":"← Back to edit the configuration","02 · Propuesta":"02 · Proposal","Configuración confirmada — añade la prima real":"Configuration confirmed — add the real premium","La configuración ya no se edita aquí. Escribe la prima mensual de cada ramo según la tarificación real de Generali; la app solo suma el total.":"The configuration is no longer editable here. Enter each line's monthly premium according to Generali's actual pricing; the app only adds up the total.","Cliente":"Client","IBAN":"IBAN","Prima total mensual":"Total monthly premium","La prima la introduce el asesor a partir de la tarificación real de Generali — la app no calcula precios ni sustituye al Antrag oficial, que se adjunta por separado.":"The premium is entered by the advisor based on Generali's real pricing — the app does not calculate prices and does not replace the official Antrag, which is attached separately.","🖨 Exportar PDF de la propuesta":"🖨 Export proposal as PDF","Con total transparencia":"With full transparency","Esta pantalla es un análisis de necesidad y una propuesta orientativa, no el Antrag vinculante de Generali. La contratación real, sus condiciones exactas y el precio definitivo se formalizan en el Antrag oficial, que el asesor adjunta por separado.":"This screen is a needs analysis and an indicative proposal, not Generali's binding Antrag. The actual contract, its exact terms, and the final price are formalized in the official Antrag, which the advisor attaches separately.","AORAES · Departamento Español · Seguros patrimoniales (VSP)":"AORAES · Spanish Department · Property & liability cover (VSP)","Análisis orientativo, sin validez contractual.":"Indicative analysis, not contractually binding.","Propuesta de seguros patrimoniales (VSP) · ":"Property & liability proposal (VSP) · ","Sin configurar":"Not configured","Selbstbehalt":"Selbstbehalt","Wertsachen":"Wertsachen","Dirección":"Address","IBAN en ficha":"IBAN on file"};
+window.I18N_DE_VSP = {"Preparado para":"Erstellt für","tu cliente":"Ihr Kunde","Seguros patrimoniales":"Vermögensschutz","Vermögenssicherungspolice · Generali":"Vermögenssicherungspolice · Generali","Protección patrimonial a la medida":"Maßgeschneiderter Vermögensschutz","Antes de hablar de precio, revisamos juntos qué riesgos patrimoniales tiene sentido cubrir en tu situación real: responsabilidad civil, el contenido de tu vivienda y sus cristales. Activa solo lo que aplique.":"Bevor wir über den Preis sprechen, prüfen wir gemeinsam, welche Vermögensrisiken in Ihrer konkreten Situation sinnvoll abgesichert werden sollten: Haftpflicht, der Inhalt Ihrer Wohnung und deren Glasscheiben. Aktivieren Sie nur, was zutrifft.","🔒 Sin ningún precio en esta fase — solo el análisis de necesidad":"🔒 Kein Preis in dieser Phase — nur die Bedarfsanalyse","01 · Análisis de necesidad":"01 · Bedarfsanalyse","Activa los ramos que quieres revisar con el cliente":"Aktivieren Sie die Sparten, die Sie mit dem Kunden besprechen möchten","Cada tarjeta explica en una frase qué cubre. Los campos de configuración solo importan para la tarificación real — no cambian nada del análisis en sí.":"Jede Karte erklärt in einem Satz, was abgedeckt ist. Die Konfigurationsfelder sind nur für die tatsächliche Tarifierung relevant — sie ändern nichts an der Analyse selbst.","Ramo núcleo":"Kernsparte","Privathaftpflicht Optimal":"Privathaftpflicht Optimal","Si por un error privado causas un daño a otra persona y eres legalmente responsable, la Haftpflicht evita que ese daño salga de tu patrimonio.":"Wenn Sie durch ein privates Versehen jemand anderem einen Schaden zufügen und dafür rechtlich haften, verhindert die Haftpflicht, dass dieser Schaden aus Ihrem Vermögen bezahlt werden muss.","Selbstbehalt (franquicia por siniestro)":"Selbstbehalt (pro Schadenfall)","Lebenssituation":"Lebenssituation","Ausfalldeckung":"Ausfalldeckung","Cubre cuando el responsable del daño no puede pagar":"Greift, wenn der Schadenverursacher nicht zahlen kann","Hausrat Optimal":"Hausrat Optimal","Si se quema, entra agua, hay robo o ocurre uno de los peligros definidos, Hausrat protege los objetos de la vivienda.":"Bei Brand, Leitungswasser, Einbruch oder einer der definierten Gefahren schützt Hausrat die Gegenstände in der Wohnung.","Hausrat XXL da un paso más: protege el contenido ante muchos daños repentinos e imprevistos que una Hausrat normal no cubriría, salvo las exclusiones contractuales.":"Hausrat XXL geht einen Schritt weiter: Sie schützt den Inhalt vor vielen plötzlichen und unvorhergesehenen Schäden, die eine normale Hausrat nicht abdecken würde, vorbehaltlich der vertraglichen Ausschlüsse.","Wohnart":"Wohnart","Wohnfläche (m²)":"Wohnfläche (m²)","Weitere Elementargefahren":"Weitere Elementargefahren","Inundación, reflujo y otros riesgos naturales adicionales — la prima y el Selbstbehalt pueden depender de la clasificación ZÜRS del domicilio":"Überschwemmung, Rückstau und weitere Naturgefahren — Prämie und Selbstbehalt können von der ZÜRS-Einstufung des Wohnorts abhängen","Hausrat Optimal XXL":"Hausrat Optimal XXL","Amplía a Allgefahrendeckung — ya incluye Fahrrad Plus y Freizeit Plus, no hace falta contratarlos aparte":"Erweitert zur Allgefahrendeckung — Fahrrad Plus und Freizeit Plus sind bereits enthalten, eine separate Absicherung ist nicht nötig","Haushalt-Glas":"Haushalt-Glas","Si se rompe un cristal de la vivienda — ventana, puerta, placa vitrocerámica u otro elemento definido —, Haushalt-Glas cubre su reposición.":"Zerbricht eine Glasscheibe der Wohnung — Fenster, Tür, Kochfeld oder ein anderes definiertes Element —, übernimmt Haushalt-Glas den Ersatz.","Se cubre la misma vivienda que en Hausrat Optimal (":"Es wird dieselbe Wohnung wie bei Hausrat Optimal versichert (","Versicherungsort (dirección de la vivienda)":"Versicherungsort (Adresse der Wohnung)","Confirmar configuración y continuar a la propuesta →":"Konfiguration bestätigen und zur Vorschlag übergehen →","Activa al menos un ramo para continuar.":"Aktivieren Sie mindestens eine Sparte, um fortzufahren.","← Volver a editar la configuración":"← Zurück zur Konfiguration","02 · Propuesta":"02 · Vorschlag","Configuración confirmada — añade la prima real":"Konfiguration bestätigt — reale Prämie hinzufügen","La configuración ya no se edita aquí. Escribe la prima mensual de cada ramo según la tarificación real de Generali; la app solo suma el total.":"Die Konfiguration wird hier nicht mehr bearbeitet. Geben Sie die monatliche Prämie jeder Sparte gemäß der tatsächlichen Tarifierung von Generali ein; die App addiert nur die Summe.","Cliente":"Kunde","IBAN":"IBAN","Prima total mensual":"Monatliche Gesamtprämie","La prima la introduce el asesor a partir de la tarificación real de Generali — la app no calcula precios ni sustituye al Antrag oficial, que se adjunta por separado.":"Die Prämie wird vom Berater anhand der tatsächlichen Tarifierung von Generali eingegeben — die App berechnet keine Preise und ersetzt nicht den offiziellen Antrag, der separat beigefügt wird.","🖨 Exportar PDF de la propuesta":"🖨 Vorschlag als PDF exportieren","Con total transparencia":"Mit voller Transparenz","Esta pantalla es un análisis de necesidad y una propuesta orientativa, no el Antrag vinculante de Generali. La contratación real, sus condiciones exactas y el precio definitivo se formalizan en el Antrag oficial, que el asesor adjunta por separado.":"Dieser Bildschirm ist eine Bedarfsanalyse und ein orientierender Vorschlag, nicht der verbindliche Antrag von Generali. Der tatsächliche Vertragsabschluss, die genauen Bedingungen und der endgültige Preis werden im offiziellen Antrag festgelegt, den der Berater separat beifügt.","AORAES · Departamento Español · Seguros patrimoniales (VSP)":"AORAES · Spanische Abteilung · Vermögensschutz (VSP)","Análisis orientativo, sin validez contractual.":"Orientierende Analyse, ohne vertragliche Gültigkeit.","Propuesta de seguros patrimoniales (VSP) · ":"Vorschlag Vermögensschutz (VSP) · ","Sin configurar":"Nicht konfiguriert","Selbstbehalt":"Selbstbehalt","Wertsachen":"Wertsachen","Dirección":"Adresse","IBAN en ficha":"IBAN in Akte","Preguntas clave para el asesor":"Wichtige Fragen für den Berater","¿Tiene mascota más allá de un animal pequeño doméstico, o un caballo?":"Hat der Kunde ein Haustier über ein kleines Haustier hinaus, oder ein Pferd?","Revisa si necesita Tierhalterhaftpflicht aparte — la Privathaftpflicht no lo cubre.":"Prüfen Sie, ob eine separate Tierhalterhaftpflicht nötig ist — die Privathaftpflicht deckt das nicht ab.","¿Tiene una embarcación más allá de un bote de remo/inflable?":"Hat der Kunde ein Boot, das über ein Ruder-/Schlauchboot hinausgeht?","Revisa si necesita Wassersporthaftpflicht aparte.":"Prüfen Sie, ob eine separate Wassersporthaftpflicht nötig ist.","¿Trabaja en el sector público (docente, sanidad, policía, Bundeswehr)?":"Arbeitet der Kunde im öffentlichen Dienst (Lehrer, Gesundheitswesen, Polizei, Bundeswehr)?","Considera ofrecer Diensthaftpflicht — cobertura distinta, con frecuencia olvidada.":"Erwägen Sie, eine Diensthaftpflicht anzubieten — ein eigenständiger, oft übersehener Baustein.","¿Ingresos por actividad secundaria por cuenta propia superiores a 22.000 €/año?":"Einkünfte aus nebenberuflicher selbstständiger Tätigkeit über 22.000 €/Jahr?","Por encima de 22.000 €/año esta actividad queda fuera de la Privathaftpflicht Optimal.":"Oberhalb von 22.000 €/Jahr ist diese Tätigkeit nicht mehr über die Privathaftpflicht Optimal abgedeckt.","¿Estancia en el extranjero superior a 3 años (5 en Optimal)?":"Auslandsaufenthalt länger als 3 Jahre (5 Jahre bei Optimal)?","La cobertura decae pasado ese plazo — revisa si necesita un acuerdo especial.":"Der Versicherungsschutz erlischt nach dieser Frist — prüfen Sie, ob eine Sondervereinbarung nötig ist.","Presupuesto de proyecto de construcción/reforma (0 = sin proyecto)":"Budget für Bau-/Umbauprojekt (0 = kein Projekt)","Supera el límite de 30.000 € de Bauherrenhaftpflicht incluido — hace falta contratar la cobertura completa aparte, no solo el exceso.":"Übersteigt die enthaltene Grenze von 30.000 € der Bauherrenhaftpflicht — es muss der vollständige Schutz separat abgeschlossen werden, nicht nur der übersteigende Betrag.","Benzinklausel: un daño con vehículo, incluso en un aparcamiento privado, no lo cubre la Privathaftpflicht.":"Benzinklausel: Ein Fahrzeugschaden, auch auf einem privaten Parkplatz, ist nicht über die Privathaftpflicht abgedeckt.","Objetos prestados: 150 € de franquicia, ~3 meses de cobertura, salvo aparatos médicos o tablets del colegio.":"Geliehene Gegenstände: 150 € Selbstbehalt, ca. 3 Monate Deckung, außer bei medizinischen Geräten oder Schul-Tablets.","El daño entre personas de la misma póliza está excluido.":"Schäden zwischen Personen desselben Vertrags sind ausgeschlossen.","Familien/Singles (mit Kindern) — incluye monoparentales":"Familien/Singles (mit Kindern) — inklusive Alleinerziehende","Valor total de objetos de valor (efectivo, documentos, joyas, etc.)":"Gesamtwert der Wertsachen (Bargeld, Dokumente, Schmuck usw.)","Supera el límite general de 50.000 € — puede hacer falta ampliar el límite con medidas de seguridad adicionales.":"Übersteigt die allgemeine Grenze von 50.000 € — die Grenze kann mit zusätzlichen Sicherheitsmaßnahmen erhöht werden.","Sublímites reales fuera de caja fuerte: 3.000 € efectivo · 5.000 € documentos · 50.000 € joyas.":"Reale Unterlimits außerhalb eines Safes: 3.000 € Bargeld · 5.000 € Dokumente · 50.000 € Schmuck.","¿Tiene bicicleta eléctrica (E-Bike) de valor relevante?":"Hat der Kunde ein E-Bike von relevantem Wert?","Valor del E-Bike (€)":"Wert des E-Bikes (€)","Sin Hausrat Optimal XXL, el robo de la bici fuera de casa tiene cobertura limitada — con XXL, cobertura ilimitada.":"Ohne Hausrat Optimal XXL ist der Fahrraddiebstahl außerhalb der Wohnung nur begrenzt gedeckt — mit XXL unbegrenzt.","Con Hausrat Optimal XXL, la bici tiene cobertura ilimitada.":"Mit Hausrat Optimal XXL ist das Fahrrad unbegrenzt gedeckt.","Robo de bicicleta fuera de casa no está cubierto por la VHB base — solo con Optimal ilimitado o recargo.":"Fahrraddiebstahl außerhalb der Wohnung ist in der Basis-VHB nicht gedeckt — nur mit Optimal unbegrenzt oder gegen Beitragszuschlag.","Vandalismo solo se cubre tras un allanamiento probado.":"Vandalismus ist nur nach nachgewiesenem Einbruch gedeckt.","Elementarschäden excluye expresamente Sturmflut y Grundwasser, aunque suene incluido.":"Elementarschäden schließt Sturmflut und Grundwasser ausdrücklich aus, auch wenn es enthalten klingt.","Incluye buhardillas o sótanos acondicionados y cualquier ampliación reciente — es la base real del cálculo de la prima.":"Schließt ausgebaute Dachböden oder Keller sowie kürzliche Erweiterungen ein — das ist die reale Grundlage der Prämienberechnung.","Zona ZÜRS del domicilio":"ZÜRS-Zone des Wohnorts","Selbstbehalt sugerido para Elementargefahren en GK1: 500 €.":"Empfohlener Selbstbehalt für Elementargefahren in GK1: 500 €.","Selbstbehalt sugerido para Elementargefahren en GK2: 2.000 €.":"Empfohlener Selbstbehalt für Elementargefahren in GK2: 2.000 €.","Selbstbehalt sugerido para Elementargefahren en GK3: 5.000 €.":"Empfohlener Selbstbehalt für Elementargefahren in GK3: 5.000 €.","Selbstbehalt sugerido para Elementargefahren en GK4: 5.000 €.":"Empfohlener Selbstbehalt für Elementargefahren in GK4: 5.000 €.","Arañazos no están cubiertos — solo roturas de espesor completo.":"Kratzer sind nicht gedeckt — nur Brüche über die volle Dicke.","El daño que un cristal roto causa a OTRAS cosas no lo cubre Glas — eso lo cubre Hausrat o Wohngebäude.":"Der Schaden, den zerbrochenes Glas an ANDEREN Gegenständen verursacht, ist nicht über Glas gedeckt — das deckt Hausrat oder Wohngebäude.","Extensión para propietarios":"Erweiterung für Eigentümer","A diferencia de Hausrat (el contenido), Wohngebäude protege el edificio mismo — incendio, agua de tuberías, tormenta y granizo, con extensiones opcionales de riesgos naturales.":"Anders als Hausrat (der Inhalt) schützt Wohngebäude das Gebäude selbst — Feuer, Leitungswasser, Sturm und Hagel, mit optionalen Erweiterungen für Naturgefahren.","¿Tiene instalación fotovoltaica?":"Hat der Kunde eine Photovoltaikanlage?","La Photovoltaikversicherung no se contrata sola — se añade sobre este contrato de Wohngebäude.":"Die Photovoltaikversicherung wird nicht eigenständig abgeschlossen — sie wird zu diesem Wohngebäude-Vertrag hinzugefügt.","Wiederherstellungsklausel: pago a valor nuevo solo si se reconstruye en el mismo sitio.":"Wiederherstellungsklausel: Neuwertentschädigung nur bei Wiederaufbau am gleichen Ort.","Se necesita el consentimiento del acreedor hipotecario para pagar o cancelar la póliza si hay Grundschuld.":"Bei bestehender Grundschuld ist die Zustimmung des Grundschuldgläubigers zur Auszahlung oder Kündigung nötig.","Inundación, reflujo, terremoto — requisito previo para la extensión XXL":"Überschwemmung, Rückstau, Erdbeben — Voraussetzung für die XXL-Erweiterung","Amplía a Allgefahrendeckung, incluye viento por debajo de fuerza 8, vandalismo y torpeza propia":"Erweitert zur Allgefahrendeckung, umfasst Wind unter Stärke 8, Vandalismus und eigene Ungeschicklichkeit","Duración del contrato":"Vertragslaufzeit","3 años":"3 Jahre","5 años":"5 Jahre","Frecuencia de pago":"Zahlweise","Mensual":"Monatlich","Semestral":"Halbjährlich","Anual":"Jährlich","Subtotal":"Zwischensumme","Kundenbonus ({0} %)":"Kundenbonus ({0} %)","Zahlungsbonus ({0} %)":"Zahlungsbonus ({0} %)","Recargo por duración (+10 %)":"Laufzeitzuschlag (+10 %)","Total mensual":"Monatliche Gesamtsumme","La prima la introduce el asesor a partir de la tarificación real de Generali — la app no calcula precios ni sustituye al Antrag oficial, que se adjunta por separado. El Kundenbonus, el Zahlungsbonus y el recargo por duración siguen las reglas tarifarias reales de Generali (PK 700).":"Die Prämie wird vom Berater anhand der tatsächlichen Tarifierung von Generali eingegeben — die App berechnet keine Preise und ersetzt nicht den offiziellen Antrag, der separat beigefügt wird. Kundenbonus, Zahlungsbonus und Laufzeitzuschlag folgen den realen Tarifregeln von Generali (PK 700).","Prima mensual":"Monatliche Prämie","Sí":"Ja","No":"Nein","Misma vivienda que Hausrat ({0} m²)":"Gleiche Wohnung wie bei Hausrat ({0} m²)"};
+window.I18N_EN_VSP = {"Preparado para":"Prepared for","tu cliente":"your client","Seguros patrimoniales":"Property & liability cover","Vermögenssicherungspolice · Generali":"Vermögenssicherungspolice · Generali","Protección patrimonial a la medida":"Tailored asset protection","Antes de hablar de precio, revisamos juntos qué riesgos patrimoniales tiene sentido cubrir en tu situación real: responsabilidad civil, el contenido de tu vivienda y sus cristales. Activa solo lo que aplique.":"Before talking about price, let's review together which property risks are worth covering in your actual situation: liability, the contents of your home, and its glass. Only turn on what applies.","🔒 Sin ningún precio en esta fase — solo el análisis de necesidad":"🔒 No price at this stage — just the needs analysis","01 · Análisis de necesidad":"01 · Needs analysis","Activa los ramos que quieres revisar con el cliente":"Turn on the lines you want to review with the client","Cada tarjeta explica en una frase qué cubre. Los campos de configuración solo importan para la tarificación real — no cambian nada del análisis en sí.":"Each card explains in one sentence what it covers. The configuration fields only matter for the real pricing later — they don't change anything about the analysis itself.","Ramo núcleo":"Core line","Privathaftpflicht Optimal":"Privathaftpflicht Optimal","Si por un error privado causas un daño a otra persona y eres legalmente responsable, la Haftpflicht evita que ese daño salga de tu patrimonio.":"If a private mistake causes damage to someone else and you're legally liable, Haftpflicht keeps that damage from coming out of your own assets.","Selbstbehalt (franquicia por siniestro)":"Selbstbehalt (deductible per claim)","Lebenssituation":"Lebenssituation","Ausfalldeckung":"Ausfalldeckung","Cubre cuando el responsable del daño no puede pagar":"Covers you when the person responsible for the damage can't pay","Hausrat Optimal":"Hausrat Optimal","Si se quema, entra agua, hay robo o ocurre uno de los peligros definidos, Hausrat protege los objetos de la vivienda.":"If there's a fire, water damage, burglary, or one of the defined perils, Hausrat protects the belongings in the home.","Hausrat XXL da un paso más: protege el contenido ante muchos daños repentinos e imprevistos que una Hausrat normal no cubriría, salvo las exclusiones contractuales.":"Hausrat XXL goes a step further: it protects the contents against many sudden, unforeseen damages a standard Hausrat wouldn't cover, subject to the contractual exclusions.","Wohnart":"Wohnart","Wohnfläche (m²)":"Wohnfläche (m²)","Weitere Elementargefahren":"Weitere Elementargefahren","Inundación, reflujo y otros riesgos naturales adicionales — la prima y el Selbstbehalt pueden depender de la clasificación ZÜRS del domicilio":"Flooding, backwater and other additional natural risks — premium and Selbstbehalt can depend on the home's ZÜRS classification","Hausrat Optimal XXL":"Hausrat Optimal XXL","Amplía a Allgefahrendeckung — ya incluye Fahrrad Plus y Freizeit Plus, no hace falta contratarlos aparte":"Extends to all-risk cover — already includes Fahrrad Plus and Freizeit Plus, no need to add them separately","Haushalt-Glas":"Haushalt-Glas","Si se rompe un cristal de la vivienda — ventana, puerta, placa vitrocerámica u otro elemento definido —, Haushalt-Glas cubre su reposición.":"If a piece of glass in the home breaks — a window, door, ceramic hob, or other defined element — Haushalt-Glas covers its replacement.","Se cubre la misma vivienda que en Hausrat Optimal (":"The same home as in Hausrat Optimal is covered (","Versicherungsort (dirección de la vivienda)":"Versicherungsort (home address)","Confirmar configuración y continuar a la propuesta →":"Confirm configuration and continue to the proposal →","Activa al menos un ramo para continuar.":"Turn on at least one line to continue.","← Volver a editar la configuración":"← Back to edit the configuration","02 · Propuesta":"02 · Proposal","Configuración confirmada — añade la prima real":"Configuration confirmed — add the real premium","La configuración ya no se edita aquí. Escribe la prima mensual de cada ramo según la tarificación real de Generali; la app solo suma el total.":"The configuration is no longer editable here. Enter each line's monthly premium according to Generali's actual pricing; the app only adds up the total.","Cliente":"Client","IBAN":"IBAN","Prima total mensual":"Total monthly premium","La prima la introduce el asesor a partir de la tarificación real de Generali — la app no calcula precios ni sustituye al Antrag oficial, que se adjunta por separado.":"The premium is entered by the advisor based on Generali's real pricing — the app does not calculate prices and does not replace the official Antrag, which is attached separately.","🖨 Exportar PDF de la propuesta":"🖨 Export proposal as PDF","Con total transparencia":"With full transparency","Esta pantalla es un análisis de necesidad y una propuesta orientativa, no el Antrag vinculante de Generali. La contratación real, sus condiciones exactas y el precio definitivo se formalizan en el Antrag oficial, que el asesor adjunta por separado.":"This screen is a needs analysis and an indicative proposal, not Generali's binding Antrag. The actual contract, its exact terms, and the final price are formalized in the official Antrag, which the advisor attaches separately.","AORAES · Departamento Español · Seguros patrimoniales (VSP)":"AORAES · Spanish Department · Property & liability cover (VSP)","Análisis orientativo, sin validez contractual.":"Indicative analysis, not contractually binding.","Propuesta de seguros patrimoniales (VSP) · ":"Property & liability proposal (VSP) · ","Sin configurar":"Not configured","Selbstbehalt":"Selbstbehalt","Wertsachen":"Wertsachen","Dirección":"Address","IBAN en ficha":"IBAN on file","Preguntas clave para el asesor":"Key questions for the advisor","¿Tiene mascota más allá de un animal pequeño doméstico, o un caballo?":"Does the client have a pet beyond a small domestic animal, or a horse?","Revisa si necesita Tierhalterhaftpflicht aparte — la Privathaftpflicht no lo cubre.":"Check whether a separate Tierhalterhaftpflicht is needed — Privathaftpflicht doesn't cover this.","¿Tiene una embarcación más allá de un bote de remo/inflable?":"Does the client have a boat beyond a rowing/inflatable craft?","Revisa si necesita Wassersporthaftpflicht aparte.":"Check whether a separate Wassersporthaftpflicht is needed.","¿Trabaja en el sector público (docente, sanidad, policía, Bundeswehr)?":"Does the client work in the public sector (teacher, healthcare, police, Bundeswehr)?","Considera ofrecer Diensthaftpflicht — cobertura distinta, con frecuencia olvidada.":"Consider offering Diensthaftpflicht — a distinct, often-overlooked line.","¿Ingresos por actividad secundaria por cuenta propia superiores a 22.000 €/año?":"Income from self-employed side activity above 22,000 €/year?","Por encima de 22.000 €/año esta actividad queda fuera de la Privathaftpflicht Optimal.":"Above 22,000 €/year this activity falls outside Privathaftpflicht Optimal.","¿Estancia en el extranjero superior a 3 años (5 en Optimal)?":"Foreign stay longer than 3 years (5 years under Optimal)?","La cobertura decae pasado ese plazo — revisa si necesita un acuerdo especial.":"Coverage lapses after that period — check whether a special arrangement is needed.","Presupuesto de proyecto de construcción/reforma (0 = sin proyecto)":"Building/renovation project budget (0 = no project)","Supera el límite de 30.000 € de Bauherrenhaftpflicht incluido — hace falta contratar la cobertura completa aparte, no solo el exceso.":"Exceeds the included 30,000 € Bauherrenhaftpflicht limit — the full cover needs to be arranged separately, not just the excess.","Benzinklausel: un daño con vehículo, incluso en un aparcamiento privado, no lo cubre la Privathaftpflicht.":"Benzinklausel: vehicle-related damage, even in a private parking lot, isn't covered by Privathaftpflicht.","Objetos prestados: 150 € de franquicia, ~3 meses de cobertura, salvo aparatos médicos o tablets del colegio.":"Borrowed items: 150 € deductible, ~3 months of cover, except medical devices or school tablets.","El daño entre personas de la misma póliza está excluido.":"Damage between people on the same policy is excluded.","Familien/Singles (mit Kindern) — incluye monoparentales":"Familien/Singles (mit Kindern) — includes single parents","Valor total de objetos de valor (efectivo, documentos, joyas, etc.)":"Total value of valuables (cash, documents, jewelry, etc.)","Supera el límite general de 50.000 € — puede hacer falta ampliar el límite con medidas de seguridad adicionales.":"Exceeds the general 50,000 € limit — the limit can be raised with additional security measures.","Sublímites reales fuera de caja fuerte: 3.000 € efectivo · 5.000 € documentos · 50.000 € joyas.":"Real sub-limits outside a safe: 3,000 € cash · 5,000 € documents · 50,000 € jewelry.","¿Tiene bicicleta eléctrica (E-Bike) de valor relevante?":"Does the client have an e-bike of significant value?","Valor del E-Bike (€)":"E-Bike value (€)","Sin Hausrat Optimal XXL, el robo de la bici fuera de casa tiene cobertura limitada — con XXL, cobertura ilimitada.":"Without Hausrat Optimal XXL, bike theft away from home has limited cover — with XXL, unlimited.","Con Hausrat Optimal XXL, la bici tiene cobertura ilimitada.":"With Hausrat Optimal XXL, the bike has unlimited cover.","Robo de bicicleta fuera de casa no está cubierto por la VHB base — solo con Optimal ilimitado o recargo.":"Bike theft away from home isn't covered by base VHB — only with unlimited Optimal cover or a surcharge.","Vandalismo solo se cubre tras un allanamiento probado.":"Vandalism is only covered after a proven break-in.","Elementarschäden excluye expresamente Sturmflut y Grundwasser, aunque suene incluido.":"Elementarschäden explicitly excludes Sturmflut and Grundwasser, even though it sounds included.","Incluye buhardillas o sótanos acondicionados y cualquier ampliación reciente — es la base real del cálculo de la prima.":"Includes converted attics or basements and any recent extension — it's the real basis for the premium calculation.","Zona ZÜRS del domicilio":"ZÜRS zone of the home","Selbstbehalt sugerido para Elementargefahren en GK1: 500 €.":"Suggested Selbstbehalt for Elementargefahren in GK1: 500 €.","Selbstbehalt sugerido para Elementargefahren en GK2: 2.000 €.":"Suggested Selbstbehalt for Elementargefahren in GK2: 2,000 €.","Selbstbehalt sugerido para Elementargefahren en GK3: 5.000 €.":"Suggested Selbstbehalt for Elementargefahren in GK3: 5,000 €.","Selbstbehalt sugerido para Elementargefahren en GK4: 5.000 €.":"Suggested Selbstbehalt for Elementargefahren in GK4: 5,000 €.","Arañazos no están cubiertos — solo roturas de espesor completo.":"Scratches aren't covered — only full-thickness breaks.","El daño que un cristal roto causa a OTRAS cosas no lo cubre Glas — eso lo cubre Hausrat o Wohngebäude.":"Damage that broken glass causes to OTHER things isn't covered by Glas — that's covered by Hausrat or Wohngebäude.","Extensión para propietarios":"Extension for homeowners","A diferencia de Hausrat (el contenido), Wohngebäude protege el edificio mismo — incendio, agua de tuberías, tormenta y granizo, con extensiones opcionales de riesgos naturales.":"Unlike Hausrat (the contents), Wohngebäude protects the building itself — fire, water from pipes, storm and hail, with optional natural-hazard extensions.","¿Tiene instalación fotovoltaica?":"Does the client have a photovoltaic system?","La Photovoltaikversicherung no se contrata sola — se añade sobre este contrato de Wohngebäude.":"Photovoltaikversicherung isn't sold on its own — it's added on top of this Wohngebäude contract.","Wiederherstellungsklausel: pago a valor nuevo solo si se reconstruye en el mismo sitio.":"Wiederherstellungsklausel: new-value payout only if rebuilt on the same site.","Se necesita el consentimiento del acreedor hipotecario para pagar o cancelar la póliza si hay Grundschuld.":"If there's a Grundschuld, the mortgage lender's consent is needed to pay out or cancel the policy.","Inundación, reflujo, terremoto — requisito previo para la extensión XXL":"Flooding, backwater, earthquake — prerequisite for the XXL extension","Amplía a Allgefahrendeckung, incluye viento por debajo de fuerza 8, vandalismo y torpeza propia":"Extends to all-risk cover, includes wind below force 8, vandalism and own clumsiness","Duración del contrato":"Contract duration","3 años":"3 years","5 años":"5 years","Frecuencia de pago":"Payment frequency","Mensual":"Monthly","Semestral":"Semi-annual","Anual":"Annual","Subtotal":"Subtotal","Kundenbonus ({0} %)":"Kundenbonus ({0}%)","Zahlungsbonus ({0} %)":"Zahlungsbonus ({0}%)","Recargo por duración (+10 %)":"Duration surcharge (+10%)","Total mensual":"Total monthly","La prima la introduce el asesor a partir de la tarificación real de Generali — la app no calcula precios ni sustituye al Antrag oficial, que se adjunta por separado. El Kundenbonus, el Zahlungsbonus y el recargo por duración siguen las reglas tarifarias reales de Generali (PK 700).":"The premium is entered by the advisor based on Generali's real pricing — the app does not calculate prices and does not replace the official Antrag, which is attached separately. Kundenbonus, Zahlungsbonus and Laufzeitzuschlag follow Generali's real tariff rules (PK 700).","Prima mensual":"Monthly premium","Sí":"Yes","Misma vivienda que Hausrat ({0} m²)":"Same home as Hausrat ({0} m²)"};
 (function(){
   var MAP_DE=window.I18N_DE_VSP, MAP_EN=window.I18N_EN_VSP;
   var REV_DE=(function(){var r={};for(var k in MAP_DE){if(!(MAP_DE[k] in r))r[MAP_DE[k]]=k;}return r;})();
@@ -348,23 +518,41 @@ var eur=function(n){ n=n||0; return new Intl.NumberFormat('de-DE',{maximumFracti
 var LBL_SB={'0':'0 €','150':'150 €','300':'300 €'};
 var LBL_SIT={singles:'Singles (ohne Kinder)',paare:'Paare (ohne Kinder)',familie:'Familien/Singles (mit Kindern)'};
 var LBL_WOHNART={einfamilienhaus:'Einfamilienhaus',zweifamilienhaus:'Zweifamilienhaus',mehrfamilienhaus:'Mehrfamilienhaus',geschaeftshaus:'Wohn-/Geschäftshaus'};
+var LBL_WG_WOHNART={einfamilienhaus:'Einfamilienhaus',zweifamilienhaus:'Zweifamilienhaus'};
+var ZURS_NOTE={
+  GK1:'Selbstbehalt sugerido para Elementargefahren en GK1: 500 €.',
+  GK2:'Selbstbehalt sugerido para Elementargefahren en GK2: 2.000 €.',
+  GK3:'Selbstbehalt sugerido para Elementargefahren en GK3: 5.000 €.',
+  GK4:'Selbstbehalt sugerido para Elementargefahren en GK4: 5.000 €.'
+};
 
 var R={
-  haftpflicht:{active:false, selbstbehalt:'150', lebenssituation:'singles', ausfall:false, premium:0},
-  hausrat:{active:false, wohnart:'mehrfamilienhaus', flache:60, selbstbehalt:'150', elementar:false, xxl:false, premium:0},
-  glas:{active:false, addr:'', flache:60, premium:0}
+  haftpflicht:{active:false, selbstbehalt:'150', lebenssituation:'singles', ausfall:false,
+    hasPets:false, hasBoat:false, publicSector:false, sideIncomeOver22k:false, foreignStayOver3y:false, buildingProjectBudget:0,
+    premium:0},
+  hausrat:{active:false, wohnart:'mehrfamilienhaus', flache:60, selbstbehalt:'150', elementar:false, zursZone:'GK1', xxl:false,
+    wertsachenTotal:0, hasEbike:false, ebikeValue:0,
+    premium:0},
+  glas:{active:false, addr:'', flache:60, premium:0},
+  wohngebaude:{active:false, wohnart:'einfamilienhaus', selbstbehalt:'100', elementar:false, xxl:false, hasPV:false, premium:0}
 };
 var confirmed=false;
 
-function anyActive(){ return R.haftpflicht.active||R.hausrat.active||R.glas.active; }
+function anyActive(){ return R.haftpflicht.active||R.hausrat.active||R.glas.active||R.wohngebaude.active; }
+
+function showFlag(id,on){ var el=$(id); if(el) el.classList.toggle('show',!!on); }
 
 function renderFase1(){
-  ['haftpflicht','hausrat','glas'].forEach(function(k){
-    var card=document.getElementById('card-'+k), fields=document.getElementById('fields-'+k);
+  ['haftpflicht','hausrat','glas','wohngebaude'].forEach(function(k){
+    var card=document.getElementById('card-'+k), fields=document.getElementById('fields-'+k), risk=document.getElementById('risk-'+k);
     var on=R[k].active;
     card.classList.toggle('inactive',!on);
     fields.classList.toggle('is-disabled',!on);
     fields.querySelectorAll('select,input').forEach(function(el){ el.disabled=!on; });
+    if(risk){
+      risk.classList.toggle('is-disabled',!on);
+      risk.querySelectorAll('select,input').forEach(function(el){ el.disabled=!on; });
+    }
   });
   var glasInherit=$('glas-inherit'), glasOwn=$('glas-own');
   if(R.hausrat.active){
@@ -373,7 +561,26 @@ function renderFase1(){
   } else {
     glasInherit.style.display='none'; glasOwn.style.display=(R.glas.active?'flex':'none');
   }
-  var xxlNote=$('xxl-note');
+
+  showFlag('flag-hf-pets',R.haftpflicht.hasPets);
+  showFlag('flag-hf-boat',R.haftpflicht.hasBoat);
+  showFlag('flag-hf-public',R.haftpflicht.publicSector);
+  showFlag('flag-hf-sideincome',R.haftpflicht.sideIncomeOver22k);
+  showFlag('flag-hf-foreign',R.haftpflicht.foreignStayOver3y);
+  showFlag('flag-hf-building',(R.haftpflicht.buildingProjectBudget||0)>30000);
+
+  showFlag('flag-hr-wertsachen',(R.hausrat.wertsachenTotal||0)>50000);
+  var wrapEbikeVal=$('wrap-hr-ebikevalue'); if(wrapEbikeVal) wrapEbikeVal.style.display=R.hausrat.hasEbike?'flex':'none';
+  showFlag('flag-hr-ebike',R.hausrat.hasEbike);
+  var flagEbike=$('flag-hr-ebike'); if(flagEbike) flagEbike.textContent=R.hausrat.xxl
+    ? 'Con Hausrat Optimal XXL, la bici tiene cobertura ilimitada.'
+    : 'Sin Hausrat Optimal XXL, el robo de la bici fuera de casa tiene cobertura limitada — con XXL, cobertura ilimitada.';
+
+  var wrapZurs=$('wrap-hr-zurs'); if(wrapZurs) wrapZurs.style.display=R.hausrat.elementar?'flex':'none';
+  var zursNote=$('zurs-note'); if(zursNote) zursNote.textContent=ZURS_NOTE[R.hausrat.zursZone];
+
+  showFlag('flag-wg-pv',R.wohngebaude.hasPV);
+
   $('btn-confirm').disabled=!anyActive();
   $('confirm-note').textContent=anyActive()?'':'Activa al menos un ramo para continuar.';
   if(window.applyLang){ var l=(function(){try{return localStorage.getItem('aoraes_lang')||'es';}catch(e){return 'es';}})(); if(l==='de'||l==='en') setTimeout(function(){window.applyLang(l);},0); }
@@ -385,24 +592,42 @@ function bindToggle(toggleId,key){
 bindToggle('tg-haftpflicht','haftpflicht');
 bindToggle('tg-hausrat','hausrat');
 bindToggle('tg-glas','glas');
+bindToggle('tg-wohngebaude','wohngebaude');
 
 $('v-hf-sb').addEventListener('change',function(e){ R.haftpflicht.selbstbehalt=e.target.value; });
 $('v-hf-sit').addEventListener('change',function(e){ R.haftpflicht.lebenssituation=e.target.value; });
 $('v-hf-ausfall').addEventListener('change',function(e){ R.haftpflicht.ausfall=e.target.checked; });
+$('v-hf-pets').addEventListener('change',function(e){ R.haftpflicht.hasPets=e.target.checked; renderFase1(); });
+$('v-hf-boat').addEventListener('change',function(e){ R.haftpflicht.hasBoat=e.target.checked; renderFase1(); });
+$('v-hf-public').addEventListener('change',function(e){ R.haftpflicht.publicSector=e.target.checked; renderFase1(); });
+$('v-hf-sideincome').addEventListener('change',function(e){ R.haftpflicht.sideIncomeOver22k=e.target.checked; renderFase1(); });
+$('v-hf-foreign').addEventListener('change',function(e){ R.haftpflicht.foreignStayOver3y=e.target.checked; renderFase1(); });
+$('v-hf-building').addEventListener('input',function(e){ R.haftpflicht.buildingProjectBudget=parseFloat(e.target.value)||0; renderFase1(); });
 
 $('v-hr-wohnart').addEventListener('change',function(e){ R.hausrat.wohnart=e.target.value; });
 $('v-hr-flache').addEventListener('input',function(e){ R.hausrat.flache=parseFloat(e.target.value)||0; if(R.hausrat.active)$('glas-inherit-wf').textContent=R.hausrat.flache; });
 $('v-hr-sb').addEventListener('change',function(e){ R.hausrat.selbstbehalt=e.target.value; });
-$('v-hr-elementar').addEventListener('change',function(e){ R.hausrat.elementar=e.target.checked; });
-$('v-hr-xxl').addEventListener('change',function(e){ R.hausrat.xxl=e.target.checked; });
+$('v-hr-elementar').addEventListener('change',function(e){ R.hausrat.elementar=e.target.checked; renderFase1(); });
+$('v-hr-zurs').addEventListener('change',function(e){ R.hausrat.zursZone=e.target.value; renderFase1(); });
+$('v-hr-xxl').addEventListener('change',function(e){ R.hausrat.xxl=e.target.checked; renderFase1(); });
+$('v-hr-wertsachen').addEventListener('input',function(e){ R.hausrat.wertsachenTotal=parseFloat(e.target.value)||0; renderFase1(); });
+$('v-hr-ebike').addEventListener('change',function(e){ R.hausrat.hasEbike=e.target.checked; renderFase1(); });
+$('v-hr-ebikevalue').addEventListener('input',function(e){ R.hausrat.ebikeValue=parseFloat(e.target.value)||0; });
 
 $('v-gl-addr').addEventListener('input',function(e){ R.glas.addr=e.target.value; });
 $('v-gl-flache').addEventListener('input',function(e){ R.glas.flache=parseFloat(e.target.value)||0; });
+
+$('v-wg-wohnart').addEventListener('change',function(e){ R.wohngebaude.wohnart=e.target.value; });
+$('v-wg-sb').addEventListener('change',function(e){ R.wohngebaude.selbstbehalt=e.target.value; });
+$('v-wg-elementar').addEventListener('change',function(e){ R.wohngebaude.elementar=e.target.checked; });
+$('v-wg-xxl').addEventListener('change',function(e){ R.wohngebaude.xxl=e.target.checked; });
+$('v-wg-pv').addEventListener('change',function(e){ R.wohngebaude.hasPV=e.target.checked; renderFase1(); });
 
 function ramoLabel(k){
   if(k==='haftpflicht')return 'Privathaftpflicht Optimal';
   if(k==='hausrat')return 'Hausrat Optimal'+(R.hausrat.xxl?' XXL':'');
   if(k==='glas')return 'Haushalt-Glas';
+  if(k==='wohngebaude')return 'Wohngebäude Optimal'+(R.wohngebaude.xxl?' XXL':'');
 }
 
 function buildPropRamos(){
@@ -431,6 +656,14 @@ function buildPropRamos(){
       '<div class="prop-premium-row"><span class="vf-label">Prima mensual</span><div class="pp-input-wrap"><input type="number" min="0" step="1" data-prem="glas" value="'+(R.glas.premium||'')+'"><span>€</span></div></div>'+
       '</div>';
   }
+  if(R.wohngebaude.active){
+    html+='<div class="prop-ramo" data-ramo="wohngebaude"><h4>'+ramoLabel('wohngebaude')+'</h4>'+
+      '<div class="pr-field"><span class="k">Wohnart</span><span class="v">'+LBL_WG_WOHNART[R.wohngebaude.wohnart]+'</span></div>'+
+      '<div class="pr-field"><span class="k">Selbstbehalt</span><span class="v">'+(LBL_SB[R.wohngebaude.selbstbehalt]||R.wohngebaude.selbstbehalt+' €')+'</span></div>'+
+      '<div class="pr-field"><span class="k">Weitere Elementargefahren</span><span class="v">'+(R.wohngebaude.elementar?'Sí':'No')+'</span></div>'+
+      '<div class="prop-premium-row"><span class="vf-label">Prima mensual</span><div class="pp-input-wrap"><input type="number" min="0" step="1" data-prem="wohngebaude" value="'+(R.wohngebaude.premium||'')+'"><span>€</span></div></div>'+
+      '</div>';
+  }
   wrap.innerHTML=html;
   wrap.querySelectorAll('[data-prem]').forEach(function(inp){
     inp.addEventListener('input',function(){
@@ -440,10 +673,39 @@ function buildPropRamos(){
 }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 
-function updateTotal(){
-  var t=0; if(R.haftpflicht.active)t+=R.haftpflicht.premium||0; if(R.hausrat.active)t+=R.hausrat.premium||0; if(R.glas.active)t+=R.glas.premium||0;
-  $('prop-total-val').textContent=eur(t);
+// Kundenbonus/Zahlungsbonus/Laufzeitzuschlag: reglas reales del tarifario PK 700 de Generali
+// (sección 22-23 de la guía VSP) — no es una tarificación real (eso sigue siendo manual), pero
+// aplica los descuentos/recargos reales sobre lo que el asesor escribe, en vez de solo sumar.
+function calcPricing(){
+  var ramosActivos=['haftpflicht','hausrat','glas','wohngebaude'].filter(function(k){return R[k].active;});
+  var n=ramosActivos.length;
+  var kundenbonusPct = n>=6?25 : n>=5?20 : n>=4?15 : n>=3?10 : 0;
+  var freq=$('v-payment-freq').value;
+  var paymentBonusPct = freq==='anual'?5 : freq==='semestral'?2 : 0;
+  var years=parseFloat($('v-contract-years').value)||5;
+  var surchargePct = years<5 ? 10 : 0;
+  var subtotal=0; ramosActivos.forEach(function(k){ subtotal+=R[k].premium||0; });
+  var total = subtotal * (1 - (kundenbonusPct+paymentBonusPct)/100 + surchargePct/100);
+  return {n:n, kundenbonusPct:kundenbonusPct, paymentBonusPct:paymentBonusPct, surchargePct:surchargePct, subtotal:subtotal, total:Math.max(0,total)};
 }
+
+function updateTotal(){
+  var p=calcPricing();
+  $('pt-subtotal').textContent=eur(p.subtotal);
+  $('pt-kundenbonus-lbl').textContent='Kundenbonus ('+p.kundenbonusPct+' %)';
+  $('pt-kundenbonus').textContent='− '+eur(p.subtotal*p.kundenbonusPct/100);
+  $('pt-paymentbonus-lbl').textContent='Zahlungsbonus ('+p.paymentBonusPct+' %)';
+  $('pt-paymentbonus').textContent='− '+eur(p.subtotal*p.paymentBonusPct/100);
+  var surchargeRow=$('pt-surcharge-row');
+  if(p.surchargePct>0){
+    surchargeRow.style.display='flex';
+    $('pt-surcharge-lbl').textContent='Recargo por duración (+'+p.surchargePct+' %)';
+    $('pt-surcharge').textContent='+ '+eur(p.subtotal*p.surchargePct/100);
+  } else { surchargeRow.style.display='none'; }
+  $('prop-total-val').textContent=eur(p.total);
+}
+$('v-contract-years').addEventListener('change',updateTotal);
+$('v-payment-freq').addEventListener('change',updateTotal);
 
 $('btn-confirm').addEventListener('click',function(){
   if(!anyActive())return;
@@ -482,15 +744,16 @@ window.aoraesRestore=function(snap){
 window.aoraesGetScenario=function(){
   try{
     if(!confirmed || !anyActive()) return null;
-    var ramos=[]; var total=0;
-    if(R.haftpflicht.active){ ramos.push(ramoLabel('haftpflicht')); total+=R.haftpflicht.premium||0; }
-    if(R.hausrat.active){ ramos.push(ramoLabel('hausrat')); total+=R.hausrat.premium||0; }
-    if(R.glas.active){ ramos.push(ramoLabel('glas')); total+=R.glas.premium||0; }
+    var ramos=[];
+    ['haftpflicht','hausrat','glas','wohngebaude'].forEach(function(k){ if(R[k].active) ramos.push(ramoLabel(k)); });
+    var p=calcPricing();
     return {
       ramos:ramos,
       config:JSON.parse(JSON.stringify(R)),
+      contract:{years:parseFloat($('v-contract-years').value)||5, paymentFreq:$('v-payment-freq').value},
+      pricing:{subtotal:p.subtotal, kundenbonusPct:p.kundenbonusPct, paymentBonusPct:p.paymentBonusPct, surchargePct:p.surchargePct},
       iban:($('v-iban')?$('v-iban').value:'')||null,
-      totalPremium:total,
+      totalPremium:p.total,
       savedAt:new Date().toISOString()
     };
   }catch(e){ return null; }
