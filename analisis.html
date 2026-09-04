@@ -1887,10 +1887,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     ['insAccidentes','Seguro de accidentes'],
     ['insLegal','Defensa jurídica (abogados)'],
     ['insVida','Seguro de vida'],
-    ['insViaje','Seguro de viaje (equipaje, cancelación, médico en el extranjero)']
+    ['insViaje','Seguro de viaje (equipaje, cancelación, médico en el extranjero)'],
+    ['insEnfermedades','Enfermedades graves (Cáncer, Ictus, Infarto)']
   ];
   // S.4 · Gesundheits- & Risikovorsorge   |   S.6 · Vermögensabsicherung
-  var insS4=['insAccidentes','insIncap','insSalud','insPflege','insVida'];
+  var insS4=['insAccidentes','insIncap','insSalud','insPflege','insVida','insEnfermedades'];
   var insS6=['insRC','insHogar','insGlas','insLegal','insGebaude','insAuto','insViaje'];
 
   var goals = [
@@ -1961,7 +1962,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   // insurances — grouped into must-have and nice-to-have
   var insLabel={}; insurances.forEach(function(f){insLabel[f[0]]=f[1];});
   var insMust=['insSalud','insIncap','insPflege','insRC','insVida'];
-  var insNice=['insAuto','insHogar','insGebaude','insGlas','insAccidentes','insLegal','insViaje'];
+  var insNice=['insAuto','insHogar','insGebaude','insGlas','insAccidentes','insLegal','insViaje','insEnfermedades'];
   // protection scoring weights: must-haves weigh most; Glas/Accidentes/Legal (weight 0) never affect the
   // score. insVida solía tener peso 0 (invisible para la pirámide) — un cliente sin seguro de
   // fallecimiento podía marcar "familia" al 100% con solo salud+incapacidad+dependencia, aunque su
@@ -1970,7 +1971,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   // insAccidentes ya no pesa 0: el guion oficial de Unfallversicherung da una Faustformel concreta
   // para juzgar si la Grundsumme es adecuada (ver accidentesCoverageCredit), así que deja de ser
   // "cobertura menor sin criterio de suficiencia" y pasa al mismo nivel que Auto/Hogar/Gebäude.
-  var insWeight={insSalud:2,insIncap:2,insPflege:2,insVida:2,insRC:2,insAuto:1,insHogar:1,insGebaude:1,insGlas:0,insAccidentes:1,insLegal:0,insViaje:0};
+  var insWeight={insSalud:2,insIncap:2,insPflege:2,insVida:2,insRC:2,insAuto:1,insHogar:1,insGebaude:1,insGlas:0,insAccidentes:1,insLegal:0,insViaje:0,insEnfermedades:0};
   // generic repeatable contract-row config — must be defined before insRow()/insGroup() run (below)
   var FIELD_META={
     tipo:{label:'Tipo de producto',kind:'type'},
@@ -2015,7 +2016,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
           'Depot de inversión','Fondos de inversión','ETF','Acciones','Criptomonedas','Bausparvertrag','Otros ahorros o inversiones']},
     propuesta:{types:['BU (Incapacidad laboral)','GF (Grundfähigkeitsversicherung)','Pflege (Dependencia)','Opción de dependencia (Pflegerentenoption)','Seguro de fallecimiento']
         .concat(insurances.filter(function(f){return ['insIncap','insPflege','insVida'].indexOf(f[0])<0;}).map(function(f){return f[1];}))
-        .concat(['Enfermedades graves (Cáncer, Ictus, Infarto)','Basisrente','Vermögensaufbau (renta vitalicia con fondos)','Inversión','Bauspar','Otro']),
+        .concat(['Basisrente','Vermögensaufbau (renta vitalicia con fondos)','Inversión','Bauspar','Otro']),
         fields:['persona','tipo','producto','garantia']} // fallback; ver resolveFields() para el detalle por tipo
   };
   // S.12 · lo que el cliente RECIBE con cada producto propuesto. Es el eje de la sección y de la
@@ -3440,6 +3441,14 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   function renderPropuestaPreview(r){
     var box=$('#prop-preview'); if(!box) return;
     if(!hasProposal()){ box.hidden=true; return; }
+    // computePerson() reconstruye S.5/S.7/los seguros para simular "qué pasaría si" y luego los
+    // restaura (ver comentario en computePerson) — si el asesor está escribiendo AHORA MISMO dentro
+    // de una de esas tablas, esa reconstrucción destruye el campo con el foco y hay que volver a
+    // hacer clic para seguir escribiendo. Mismo criterio que ya protege a S.12 con skipPropuesta:
+    // se salta este recálculo mientras el foco esté ahí; el aviso se pone al día en el siguiente
+    // render() normal (al salir del campo, o al cambiar algo en otro sitio).
+    var act=document.activeElement;
+    if(act && act.closest && (act.closest('#contract-s5-body')||act.closest('#contract-s7-body')||act.closest('.ins-contracts'))) return;
     var r2=computePerson(buildProposalSnap());
     if(!r2){ box.hidden=true; return; }
     box.hidden=false;
