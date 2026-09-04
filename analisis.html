@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow">
 <title>AORAES · Análisis Financiero Personal</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -298,6 +299,8 @@
   .cr-dup:hover{background:rgba(201,169,97,.16);border-color:rgba(201,169,97,.35);color:var(--gold-deep)}
   .cr-add{display:inline-block;padding:8px 14px;border:1px dashed var(--line);border-radius:8px;background:transparent;color:var(--navy);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.13s}
   .cr-add:hover{border-color:var(--gold);background:rgba(201,169,97,.07)}
+  .cr-contract{align-self:end;height:38px;padding:0 14px;border:1px solid var(--navy);border-radius:8px;background:var(--navy);color:#ffffff;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.13s;white-space:nowrap}
+  .cr-contract:hover{background:var(--navy-deep)}
 
   /* ---------- S.7 patrimony summary ---------- */
   .s7-summary{margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)}
@@ -2281,8 +2284,10 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   function renderContractRowHTML(section,idx,rowData){
     var fields=resolveFields(section,rowData);
     var dupBtn=(section==='s7')?'<button type="button" class="cr-dup" data-crdup="'+section+':'+idx+'" title="Duplicar fila" aria-label="Duplicar fila">&#10697;</button>':'';
+    var contractBtn=(section==='propuesta'&&rowData&&rowData.tipo)?'<button type="button" class="cr-contract" data-crcontract="'+section+':'+idx+'" title="Marcar como contratado y trasladarlo a su sección real (S.5/S.7/seguros)">✓ Contratado</button>':'';
     return '<div class="contract-row" data-row-idx="'+idx+'">'+
       fields.map(function(f){return crField(section,idx,f);}).join('')+
+      contractBtn+
       dupBtn+
       '<button type="button" class="cr-del" data-crdel="'+section+':'+idx+'" title="Eliminar fila" aria-label="Eliminar fila">&#10005;</button>'+
     '</div>';
@@ -2361,6 +2366,56 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   function duplicateContractRow(section,idx){
     var rows=getContractRows(section); var clone=Object.assign({},rows[idx]||{});
     rows.splice(idx+1,0,clone); renderContractSection(section,rows);
+  }
+  // "✓ Contratado" en S.12: el producto propuesto deja de ser una simulación y pasa a ser un
+  // contrato real del cliente. Reutiliza el mismo mapeo tipo→sección real que ya usa
+  // buildProposalSnap() para el "qué pasaría si" (PROP_INS_MAP + Basisrente/Vermögensaufbau/
+  // Inversión/Bauspar), pero aplicado al estado real en vez de a un clon — y quita la fila de la
+  // propuesta al terminar, para que no quede contada dos veces (una como propuesta, otra como real).
+  function contractPropuestaRow(idx){
+    var rows=getContractRows('propuesta');
+    var row=rows[idx]; if(!row) return;
+    if(!row.tipo){ alert('Elige primero el tipo de producto antes de marcarlo como contratado.'); return; }
+    var persona=row.persona||'A', freq=(row.aportFrecuencia==='anual')?'anual':'mensual', aporte=row.aportacion||0;
+    var rentaReal=parseFloat(row.garantia)||0;
+    var pmRow=propuestaMeta(row.tipo);
+    // Si la sección destino solo tiene la fila vacía por defecto, se rellena esa en vez de añadir
+    // una segunda — así "Contratado" no deja una fila en blanco sobrante junto a la real. Se mira
+    // el campo identificador real (compañía/entidad), no rowHasData(): un select como tipoIncap ya
+    // trae "BU" seleccionado por defecto en una fila vacía, así que contarlo como "con datos" haría
+    // que nunca se rellenara la fila vacía.
+    function pushOrFill(destRows,fila,emptyKey){
+      var d0=destRows[0];
+      if(destRows.length===1 && d0 && !d0[emptyKey]) destRows[0]=fila; else destRows.push(fila);
+      return destRows;
+    }
+    var moved=false;
+    if(PROP_INS_MAP[row.tipo]){
+      PROP_INS_MAP[row.tipo].forEach(function(key){
+        var chk=document.querySelector('[data-ins="'+key+'"]'); if(chk) chk.checked=true;
+        var sec=insSectionKey(key), destRows=getContractRows(sec);
+        var fila={persona:persona,compania:row.producto||'Contratado'};
+        if(key==='insIncap') fila.tipoIncap=(row.tipo==='GF (Grundfähigkeitsversicherung)')?'GF':'BU';
+        renderContractSection(sec,pushOrFill(destRows,fila,'compania'));
+      });
+      moved=true;
+    } else if(row.tipo==='Basisrente'||row.tipo==='Vermögensaufbau (renta vitalicia con fondos)'){
+      var s5Rows=getContractRows('s5');
+      var o={tipo:(row.tipo==='Basisrente'?'Basisrente':'Rentenversicherung'),persona:persona,compania:row.producto||'Contratado',aportacion:aporte,aportFrecuencia:freq};
+      if(rentaReal>0 && pmRow.benefit==='renta'){ if(pmRow.garantizado===false) o.rentaEstimada=rentaReal; else o.rentaGarantizada=rentaReal; }
+      renderContractSection('s5',pushOrFill(s5Rows,o,'compania')); moved=true;
+    } else if(row.tipo==='Inversión'||row.tipo==='Bauspar'){
+      var s7Rows=getContractRows('s7');
+      var o7={persona:persona,tipo:(row.tipo==='Inversión'?'Fondos de inversión':'Bausparvertrag'),entidad:row.producto||'Contratado',aportacion:aporte,frecuencia:freq,tieneAportacion:!!aporte};
+      renderContractSection('s7',pushOrFill(s7Rows,o7,'entidad')); moved=true;
+    }
+    if(!moved){
+      alert('"'+row.tipo+'" todavía no tiene una sección real donde colocarse automáticamente (por ejemplo, una opción de dependencia no es una cobertura activa) — anótalo manualmente en la ficha si corresponde.');
+      return;
+    }
+    rows.splice(idx,1);
+    renderContractSection('propuesta',rows);
+    render();
   }
   // S.7 y S.12 (propuesta): cambiar "Tipo de producto" cambia el set de campos visibles; avisar
   // antes de descartar datos ya introducidos que ya no aplican bajo el tipo nuevo.
@@ -5061,6 +5116,12 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     if(cdel){
       var parts=cdel.getAttribute('data-crdel').split(':');
       removeContractRow(parts[0],parseInt(parts[1],10));
+      return;
+    }
+    var ccon=e.target.closest('[data-crcontract]');
+    if(ccon){
+      var partsCon=ccon.getAttribute('data-crcontract').split(':');
+      contractPropuestaRow(parseInt(partsCon[1],10));
       return;
     }
     var hyn=e.target.closest('[data-hijos]');
