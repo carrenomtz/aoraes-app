@@ -2621,6 +2621,7 @@
       // de la ficha — quedaba guardado a ciegas. Se muestra aquí en Seguimiento, con acceso directo
       // de vuelta al comparador para revisar o actualizar el escenario.
       var sol=getSolution(rec.id);
+      var investmentContracted=!!(cm.contractedInvestment);
       var jubCard=sol?(
         '<div class="ws-card"><h3>Plan de jubilación guardado</h3>'+
         '<div class="ws-field"><span class="k">Producto</span><span class="v">'+esc(sol.product||'—')+'</span></div>'+
@@ -2629,6 +2630,7 @@
         '<div class="ws-field"><span class="k">Renta mensual estimada</span><span class="v">'+eur(sol.monthlyPension)+'/mes</span></div>'+
         '<div class="ws-field"><span class="k">Guardado</span><span class="v">'+(sol.savedAt?relTime(sol.savedAt):'—')+'</span></div>'+
         '<button type="button" class="ws-cta ghost" data-deep="jubilacion">Abrir en el comparador de jubilación →</button>'+
+        '<button type="button" class="ws-cta'+(investmentContracted?' ghost':'')+'" data-mark-contracted="investment">'+(investmentContracted?'✓ Contratado — quitar marca':'✓ Marcar como contratado')+'</button>'+
         '</div>'
       ):'';
       // Propuesta VSP guardada (seguros patrimoniales) — segunda tarjeta independiente, en paralelo
@@ -2636,12 +2638,14 @@
       // forma parte de wsFrames, el botón abre la herramienta a nivel superior (data-open-tool), no
       // un paso interno del workspace (data-deep).
       var solVsp=getSolution(rec.id,'vsp');
+      var insuranceContracted=!!(cm.contractedInsurance);
       var vspCard=solVsp?(
         '<div class="ws-card"><h3>Seguros patrimoniales (VSP) guardados</h3>'+
         '<div class="ws-field"><span class="k">Ramos configurados</span><span class="v">'+esc((solVsp.ramos||[]).join(', ')||'—')+'</span></div>'+
         '<div class="ws-field"><span class="k">Prima total</span><span class="v">'+eur(solVsp.totalPremium)+'/mes</span></div>'+
         '<div class="ws-field"><span class="k">Guardado</span><span class="v">'+(solVsp.savedAt?relTime(solVsp.savedAt):'—')+'</span></div>'+
         '<button type="button" class="ws-cta ghost" data-open-tool="vsp">Abrir en Seguros patrimoniales →</button>'+
+        '<button type="button" class="ws-cta'+(insuranceContracted?' ghost':'')+'" data-mark-contracted="insurance">'+(insuranceContracted?'✓ Contratado — quitar marca':'✓ Marcar como contratado')+'</button>'+
         '</div>'
       ):'';
       var seg='<div class="ws-card"><h3>Estado y seguimiento</h3>'+
@@ -2657,6 +2661,8 @@
         '<div class="ws-field"><span class="k">Nombre</span><span class="v">'+esc(rec.name||'—')+'</span></div>'+
         '<div class="ws-field"><span class="k">Asesor/a</span><span class="v">'+esc(rec.advisor||'—')+'</span></div>'+
         '<div class="ws-field"><span class="k">Estado</span><span class="v">'+st.l+'</span></div>'+
+        '<div class="ws-field"><span class="k">Seguro contratado</span><span class="v">'+(cm.contractedInsurance?esc(cm.contractedInsurance):'—')+'</span></div>'+
+        '<div class="ws-field"><span class="k">Inversión contratada</span><span class="v">'+(cm.contractedInvestment?esc(cm.contractedInvestment):'—')+'</span></div>'+
         (contact?'<div class="ws-field"><span class="k">Contacto</span><span class="v">'+esc(contact)+'</span></div>':'')+
         (isCouple(rec)?'<div class="ws-field"><span class="k">Tipo</span><span class="v">Pareja</span></div>':'')+
         '</div>'+personalDataBlock(rec,'A','Datos personales · Persona A')+personalDataBlock(rec,'B','Datos personales · Persona B')+
@@ -2824,6 +2830,31 @@
       writeClientFile(id);
       renderCockpitInner();
     }
+    // Marca (o desmarca, si ya estaba marcado) un producto como contratado — independiente del
+    // estado del pipeline CRM, ya que un cliente puede contratar el seguro y la inversión en
+    // momentos distintos. Toma el nombre del producto directamente de la solución ya guardada
+    // (getSolution), no de un campo aparte que el asesor tendría que rellenar a mano.
+    function markContracted(id,kind){
+      if(!id||(kind!=='insurance'&&kind!=='investment'))return;
+      var arr=readLocalClientsRaw();
+      for(var i=0;i<arr.length;i++){
+        if(arr[i].id===id){
+          var cm=Object.assign({status:'prospecto'},arr[i].crm||{});
+          if(kind==='insurance'){
+            if(cm.contractedInsurance){ cm.contractedInsurance=''; cm.contractedInsuranceAt=''; }
+            else{ var solVsp=getSolution(id,'vsp'); cm.contractedInsurance=(solVsp&&(solVsp.ramos||[]).join(', '))||'Seguro patrimonial'; cm.contractedInsuranceAt=new Date().toISOString(); }
+          } else {
+            if(cm.contractedInvestment){ cm.contractedInvestment=''; cm.contractedInvestmentAt=''; }
+            else{ var sol=getSolution(id); cm.contractedInvestment=(sol&&sol.product)||'Plan de jubilación'; cm.contractedInvestmentAt=new Date().toISOString(); }
+          }
+          arr[i].crm=cm;
+          break;
+        }
+      }
+      try{ localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr)); }catch(e){}
+      writeClientFile(id);
+      try{ var rec=findClient(id); if(rec && wsFrames.analisis.ready){ var s=wsFrames.analisis.el.contentWindow.aoraesClientSummary(id); if(s) renderWorkspace(rec,s); } }catch(e){}
+    }
     var _ciWired=false;
     function wireImpulsosClicks(){
       if(_ciWired) return; _ciWired=true;
@@ -2963,6 +2994,7 @@
       // wsFrames/WS_TOOL_STEPS (mismo criterio que Plan Futuro): se abre como herramienta de nivel
       // superior vía show(), que ya hace el puente con el cliente activo (maybeBridge).
       var ot=e.target.closest('[data-open-tool]'); if(ot){ show(ot.getAttribute('data-open-tool')); return; }
+      var mc=e.target.closest('[data-mark-contracted]'); if(mc){ markContracted(wsId,mc.getAttribute('data-mark-contracted')); return; }
       var sv=e.target.closest('#ws-jub-save'); if(sv){ saveWsSolution(); return; }
       var un=e.target.closest('#ws-jub-undo'); if(un){ undoWsSolution(); return; }
       var rt=e.target.closest('[data-inm-rate]'); if(rt){ var card=rt.closest('.inm-card'); var inp=card&&card.querySelector('[data-inm-field="interesPrestamo"]'); if(inp){ inp.value=rt.getAttribute('data-inm-rate'); inp.dispatchEvent(new Event('input',{bubbles:true})); } return; }
