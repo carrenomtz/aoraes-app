@@ -438,8 +438,8 @@
   @keyframes fade{from{opacity:0} to{opacity:1}}
   .ws-lead{color:var(--muted); font-size:13.5px; margin:0 0 18px; max-width:62ch}
 
-  .ws-cta{display:inline-flex; align-items:center; gap:8px; background:var(--navy); color:#ffffff; border:0; font-family:inherit; font-weight:600; font-size:13px; min-height:42px; padding:0 18px; border-radius:var(--r-md); cursor:pointer; transition:background .16s var(--ease), transform .16s var(--ease)}
-  .ws-cta:hover{background:var(--navy-deep); transform:translateY(-1px)} .ws-cta:active{transform:translateY(0)}
+  .ws-cta{display:inline-flex; align-items:center; gap:8px; background:var(--navy); color:#ffffff; border:0; font-family:inherit; font-weight:600; font-size:13px; min-height:42px; padding:0 18px; border-radius:11px; box-shadow:0 6px 16px rgba(20,33,61,.18); cursor:pointer; transition:background .16s var(--ease), box-shadow .16s var(--ease), transform .16s var(--ease)}
+  .ws-cta:hover{background:var(--navy-deep); box-shadow:0 8px 20px rgba(20,33,61,.24); transform:translateY(-1px)} .ws-cta:active{transform:translateY(0)}
   .ws-cta:disabled{opacity:.6; cursor:default; transform:none}
   .ws-generic-banner{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; background:var(--gold-tint); border:1px solid var(--gold-soft); border-radius:var(--r-md); padding:14px 18px; margin:14px 0; font-size:13px; color:var(--navy-2)}
   .ws-cta.ghost{background:var(--surface); color:var(--navy); border:1px solid var(--gold-soft)} .ws-cta.ghost:hover{background:var(--gold-tint)}

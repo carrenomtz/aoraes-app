@@ -110,8 +110,8 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .pt-row.pt-final{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--gold-light);margin-top:.4rem;padding-top:.6rem;border-top:1px solid rgba(255,255,255,.18)}
 
 .vsp-confirm-bar{display:flex;flex-direction:column;align-items:center;gap:.75rem;margin-top:2.5rem;text-align:center}
-.vsp-confirm-btn{background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:var(--midnight);border:none;border-radius:12px;padding:1.05rem 2.1rem;font-family:var(--sans);font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:var(--shadow-lg);transition:transform .15s}
-.vsp-confirm-btn:hover:not(:disabled){transform:translateY(-1px)}
+.vsp-confirm-btn{background:var(--gold);color:var(--navy);border:none;border-radius:11px;padding:1.05rem 2.1rem;font-family:var(--sans);font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:0 6px 16px rgba(201,169,97,.28);transition:background .15s,box-shadow .15s,transform .15s}
+.vsp-confirm-btn:hover:not(:disabled){background:#bd9c55;box-shadow:0 8px 20px rgba(201,169,97,.34);transform:translateY(-1px)}
 .vsp-confirm-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
 .vsp-confirm-note{font-size:.78rem;color:var(--slate)}
 
@@ -137,8 +137,8 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .prop-total .val{font-family:var(--serif);font-size:2rem;font-weight:600;color:var(--gold-light)}
 .prop-disclaimer{font-size:.76rem;color:var(--slate);line-height:1.55;margin-top:1.1rem}
 .prop-actions{display:flex;gap:1rem;margin-top:1.75rem;flex-wrap:wrap}
-.prop-actions button{font-family:var(--sans);font-size:.85rem;font-weight:600;border-radius:10px;padding:.75rem 1.4rem;cursor:pointer;border:1px solid var(--mist);background:#fff;color:var(--navy)}
-.prop-actions button.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.prop-actions button{font-family:var(--sans);font-size:.85rem;font-weight:600;border-radius:11px;padding:.75rem 1.4rem;cursor:pointer;border:1px solid var(--mist);background:#fff;color:var(--navy)}
+.prop-actions button.primary{background:var(--navy);color:#fff;border-color:var(--navy);box-shadow:0 6px 16px rgba(20,33,61,.18)}
 
 .note-card{background:var(--navy);color:#ffffff;border-radius:18px;padding:2rem 2.25rem;display:flex;gap:1.25rem;align-items:flex-start;max-width:1180px;margin:0 auto 3rem}
 .note-card>svg{width:24px;height:24px;color:var(--gold);flex-shrink:0;margin-top:.15rem}
