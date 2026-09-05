@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="noindex, nofollow">
 <title>AORAES · Herramientas del asesor</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -93,8 +93,8 @@
   #auth-pass2-wrap[hidden], #auth-pass2-label[hidden]{display:none}
   .auth-err{font-size:12.5px; color:#b0473a; background:rgba(176,71,58,.08); border:1px solid rgba(176,71,58,.25); border-radius:8px; padding:8px 10px; margin-top:10px}
   .auth-err[hidden]{display:none}
-  #auth-submit{margin-top:16px; font:inherit; font-weight:700; font-size:14px; padding:11px; border:none; border-radius:9px; background:var(--navy); color:#fff; cursor:pointer}
-  #auth-submit:hover{background:var(--navy-deep)}
+  #auth-submit{margin-top:16px; font:inherit; font-weight:700; font-size:14px; padding:11px; border:none; border-radius:11px; background:var(--navy); color:#fff; box-shadow:0 6px 16px rgba(20,33,61,.18); cursor:pointer; transition:background .15s, box-shadow .15s}
+  #auth-submit:hover{background:var(--navy-deep); box-shadow:0 8px 20px rgba(20,33,61,.24)}
   #auth-submit:disabled{opacity:.6; cursor:default}
   .auth-toggle{display:block; width:100%; margin-top:16px; background:none; border:none; font:inherit; font-size:12.5px; color:var(--navy-2); cursor:pointer; text-decoration:underline}
   .auth-forgot{display:block; width:100%; margin-top:12px; background:none; border:none; font:inherit;
@@ -524,10 +524,10 @@
   .bb-inner{display:flex; align-items:center; gap:12px; padding:10px clamp(14px,3vw,24px); font-size:13px; color:var(--navy); flex-wrap:wrap}
   .bb-ico{display:inline-grid; place-items:center; width:23px; height:23px; border-radius:7px; background:var(--navy); color:var(--gold-soft); font-size:12px; flex:0 0 auto}
   .bb-txt{flex:1 1 auto; min-width:160px; font-variant-numeric:var(--tab)} .bb-txt b{color:var(--navy)}
-  .bb-save{flex:0 0 auto; background:var(--gold); color:var(--navy-deep); border:0; font-family:inherit; font-weight:700; font-size:12.5px; min-height:34px; padding:0 13px; border-radius:var(--r-sm); cursor:pointer; transition:background .14s var(--ease)}
-  .bb-save:hover{background:#bd9a4f} .bb-save:disabled{background:#d6cba6; color:#6b6750; cursor:default}
-  .bb-undo{flex:0 0 auto; background:var(--navy); color:#ffffff; border:0; font-family:inherit; font-weight:600; font-size:12.5px; min-height:34px; padding:0 13px; border-radius:var(--r-sm); cursor:pointer}
-  .bb-undo:hover{background:var(--navy-deep)}
+  .bb-save{flex:0 0 auto; background:var(--gold); color:var(--navy-deep); border:0; font-family:inherit; font-weight:700; font-size:12.5px; min-height:34px; padding:0 13px; border-radius:11px; box-shadow:0 6px 16px rgba(201,169,97,.28); cursor:pointer; transition:background .14s var(--ease), box-shadow .14s var(--ease)}
+  .bb-save:hover{background:#bd9c55; box-shadow:0 8px 20px rgba(201,169,97,.34)} .bb-save:disabled{background:#d6cba6; color:#6b6750; box-shadow:none; cursor:default}
+  .bb-undo{flex:0 0 auto; background:var(--navy); color:#ffffff; border:0; font-family:inherit; font-weight:600; font-size:12.5px; min-height:34px; padding:0 13px; border-radius:11px; box-shadow:0 6px 16px rgba(20,33,61,.18); cursor:pointer; transition:background .14s var(--ease), box-shadow .14s var(--ease)}
+  .bb-undo:hover{background:var(--navy-deep); box-shadow:0 8px 20px rgba(20,33,61,.24)}
   .bb-close{flex:0 0 auto; background:transparent; border:0; color:var(--muted); font-size:15px; cursor:pointer; padding:4px 6px; line-height:1; border-radius:5px}
   .bb-close:hover{color:var(--ink)}
 
