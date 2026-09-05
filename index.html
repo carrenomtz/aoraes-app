@@ -157,6 +157,7 @@
     border:1px solid var(--gold-soft); border-radius:999px; padding:5px 13px; cursor:pointer;
   }
   .viewing-banner button:hover{background:var(--gold-tint)}
+  .ase-stats{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px}
   .ase-list{display:flex; flex-direction:column; gap:11px}
   .ase-empty{text-align:center; color:var(--muted); background:var(--surface); border:1px dashed var(--line-strong); border-radius:var(--r-lg); padding:40px 24px; font-size:14px}
   .ase-row{display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:14px 17px; box-shadow:var(--sh-1); flex-wrap:wrap}
@@ -214,8 +215,10 @@
   .active-chip .ac-name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .active-chip .ac-x{background:transparent; border:0; color:#9db0cf; cursor:pointer; font-size:13px; line-height:1; padding:2px 3px; border-radius:5px}
   .active-chip .ac-x:hover{color:#ffffff}
-  .switch{display:flex; gap:4px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none}
-  .switch::-webkit-scrollbar{display:none}
+  /* Antes tenía overflow-x:auto para cuando cabían 8 botones de texto y podían desbordar en pantallas
+     medianas; con solo 3 (Inicio, Herramientas ▾, Asesores) ya no hace falta — y el scroll recortaba
+     el menú desplegable de "Herramientas", que es descendiente de este contenedor. */
+  .switch{display:flex; gap:4px}
   .switch button{
     flex:0 0 auto; background:transparent; border:1px solid transparent; color:#c4d0e3;
     font-family:inherit; font-size:13px; font-weight:600; padding:9px 15px; border-radius:var(--r-sm);
@@ -223,6 +226,33 @@
   }
   .switch button:hover{background:rgba(255,255,255,.07); color:#ffffff}
   .switch button.active{background:var(--gold); color:var(--navy-deep); border-color:var(--gold); box-shadow:0 2px 8px rgba(201,169,97,.35)}
+  /* "Herramientas ▾": agrupa las 6 herramientas menos usadas (Inicio y Asesores se quedan fuera,
+     visibles siempre) para que la barra superior no compita en anchura por 8 pestañas de texto a
+     la vez — el mismo patrón de menú desplegable que .ase-menu, adaptado al fondo navy de la barra. */
+  .switch-more-wrap{position:relative; flex:0 0 auto}
+  .switch-more{display:inline-flex; align-items:center; gap:5px}
+  .switch-more.active{background:var(--gold); color:var(--navy-deep); border-color:var(--gold); box-shadow:0 2px 8px rgba(201,169,97,.35)}
+  .switch-more .sm-caret{font-size:10px; opacity:.75; transition:transform .16s var(--ease)}
+  .switch-more[aria-expanded="true"] .sm-caret{transform:rotate(180deg)}
+  .switch-more-menu{
+    position:absolute; top:calc(100% + 6px); left:0; z-index:40; min-width:230px;
+    background:#fff; border:1px solid var(--line-strong); border-radius:var(--r-md); box-shadow:var(--sh-3);
+    padding:6px; display:flex; flex-direction:column; gap:2px;
+  }
+  .switch-more-menu[hidden]{display:none}
+  .switch-more-menu button{
+    text-align:left; color:var(--navy); background:none; border:0; border-radius:7px; padding:9px 12px;
+  }
+  .switch-more-menu button:hover{background:var(--gold-tint); color:var(--navy)}
+  .switch-more-menu button.active{background:var(--gold-tint); color:var(--navy); border-color:transparent; box-shadow:none}
+  @media(max-width:860px){
+    .switch-more-wrap{width:100%}
+    .switch-more{display:none}
+    .switch-more-menu{position:static; display:flex !important; box-shadow:none; border:0; background:none; padding:0; min-width:0}
+    .switch-more-menu button{color:#c4d0e3}
+    .switch-more-menu button:hover{background:rgba(255,255,255,.07); color:#ffffff}
+    .switch-more-menu button.active{background:var(--gold); color:var(--navy-deep)}
+  }
   .appbar-menu{display:flex; align-items:center; gap:14px}
   .nav-toggle{
     display:none; align-items:center; justify-content:center; width:38px; height:38px; flex:0 0 auto; margin-left:auto;
@@ -594,12 +624,17 @@
     <div class="appbar-menu" id="appbar-menu">
       <nav class="switch" id="switch">
         <button type="button" data-go="home" class="active">Inicio</button>
-        <button type="button" data-go="analisis">Análisis &amp; CRM</button>
-        <button type="button" data-go="jubilacion">Comparador de jubilación</button>
-        <button type="button" data-go="ninos">Plan Futuro</button>
-        <button type="button" data-go="vsp">Seguros patrimoniales</button>
-        <button type="button" data-go="medico">Preguntas médicas</button>
-        <button type="button" id="nav-inmueble">Proyecto inmobiliario</button>
+        <div class="switch-more-wrap">
+          <button type="button" class="switch-more" id="switch-more" aria-haspopup="true" aria-expanded="false">Herramientas <span class="sm-caret" aria-hidden="true">▾</span></button>
+          <div class="switch-more-menu" id="switch-more-menu" hidden>
+            <button type="button" data-go="analisis">Análisis &amp; CRM</button>
+            <button type="button" data-go="jubilacion">Comparador de jubilación</button>
+            <button type="button" data-go="ninos">Plan Futuro</button>
+            <button type="button" data-go="vsp">Seguros patrimoniales</button>
+            <button type="button" data-go="medico">Preguntas médicas</button>
+            <button type="button" id="nav-inmueble">Proyecto inmobiliario</button>
+          </div>
+        </div>
         <button type="button" data-go="asesores" id="nav-asesores" hidden>Asesores</button>
       </nav>
       <div class="notif-wrap" id="notif-wrap" hidden>
@@ -1281,7 +1316,15 @@
     var acChip=document.getElementById('active-chip'), acName=document.getElementById('ac-name');
     var lastSigByView={}, pendingApply=null, pendingOpen=null, pendingSummary=null, wsId=null, wsStep='diagnostico', wsRec=null, inmSaveTimer=null, cockQuickFilter=null;
 
-    function setActiveTab(view){ var b=sw.querySelectorAll('button'); for(var i=0;i<b.length;i++)b[i].classList.toggle('active',b[i].getAttribute('data-go')===view); }
+    var SWITCH_MORE_VIEWS=['analisis','jubilacion','ninos','vsp','medico'];
+    function setActiveTab(view){
+      var b=sw.querySelectorAll('button'); for(var i=0;i<b.length;i++)b[i].classList.toggle('active',b[i].getAttribute('data-go')===view);
+      // "Proyecto inmobiliario" no viaja por data-go/show() (abre el workspace directo vía
+      // openGenericInmueble, que ya marca 'home' como activo) — solo resaltamos el desplegable
+      // para las 5 herramientas que sí pasan por aquí; si no, quedaría sin ninguna pestaña
+      // resaltada mientras se usa una herramienta metida dentro de "Herramientas ▾".
+      var smb=document.getElementById('switch-more'); if(smb) smb.classList.toggle('active', SWITCH_MORE_VIEWS.indexOf(view)>=0);
+    }
     function updateActiveChip(){ var id=getActive(); var rec=id?findClient(id):null; if(rec){ acName.textContent=rec.name||'Cliente'; acChip.classList.add('on'); } else acChip.classList.remove('on'); }
     function screenTo(name){ home.hidden=(name!=='home'); wsScreen.hidden=(name!=='workspace'); frames.hidden=(name!=='frames'); asesoresScr.hidden=(name!=='asesores'); }
     window.aoraesGoHome=function(){ show('home'); };
@@ -1385,7 +1428,19 @@
           return (a.name||a.email||'').localeCompare(b.name||b.email||'');
         });
         var viewing=window.AORAES_CLOUD.viewingUid;
-        listEl.innerHTML='<div class="ase-list">'+list.map(function(p){
+        // Resumen al vuelo: cuántas solicitudes esperan, cuántos asesores activos y cuántos clientes
+        // suman entre todos — antes había que contar filas a mano para saber si algo requería
+        // atención. Mismo lenguaje visual que .cock-insights (reutiliza .ins) para que se sienta
+        // parte de la misma app, no un widget aparte.
+        var pendingCount=list.filter(function(p){return p.status==='pending';}).length;
+        var approvedCount=list.filter(function(p){return p.status==='approved';}).length;
+        var totalClients=list.reduce(function(s,p){return s+(p._count||0);},0);
+        var statsHtml='<div class="ase-stats">'+
+          '<div class="ins'+(pendingCount>0?' warn':'')+'"><div class="ins-num">'+pendingCount+'</div><div class="ins-lbl">Pendiente'+(pendingCount===1?'':'s')+' de aprobar</div></div>'+
+          '<div class="ins"><div class="ins-num">'+approvedCount+'</div><div class="ins-lbl">Asesor'+(approvedCount===1?'':'es')+' activo'+(approvedCount===1?'':'s')+'</div></div>'+
+          '<div class="ins"><div class="ins-num">'+totalClients+'</div><div class="ins-lbl">Clientes en toda la cartera</div></div>'+
+        '</div>';
+        listEl.innerHTML=statsHtml+'<div class="ase-list">'+list.map(function(p){
           var isSelf=(p.uid===window.AORAES_CLOUD.uid);
           var statusCls=p.status==='approved'?'approved':(p.status==='rechazado'?'rechazado':'pending');
           var badges='<span class="ase-badge '+statusCls+'">'+(STATUS_LABEL[p.status]||p.status||'—')+'</span>';
@@ -1394,8 +1449,11 @@
           var loginTxt=fmtLastLogin(p.lastLoginAt);
           var metaLine=[countTxt,loginTxt].filter(Boolean).join(' · ');
 
+          // "Aprobar" es la acción más urgente y frecuente del admin (la campana de notificaciones
+          // existe justo para avisar de esto) — se muestra siempre visible, no escondida detrás del
+          // menú "⋮" como el resto de acciones (más raras o irreversibles).
+          var approveBtn=(p.status!=='approved') ? '<button type="button" class="notif-row-act" data-ase-approve="'+esc(p.uid)+'">✓ Aprobar</button>' : '';
           var items='';
-          if(p.status!=='approved') items+='<button type="button" data-ase-approve="'+esc(p.uid)+'">✓ Aprobar</button>';
           if(p.status==='approved' && !isSelf){
             items+=(viewing===p.uid)
               ? '<button type="button" data-ase-unview="1">↺ Dejar de ver esta cartera</button>'
@@ -1415,7 +1473,7 @@
           var primaryLabel=esc(p.name||p.email||p.uid);
           var subEmail=(p.name && p.email) ? '<div style="font-size:12px;color:var(--faint);font-weight:500">'+esc(p.email)+'</div>' : '';
           var editNameBtn=isSelf ? ' <button type="button" data-ase-edit-name="1" style="background:none;border:none;color:var(--faint);cursor:pointer;font-size:12.5px;text-decoration:underline;padding:0">✏️ editar nombre</button>' : '';
-          return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+primaryLabel+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+editNameBtn+'</div>'+subEmail+'<div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+'</div><div class="ase-acts">'+menu+'</div></div>';
+          return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+primaryLabel+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+editNameBtn+'</div>'+subEmail+'<div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+'</div><div class="ase-acts">'+approveBtn+menu+'</div></div>';
         }).join('')+'</div>';
       }).catch(function(e){
         clearTimeout(timeoutId);
@@ -2931,11 +2989,23 @@
       if(e.target.closest('#appbar-menu')||e.target===navToggle||navToggle.contains(e.target)) return;
       appbarMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false');
     });
+    var switchMoreBtn=document.getElementById('switch-more'), switchMoreMenu=document.getElementById('switch-more-menu');
+    switchMoreBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var open=switchMoreMenu.hidden;
+      switchMoreMenu.hidden=!open;
+      switchMoreBtn.setAttribute('aria-expanded', open?'true':'false');
+    });
+    document.addEventListener('click', function(e){
+      if(e.target.closest('.switch-more-wrap')) return;
+      switchMoreMenu.hidden=true; switchMoreBtn.setAttribute('aria-expanded','false');
+    });
     document.getElementById('nav-inmueble').addEventListener('click', function(){
       appbarMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false');
+      switchMoreMenu.hidden=true; switchMoreBtn.setAttribute('aria-expanded','false');
       openGenericInmueble();
     });
-    sw.addEventListener('click',function(e){ var b=e.target.closest('button[data-go]'); if(b){ show(b.getAttribute('data-go')); appbarMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false'); } });
+    sw.addEventListener('click',function(e){ var b=e.target.closest('button[data-go]'); if(b){ show(b.getAttribute('data-go')); appbarMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false'); switchMoreMenu.hidden=true; switchMoreBtn.setAttribute('aria-expanded','false'); } });
     document.querySelector('.cock-tools').addEventListener('click',function(e){ var b=e.target.closest('[data-go]'); if(b)show(b.getAttribute('data-go')); });
     document.getElementById('cock-new').addEventListener('click',newClient);
     document.getElementById('ac-x').addEventListener('click',function(e){ e.stopPropagation(); setActive(null); });
