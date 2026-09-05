@@ -2547,11 +2547,30 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var aporteProyA=0, aporteProyB=0;
     var garA=0, garB=0, estA=0, estB=0;
     var share=incomeShareAB();
+    // La Zulage/desgravación de Riester es un beneficio POR PERSONA (Grundzulage+Kinderzulage,
+    // tope Höchstbetrag), no por contrato: si un titular tiene más de una fila Riester-Rente, hay
+    // que sumar su aportación total ANTES de calcular el fomento estatal. Calcularlo fila a fila
+    // (como antes) recompone la Zulage completa en cada fila y duplica el subsidio del hogar.
+    var riesterMontoAnualPorPersona={};
+    rows.forEach(function(r){
+      if(r.tipo!=='Riester-Rente') return;
+      var m=parseFloat(r.aportacion)||0;
+      if(r.aportFrecuencia==='anual') m=m/12;
+      var key=r.persona||'';
+      riesterMontoAnualPorPersona[key]=(riesterMontoAnualPorPersona[key]||0)+m*12;
+    });
+    var riesterZulageMensualPorPersona={}, riesterZulageAsignada={};
+    Object.keys(riesterMontoAnualPorPersona).forEach(function(key){
+      riesterZulageMensualPorPersona[key]=riesterMontoAnualPorPersona[key]>0?riesterZulageMonthly(key,riesterMontoAnualPorPersona[key]):0;
+    });
     rows.forEach(function(r){
       var monto=parseFloat(r.aportacion)||0;
       if(r.aportFrecuencia==='anual') monto=monto/12; // el asesor puede indicar el importe como aporte anual
       if(BAV_TYPES.indexOf(r.tipo)>=0) monto*=(1+BAV_EMPLOYER_MATCH);
-      if(r.tipo==='Riester-Rente') monto+=riesterZulageMonthly(r.persona,monto*12);
+      if(r.tipo==='Riester-Rente'){
+        var riesterKey=r.persona||'';
+        if(!riesterZulageAsignada[riesterKey]){ monto+=riesterZulageMensualPorPersona[riesterKey]; riesterZulageAsignada[riesterKey]=true; }
+      }
       if(r.tipo==='Ausbildungsvorsorge'){ tieneMenores=true; }
       else {
         aporte+=monto; if(monto>0||r.tipo) tieneJub=true;
@@ -2894,8 +2913,16 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // el factor que más dispara la necesidad de BU, normalmente no las activan. Por eso cuentan, pero
     // no como un BU completo. El factor es criterio AORAES, no una cifra del guion: ahí no existe.
     var INCAP_TYPE_FACTOR={BU:1, GF:0.6, EU:0.6};
+    function rowsInScope(rows){
+      // insIncap/insAccidentes llevan titular propio (no están en INS_HOUSEHOLD): en vista de una
+      // sola persona, sumar también las filas de la otra persona infla su cobertura con pólizas que
+      // no son suyas. RC/Hogar/etc. no necesitan este filtro porque son household-level (sin campo
+      // persona) y ya se tratan como una única póliza compartida en sus propias funciones.
+      if(scope==='AMBOS') return rows;
+      return rows.filter(function(r){ var p=r.persona; return !p||p==='Ambos'||p===scope; });
+    }
     function buCoverageCredit(){
-      var rows=getContractRows(insSectionKey('insIncap')), any=false, renta=0, factor=1;
+      var rows=rowsInScope(getContractRows(insSectionKey('insIncap'))), any=false, renta=0, factor=1;
       rows.forEach(function(r){
         var v=r.beneficioMensual;
         if(v!==undefined&&String(v).trim()!==''){ any=true; renta+=parseFloat(v)||0; }
@@ -2926,7 +2953,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // umbral, crédito proporcional.
     var ACCIDENTES_ADEQUACY_MULTIPLE=44;
     function accidentesCoverageCredit(){
-      var rows=getContractRows(insSectionKey('insAccidentes')), any=false, grundsumme=0;
+      var rows=rowsInScope(getContractRows(insSectionKey('insAccidentes'))), any=false, grundsumme=0;
       rows.forEach(function(r){ var v=r.grundsumme; if(v!==undefined&&String(v).trim()!==''){ any=true; grundsumme+=parseFloat(v)||0; } });
       if(!any) return 1;
       if(!(totIncome>0)) return 0;
@@ -3605,9 +3632,10 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   var BUD3010_SEGUROS=['seguroHogar','seguroCoche','rc','incapacidad'];
   function computeBudget3010(r){
     if(r.expTotalMode) return null; // needs the per-category breakdown
+    var share=scopeShare(); // mismo prorrateo que ya aplica compute() a totExp/totIncome en vista individual
     var viv=0, seg=0;
     document.querySelectorAll('[data-exp]').forEach(function(e){
-      var k=e.getAttribute('data-exp'), v=parseFloat(e.value)||0;
+      var k=e.getAttribute('data-exp'), v=(parseFloat(e.value)||0)*share;
       if(BUD3010_VIVIENDA.indexOf(k)>=0) viv+=v;
       else if(BUD3010_SEGUROS.indexOf(k)>=0) seg+=v;
     });

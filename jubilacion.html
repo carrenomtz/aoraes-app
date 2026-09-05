@@ -1167,9 +1167,16 @@ function calcRiester(){
   const extraRefund=Math.max(0,taxSaving-zulage);
   const beneficioAnual=zulage+extraRefund;
   const capitalAdicional=fvGeneric(0,beneficioAnual/12,S.ret,years);
-  // Punto a partir del cual aportar más no aumenta el fomento: la Zulage se satura al llegar
-  // al Mindesteigenbeitrag, y la desgravación se satura al llegar al Höchstbetrag (2.100€) de base deducible.
-  const maxUsefulMonthly=Math.ceil(Math.max(mindesteigenbeitrag,RIESTER.hoechstbetrag-zulageBase)/12);
+  // Punto a partir del cual aportar más no aumenta el fomento. No es simplemente
+  // max(Mindesteigenbeitrag, Höchstbetrag−Zulage): si el sueldo es alto (Mindesteigenbeitrag+Zulage >
+  // Höchstbetrag, a partir de ~52.500€ brutos/año), la base deducible total llega al Höchstbetrag
+  // ANTES de que la Zulage termine de rampar hasta su tope — en ese caso el punto de saturación real es
+  // Höchstbetrag·Mindesteigenbeitrag/(Mindesteigenbeitrag+Zulage), no Höchstbetrag−Zulage (que sería
+  // demasiado alto). Cuando el sueldo es más bajo, ambas fórmulas coinciden en que gana Höchstbetrag−Zulage.
+  const maxUsefulMonthly=Math.ceil(Math.max(
+    RIESTER.hoechstbetrag-zulageBase,
+    RIESTER.hoechstbetrag*mindesteigenbeitrag/(mindesteigenbeitrag+zulageBase)
+  )/12);
   const overfunded=monthly>maxUsefulMonthly;
   const wastedMonthly=overfunded?(monthly-maxUsefulMonthly):0;
   return {years,kids,zulageBase,mindesteigenbeitrag,suggestedMonthly,monthly,annualOwn,metRatio,zulage,taxRate,taxSaving,extraRefund,beneficioAnual,capitalAdicional,maxUsefulMonthly,overfunded,wastedMonthly};
@@ -1242,7 +1249,18 @@ function fvETFdetailed(monthly,rate,years){
   const finalTax=Math.max(0,finalGain*0.70*0.26375-vorabPool*0.26375);
   return {gross:cap,net:cap-finalTax,tax:switchTax+finalTax,spread,switchTax};
 }
-function ertragsanteil(age){const t={60:22,61:22,62:21,63:20,64:19,65:18,66:18,67:17,68:16,69:15,70:15,71:14};return(t[Math.min(Math.max(age,60),74)]??17)/100;}
+function ertragsanteil(age){const t={60:22,61:22,62:21,63:20,64:19,65:18,66:18,67:17,68:16,69:15,70:15,71:14,72:13,73:13,74:12};return(t[Math.min(Math.max(age,60),74)]??17)/100;}
+// Besteuerungsanteil de la renta Rürup/gesetzliche según el año de jubilación (misma tabla oficial
+// ya verificada en analisis.html — no la fórmula plana "0.84+años*0.005" que usaba antes este archivo,
+// que retrasaba 4 años el inicio de la subida y no cubría los tramos anteriores a 2020/2022).
+function besteuerungsanteilForYear(year){
+  const y=Math.round(year);
+  if(y<=2005) return 0.50;
+  if(y<=2020) return 0.50+0.02*(y-2005);
+  if(y<=2022) return 0.80+0.01*(y-2020);
+  if(y>=2058) return 1.00;
+  return 0.82+0.005*(y-2022);
+}
 
 function noCostFV(mo,rate,years){if(mo<=0)return 0;const r=S.excel?(rate/100+0.0065):(rate/100),ann=mo*12;let c=0;for(let y=1;y<=years;y++)c=(c+ann)*(1+r);return c;}
 function noCostFVm(mo,rate,years){if(mo<=0)return 0;const r=rate/100/12;let c=0;for(let i=0;i<years*12;i++)c=c*(1+r)+mo;return c;}
@@ -1267,7 +1285,7 @@ function calc(ins,years){
   const gR=fvIns(ruerupAmt,S.ret,years,ins,'brva');
   const gP=fvIns(prvAmt,S.ret,years,ins,'vasp');
   const gE=etfAmt>0?fvETF(etfAmt,S.ret,years):0;
-  const bst=Math.min(0.84+Math.max(years-4,0)*0.005,1.0);
+  const bst=besteuerungsanteilForYear(new Date().getFullYear()+years);
   const ea=ertragsanteil(S.retire),jr=Math.round(taxRate*100*0.65)/100;
   const Pr=getProd(ins,'brva'),Pp=getProd(ins,'vasp');
   if(ins==='generali'){Pr.rf=S.rfBrva;Pp.rf=S.rfVasp;}
@@ -1279,8 +1297,8 @@ function calc(ins,years){
   if(gE>0){const inv=etfAmt*12*years,gp=Math.max(0,(gE-inv)/gE);const moG=gE*0.04/12;etfMoN=moG*(1-gp*0.70*0.26375);etfTax=Math.max(0,(gE-inv)*0.70*0.26375);etfNet=gE-etfTax;}
   const moN=rMoN+pMoN+etfMoN;
   const lifespan=Math.max(1,S.life-S.retire);
-  const taxR=rMoG*bst*jr*12*lifespan*0.72;
-  const taxP=pMoG*ea*jr*12*lifespan*0.72;
+  const taxR=rMoG*bst*jr*12*lifespan;
+  const taxP=pMoG*ea*jr*12*lifespan;
   const net=(gR-taxR)+(gP-taxP)+etfNet;
   const gross=gR+gP+gE;
   const contributed=S.monthly*12*years;
@@ -1847,6 +1865,12 @@ async function generatePDF(lang){
   const years=S.retire-S.age;
 
   // Run calculations
+  // "real" usa la reinversión que el asesor tiene realmente configurada en pantalla — es la que debe
+  // aparecer en la portada, los números grandes, "el camino" y la página VS ETF, para que el PDF nunca
+  // contradiga lo que el cliente acaba de ver en vivo. gv/ge son solo para la página "Dos opciones", que
+  // compara a propósito los dos destinos fijos posibles del subsidio (Privatrente vs ETF) sea cual sea
+  // la reinversión real seleccionada.
+  const real=calc('generali',years);
   const oldReinvest=S.reinvest;
   S.reinvest='vasp';
   const gv=calc('generali',years);
@@ -1895,17 +1919,17 @@ async function generatePDF(lang){
   doc.addPage();bg(C.midnight);
   txt([159,176,199]);font('helvetica','bold',9);
   doc.text(t.slideCapital.replace('{0}',S.retire),15,18);
-  txt(C.white);font('helvetica','bold',52);doc.text(eur0(gv.net),15,50);
+  txt(C.white);font('helvetica','bold',52);doc.text(eur0(real.net),15,50);
   txt([159,176,199]);font('helvetica','normal',11);doc.text(t.capitalNote,15,60);
   goldLine(15,67,120);
-  txt(C.goldL);font('helvetica','bold',32);doc.text(Math.round(gv.moN)+' €/'+t.month,15,82);
+  txt(C.goldL);font('helvetica','bold',32);doc.text(Math.round(real.moN)+' €/'+t.month,15,82);
   txt([159,176,199]);font('helvetica','normal',10);doc.text(t.rentLabel,15,90);
 
   // Stat cards on right side
   const stats=[
-    {l:t.pocket,v:eur0(gv.contributed),n:S.monthly+' €/'+t.month+' × '+years+' '+t.years},
-    {l:t.mult,v:'× '+dec1(gv.net/gv.contributed),n:t.multNote},
-    {l:t.state,v:eur0(gv.subsidyTotal),n:t.stateNote},
+    {l:t.pocket,v:eur0(real.contributed),n:S.monthly+' €/'+t.month+' × '+years+' '+t.years},
+    {l:t.mult,v:'× '+dec1(real.net/real.contributed),n:t.multNote},
+    {l:t.state,v:eur0(real.subsidyTotal),n:t.stateNote},
   ];
   let sy=20;
   stats.forEach(s=>{
@@ -1921,9 +1945,9 @@ async function generatePDF(lang){
   header(t.path,t.pathTitle,'',false);
   const steps=[
     {t:t.s1,v:S.monthly+' €/'+t.month,n:t.s1n},
-    {t:t.s2,v:'+'+eur0(gv.subsidyTotal),n:t.s2n},
-    {t:t.s3,v:'× '+dec1(gv.net/gv.contributed),n:t.s3n},
-    {t:t.s4,v:eur0(gv.net),n:t.s4n},
+    {t:t.s2,v:'+'+eur0(real.subsidyTotal),n:t.s2n},
+    {t:t.s3,v:'× '+dec1(real.net/real.contributed),n:t.s3n},
+    {t:t.s4,v:eur0(real.net),n:t.s4n},
   ];
   const sw=60, sgap=8, sx=15;
   steps.forEach((s,i)=>{
@@ -1967,23 +1991,23 @@ async function generatePDF(lang){
   // ---- PAGE 4: VS ETF ----
   doc.addPage();
   header('',t.vsTitle,t.vsNote,false);
-  const maxVal=Math.max(gv.net,etf.net);
+  const maxVal=Math.max(real.net,etf.net);
   const barW=180;
   // Strategy bar
   txt(C.navy);font('helvetica','bold',10);doc.text(t.strategy,15,56);
-  fill(C.gold);doc.roundedRect(80,50,(gv.net/maxVal)*barW,10,2,2,'F');
-  txt(C.navy);font('helvetica','bold',9);doc.text(eur0(gv.net),83,58);
+  fill(C.gold);doc.roundedRect(80,50,(real.net/maxVal)*barW,10,2,2,'F');
+  txt(C.navy);font('helvetica','bold',9);doc.text(eur0(real.net),83,58);
   // ETF bar
   txt(C.navy);font('helvetica','bold',10);doc.text(t.etfDirect,15,76);
   fill(C.slate);doc.roundedRect(80,70,(etf.net/maxVal)*barW,10,2,2,'F');
   txt(C.white);font('helvetica','bold',9);doc.text(eur0(etf.net),83,78);
 
-  const diff=Math.abs(etf.net-gv.net);
+  const diff=Math.abs(etf.net-real.net);
   txt(C.slate);font('helvetica','normal',10);
   doc.text(eur0(diff)+' '+t.diff.replace('{0}',years)+' — '+t.diffNote,15,95);
 
   // Benefits
-  const bens=[t.ben1+' ('+Math.round(gv.moN)+' €/'+t.month+')',t.ben2,t.ben3,t.ben4];
+  const bens=[t.ben1+' ('+Math.round(real.moN)+' €/'+t.month+')',t.ben2,t.ben3,t.ben4];
   const bw=(W-30-10*3)/4;
   bens.forEach((b,i)=>{
     const bx=15+i*(bw+10);
@@ -2032,7 +2056,7 @@ async function generatePDF(lang){
   txt(C.goldD);font('helvetica','bold',8);doc.text('RÜRUP · BASISRENTE',20,58);
   txt(C.navy);font('helvetica','bold',18);doc.text(rMo+' €/'+t.month,20,72);
   txt(C.slate);font('helvetica','normal',9);
-  doc.text((lang==='es'?'Capital neto: ':'Nettokapital: ')+eur0(gv.brva.net)+' · '+(lang==='es'?'Renta: ':'Rente: ')+Math.round(gv.brva.moN)+' €/'+t.month,20,82);
+  doc.text((lang==='es'?'Capital neto: ':'Nettokapital: ')+eur0(real.brva.net)+' · '+(lang==='es'?'Renta: ':'Rente: ')+Math.round(real.brva.moN)+' €/'+t.month,20,82);
   const rPts=lang==='es'?['Desgravación fiscal del 100%','Renta vitalicia, no rescatable','Blindaje total ante embargo']:['100% steuerlich absetzbar','Lebenslange Rente, nicht kündbar','Vollständiger Pfändungsschutz'];
   rPts.forEach((p,i)=>{fill(C.sage);doc.circle(18,93+i*10,1.2,'F');txt(C.sage);font('helvetica','normal',9);doc.text(p,22,95+i*10);});
 
@@ -2041,15 +2065,15 @@ async function generatePDF(lang){
   txt(C.goldL);font('helvetica','bold',8);doc.text('PRIVATRENTE · VASP',x2+5,58);
   txt(C.white);font('helvetica','bold',18);doc.text(vMo+' €/'+t.month,x2+5,72);
   txt([185,196,214]);font('helvetica','normal',9);
-  doc.text((lang==='es'?'Capital neto: ':'Nettokapital: ')+eur0(gv.vasp.net)+' · '+(lang==='es'?'Renta: ':'Rente: ')+Math.round(gv.vasp.moN)+' €/'+t.month,x2+5,82);
+  doc.text((lang==='es'?'Capital neto: ':'Nettokapital: ')+eur0(real.vasp.net)+' · '+(lang==='es'?'Renta: ':'Rente: ')+Math.round(real.vasp.moN)+' €/'+t.month,x2+5,82);
   const vPts=lang==='es'?['Más flexible: capital o renta al jubilarte','Recibe el subsidio fiscal reinvertido','Capital disponible o renta vitalicia']:['Flexibler: Kapital oder Rente bei Rentenbeginn','Erhält den reinvestierten Steuervorteil','Kapitalwahl oder lebenslange Rente'];
   vPts.forEach((p,i)=>{fill(C.goldL);doc.circle(x2+4,93+i*10,1.2,'F');txt(C.goldL);font('helvetica','normal',9);doc.text(p,x2+7,95+i*10);});
 
   // ---- PAGE 7b: ENTNAHMEPHASE (fase de retiro) ----
   doc.addPage();
   header(t.entEye,t.entTitle,t.entSub,false);
-  // payout numbers based on the headline (gv) scenario
-  const entMo=gv.moN, entAnnual=entMo*12, entByLife=entMo*12*Math.max(0,S.life-S.retire);
+  // payout numbers based on the headline (real) scenario
+  const entMo=real.moN, entAnnual=entMo*12, entByLife=entMo*12*Math.max(0,S.life-S.retire);
   const eaPct=Math.round(ertragsanteil(S.retire)*100);
   let _pot=etf.net,_dep=null;const _mr=Math.pow(1+(S.retDraw||0)/100,1/12)-1;
   for(let a=S.retire;a<=100 && _dep===null;a++){for(let m=0;m<12;m++){_pot*=(1+_mr);if(_pot>=entMo){_pot-=entMo;}else{_dep=a;break;}}}

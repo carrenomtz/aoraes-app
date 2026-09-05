@@ -2370,7 +2370,12 @@
       var interesGanadoAhorro=(pct>0&&mesesAhorro>0)?Math.max(0,objetivoAhorro-cuotaAhorro*mesesAhorro):0;
       var cuotaPrestamo=annuityQuota(capitalPrestamo,cfg.interesPrestamo,mesesPrestamo);
       var interesTotalPrestamo=Math.max(0,cuotaPrestamo*mesesPrestamo-capitalPrestamo);
-      var comision=precio*(cfg.comision||0)/100;
+      // La comisión de apertura es un % del PRÉSTAMO real (capitalPrestamo), no del precio del
+      // inmueble: solo se pide comisión sobre lo que el banco realmente presta, no sobre la parte
+      // que ya cubre el ahorro previo (Bausparvertrag). Con precio en vez de capitalPrestamo la
+      // comisión salía inflada para toda opción con ahorro previo (pct>0) — coincide con precio
+      // solo cuando pct=0 (Banco directo, capitalPrestamo===precio).
+      var comision=capitalPrestamo*(cfg.comision||0)/100;
       var costeTotal=precio+interesTotalPrestamo+comision-interesGanadoAhorro;
       var tasaEfectiva=effectiveAnnualRate(capitalPrestamo-comision,cuotaPrestamo,mesesPrestamo);
       // Duración real de cada camino hasta terminar de pagar del todo: ahorro (si lo hay) + el
