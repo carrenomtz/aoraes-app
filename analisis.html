@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="noindex, nofollow">
 <title>AORAES · Análisis Financiero Personal</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -2409,9 +2409,19 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       var s7Rows=getContractRows('s7');
       var o7={persona:persona,tipo:(row.tipo==='Inversión'?'Fondos de inversión':'Bausparvertrag'),entidad:row.producto||'Contratado',aportacion:aporte,frecuencia:freq,tieneAportacion:!!aporte};
       renderContractSection('s7',pushOrFill(s7Rows,o7,'entidad')); moved=true;
+    } else if(row.tipo==='Opción de dependencia (Pflegerentenoption)'){
+      // No marca "tengo esto" en insPflege (eso diría al análisis que la dependencia ya está cubierta
+      // hoy, que es justo el error que este tipo separado evita — ver PROPUESTA_TYPE_META). En vez de
+      // eso usa el flag "Revisar con nosotros" que ya existe para coberturas pendientes: así queda
+      // anotado y sale en el listado de revisiones del informe, sin falsear la puntuación.
+      var revChk=document.querySelector('[data-insrev="insPflege"]'); if(revChk) revChk.checked=true;
+      var secDep=insSectionKey('insPflege'), destRowsDep=getContractRows(secDep);
+      var notaDep=(row.producto||'Opción de dependencia (Pflegerentenoption)')+(rentaReal>0?' — '+rentaReal.toLocaleString('de-DE')+' €/mes en la fecha de opción':'');
+      renderContractSection(secDep,pushOrFill(destRowsDep,{persona:persona,compania:notaDep},'compania'));
+      moved=true;
     }
     if(!moved){
-      alert('"'+row.tipo+'" todavía no tiene una sección real donde colocarse automáticamente (por ejemplo, una opción de dependencia no es una cobertura activa) — anótalo manualmente en la ficha si corresponde.');
+      alert('"'+row.tipo+'" todavía no tiene una sección real donde colocarse automáticamente — anótalo manualmente en la ficha si corresponde.');
       return;
     }
     rows.splice(idx,1);
