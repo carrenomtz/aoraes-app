@@ -266,10 +266,10 @@
   .cock-head h1{font-size:clamp(26px,4vw,36px); line-height:1.04; margin-top:10px}
   .cock-new{
     background:var(--navy); color:#ffffff; border:0; font-family:inherit; font-weight:600; font-size:13.5px;
-    min-height:42px; padding:0 19px; border-radius:var(--r-md); cursor:pointer;
-    box-shadow:var(--sh-2); transition:transform .16s var(--ease), background .16s var(--ease), box-shadow .16s var(--ease);
+    min-height:42px; padding:0 19px; border-radius:11px; cursor:pointer;
+    box-shadow:0 6px 16px rgba(20,33,61,.18); transition:transform .16s var(--ease), background .16s var(--ease), box-shadow .16s var(--ease);
   }
-  .cock-new:hover{background:var(--navy-deep); transform:translateY(-1px); box-shadow:var(--sh-3)}
+  .cock-new:hover{background:var(--navy-deep); transform:translateY(-1px); box-shadow:0 8px 20px rgba(20,33,61,.24)}
   .cock-new:active{transform:translateY(0)}
 
   /* Impulsos: lista corta con nombre + motivo real (no un número), para que el asesor sepa a
@@ -442,7 +442,7 @@
   .ws-cta:hover{background:var(--navy-deep); box-shadow:0 8px 20px rgba(20,33,61,.24); transform:translateY(-1px)} .ws-cta:active{transform:translateY(0)}
   .ws-cta:disabled{opacity:.6; cursor:default; transform:none}
   .ws-generic-banner{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; background:var(--gold-tint); border:1px solid var(--gold-soft); border-radius:var(--r-md); padding:14px 18px; margin:14px 0; font-size:13px; color:var(--navy-2)}
-  .ws-cta.ghost{background:var(--surface); color:var(--navy); border:1px solid var(--gold-soft)} .ws-cta.ghost:hover{background:var(--gold-tint)}
+  .ws-cta.ghost{background:var(--surface); color:var(--navy); border:1px solid var(--gold-soft); box-shadow:none} .ws-cta.ghost:hover{background:var(--gold-tint); box-shadow:none}
   .ws-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:19px; margin-bottom:14px; box-shadow:var(--sh-1)}
   .ws-card h3{font-size:16px; margin-bottom:11px}
   .ws-field{display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line-soft); font-size:13.5px}
