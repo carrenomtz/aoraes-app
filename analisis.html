@@ -5311,6 +5311,122 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       }
       return pages;
     }
+    // Copia local y ligera de las preguntas de preguntas-medicas.html (mismo id/código/texto ES)
+    // — analisis.html no comparte módulos con esa herramienta, así que el informe no puede pedirle
+    // las etiquetas en vivo; si el cuestionario cambia allí, esta copia hay que actualizarla a mano.
+    var MED_Q_SECTIONS=[
+      {id:"A",title:"Médico de cabecera",items:[{id:"a1",code:"A1",type:"yn",text:"¿Tiene médico de cabecera (Hausarzt)?"},{id:"a2",code:"A2",type:"text",text:"Si sí, indique nombre y dirección del médico de cabecera. Si no, ¿quién conoce mejor su estado de salud? (nombre, dirección y especialidad del médico, terapeuta, psicólogo, hospital o clínica)"}]},
+      {id:"B",title:"Datos físicos y estilo de vida",items:[{id:"b1",code:"B1",type:"measure",text:"¿Cuánto mide y cuánto pesa?"},{id:"b2",code:"B2",type:"yn",text:"¿Ha practicado en los últimos 2 años deportes o aficiones de riesgo elevado (p. ej. deportes aéreos, motociclismo/automovilismo, submarinismo, equitación, deportes de combate)?"},{id:"b3",code:"B3",type:"yn",text:"¿Ha fumado (cigarrillos, puros, cigarritos o pipa) o usado cigarrillos/puros/pipas electrónicos en los últimos 12 meses?"},{id:"b4",code:"B4",type:"yn",text:"¿Va a residir en los próximos 12 meses más de 3 meses seguidos fuera de Europa?"}]},
+      {id:"C",title:"Historial médico (últimos 5–10 años)",items:[{id:"c1",code:"C1",type:"yn",text:"¿Se le ha diagnosticado alguna vez una infección por VIH (test de sida positivo)?"},{id:"c2",code:"C2",type:"yn",text:"¿Se le ha diagnosticado alguna vez cáncer o un tumor?"},{id:"c3_1",code:"C3.1",type:"yn",text:"<b>Corazón</b>, circulación o vasos sanguíneos (p. ej. hipertensión, infarto, trastornos circulatorios, enfermedades venosas)"},{id:"c3_2",code:"C3.2",type:"yn",text:"<b>Aparato respiratorio</b> (p. ej. bronquitis aguda o crónica, asma, apnea del sueño, sinusitis)"},{id:"c3_3",code:"C3.3",type:"yn",text:"<b>Estómago</b>, intestino, vesícula biliar, páncreas o hígado (p. ej. inflamación, valores analíticos elevados, endoscopia digestiva, acidez/reflujo)"},{id:"c3_4",code:"C3.4",type:"yn",text:"<b>Riñón</b>, vejiga, próstata u órganos pélvicos (p. ej. inflamación, cálculos, sangre o proteína en orina, incontinencia, quistes)"},{id:"c3_5",code:"C3.5",type:"yn",text:"<b>Esterilidad</b> o trastornos de fertilidad (p. ej. fertilidad reducida, tratamiento hormonal, deseo de embarazo no cumplido)"},{id:"c3_6",code:"C3.6",type:"yn",text:"<b>Metabolismo</b> u hormonas (p. ej. glucosa o lípidos elevados, gota, alteración de la tiroides)"},{id:"c3_7",code:"C3.7",type:"yn",text:"<b>Sangre</b> (p. ej. anemia, trastornos de la coagulación)"},{id:"c3_8",code:"C3.8",type:"yn",text:"<b>Sistema nervioso</b>, médula espinal o cerebro (p. ej. epilepsia, migraña, mareos, trastornos del equilibrio o la marcha, cefaleas)"},{id:"c3_9",code:"C3.9",type:"yn",text:"<b>Psique</b> (p. ej. depresión, trastornos de ansiedad, trastornos psicosomáticos, duelo, TDAH, trastornos del sueño)"},{id:"c3_10",code:"C3.10",type:"yn",text:"<b>Columna vertebral</b>, tendones, ligamentos, músculos, huesos o articulaciones (p. ej. enfermedades de espalda, hernia discal, artrosis, reuma, contracturas)"},{id:"c3_11",code:"C3.11",type:"yn",text:"<b>Piel</b> o alergias (p. ej. fiebre del heno, alergia alimentaria, psoriasis, eccemas, neurodermatitis)"},{id:"c3_12",code:"C3.12",type:"yn",text:"<b>Ojos</b> u oídos (p. ej. cataratas, glaucoma, acúfenos/tinnitus, tratamiento láser)"},{id:"c3_13",code:"C3.13",type:"yn",text:"<b>Infecciones</b> (p. ej. hepatitis aguda o crónica, enfermedades tropicales, infecciones de transmisión sexual, infección tras picadura de garrapata, Covid-19)"},{id:"c3_14",code:"C3.14",type:"yn",text:"<b>Intoxicaciones</b> o adicciones (p. ej. consumo de alcohol o drogas)"},{id:"c4",code:"C4",type:"yn",text:"¿Le han recetado medicamentos, médicos o naturópatas, en los últimos 2 años? (indique cuáles en «Detalles»)"},{id:"c5",code:"C5",type:"yn",text:"¿Ha tenido operaciones (también ambulatorias) o ingresos hospitalarios en los últimos 10 años (p. ej. hospital, clínica de rehabilitación o cura)?"},{id:"c6",code:"C6",type:"yn",text:"¿Son necesarios o se le han recomendado tratamientos, revisiones o exploraciones ambulatorias u hospitalarias (incluidas revisiones de control)?"},{id:"c7",code:"C7",type:"yn",text:"¿Existe un embarazo en curso?"}]},
+      {id:"D",title:"Discapacidad y prestaciones",items:[{id:"d1",code:"D1",type:"yn",text:"¿Existen limitaciones físicas o psíquicas (p. ej. amputaciones, parálisis, discapacidad visual a partir de 8 dioptrías, hipoacusia)?"},{id:"d2",code:"D2",type:"yn",text:"¿Existe una incapacidad laboral o profesional reconocida, o un accidente de trabajo reconocido?"},{id:"d3",code:"D3",type:"yn",text:"¿Percibe o ha solicitado, por motivos de salud en los últimos 5 años, una pensión u otra prestación periódica? ¿Tiene certificado de discapacidad?"},{id:"d4",code:"D4",type:"yn",text:"¿Se han contratado ya, o solicitado en los últimos 5 años (incluso junto con esta solicitud), seguros de incapacidad laboral, renta por dependencia o capacidad básica en otra aseguradora de vida?"},{id:"d5",code:"D5",type:"yn",text:"¿Utiliza o necesita ayuda visual (gafas, lentillas)?"}]},
+      {id:"E",title:"Salud dental",items:[{id:"e1",code:"E1",type:"yn-sub",text:"¿Tiene prótesis dental removible?",sub:[["up","¿Maxilar superior?"],["lo","¿Maxilar inferior?"]]},{id:"e2",code:"E2",type:"number",text:"¿En cuántos dientes se ha realizado una endodoncia (tratamiento de conducto) en los últimos 2 años?"},{id:"e3",code:"E3",type:"yn",text:"¿Se le ha diagnosticado o tratado periodontitis / piorrea en los últimos 3 años?"},{id:"e4",code:"E4",type:"yn",text:"¿Está en curso, o es necesario o se ha recomendado, algún tratamiento dental, ortodóncico o de prótesis dental?"},{id:"e5",code:"E5",type:"number",text:"Número de dientes naturales perdidos aún no reemplazados (sin contar muelas del juicio, dientes de leche ni cierre de espacios)"}]}
+    ];
+    // "Lista de gastos" — desglose por categoría, línea a línea; se descartan las partidas en 0
+    // (igual criterio que el resto del informe: no repetir datos vacíos) para que la página muestre
+    // solo lo que el cliente realmente gasta, no las ~19 categorías completas del formulario.
+    function expenseListInner(){
+      if(state.expMode==='total'){
+        var teEl=document.querySelector('[data-exptotal]');
+        var tot=(teEl?num(teEl):0)*scopeShare();
+        return tot>0.5 ? ('<p class="sh-lead">Los gastos se registraron como un importe total, sin desglose por categoría.</p>'+
+          '<div class="sh-grid2" style="grid-template-columns:1fr">'+kpi('Gastos totales / mes',M(tot))+'</div>') : '';
+      }
+      var share=scopeShare(), rows='', grandTotal=0, any=false;
+      catOrder.forEach(function(cat){
+        var items=(expenses[cat]||[]).map(function(f){
+          var el=document.querySelector('[data-exp="'+f[0]+'"]');
+          var v=(el?num(el):0)*share;
+          return v>0.5 ? [f[1],v] : null;
+        }).filter(Boolean);
+        if(!items.length) return;
+        any=true;
+        var catTotal=items.reduce(function(s,it){return s+it[1];},0);
+        grandTotal+=catTotal;
+        rows+='<tr><td><b>'+esc(cat)+'</b></td><td class="num"><b>'+M(catTotal)+'</b></td></tr>'+
+          items.map(function(it){return '<tr><td style="padding-left:16px;color:#6b7283">'+esc(it[0])+'</td><td class="num">'+M(it[1])+'</td></tr>';}).join('');
+      });
+      if(!any) return '';
+      return '<p class="sh-lead">Solo se listan las partidas con importe registrado.</p>'+
+        '<table class="sh-table"><tbody>'+rows+'</tbody></table>'+
+        '<div class="sh-grid2" style="grid-template-columns:1fr;margin-top:14px">'+kpi('Total gastos / mes',M(grandTotal))+'</div>';
+    }
+    // "Datos personales" — copia de S.11 (identificación, contacto, IBAN, Steuer-ID) para que el
+    // asesor tenga la ficha completa a mano sin volver a abrir la app. Respeta el scope del informe:
+    // un informe individual de A o B no debe filtrar los datos de la otra persona.
+    function personalDataInner(r){
+      function g(k,letter){ return ((document.querySelector('[data-pers="'+k+'_'+letter+'"]')||{}).value||'').trim(); }
+      function block(letter,title){
+        var nombre=g('nombre',letter);
+        if(letter==='B' && !nombre) return '';
+        var fnac=g('fechaNacimiento',letter), edadP=fnac?ageFromDOB(fnac):0;
+        var rows=[
+          ['Nombre completo',[g('tratamiento',letter),nombre].filter(Boolean).join(' ')],
+          ['Fecha de nacimiento',fnac?(fmtDate(fnac)+(edadP>0?(' · '+edadP+' años'):'')):''],
+          ['Lugar de nacimiento',[g('lugarNacimiento',letter),g('paisNacimiento',letter)].filter(Boolean).join(', ')],
+          ['Nacionalidad',g('nacionalidad',letter)],
+          ['Estado civil',g('estadoCivil',letter)],
+          ['Profesión / actividad',g('profesion',letter)],
+          ['¿Fumador/a?',g('fumador',letter)],
+          ['Correo electrónico',g('email',letter)],
+          ['Teléfono',g('telefono',letter)],
+          ['Dirección',g('direccion',letter)],
+          ['Steuer-ID',g('steuerId',letter)],
+          ['IBAN',g('iban',letter)]
+        ].filter(function(x){return x[1];});
+        if(!rows.length) return '';
+        return '<div class="sh-card" style="margin-bottom:14px"><div class="sh-card-title">'+title+'</div>'+
+          rows.map(function(x){return '<div class="sh-kv" style="padding:3px 0"><span>'+x[0]+'</span><b>'+esc(x[1])+'</b></div>';}).join('')+
+          '</div>';
+      }
+      var showA=r.scope!=='B', showB=r.scope!=='A';
+      return (showA?block('A','Persona A'):'')+(showB?block('B','Persona B'):'');
+    }
+    // "Cuestionario de salud" — resumen del cuestionario de preguntas-medicas.html para este mismo
+    // cliente (comparten el id de aoraes_clients_v1 / currentId). Solo se listan las respuestas "Sí"
+    // y los datos con contenido real (medidas, texto, números>0): un "No" es la respuesta esperada
+    // por defecto y listar las ~36 no aporta nada — mismo criterio que descartar los gastos en 0.
+    function medicalQuestionnaireInner(r){
+      if(!currentId) return '';
+      var byClient={};
+      try{ byClient=JSON.parse(localStorage.getItem('aoraes_med_by_client_v1'))||{}; }catch(e){}
+      var rec=byClient[currentId]; if(!rec) return '';
+      function personBlock(letter,title){
+        var data=rec[letter]||{};
+        if(!data || !Object.keys(data).length) return '';
+        var h=data['b1.h'], w=data['b1.w'], lines='', siCount=0, totalYn=0;
+        MED_Q_SECTIONS.forEach(function(sec){
+          var secLines='';
+          sec.items.forEach(function(q){
+            if(q.type==='measure') return; // se muestra aparte, arriba
+            if(q.type==='yn'||q.type==='yn-sub'){
+              totalYn++;
+              var ans=data[q.id];
+              if(!ans||ans.ans!=='si') return;
+              siCount++;
+              var extra='';
+              if(q.type==='yn-sub' && ans.sub){
+                var checked=(q.sub||[]).filter(function(s){return ans.sub[s[0]];}).map(function(s){return s[1];});
+                if(checked.length) extra=' — '+checked.join(', ');
+              }
+              if(ans.detail) extra+=(extra?'; ':' — ')+esc(ans.detail);
+              secLines+='<li><b>'+q.code+'</b> '+q.text+extra+'</li>';
+            } else if(q.type==='text'){
+              var val=(data[q.id]||'').trim();
+              if(val) secLines+='<li><b>'+q.code+'</b> '+q.text+' — '+esc(val)+'</li>';
+            } else if(q.type==='number'){
+              var n=parseFloat(data[q.id]);
+              if(n>0) secLines+='<li><b>'+q.code+'</b> '+q.text+' — <b>'+n+'</b></li>';
+            }
+          });
+          if(secLines) lines+='<div class="sh-card-title" style="margin-top:10px">'+esc(sec.title)+'</div><ul class="sh-list">'+secLines+'</ul>';
+        });
+        var measureTxt=(h||w)?('<div class="sh-kv" style="padding:3px 0"><span>Altura / peso</span><b>'+(h||'—')+' cm / '+(w||'—')+' kg</b></div>'):'';
+        if(!measureTxt && !lines) return '';
+        return '<div class="sh-card" style="margin-bottom:14px"><div class="sh-card-title">'+esc(title)+' · '+siCount+' de '+totalYn+' respuestas «Sí»</div>'+measureTxt+lines+'</div>';
+      }
+      var showA=r.scope!=='B', showB=r.scope!=='A';
+      return (showA?personBlock('a','Persona A'):'')+(showB?personBlock('b','Persona B'):'');
+    }
     var S=[];
     var pctR=function(x){return Math.round((x||0)*100)+'%';};
     function pyramidSVG(L){
@@ -5376,6 +5492,8 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // ---- per-person content pages (Resumen, Pirámide, Jubilación, Prioridades) ----
     function contentPages(r,includePropuesta){
       var P=[];
+      var persInner=personalDataInner(r);
+      if(persInner) P.push(page('Datos personales','<div class="sh-eyebrow">Ficha del cliente</div><h2>Datos personales</h2>'+persInner));
       var Lp=levelScores(r);
       var d=r.ret;
       var splitBar='';
@@ -5417,6 +5535,9 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
             '<div class="sh-bar"><span style="width:'+efPct+'%;background:'+efColor+'"></span></div>'+
             '<div class="sh-kv" style="padding:3px 0"><span>Reserva / objetivo</span><b>'+M(r.ahorro)+' / '+M(efTarget)+'</b></div></div>'+
         '</div>'));
+
+      var expInner=expenseListInner();
+      if(expInner) P.push(page('Gastos','<div class="sh-eyebrow">Detalle</div><h2>Lista de gastos</h2>'+expInner));
 
       var swBody=r.hasData?levelSWData(r,Lp).map(swCardC).join(''):'<p style="color:#8a8470">Introduzca los datos del cliente para el diagnóstico por nivel.</p>';
       P.push(page('Pirámide patrimonial','<div class="sh-eyebrow">El mapa</div><h2>Su pirámide patrimonial</h2>'+
@@ -5547,6 +5668,9 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       // una hoja casi en blanco al final del PDF — un bloque de tamaño fijo en su propia página nunca
       // puede desbordarse, sin importar cuántos datos tenga el cliente.
       if(includePropuesta) P=P.concat(propuestaPages(r));
+      var medInner=medicalQuestionnaireInner(r);
+      if(medInner) P.push(page('Salud','<div class="sh-eyebrow">Anexo · para la contratación</div><h2>Cuestionario de salud</h2>'+
+        '<p class="sh-lead">Solo se listan las respuestas afirmativas y los datos con contenido; un &laquo;No&raquo; es la respuesta esperada y no se repite aquí.</p>'+medInner));
       P.push(page('Aviso legal','<div class="sh-eyebrow">Conclusión · aviso legal</div><h2>Aviso legal</h2>'+
         '<div class="sh-card" style="background:#faf8f2"><p style="font-size:9.5pt;color:#6b7283;line-height:1.5;margin:0">Informe orientativo elaborado a partir de la información facilitada por el cliente. Los cálculos se basan en supuestos (rendimientos, inflación, marcos fiscales) que pueden diferir de la realidad y no garantizan resultado alguno. No constituye asesoramiento legal ni fiscal vinculante ni una oferta. Para decisiones concretas, consulte con un profesional cualificado. AORAES no asume responsabilidad por la exactitud de los datos aportados ni por las decisiones tomadas a partir de este documento.</p></div>'+
         '<p style="font-family:\'Fraunces\',serif;font-size:12pt;color:#14213d;margin-top:16px">'+(asesor?(esc(asesor)+' · '):'')+'AORAES</p>'));
