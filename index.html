@@ -679,6 +679,7 @@
       <div class="cock-toolbar">
         <input type="search" id="cock-search" aria-label="Buscar clientes" placeholder="Buscar por nombre, etiqueta o asesor…" />
         <select id="cock-status" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option value="prospecto">Prospecto</option><option value="contactado">Contactado</option><option value="analisis_pendiente">Análisis pendiente</option><option value="analisis">Análisis en curso</option><option value="propuesta">Propuesta enviada</option><option value="implementacion">En implementación</option><option value="cliente">Cliente activo</option><option value="inactivo">Inactivo</option></select>
+        <select id="cock-advisor" aria-label="Filtrar por asesor"><option value="">Todos los asesores</option></select>
         <select id="cock-sort" aria-label="Ordenar clientes"><option value="saved">Orden: más recientes</option><option value="review">Orden: próxima revisión</option><option value="score">Orden: puntuación</option><option value="name">Orden: nombre (A–Z)</option></select>
       </div>
       <div class="cock-list" id="cock-list"></div>
@@ -1312,7 +1313,7 @@
     var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames'), asesoresScr=document.getElementById('asesores');
     var stage=document.getElementById('frame-stage'), sw=document.getElementById('switch'), banner=document.getElementById('bridge-banner');
     var insEl=document.getElementById('cock-insights'), listEl=document.getElementById('cock-list');
-    var searchEl=document.getElementById('cock-search'), statusEl=document.getElementById('cock-status'), sortEl=document.getElementById('cock-sort');
+    var searchEl=document.getElementById('cock-search'), statusEl=document.getElementById('cock-status'), sortEl=document.getElementById('cock-sort'), advisorEl=document.getElementById('cock-advisor');
     var acChip=document.getElementById('active-chip'), acName=document.getElementById('ac-name');
     var lastSigByView={}, pendingApply=null, pendingOpen=null, pendingSummary=null, wsId=null, wsStep='diagnostico', wsRec=null, inmSaveTimer=null, cockQuickFilter=null;
 
@@ -1905,6 +1906,8 @@
       'pendiente de aprobación':'pending approval',
       'en implementación':'being implemented',
       'sin cliente':'no client',
+      'Todos los asesores':'All advisors',
+      'Filtrar por asesor':'Filter by advisor',
     };
     var SHELL_I18N_DE={
       'AORAES · Herramientas del asesor':'AORAES · Berater-Tools','Departamento Español':'Spanische Abteilung',
@@ -2115,6 +2118,8 @@
       'pendiente de aprobación':'ausstehende Genehmigung',
       'en implementación':'in Umsetzung',
       'sin cliente':'kein Kunde',
+      'Todos los asesores':'Alle Berater',
+      'Filtrar por asesor':'Nach Berater filtern',
     };
 
     function setAppLang(lang){
@@ -3133,8 +3138,17 @@
         if(qf==='proposals'){ var st0=cm.status||'prospecto'; return st0==='propuesta'||st0==='implementacion'; }
         return true;
       }
-      var q=(searchEl.value||'').toLowerCase().trim(), fS=statusEl.value||'', sortBy=sortEl.value||'saved';
-      var shown=arr.filter(function(c){ if(!matchesQuickFilter(c))return false; var cm=c.crm||{}; if(fS&&(cm.status||'prospecto')!==fS)return false; if(!q)return true; return [c.name,cm.tags,cm.email,c.advisor].join(' ').toLowerCase().indexOf(q)>=0; });
+      // "Asesor/a" es un texto libre por ficha (no una identidad de login), así que el desplegable se
+      // rellena con los nombres que ya aparecen en la cartera en vez de intentar deducir "quién soy" —
+      // sirve igual para "solo los míos" (eligiendo tu propio nombre) que para ver los de otro asesor
+      // del grupo. Se reconstruye en cada render pero conservando la selección si sigue existiendo.
+      var advisorNames=Array.from(new Set(arr.map(function(c){return (c.advisor||'').trim();}).filter(Boolean))).sort(function(a,b){return a.localeCompare(b,'es');});
+      var advisorSel=advisorEl.value||'';
+      if(advisorSel && advisorNames.indexOf(advisorSel)<0) advisorSel='';
+      var advisorOptionsHtml='<option value="">Todos los asesores</option>'+advisorNames.map(function(n){return '<option value="'+esc(n)+'"'+(n===advisorSel?' selected':'')+'>'+esc(n)+'</option>';}).join('');
+      if(advisorEl.innerHTML!==advisorOptionsHtml) advisorEl.innerHTML=advisorOptionsHtml;
+      var q=(searchEl.value||'').toLowerCase().trim(), fS=statusEl.value||'', sortBy=sortEl.value||'saved', fAdvisor=advisorSel;
+      var shown=arr.filter(function(c){ if(!matchesQuickFilter(c))return false; var cm=c.crm||{}; if(fS&&(cm.status||'prospecto')!==fS)return false; if(fAdvisor&&(c.advisor||'').trim()!==fAdvisor)return false; if(!q)return true; return [c.name,cm.tags,cm.email,c.advisor].join(' ').toLowerCase().indexOf(q)>=0; });
       shown.sort(function(a,b){ var ca=a.crm||{},cb=b.crm||{}; if(sortBy==='name')return (a.name||'').localeCompare(b.name||'','es'); if(sortBy==='score')return (b.score||0)-(a.score||0); if(sortBy==='review'){var ra=ca.review||'9999-12-31',rb=cb.review||'9999-12-31';return ra<rb?-1:(ra>rb?1:0);} return new Date(b.savedAt||0)-new Date(a.savedAt||0); });
       if(arr.length===0){ listEl.innerHTML='<div class="cock-empty">Aún no tienes clientes guardados.<br>Crea el primero para empezar tu cartera.<div class="ce-new"><button type="button" class="cock-new" id="empty-new">+ Nuevo cliente</button></div></div>'; var en=document.getElementById('empty-new'); if(en)en.onclick=newClient; return; }
       if(shown.length===0){ listEl.innerHTML='<div class="cock-empty">Sin resultados para los filtros actuales.</div>'; return; }
@@ -3232,7 +3246,7 @@
       cockQuickFilter=(f==='all'||cockQuickFilter===f)?null:f;
       renderCockpit();
     });
-    searchEl.addEventListener('input',renderCockpit); statusEl.addEventListener('change',renderCockpit); sortEl.addEventListener('change',renderCockpit);
+    searchEl.addEventListener('input',renderCockpit); statusEl.addEventListener('change',renderCockpit); sortEl.addEventListener('change',renderCockpit); advisorEl.addEventListener('change',renderCockpit);
     wsScreen.addEventListener('click',function(e){
       var bk=e.target.closest('#ws-back'); if(bk){ flushInmuebleSave(); teardownWsFrames(); wsId=null; wsRec=null; show('home'); return; }
       var stp=e.target.closest('.ws-stepper button'); if(stp){ setStep(stp.getAttribute('data-step')); return; }
