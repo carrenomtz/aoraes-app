@@ -1450,6 +1450,11 @@ function renderHero(){
   }
 }
 function render(){
+  // La sugerencia de "Optimizar estrategia" depende de age/retire/salary/monthly/ret y demás — al
+  // cambiar cualquiera de esos (render() se llama en cada uno) deja de ser válida para los datos
+  // actuales. Se oculta aquí en vez de dejarla fija, para no aplicar por error el óptimo de un
+  // cliente anterior sobre los datos de uno nuevo.
+  var optOutEl=$('opt-out'); if(optOutEl) optOutEl.classList.remove('show');
   const years=S.retire-S.age;
   const c=calc('generali',years);
   $('v-age').textContent=S.age+' años';

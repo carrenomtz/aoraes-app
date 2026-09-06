@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="noindex, nofollow">
 <title>AORAES · Plan Futuro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -389,7 +389,11 @@ function calcPlan(){
   const years=Math.max(0,S.targetYear-THIS_YEAR);
   const ageAtTarget=S.childAge+years;
   const d=fvGeneric(S.capital0,S.monthly,S.ret,years);
-  const growth=Math.max(0,d.capital-d.contributed-(S.capital0||0));
+  // En horizontes cortos con rentabilidad baja, el coste Zillmer de los primeros 5 años puede superar
+  // lo que ese periodo llega a rendir: el crecimiento real es negativo. Forzarlo a 0€ lo escondía y
+  // dejaba la pantalla contradiciéndose a sí misma (el capital final ya se mostraba por debajo de lo
+  // aportado, pero "crecimiento" decía 0€ en vez de la pérdida real).
+  const growth=d.capital-d.contributed-(S.capital0||0);
   return {years,ageAtTarget,capital:d.capital,contributed:d.contributed,growth};
 }
 
@@ -449,10 +453,16 @@ function render(){
   rows.push('<div>Horizonte: <b>'+p.years+' años</b></div>');
   $('hero-breakdown').innerHTML=rows.join('');
 
-  countUp($('e-contributed'),p.contributed);
+  // "De tu bolsillo" y el multiplicador "×N" deben incluir el capital ya acumulado (S.capital0), no
+  // solo la aportación mensual: si no, cuando hay capital inicial, el crecimiento que genera ese
+  // capital por su cuenta se atribuye por error al esfuerzo mensual, e infla el multiplicador. La
+  // sección "Aportado" del resumen (hero-breakdown, más arriba) ya muestra el capital inicial por
+  // separado, así que p.contributed sigue sin tocarse ahí para no duplicarlo.
+  const pocketTotal=p.contributed+(S.capital0||0);
+  countUp($('e-contributed'),pocketTotal);
   countUp($('e-final'),p.capital);
   $('e-monthly-note').textContent=S.monthly+' € al mes, durante '+p.years+' años';
-  $('e-mult').textContent='×'+(p.contributed>0?(p.capital/p.contributed).toFixed(1):'0');
+  $('e-mult').textContent='×'+(pocketTotal>0?(p.capital/pocketTotal).toFixed(1):'0');
   $('e-gain-note').textContent='Un crecimiento de '+eurc(p.growth);
 
   renderChart(p.years);

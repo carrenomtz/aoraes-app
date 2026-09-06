@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="noindex, nofollow">
 <title>AORAES · Preguntas de salud</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -577,15 +577,34 @@ function bindEvents(){
 }
 
 function updateVisibility(qid,person){
+  var siChecked=document.querySelector('input[data-ans="si"][data-qid="'+qid+'"][data-person="'+person+'"]').checked;
+  var p=state[person];
   var det=document.querySelector('input[data-detail="'+qid+'"][data-person="'+person+'"]');
   if(det){
-    var checked=document.querySelector('input[data-ans="si"][data-qid="'+qid+'"][data-person="'+person+'"]').checked;
-    det.classList.toggle('show',checked);
+    det.classList.toggle('show',siChecked);
+    // Si la respuesta deja de ser "Sí", el detalle ya no aplica: se limpia el campo y el dato
+    // guardado. Sin esto, un detalle escrito para un "Sí" anterior queda en el estado aunque se
+    // corrija la respuesta a "No", y puede reaparecer donde se lea esta ficha (p. ej. el informe
+    // médico en PDF de analisis.html) como si siguiera vigente.
+    if(!siChecked && (det.value || (p[qid]&&p[qid].detail))){
+      det.value='';
+      if(p[qid]) p[qid].detail='';
+      saveState();
+    }
   }
   var subwrap=document.querySelector('[data-subwrap="'+qid+'"][data-person="'+person+'"]');
   if(subwrap){
-    var checkedSi=document.querySelector('input[data-ans="si"][data-qid="'+qid+'"][data-person="'+person+'"]').checked;
-    subwrap.style.display=checkedSi?'block':'none';
+    subwrap.style.display=siChecked?'block':'none';
+    if(!siChecked){
+      var subChanged=false;
+      subwrap.querySelectorAll('input[data-sub]').forEach(function(inp){
+        if(inp.checked){ inp.checked=false; subChanged=true; }
+      });
+      if(p[qid]&&p[qid].sub){
+        Object.keys(p[qid].sub).forEach(function(k){ if(p[qid].sub[k]){ p[qid].sub[k]=false; subChanged=true; } });
+      }
+      if(subChanged) saveState();
+    }
   }
   updateDim(person);
 }

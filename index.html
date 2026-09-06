@@ -2265,6 +2265,7 @@
     }
     function openWorkspace(id,initialStep){
       var rec=findClient(id); if(!rec){ show('home'); return; }
+      flushInmuebleSave(); // antes de reasignar wsId/wsRec al nuevo cliente
       teardownWsFrames();
       setActive(id); wsId=id; wsStep=initialStep||'resumen';
       for(var k in MOD){ if(MOD[k].el)MOD[k].el.style.display='none'; }
@@ -2837,6 +2838,15 @@
       if(inmSaveTimer) clearTimeout(inmSaveTimer);
       inmSaveTimer=setTimeout(persistInmueble,500);
     }
+    // Si se navega fuera del Proyecto inmobiliario (otro cliente, "Volver a la cartera", o se cierra
+    // la pestaña) antes de que salte scheduleInmuebleSave, el timer pendiente se queda apuntando a un
+    // wsId/wsRec que para entonces ya cambiaron — el guardado real nunca llega a ejecutarse y la
+    // edición se pierde en silencio. flushInmuebleSave() fuerza ese guardado ANTES de que wsId/wsRec
+    // cambien de valor.
+    function flushInmuebleSave(){
+      if(inmSaveTimer){ clearTimeout(inmSaveTimer); inmSaveTimer=null; persistInmueble(); }
+    }
+    window.addEventListener('beforeunload',flushInmuebleSave);
     function renderGenericInmuebleWorkspace(rec){
       if(wsRec&&wsRec.id===rec.id&&wsRec.inmueble) rec.inmueble=wsRec.inmueble;
       wsRec=rec;
@@ -3224,7 +3234,7 @@
     });
     searchEl.addEventListener('input',renderCockpit); statusEl.addEventListener('change',renderCockpit); sortEl.addEventListener('change',renderCockpit);
     wsScreen.addEventListener('click',function(e){
-      var bk=e.target.closest('#ws-back'); if(bk){ teardownWsFrames(); wsId=null; wsRec=null; show('home'); return; }
+      var bk=e.target.closest('#ws-back'); if(bk){ flushInmuebleSave(); teardownWsFrames(); wsId=null; wsRec=null; show('home'); return; }
       var stp=e.target.closest('.ws-stepper button'); if(stp){ setStep(stp.getAttribute('data-step')); return; }
       var dp=e.target.closest('[data-deep]'); if(dp){ setStep(dp.getAttribute('data-deep')); return; }
       // A diferencia de data-deep (pasos dentro del propio "workspace"), VSP no forma parte de
