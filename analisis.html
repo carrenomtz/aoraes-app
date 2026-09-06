@@ -296,7 +296,7 @@
   .cr-del{position:absolute;top:10px;right:10px;width:26px;height:26px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;border-radius:7px;transition:.13s}
   .cr-del:hover{background:rgba(176,74,58,.12);border-color:rgba(176,74,58,.25);color:var(--red)}
   .cr-dup{position:absolute;top:10px;right:44px;width:26px;height:26px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:13px;line-height:1;cursor:pointer;border-radius:7px;transition:.13s}
-  .cr-dup:hover{background:rgba(201,169,97,.16);border-color:rgba(201,169,97,.35);color:var(--gold-deep)}
+  .cr-dup:hover{background:rgba(201,169,97,.16);border-color:rgba(201,169,97,.35);color:var(--gold)}
   .cr-add{display:inline-block;padding:8px 14px;border:1px dashed var(--line);border-radius:8px;background:transparent;color:var(--navy);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.13s}
   .cr-add:hover{border-color:var(--gold);background:rgba(201,169,97,.07)}
   .cr-contract{align-self:end;height:38px;padding:0 14px;border:1px solid var(--navy);border-radius:8px;background:var(--navy);color:#ffffff;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.13s;white-space:nowrap}
@@ -533,12 +533,25 @@
   /* Pestañas Personas/Empresas: los dos tipos nunca se mezclan en la misma lista. */
   .type-tabs{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:18px;background:var(--paper)}
   .type-tabs button{appearance:none;border:0;background:transparent;padding:9px 20px;font:inherit;font-size:13.5px;
-    font-weight:600;color:var(--muted);cursor:pointer}
+    font-weight:600;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .type-tabs button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
   .type-tabs button.active{background:var(--navy);color:#fff}
-  /* Selector de tipo al pulsar "+ Nuevo" */
-  .nt-opt{display:block;width:100%;text-align:left;background:var(--paper);border:1px solid var(--line);
-    border-radius:13px;padding:18px 20px;margin:0 0 12px;cursor:pointer;font:inherit;transition:border-color .15s,box-shadow .15s}
-  .nt-opt:hover{border-color:var(--gold);box-shadow:0 1px 2px rgba(20,33,61,.04),0 8px 22px rgba(20,33,61,.08)}
+  /* Selector de tipo al pulsar "+ Nuevo": dos tarjetas lado a lado (no una lista apilada) para que la
+     decisión Persona/Empresa se note de un vistazo, con un icono y un color de acento distintos por
+     tipo — antes las dos opciones eran casi indistinguibles salvo por el texto. */
+  .nt-choices{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:560px){.nt-choices{grid-template-columns:1fr}}
+  .nt-opt{display:block;width:100%;text-align:left;background:var(--paper);border:1.5px solid var(--line);
+    border-radius:13px;padding:20px 20px 18px;margin:0;cursor:pointer;font:inherit;transition:border-color .15s,box-shadow .15s,transform .15s}
+  .nt-opt:hover{border-color:var(--gold);box-shadow:0 1px 2px rgba(20,33,61,.04),0 8px 22px rgba(20,33,61,.08);transform:translateY(-1px)}
+  .nt-opt .nt-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;margin-bottom:13px}
+  .nt-opt .nt-icon svg{width:22px;height:22px;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .nt-opt-private .nt-icon{background:rgba(201,169,97,.16)}
+  .nt-opt-private .nt-icon svg{stroke:var(--gold)}
+  .nt-opt-private:hover{border-color:var(--gold)}
+  .nt-opt-business .nt-icon{background:rgba(20,33,61,.08)}
+  .nt-opt-business .nt-icon svg{stroke:var(--navy)}
+  .nt-opt-business:hover{border-color:var(--navy)}
   .nt-opt .nt-t{display:block;font-family:'Fraunces',serif;font-size:19px;color:var(--navy)}
   .nt-opt .nt-d{display:block;font-size:13px;color:var(--muted);margin-top:5px;line-height:1.5}
   .nt-opt .nt-cta{display:block;font-size:12.5px;font-weight:700;color:var(--gold);margin-top:10px}
@@ -1600,8 +1613,8 @@
   </div>
   <div class="cs-inner">
     <div class="type-tabs" id="type-tabs">
-      <button type="button" data-dashtype="PRIVATE" class="active">Personas</button>
-      <button type="button" data-dashtype="BUSINESS">Empresas</button>
+      <button type="button" data-dashtype="PRIVATE" class="active"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c0-4.2 3.8-6.2 7.5-6.2s7.5 2 7.5 6.2"/></svg>Personas</button>
+      <button type="button" data-dashtype="BUSINESS"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 21v-4h6v4"/><path d="M8 7h1.5M14.5 7H16M8 11h1.5M14.5 11H16M8 15h1.5M14.5 15H16"/></svg>Empresas</button>
     </div>
     <div class="cs-headline"><span class="eyebrow">Cartera</span><h1 id="cs-title">Mis clientes</h1><p id="cs-lead">Seleccione un cliente para abrir su análisis y reporte, o cree uno nuevo.</p></div>
     <div class="modal-tools">
@@ -1657,18 +1670,20 @@
 </section>
 
 <div class="modal-overlay no-print" id="newtype-overlay">
-  <div class="modal modal-sm">
+  <div class="modal">
     <div class="modal-head">
       <div><span class="eyebrow" style="color:var(--gold-soft)">Nuevo análisis</span><h2>¿Qué tipo de análisis quieres crear?</h2></div>
       <button class="modal-close" id="newtype-close" aria-label="Cerrar">&times;</button>
     </div>
-    <div class="modal-body" style="padding-top:18px;padding-bottom:18px">
-      <button type="button" class="nt-opt" data-newtype="PRIVATE">
+    <div class="modal-body nt-choices" style="padding-top:20px;padding-bottom:20px">
+      <button type="button" class="nt-opt nt-opt-private" data-newtype="PRIVATE">
+        <span class="nt-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c0-4.2 3.8-6.2 7.5-6.2s7.5 2 7.5 6.2"/></svg></span>
         <span class="nt-t">Persona privada</span>
         <span class="nt-d">Análisis financiero personal, protección, patrimonio, jubilación, inversión y objetivos.</span>
         <span class="nt-cta">Crear análisis privado →</span>
       </button>
-      <button type="button" class="nt-opt" data-newtype="BUSINESS">
+      <button type="button" class="nt-opt nt-opt-business" data-newtype="BUSINESS">
+        <span class="nt-icon"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 21v-4h6v4"/><path d="M8 7h1.5M14.5 7H16M8 11h1.5M14.5 11H16M8 15h1.5M14.5 15H16"/></svg></span>
         <span class="nt-t">Empresa</span>
         <span class="nt-d">Análisis financiero, patrimonial, operativo y de riesgos de una empresa.</span>
         <span class="nt-cta">Crear análisis empresarial →</span>
@@ -5919,7 +5934,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     window.aoraesSetView=function(v){ try{ setView(v); return true; }catch(e){ console.error('AORAES: aoraesSetView falló para',v,e); return false; } };
     window.aoraesOpenInforme=function(){ try{ openInforme(); return true; }catch(e){ console.error('AORAES: aoraesOpenInforme falló',e); return false; } };
     window.aoraesCloseInforme=function(){ try{ closeInforme(); return true; }catch(e){ return false; } };
-    window.aoraesNewClient=function(){ try{ newAnalysis(); showScreen('workspace'); return true; }catch(e){ return false; } };
+    // Antes creaba directo un análisis privado, saltándose la pregunta Persona/Empresa que sí hace
+    // el propio botón "+ Nuevo" de esta pantalla (ver #cs-new más abajo) — un asesor que pulsaba
+    // "+ Nuevo cliente" desde el panel principal (index.html) nunca podía crear una empresa. Ahora
+    // ambos caminos llevan al mismo selector de tipo.
+    window.aoraesNewClient=function(){ try{ showScreen('clients'); var ov=$('#newtype-overlay'); if(ov) ov.classList.add('open'); return true; }catch(e){ console.error('AORAES: aoraesNewClient falló',e); return false; } };
     window.aoraesListClients=function(){ try{ return loadClients(); }catch(e){ return []; } };
     window.__aoraesSuggestRetirement=function(){
       try{
