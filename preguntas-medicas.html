@@ -560,6 +560,18 @@ function bindEvents(){
   });
   document.querySelectorAll('input[data-num]').forEach(function(inp){
     inp.addEventListener('input',function(){
+      // Los atributos min/max (p. ej. 0-99 dientes, 0-250cm, 0-300kg) solo afectan a las flechas del
+      // spinner y a checkValidity(), que aquí no se llama en ningún formulario: sin este ajuste, un
+      // valor negativo o fuera de rango (p. ej. "-3" dientes) se guardaba tal cual, sin corregirse.
+      var min=inp.hasAttribute('min')?parseFloat(inp.min):null;
+      var max=inp.hasAttribute('max')?parseFloat(inp.max):null;
+      var n=parseFloat(inp.value);
+      if(!isNaN(n)){
+        var clamped=n;
+        if(min!=null&&clamped<min)clamped=min;
+        if(max!=null&&clamped>max)clamped=max;
+        if(clamped!==n)inp.value=clamped;
+      }
       var key=inp.getAttribute('data-num'), person=inp.getAttribute('data-person');
       state[person][key]=inp.value; saveState();
       updateDim(person);

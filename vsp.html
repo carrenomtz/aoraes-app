@@ -1036,8 +1036,8 @@ $('v-gl-flache').addEventListener('input',function(e){ R.glas.flache=parseFloat(
 
 $('v-wg-wohnart').addEventListener('change',function(e){ R.wohngebaude.wohnart=e.target.value; });
 $('v-wg-sb').addEventListener('change',function(e){ R.wohngebaude.selbstbehalt=e.target.value; });
-$('v-wg-elementar').addEventListener('change',function(e){ R.wohngebaude.elementar=e.target.checked; });
-$('v-wg-xxl').addEventListener('change',function(e){ R.wohngebaude.xxl=e.target.checked; });
+$('v-wg-elementar').addEventListener('change',function(e){ R.wohngebaude.elementar=e.target.checked; renderFase1(); });
+$('v-wg-xxl').addEventListener('change',function(e){ R.wohngebaude.xxl=e.target.checked; renderFase1(); });
 $('v-wg-pv').addEventListener('change',function(e){ R.wohngebaude.hasPV=e.target.checked; renderFase1(); });
 
 $('v-rs-tenant').addEventListener('change',function(e){ R.rechtsschutz.tenant=e.target.value; renderFase1(); });
@@ -1080,7 +1080,7 @@ function ramoLabel(k){
   if(k==='glas')return 'Haushalt-Glas';
   if(k==='wohngebaude')return 'Wohngebäude Optimal'+(R.wohngebaude.xxl?' XXL':'');
   if(k==='rechtsschutz')return 'ADVOCARD-360°-PRIVAT';
-  if(k==='gesundheit')return (R.gesundheit.planType==='zahn'?'PlanZahn':'Plan')+R.gesundheit.tier.slice(-1)+'V';
+  if(k==='gesundheit')return (R.gesundheit.planType==='zahn'?'PlanZahn':'PlanV')+R.gesundheit.tier.slice(-1);
   if(k==='unfall')return 'Unfall';
   if(k==='kfz')return 'Kfz '+(R.kfz.coverage==='kh'?'Haftpflicht':(R.kfz.coverage==='tk'?'Teilkasko':'Vollkasko'));
 }
