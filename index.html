@@ -1670,6 +1670,8 @@
       'Förderung del Estado (Wohnungsbauprämie)':'State subsidy (Wohnungsbauprämie)',
       'De los cuales VL + Förderung':'Of which VL + subsidy',
       '€/mes':'€/month','€/año':'€/year',
+      'Cuánto capital devuelves cada año, además de los intereses — junto con el tipo, esto fija tu cuota mensual. Más Tilgung: cuota más alta, pero terminas de pagar antes.':'How much capital you repay each year, on top of the interest — together with the rate, this sets your monthly instalment. More Tilgung: a higher instalment, but you finish paying sooner.',
+      'Cuota fija mensual que pide la Bausparkasse, en milésimas del total del contrato (Bausparsumme) — no depende del tipo de interés pactado.':'Fixed monthly instalment the Bausparkasse requires, in thousandths of the total contract sum (Bausparsumme) — independent of the agreed interest rate.',
       'AORAES · Herramientas del asesor':'AORAES · Advisor Tools',
       'Departamento Español':'Spanish Department',
       'Inicio':'Home','Análisis & CRM':'Analysis & CRM','Comparador de jubilación':'Retirement Comparator',
@@ -1922,6 +1924,8 @@
       'Förderung del Estado (Wohnungsbauprämie)':'Wohnungsbauprämie',
       'De los cuales VL + Förderung':'Davon VL + Förderung',
       '€/mes':'€/Monat','€/año':'€/Jahr',
+      'Cuánto capital devuelves cada año, además de los intereses — junto con el tipo, esto fija tu cuota mensual. Más Tilgung: cuota más alta, pero terminas de pagar antes.':'Wie viel Kapital Sie jährlich zusätzlich zu den Zinsen zurückzahlen — zusammen mit dem Zinssatz bestimmt das Ihre monatliche Rate. Mehr Tilgung: höhere Rate, aber schneller schuldenfrei.',
+      'Cuota fija mensual que pide la Bausparkasse, en milésimas del total del contrato (Bausparsumme) — no depende del tipo de interés pactado.':'Feste monatliche Rate, die die Bausparkasse verlangt, in Promille der gesamten Bausparsumme — unabhängig vom vereinbarten Zinssatz.',
       'AORAES · Herramientas del asesor':'AORAES · Berater-Tools','Departamento Español':'Spanische Abteilung',
       'Inicio':'Start','Análisis & CRM':'Analyse & CRM','Comparador de jubilación':'Renten-Vergleich',
       'Preguntas médicas':'Gesundheitsfragen','Asesores':'Berater',
@@ -2493,6 +2497,12 @@
     function inmuebleOptField(opt,key,label,val,step,suffix,extra){
       return '<label class="inm-f"><span>'+esc(label)+'</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" data-inm-opt="'+opt+'" data-inm-field="'+key+'" value="'+val+'" step="'+step+'" '+(extra||'')+'><span class="inm-suf">'+suffix+'</span></span></label>';
     }
+    // Botones de valores típicos para rellenar un campo numérico de un toque, en vez de tener que
+    // escribirlo — el campo objetivo se lee de data-inm-quickfield, así sirve para cualquier campo
+    // (interesPrestamo, tilgungInicial, tilgungsbeitragPerMille), no solo para el tipo del banco.
+    function inmuebleQuickButtons(field,values,unit){
+      return '<div class="inm-quick">'+values.map(function(v){return '<button type="button" data-inm-quickfield="'+field+'" data-inm-quickval="'+v+'">'+String(v).replace('.',',')+unit+'</button>';}).join('')+'</div>';
+    }
     function inmuebleOptionCard(opt,title,cfg,note){
       var fields='';
       var withAhorro=(opt==='a'||opt==='b'||opt==='refiA'||opt==='refiB');
@@ -2506,11 +2516,15 @@
       }
       fields+=inmuebleOptField(opt,'interesPrestamo','Interés del préstamo',cfg.interesPrestamo,'0.01','%','min="0" max="20"');
       if(opt==='banco'||opt==='refiBanco'){
-        fields+='<div class="inm-quick" data-inm-quick="banco">'+[2,3,4,4.2,5].map(function(r){return '<button type="button" data-inm-rate="'+r+'">'+String(r).replace('.',',')+'%</button>';}).join('')+'</div>';
+        fields+=inmuebleQuickButtons('interesPrestamo',[2,3,4,4.2,5],'%');
       }
       fields+=(opt==='banco'||opt==='refiBanco'
-        ? inmuebleOptField(opt,'tilgungInicial','Amortización inicial (Tilgung)',cfg.tilgungInicial,'0.1','%','min="0.1" max="10"')
-        : inmuebleOptField(opt,'tilgungsbeitragPerMille','Cuota de amortización (Tilgungsbeitrag)',cfg.tilgungsbeitragPerMille,'0.1','‰','min="1" max="20"'))+
+        ? inmuebleOptField(opt,'tilgungInicial','Amortización inicial (Tilgung)',cfg.tilgungInicial,'0.1','%','min="0.1" max="10"')+
+          inmuebleQuickButtons('tilgungInicial',[1,1.5,2,3],'%')+
+          '<p class="inm-note">Cuánto capital devuelves cada año, además de los intereses — junto con el tipo, esto fija tu cuota mensual. Más Tilgung: cuota más alta, pero terminas de pagar antes.</p>'
+        : inmuebleOptField(opt,'tilgungsbeitragPerMille','Cuota de amortización (Tilgungsbeitrag)',cfg.tilgungsbeitragPerMille,'0.1','‰','min="1" max="20"')+
+          inmuebleQuickButtons('tilgungsbeitragPerMille',[4,5,6,8],'‰')+
+          '<p class="inm-note">Cuota fija mensual que pide la Bausparkasse, en milésimas del total del contrato (Bausparsumme) — no depende del tipo de interés pactado.</p>')+
         inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
       if(opt==='banco'||opt==='refiBanco'){
         fields+=inmuebleOptField(opt,'zinsbindung','Vigencia del tipo (Zinsbindung)',cfg.zinsbindung,'1','años','min="1" max="40"');
@@ -2531,13 +2545,11 @@
     // no tienen "anios" propio — los años de ahorro son los que quedan hasta la fecha de
     // refinanciación, calculados aparte — así que aquí se puede forzar con aniosOverride en vez de
     // leer un campo que en refi simplemente no existe (por eso salía "undefined años").
-    function inmuebleEstNombre(cfg,aniosOverride){
-      var anios=aniosOverride!=null?aniosOverride:cfg.anios;
-      return (cfg.pct||0)+'% ahorro ('+String(Math.round(anios*10)/10).replace('.',',')+' años)';
+    function inmuebleEstNombre(cfg){
+      return (cfg.pct||0)+'% ahorro';
     }
     // Una sola estrategia Bausparvertrag a la vez frente al banco (no las dos fusionadas): deja
-    // sitio a la tarjeta para la línea de tiempo y el resto de detalle, y el propio botón ya
-    // enseña los años de cada una — la primera diferencia que el cliente ve, antes de mirar nada más.
+    // sitio a la tarjeta para la línea de tiempo y el resto de detalle.
     function inmuebleStrategyToggle(activeKey,opts){
       return '<div class="inm-strategy" role="tablist" aria-label="Estrategia Bausparvertrag a comparar">'+
         opts.map(function(o){var on=(o.key===activeKey);return '<button type="button" data-inm-strategy="'+o.key+'"'+(on?' class="active"':'')+' aria-pressed="'+(on?'true':'false')+'">'+esc(o.label)+'</button>';}).join('')+
@@ -2737,7 +2749,7 @@
       var saldoAtRefi=saldoEnFecha(refi,fr);
       var estKey=(refi.estrategia==='refiB')?'refiB':'refiA';
       var estCfg=(estKey==='refiB')?refi.b:refi.a;
-      var estTitle='Badenia · '+inmuebleEstNombre(estCfg,anosDisponibles);
+      var estTitle='Badenia · '+inmuebleEstNombre(estCfg);
       // Si la fecha de refinanciación cae después de que el crédito original ya se habría
       // terminado de pagar solo, no se sigue pagando cuota en ese tramo — se limita al tiempo
       // que el crédito original realmente sigue vivo.
@@ -2857,25 +2869,27 @@
       migrateBausparTilgungsbeitrag(inm.b,inm.precio);
       migrateBausparTilgungsbeitrag(inm.refi.a,inm.refi.importeOriginal);
       migrateBausparTilgungsbeitrag(inm.refi.b,inm.refi.importeOriginal);
+      // Redondeo defensivo a 2 decimales, siempre, no solo la primera vez que se migra: fichas
+      // que ya se guardaron con el valor migrado SIN redondear (antes de este arreglo) se quedaban
+      // con el número de coma flotante feo para siempre, porque la migración solo corre si el
+      // campo está vacío. Redondear aquí, en cada carga, limpia también esas fichas ya migradas.
+      [inm.banco,inm.refi.banco].forEach(function(c){ if(c.tilgungInicial!=null) c.tilgungInicial=Math.round(c.tilgungInicial*100)/100; });
+      [inm.a,inm.b,inm.refi.a,inm.refi.b].forEach(function(c){ if(c.tilgungsbeitragPerMille!=null) c.tilgungsbeitragPerMille=Math.round(c.tilgungsbeitragPerMille*100)/100; });
       return inm;
     }
     function inmuebleBlock(rec){
       var inm=normalizeInmueble(rec);
-      // Años de ahorro en Refinanciar: no son un dato propio de cada estrategia, son los que quedan
-      // hasta la fecha de refinanciación — se calculan una vez aquí para nombrar el selector y las
-      // tarjetas de entrada igual que hace inmuebleRefiResultsHTML con las de resultado.
-      var refiAniosDisp=inm.modo==='refi'?(mesesEntreFechas(todayISO(),fechaRefiEfectiva(inm.refi))/12):0;
       var body=(inm.modo==='refi')
         ? inmuebleStrategyToggle(inm.refi.estrategia,[
-            {key:'refiA',label:inmuebleEstNombre(inm.refi.a,refiAniosDisp)},
-            {key:'refiB',label:inmuebleEstNombre(inm.refi.b,refiAniosDisp)}
+            {key:'refiA',label:inmuebleEstNombre(inm.refi.a)},
+            {key:'refiB',label:inmuebleEstNombre(inm.refi.b)}
           ])+
           '<div class="inm-grid">'+
             inmuebleRefiCurrentCard(inm.refi)+
             inmuebleOptionCard('refiBanco','Refinanciar con banco',inm.refi.banco,'A tipo de mercado, sobre el saldo pendiente.')+
             (inm.refi.estrategia==='refiA'
-              ?inmuebleOptionCard('refiA','Badenia · '+inmuebleEstNombre(inm.refi.a,refiAniosDisp),inm.refi.a,'Ahorro en paralelo hasta la fecha de refinanciación.')
-              :inmuebleOptionCard('refiB','Badenia · '+inmuebleEstNombre(inm.refi.b,refiAniosDisp),inm.refi.b,'Ahorro en paralelo hasta la fecha de refinanciación.'))+
+              ?inmuebleOptionCard('refiA','Badenia · '+inmuebleEstNombre(inm.refi.a),inm.refi.a,'Ahorro en paralelo hasta la fecha de refinanciación.')
+              :inmuebleOptionCard('refiB','Badenia · '+inmuebleEstNombre(inm.refi.b),inm.refi.b,'Ahorro en paralelo hasta la fecha de refinanciación.'))+
           '</div>'+
           '<div id="inm-results-wrap">'+inmuebleRefiResultsHTML(inm.refi)+'</div>'
         : '<label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
@@ -3338,7 +3352,7 @@
       var ot=e.target.closest('[data-open-tool]'); if(ot){ show(ot.getAttribute('data-open-tool')); return; }
       var sv=e.target.closest('#ws-jub-save'); if(sv){ saveWsSolution(); return; }
       var un=e.target.closest('#ws-jub-undo'); if(un){ undoWsSolution(); return; }
-      var rt=e.target.closest('[data-inm-rate]'); if(rt){ var card=rt.closest('.inm-card'); var inp=card&&card.querySelector('[data-inm-field="interesPrestamo"]'); if(inp){ inp.value=rt.getAttribute('data-inm-rate'); inp.dispatchEvent(new Event('input',{bubbles:true})); } return; }
+      var rt=e.target.closest('[data-inm-quickfield]'); if(rt){ var card=rt.closest('.inm-card'); var inp=card&&card.querySelector('[data-inm-field="'+rt.getAttribute('data-inm-quickfield')+'"]'); if(inp){ inp.value=rt.getAttribute('data-inm-quickval'); inp.dispatchEvent(new Event('input',{bubbles:true})); } return; }
       var md=e.target.closest('[data-inm-mode]'); if(md){
         if(!wsRec) return;
         normalizeInmueble(wsRec).modo=md.getAttribute('data-inm-mode');
