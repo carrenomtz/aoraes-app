@@ -1664,6 +1664,8 @@
     function shellStopObserver(){ if(_shellMo){ _shellMo.disconnect(); _shellMo=null; } }
     var SHELL_LANG='es';
     var SHELL_I18N_EN={
+      'Amortización inicial (Tilgung)':'Initial repayment (Tilgung)',
+      'Cuota de amortización (Tilgungsbeitrag)':'Repayment contribution (Tilgungsbeitrag)',
       'AORAES · Herramientas del asesor':'AORAES · Advisor Tools',
       'Departamento Español':'Spanish Department',
       'Inicio':'Home','Análisis & CRM':'Analysis & CRM','Comparador de jubilación':'Retirement Comparator',
@@ -1910,6 +1912,8 @@
       'Filtrar por asesor':'Filter by advisor',
     };
     var SHELL_I18N_DE={
+      'Amortización inicial (Tilgung)':'Anfängliche Tilgung',
+      'Cuota de amortización (Tilgungsbeitrag)':'Tilgungsbeitrag',
       'AORAES · Herramientas del asesor':'AORAES · Berater-Tools','Departamento Español':'Spanische Abteilung',
       'Inicio':'Start','Análisis & CRM':'Analyse & CRM','Comparador de jubilación':'Renten-Vergleich',
       'Preguntas médicas':'Gesundheitsfragen','Asesores':'Berater',
@@ -2365,16 +2369,35 @@
       if(Math.abs(r)<1e-9) return target/months;
       return target*r/(Math.pow(1+r,months)-1);
     }
+    // Meses hasta amortizar del todo un préstamo con cuota FIJA conocida (en vez de fijar el
+    // plazo y derivar la cuota, como hace annuityQuota): la fórmula inversa de una anualidad,
+    // N = -ln(1 - P·r/M) / ln(1+r). Necesaria porque, tanto en un préstamo bancario alemán
+    // (cuota = capital·(Sollzins+Tilgung inicial)/12) como en la fase de préstamo de un
+    // Bausparvertrag (cuota = Tilgungsbeitrag fijo en ‰ de la Bausparsumme), la cuota mensual es
+    // el dato que se fija de entrada — el plazo es la consecuencia, nunca al revés.
+    function monthsToPayoff(principal,annualRatePct,payment){
+      if(!(principal>0)||!(payment>0)) return 0;
+      var r=(annualRatePct||0)/100/12;
+      if(Math.abs(r)<1e-9) return Math.ceil(principal/payment);
+      if(payment<=principal*r) return 600; // la cuota no cubre ni el interés: no amortiza — se limita a 50 años en vez de Infinity para no romper el resto del cálculo
+      return Math.min(600,Math.ceil(-Math.log(1-(principal*r)/payment)/Math.log(1+r)));
+    }
     function calcInmuebleOption(precio,cfg){
       precio=precio||0;
       var pct=Math.max(0,Math.min(100,cfg.pct||0));
       var objetivoAhorro=precio*pct/100;
       var capitalPrestamo=precio-objetivoAhorro;
       var mesesAhorro=Math.max(0,Math.round((cfg.anios||0)*12));
-      var mesesPrestamo=Math.max(1,Math.round((cfg.plazoPrestamo||0)*12));
       var cuotaAhorro=(pct>0&&mesesAhorro>0)?savingsQuota(objetivoAhorro,cfg.interesAhorro,mesesAhorro):0;
       var interesGanadoAhorro=(pct>0&&mesesAhorro>0)?Math.max(0,objetivoAhorro-cuotaAhorro*mesesAhorro):0;
-      var cuotaPrestamo=annuityQuota(capitalPrestamo,cfg.interesPrestamo,mesesPrestamo);
+      // Bausparvertrag (a/b/refiA/refiB): el Tilgungsbeitrag es un ‰ fijo de la Bausparsumme
+      // (aquí, precio), independiente del tipo pactado — así lo hacen las Bausparkassen reales
+      // (p. ej. Badenia: 6‰ típico). Banco directo: la cuota alemana estándar es
+      // capital·(Sollzins + Tilgung inicial)/12 — no se fija un plazo, se fija la Tilgung.
+      var cuotaPrestamo=(cfg.tilgungsbeitragPerMille!=null)
+        ? precio*(cfg.tilgungsbeitragPerMille||0)/1000
+        : capitalPrestamo*(((cfg.interesPrestamo||0)+(cfg.tilgungInicial||0))/100)/12;
+      var mesesPrestamo=Math.max(1,monthsToPayoff(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo));
       var interesTotalPrestamo=Math.max(0,cuotaPrestamo*mesesPrestamo-capitalPrestamo);
       // La comisión de apertura es un % del PRÉSTAMO real (capitalPrestamo), no del precio del
       // inmueble: solo se pide comisión sobre lo que el banco realmente presta, no sobre la parte
@@ -2430,14 +2453,14 @@
       return {
         modo:'compra',
         precio:200000,
-        a:{pct:40,anios:3.5,interesAhorro:0.05,interesPrestamo:1.75,plazoPrestamo:7,comision:1.6},
-        b:{pct:50,anios:5,interesAhorro:0.05,interesPrestamo:0.95,plazoPrestamo:8,comision:1.6},
-        banco:{pct:0,anios:0,interesAhorro:0,interesPrestamo:3.5,plazoPrestamo:20,comision:0,zinsbindung:10},
+        a:{pct:40,anios:3.5,interesAhorro:0.05,interesPrestamo:1.75,tilgungsbeitragPerMille:6,comision:1.6},
+        b:{pct:50,anios:5,interesAhorro:0.05,interesPrestamo:0.95,tilgungsbeitragPerMille:6,comision:1.6},
+        banco:{pct:0,anios:0,interesAhorro:0,interesPrestamo:3.5,tilgungInicial:2,comision:0,zinsbindung:10},
         refi:{
           importeOriginal:200000,interesOriginal:3.0,plazoOriginal:25,fechaInicio:isoDateYearsAgo(5),fechaRefi:isoDateYearsAgo(-5),
-          banco:{interesPrestamo:3.5,plazoPrestamo:15,comision:0,zinsbindung:10},
-          a:{pct:40,interesAhorro:0.05,interesPrestamo:1.75,plazoPrestamo:15,comision:1.6},
-          b:{pct:50,interesAhorro:0.05,interesPrestamo:0.95,plazoPrestamo:15,comision:1.6}
+          banco:{interesPrestamo:3.5,tilgungInicial:2,comision:0,zinsbindung:10},
+          a:{pct:40,interesAhorro:0.05,interesPrestamo:1.75,tilgungsbeitragPerMille:6,comision:1.6},
+          b:{pct:50,interesAhorro:0.05,interesPrestamo:0.95,tilgungsbeitragPerMille:6,comision:1.6}
         }
       };
     }
@@ -2457,7 +2480,9 @@
       if(opt==='banco'||opt==='refiBanco'){
         fields+='<div class="inm-quick" data-inm-quick="banco">'+[2,3,4,4.2,5].map(function(r){return '<button type="button" data-inm-rate="'+r+'">'+String(r).replace('.',',')+'%</button>';}).join('')+'</div>';
       }
-      fields+=inmuebleOptField(opt,'plazoPrestamo','Plazo del préstamo',cfg.plazoPrestamo,'1','años','min="1" max="40"')+
+      fields+=(opt==='banco'||opt==='refiBanco'
+        ? inmuebleOptField(opt,'tilgungInicial','Amortización inicial (Tilgung)',cfg.tilgungInicial,'0.1','%','min="0.1" max="10"')
+        : inmuebleOptField(opt,'tilgungsbeitragPerMille','Cuota de amortización (Tilgungsbeitrag)',cfg.tilgungsbeitragPerMille,'0.1','‰','min="1" max="20"'))+
         inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
       if(opt==='banco'||opt==='refiBanco'){
         fields+=inmuebleOptField(opt,'zinsbindung','Vigencia del tipo (Zinsbindung)',cfg.zinsbindung,'1','años','min="1" max="40"');
@@ -2689,8 +2714,8 @@
       // terminado de pagar solo, no se sigue pagando cuota en ese tramo — se limita al tiempo
       // que el crédito original realmente sigue vivo.
       var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
-      var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,plazoPrestamo:refi.banco.plazoPrestamo,comision:refi.banco.comision});
-      var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,plazoPrestamo:estCfg.plazoPrestamo,comision:estCfg.comision});
+      var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision});
+      var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision});
       var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
       var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
       var mejorEsEst=costeEstAbs<=costeBancoAbs;
@@ -2759,6 +2784,23 @@
         rEst.mesesPrestamo,rEst.mesesPrestamo,Math.min((inm.banco.zinsbindung||0)*12,rk.mesesPrestamo),rk.mesesPrestamo);
       return frase+curva+'<div class="inm-results">'+row(estTitle,rEst,false)+row('Banco directo',rk,true)+'</div>';
     }
+    // Fichas guardadas con el esquema anterior (plazoPrestamo en años + anualidad) migran a la
+    // cuota fija real (Tilgung inicial % para banco, Tilgungsbeitrag ‰ para Bausparvertrag) SIN
+    // cambiar el número que el asesor ya veía: se deriva la cuota que daba el plazoPrestamo
+    // guardado y se reexpresa como el dato equivalente en el nuevo esquema, para no perder ni
+    // silenciar lo que ya había introducido.
+    function migrateBancoTilgung(cfg){
+      if(cfg.tilgungInicial!=null||cfg.plazoPrestamo==null) return;
+      var quotaPerUnit=annuityQuota(1,cfg.interesPrestamo,Math.max(1,Math.round((cfg.plazoPrestamo||0)*12)));
+      cfg.tilgungInicial=Math.max(0,quotaPerUnit*12*100-(cfg.interesPrestamo||0));
+    }
+    function migrateBausparTilgungsbeitrag(cfg,bausparsumme){
+      if(cfg.tilgungsbeitragPerMille!=null) return;
+      if(cfg.plazoPrestamo==null||!(bausparsumme>0)){ cfg.tilgungsbeitragPerMille=6; return; }
+      var capitalPrestamo=bausparsumme*(1-(cfg.pct||0)/100);
+      var quotaPerUnit=annuityQuota(1,cfg.interesPrestamo,Math.max(1,Math.round((cfg.plazoPrestamo||0)*12)));
+      cfg.tilgungsbeitragPerMille=Math.max(0,quotaPerUnit*capitalPrestamo/bausparsumme*1000);
+    }
     function normalizeInmueble(rec){
       if(!rec.inmueble) rec.inmueble=defaultInmueble();
       var inm=rec.inmueble, def=defaultInmueble();
@@ -2776,6 +2818,12 @@
       // certeza de tipo — 10 es el ejemplo que el propio Lernskript usa como plazo típico fijado.
       if(inm.banco.zinsbindung==null) inm.banco.zinsbindung=def.banco.zinsbindung;
       if(inm.refi.banco.zinsbindung==null) inm.refi.banco.zinsbindung=def.refi.banco.zinsbindung;
+      migrateBancoTilgung(inm.banco);
+      migrateBancoTilgung(inm.refi.banco);
+      migrateBausparTilgungsbeitrag(inm.a,inm.precio);
+      migrateBausparTilgungsbeitrag(inm.b,inm.precio);
+      migrateBausparTilgungsbeitrag(inm.refi.a,inm.refi.importeOriginal);
+      migrateBausparTilgungsbeitrag(inm.refi.b,inm.refi.importeOriginal);
       return inm;
     }
     function inmuebleBlock(rec){
