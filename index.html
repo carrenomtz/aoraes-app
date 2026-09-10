@@ -2819,17 +2819,20 @@
     // cambiar el número que el asesor ya veía: se deriva la cuota que daba el plazoPrestamo
     // guardado y se reexpresa como el dato equivalente en el nuevo esquema, para no perder ni
     // silenciar lo que ya había introducido.
+    // Redondeado a 2 decimales: es un valor derivado por matemática de coma flotante, no una
+    // cifra que el asesor haya escrito — sin redondear salían cosas como "1,5802237179106289%"
+    // en el campo, ilegible y que parecía un dato roto en vez de una migración automática.
     function migrateBancoTilgung(cfg){
       if(cfg.tilgungInicial!=null||cfg.plazoPrestamo==null) return;
       var quotaPerUnit=annuityQuota(1,cfg.interesPrestamo,Math.max(1,Math.round((cfg.plazoPrestamo||0)*12)));
-      cfg.tilgungInicial=Math.max(0,quotaPerUnit*12*100-(cfg.interesPrestamo||0));
+      cfg.tilgungInicial=Math.round(Math.max(0,quotaPerUnit*12*100-(cfg.interesPrestamo||0))*100)/100;
     }
     function migrateBausparTilgungsbeitrag(cfg,bausparsumme){
       if(cfg.tilgungsbeitragPerMille!=null) return;
       if(cfg.plazoPrestamo==null||!(bausparsumme>0)){ cfg.tilgungsbeitragPerMille=6; return; }
       var capitalPrestamo=bausparsumme*(1-(cfg.pct||0)/100);
       var quotaPerUnit=annuityQuota(1,cfg.interesPrestamo,Math.max(1,Math.round((cfg.plazoPrestamo||0)*12)));
-      cfg.tilgungsbeitragPerMille=Math.max(0,quotaPerUnit*capitalPrestamo/bausparsumme*1000);
+      cfg.tilgungsbeitragPerMille=Math.round(Math.max(0,quotaPerUnit*capitalPrestamo/bausparsumme*1000)*100)/100;
     }
     function normalizeInmueble(rec){
       if(!rec.inmueble) rec.inmueble=defaultInmueble();
