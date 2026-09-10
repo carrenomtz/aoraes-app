@@ -2388,25 +2388,33 @@
       var objetivoAhorro=precio*pct/100;
       var capitalPrestamo=precio-objetivoAhorro;
       var mesesAhorro=Math.max(0,Math.round((cfg.anios||0)*12));
-      var cuotaAhorro=(pct>0&&mesesAhorro>0)?savingsQuota(objetivoAhorro,cfg.interesAhorro,mesesAhorro):0;
-      var interesGanadoAhorro=(pct>0&&mesesAhorro>0)?Math.max(0,objetivoAhorro-cuotaAhorro*mesesAhorro):0;
+      var esBausparvertrag=(cfg.tilgungsbeitragPerMille!=null);
+      // La Abschlussgebühr de un Bausparvertrag se cobra sobre la Bausparsumme (aquí, precio) y se
+      // descuenta de golpe contra los primeros ahorros, no al final contra el préstamo — así lo
+      // hacen las Bausparkassen reales (confirmado contra un extracto de amortización real: el
+      // Saldo del primer año ya sale negativo por la comisión). La cuota de ahorro necesaria sube
+      // en consecuencia: tiene que cubrir el objetivo de ahorro Y la comisión, ya que esta se resta
+      // del Guthaben nada más pagarla, antes de que pueda generar interés.
+      var comisionAhorro=esBausparvertrag?precio*(cfg.comision||0)/100:0;
+      var cuotaAhorro=(pct>0&&mesesAhorro>0)?savingsQuota(objetivoAhorro+comisionAhorro,cfg.interesAhorro,mesesAhorro):0;
+      var interesGanadoAhorro=(pct>0&&mesesAhorro>0)?Math.max(0,objetivoAhorro+comisionAhorro-cuotaAhorro*mesesAhorro):0;
       // Bausparvertrag (a/b/refiA/refiB): el Tilgungsbeitrag es un ‰ fijo de la Bausparsumme
       // (aquí, precio), independiente del tipo pactado — así lo hacen las Bausparkassen reales
       // (p. ej. Badenia: 6‰ típico). Banco directo: la cuota alemana estándar es
       // capital·(Sollzins + Tilgung inicial)/12 — no se fija un plazo, se fija la Tilgung.
-      var cuotaPrestamo=(cfg.tilgungsbeitragPerMille!=null)
+      var cuotaPrestamo=esBausparvertrag
         ? precio*(cfg.tilgungsbeitragPerMille||0)/1000
         : capitalPrestamo*(((cfg.interesPrestamo||0)+(cfg.tilgungInicial||0))/100)/12;
       var mesesPrestamo=Math.max(1,monthsToPayoff(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo));
       var interesTotalPrestamo=Math.max(0,cuotaPrestamo*mesesPrestamo-capitalPrestamo);
-      // La comisión de apertura es un % del PRÉSTAMO real (capitalPrestamo), no del precio del
-      // inmueble: solo se pide comisión sobre lo que el banco realmente presta, no sobre la parte
-      // que ya cubre el ahorro previo (Bausparvertrag). Con precio en vez de capitalPrestamo la
-      // comisión salía inflada para toda opción con ahorro previo (pct>0) — coincide con precio
-      // solo cuando pct=0 (Banco directo, capitalPrestamo===precio).
-      var comision=capitalPrestamo*(cfg.comision||0)/100;
+      // Banco directo: la comisión (Bearbeitungsgebühr) sigue siendo un % del PRÉSTAMO realmente
+      // desembolsado (capitalPrestamo) — reduce lo que el cliente recibe en mano aunque devuelva el
+      // capital completo. En Bausparvertrag ya se ha cobrado en la fase de ahorro (comisionAhorro,
+      // arriba), así que aquí no vuelve a restarse del préstamo.
+      var comisionPrestamo=esBausparvertrag?0:capitalPrestamo*(cfg.comision||0)/100;
+      var comision=esBausparvertrag?comisionAhorro:comisionPrestamo;
       var costeTotal=precio+interesTotalPrestamo+comision-interesGanadoAhorro;
-      var tasaEfectiva=effectiveAnnualRate(capitalPrestamo-comision,cuotaPrestamo,mesesPrestamo);
+      var tasaEfectiva=effectiveAnnualRate(capitalPrestamo-comisionPrestamo,cuotaPrestamo,mesesPrestamo);
       // Duración real de cada camino hasta terminar de pagar del todo: ahorro (si lo hay) + el
       // plazo del préstamo que sigue después — la comparación de tiempo que pide verse tan clara
       // como la de precio (p. ej. "3,5 + 10 años" frente a "30 años").
