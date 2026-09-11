@@ -1671,6 +1671,7 @@
     var SHELL_LANG='es';
     var SHELL_I18N_EN={
       'Opciones avanzadas':'Advanced options',
+      'Deuda pendiente al fin de la Zinsbindung':'Remaining debt at the end of the Zinsbindung',
       'Amortización inicial (Tilgung)':'Initial repayment (Tilgung)',
       'Cuota de amortización (Tilgungsbeitrag)':'Repayment contribution (Tilgungsbeitrag)',
       'Cuánto capital devuelves cada año, además de los intereses — junto con el tipo, esto fija tu cuota mensual. Más Tilgung: cuota más alta, pero terminas de pagar antes.':'How much capital you repay each year, on top of the interest — together with the rate, this sets your monthly instalment. More Tilgung: a higher instalment, but you finish paying sooner.',
@@ -1921,6 +1922,7 @@
     };
     var SHELL_I18N_DE={
       'Opciones avanzadas':'Erweiterte Optionen',
+      'Deuda pendiente al fin de la Zinsbindung':'Restschuld zum Ende der Zinsbindung',
       'Amortización inicial (Tilgung)':'Anfängliche Tilgung',
       'Cuota de amortización (Tilgungsbeitrag)':'Tilgungsbeitrag',
       'Cuánto capital devuelves cada año, además de los intereses — junto con el tipo, esto fija tu cuota mensual. Más Tilgung: cuota más alta, pero terminas de pagar antes.':'Wie viel Kapital Sie jährlich zusätzlich zu den Zinsen zurückzahlen — zusammen mit dem Zinssatz bestimmt das Ihre monatliche Rate. Mehr Tilgung: höhere Rate, aber schneller schuldenfrei.',
@@ -2430,7 +2432,15 @@
       // como la de precio (p. ej. "3,5 + 10 años" frente a "30 años").
       var mesesAhorroEfectivo=(pct>0)?mesesAhorro:0;
       var mesesTotal=mesesAhorroEfectivo+mesesPrestamo;
-      return {objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal};
+      // Restschuld al final de la Zinsbindung: el dato que cualquier calculadora bancaria alemana
+      // real muestra siempre (lo vimos en ehyp.de) — cuánta deuda queda sin pagar cuando se acaba
+      // el tipo fijo, y hay que refinanciar (Anschlussfinanzierung) al tipo que haya entonces. Solo
+      // tiene sentido en Banco directo: en un Bausparvertrag el tipo está fijado para TODA la
+      // Darlehensphase, así que no hay Zinsbindung que se acabe antes de terminar de pagar.
+      var restschuldZinsbindung=(!esBausparvertrag&&cfg.zinsbindung!=null)
+        ?balanceTrasMeses(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,Math.min(mesesPrestamo,Math.round((cfg.zinsbindung||0)*12)))
+        :null;
+      return {objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal,restschuldZinsbindung:restschuldZinsbindung};
     }
     function isoDateYearsAgo(years){
       var d=new Date(); d.setFullYear(d.getFullYear()-years);
@@ -2763,6 +2773,7 @@
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
           '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
+          (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
           (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(costeAbs)+'</b></div>'+
           '<div class="inm-res-line save '+(ahorroVs>=0?'pos':'neg')+'"><span>'+(ahorroVs>=0?'Ahorras vs. seguir igual':'Más caro que seguir igual')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>'+
@@ -2797,6 +2808,7 @@
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
           '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
+          (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
           (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(r.costeTotal)+'</b></div>'+
           (ahorroVs!=null?'<div class="inm-res-line save '+(ahorroVs>=0?'pos':'neg')+'"><span>'+(ahorroVs>=0?'Ahorras vs. banco':'Más caro que el banco')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>':'')+
