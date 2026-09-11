@@ -502,6 +502,12 @@
   .inm-quick{display:flex; flex-wrap:wrap; gap:6px; margin:-3px 0 11px}
   .inm-quick button{font-family:inherit; font-size:12px; font-weight:700; color:var(--navy); background:var(--surface); border:1px solid var(--gold-soft); border-radius:999px; padding:5px 12px; cursor:pointer; transition:.14s}
   .inm-quick button:hover{background:var(--gold-tint); border-color:var(--gold)}
+  .inm-advanced{margin-top:6px; padding-top:12px; border-top:1px dashed var(--line-soft)}
+  .inm-advanced summary{cursor:pointer; font-size:12px; font-weight:700; color:var(--navy-2); list-style:none; display:flex; align-items:center; gap:5px; user-select:none; margin-bottom:12px}
+  .inm-advanced summary::-webkit-details-marker{display:none}
+  .inm-advanced summary::before{content:'▸'; font-size:9px; transition:transform .15s}
+  .inm-advanced[open] summary::before{transform:rotate(90deg)}
+  .inm-advanced summary:hover{color:var(--navy)}
   .inm-results{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px}
   .inm-time{margin-top:11px; padding-top:10px; border-top:1px solid var(--line-soft)}
   .inm-time-lab{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:5px}
@@ -1664,6 +1670,7 @@
     function shellStopObserver(){ if(_shellMo){ _shellMo.disconnect(); _shellMo=null; } }
     var SHELL_LANG='es';
     var SHELL_I18N_EN={
+      'Opciones avanzadas':'Advanced options',
       'Amortización inicial (Tilgung)':'Initial repayment (Tilgung)',
       'Cuota de amortización (Tilgungsbeitrag)':'Repayment contribution (Tilgungsbeitrag)',
       'Cuánto capital devuelves cada año, además de los intereses — junto con el tipo, esto fija tu cuota mensual. Más Tilgung: cuota más alta, pero terminas de pagar antes.':'How much capital you repay each year, on top of the interest — together with the rate, this sets your monthly instalment. More Tilgung: a higher instalment, but you finish paying sooner.',
@@ -1913,6 +1920,7 @@
       'Filtrar por asesor':'Filter by advisor',
     };
     var SHELL_I18N_DE={
+      'Opciones avanzadas':'Erweiterte Optionen',
       'Amortización inicial (Tilgung)':'Anfängliche Tilgung',
       'Cuota de amortización (Tilgungsbeitrag)':'Tilgungsbeitrag',
       'Cuánto capital devuelves cada año, además de los intereses — junto con el tipo, esto fija tu cuota mensual. Más Tilgung: cuota más alta, pero terminas de pagar antes.':'Wie viel Kapital Sie jährlich zusätzlich zu den Zinsen zurückzahlen — zusammen mit dem Zinssatz bestimmt das Ihre monatliche Rate. Mehr Tilgung: höhere Rate, aber schneller schuldenfrei.',
@@ -2483,29 +2491,35 @@
     function inmuebleQuickButtons(field,values,unit){
       return '<div class="inm-quick">'+values.map(function(v){return '<button type="button" data-inm-quickfield="'+field+'" data-inm-quickval="'+v+'">'+String(v).replace('.',',')+unit+'</button>';}).join('')+'</div>';
     }
+    // Solo el precio/plazo del ahorro y el tipo del préstamo se ven a simple vista — son los
+    // datos que un cliente sin idea de inmuebles reconoce al momento. El resto (Tilgung/
+    // Tilgungsbeitrag, comisión, Zinsbindung, interés del ahorro) ya trae puesto el valor
+    // estándar que usaría un banco/Bausparkasse por defecto, y queda oculto en "Opciones
+    // avanzadas" — ahí sigue disponible por si hay que ajustar uno a una oferta real concreta.
     function inmuebleOptionCard(opt,title,cfg,note){
-      var fields='';
+      var basic='', advanced='';
       var withAhorro=(opt==='a'||opt==='b'||opt==='refiA'||opt==='refiB');
       var withAnios=(opt==='a'||opt==='b');
       if(withAhorro){
-        fields+=inmuebleOptField(opt,'pct','% ahorrado',cfg.pct,'1','%','min="0" max="100"');
-        if(withAnios) fields+=inmuebleOptField(opt,'anios','Años de ahorro',cfg.anios,'1','años','min="0" max="40"');
-        fields+=inmuebleOptField(opt,'interesAhorro','Interés del ahorro',cfg.interesAhorro,'0.01','%','min="0" max="20"');
+        basic+=inmuebleOptField(opt,'pct','% ahorrado',cfg.pct,'1','%','min="0" max="100"');
+        if(withAnios) basic+=inmuebleOptField(opt,'anios','Años de ahorro',cfg.anios,'1','años','min="0" max="40"');
+        advanced+=inmuebleOptField(opt,'interesAhorro','Interés del ahorro',cfg.interesAhorro,'0.01','%','min="0" max="20"');
       }
-      fields+=inmuebleOptField(opt,'interesPrestamo','Interés del préstamo',cfg.interesPrestamo,'0.01','%','min="0" max="20"');
+      basic+=inmuebleOptField(opt,'interesPrestamo','Interés del préstamo',cfg.interesPrestamo,'0.01','%','min="0" max="20"');
       if(opt==='banco'||opt==='refiBanco'){
-        fields+=inmuebleQuickButtons('interesPrestamo',[2,3,4,4.2,5],'%');
+        basic+=inmuebleQuickButtons('interesPrestamo',[2,3,4,4.2,5],'%');
       }
-      fields+=(opt==='banco'||opt==='refiBanco'
+      advanced+=(opt==='banco'||opt==='refiBanco'
         ? inmuebleOptField(opt,'tilgungInicial','Amortización inicial (Tilgung)',cfg.tilgungInicial,'0.1','%','min="0.1" max="10"')+
           inmuebleQuickButtons('tilgungInicial',[1,1.5,2,3],'%')+
           '<p class="inm-note">Cuánto capital devuelves cada año, además de los intereses — junto con el tipo, esto fija tu cuota mensual. Más Tilgung: cuota más alta, pero terminas de pagar antes.</p>'
         : inmuebleOptField(opt,'tilgungsbeitragPerMille','Cuota de amortización (Tilgungsbeitrag)',cfg.tilgungsbeitragPerMille,'0.1','‰','min="1" max="20"'))+
         inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
       if(opt==='banco'||opt==='refiBanco'){
-        fields+=inmuebleOptField(opt,'zinsbindung','Vigencia del tipo (Zinsbindung)',cfg.zinsbindung,'1','años','min="1" max="40"');
+        advanced+=inmuebleOptField(opt,'zinsbindung','Vigencia del tipo (Zinsbindung)',cfg.zinsbindung,'1','años','min="1" max="40"');
       }
-      return '<div class="inm-card" data-inm-card="'+opt+'"><h4>'+esc(title)+'</h4>'+(note?'<p class="inm-note">'+esc(note)+'</p>':'')+fields+'</div>';
+      return '<div class="inm-card" data-inm-card="'+opt+'"><h4>'+esc(title)+'</h4>'+(note?'<p class="inm-note">'+esc(note)+'</p>':'')+basic+
+        '<details class="inm-advanced"><summary>Opciones avanzadas</summary>'+advanced+'</details></div>';
     }
     function inmuebleModeToggle(modo){
       return '<div class="inm-mode" role="tablist" aria-label="Modo del proyecto inmobiliario">'+
