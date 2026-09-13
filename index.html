@@ -10,9 +10,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="AORAES" />
 <meta name="theme-color" content="#14213d" />
-<!-- Solo para el admin: lee el Excel/CSV de contactos en el navegador, sin subirlo a ningún
-     servidor externo — necesaria para "Importar Excel" en el panel de Asesores. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
@@ -823,7 +820,7 @@
         </div>
         <div class="pool-table-wrap">
           <table class="pool-table" data-no-i18n>
-            <thead><tr><th></th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th>Última vez</th><th>Notas</th><th>Asignar a</th></tr></thead>
+            <thead><tr><th></th><th>Nº</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th>Última vez</th><th>Notas</th><th>Asignar a</th></tr></thead>
             <tbody id="pool-list"></tbody>
           </table>
         </div>
@@ -867,7 +864,12 @@
         <input type="search" id="cont-search" aria-label="Buscar contactos" placeholder="Buscar por nombre, correo o teléfono…" />
         <select id="cont-status" aria-label="Filtrar por estado"><option value="">Todos (sin convertidos)</option><option value="nuevo">Nuevo</option><option value="no_contesto">No contestó</option><option value="no_disponible">Número no disponible</option><option value="contactado">Contactado</option><option value="no_interesa">No interesa</option><option value="convertido">Convertido</option></select>
       </div>
-      <div class="cock-list" id="cont-list" data-no-i18n></div>
+      <div class="pool-table-wrap">
+        <table class="pool-table" data-no-i18n>
+          <thead><tr><th>Nº</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th>Última vez</th><th>Notas</th><th></th></tr></thead>
+          <tbody id="cont-list"></tbody>
+        </table>
+      </div>
     </div>
   </main>
 
@@ -881,7 +883,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, collectionGroup, query, where, orderBy, limit as fsLimit, getDocs, onSnapshot, serverTimestamp, writeBatch }
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, collectionGroup, query, where, orderBy, limit as fsLimit, getDocs, getCountFromServer, onSnapshot, serverTimestamp, writeBatch }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     var firebaseConfig = {
@@ -978,6 +980,12 @@
           arr.sort(function(a,b){ return (b.importedAt||'').localeCompare(a.importedAt||''); });
           return arr;
         });
+      },
+      // Cuenta agregada (getCountFromServer) en vez de descargar los documentos completos — para el
+      // número de la pestaña "Bolsa sin asignar" no hace falta traer miles de fichas cada vez que se
+      // entra al panel Admin, solo cuando el admin realmente abre esa pestaña.
+      countPool: function(){
+        return getCountFromServer(leadsPoolCol()).then(function(snap){ return snap.data().count; });
       },
       // Escritura en lote de la importación: payloadsByAdvisor={uid:[lead,...]}, poolPayloads=[lead,...].
       // Firestore limita cada batch a 500 operaciones — se trocea para Excel grandes.
@@ -1313,6 +1321,9 @@
       return s;
     }
     function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+    // Con miles de contactos en la bolsa, re-renderizar la tabla entera en cada tecla se sentía a
+    // tirones — se espera una pausa breve antes de filtrar, en vez de hacerlo letra por letra.
+    function debounce(fn, ms){ var t=null; return function(){ var args=arguments, ctx=this; clearTimeout(t); t=setTimeout(function(){ fn.apply(ctx,args); }, ms); }; }
     var EUR=new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0});
     function eur(n){ return (n==null||isNaN(n))?'—':EUR.format(Math.round(n)); }
 
@@ -1796,7 +1807,10 @@
           return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+primaryLabel+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+editNameBtn+'</div>'+subEmail+'<div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+pipeHtml+'</div><div class="ase-acts">'+approveBtn+menu+'</div></div>';
         }).join('')+'</div>';
         _lastApprovedAdvisors=list.filter(function(p){ return p.status==='approved'; });
-        renderPool();
+        // Solo se trae la bolsa completa (miles de documentos) si esa pestaña ya está abierta — si no,
+        // basta un conteo agregado (barato) para el número que se ve junto a "Bolsa sin asignar".
+        var poolTabEl=document.getElementById('admin-tab-pool');
+        if(poolTabEl && !poolTabEl.hidden) renderPool(); else refreshPoolBadge();
       }).catch(function(e){
         clearTimeout(timeoutId);
         if(timedOut) return;
@@ -1886,6 +1900,11 @@
         filterAndRenderPool();
       }).catch(function(e){ console.error('AORAES: fallo al listar la bolsa de contactos',e); });
     }
+    function refreshPoolBadge(){
+      var badge=document.getElementById('admin-pool-badge');
+      if(!badge||!window.AORAES_CLOUD||!window.AORAES_CLOUD.countPool) return;
+      window.AORAES_CLOUD.countPool().then(function(n){ badge.textContent=n; badge.hidden=!n; }).catch(function(e){ console.error('AORAES: fallo al contar la bolsa',e); });
+    }
     /* ---------- Pestañas del panel Admin: Asesores / Bolsa sin asignar ---------- */
     var ADMIN_TABS=['asesores','pool'];
     function showAdminTab(tab){
@@ -1894,7 +1913,9 @@
     }
     document.getElementById('admin-tabs').addEventListener('click', function(e){
       var b=e.target.closest('[data-admin-tab]'); if(!b) return;
-      showAdminTab(b.getAttribute('data-admin-tab'));
+      var tab=b.getAttribute('data-admin-tab');
+      showAdminTab(tab);
+      if(tab==='pool') renderPool();
     });
     function filterAndRenderPool(){
       var listEl=document.getElementById('pool-list'); if(!listEl) return;
@@ -1904,8 +1925,14 @@
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
         return hay.indexOf(q)>=0;
       });
-      if(!shown.length){ listEl.innerHTML='<tr><td colspan="8" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
-      listEl.innerHTML=shown.map(function(l){
+      if(!shown.length){ listEl.innerHTML='<tr><td colspan="9" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
+      // Con miles de contactos, pintar la tabla entera de una sola vez se sentía lento — sin filtro
+      // se muestran solo los primeros 300 (los más recién importados) y se pide buscar para el resto.
+      var POOL_CAP=300;
+      var capped=shown.length>POOL_CAP && !q;
+      var toRender=capped?shown.slice(0,POOL_CAP):shown;
+      var capNote=capped?('<tr><td colspan="9" class="ase-empty" style="border:0">Mostrando '+POOL_CAP+' de '+shown.length+' — usa la búsqueda para encontrar el resto.</td></tr>'):'';
+      listEl.innerHTML=capNote+toRender.map(function(l){
         var st=l.status||'nuevo';
         var dupeKey=_poolDupeByLead[l.id];
         var phoneCell=l.phone?esc(l.phone):'<span style="color:var(--faint)">—</span>';
@@ -1913,6 +1940,7 @@
         var lastContact=fmtLastContact(l.lastContactAt);
         return '<tr'+(dupeKey?' class="pool-dupe-row"':'')+'>'+
           '<td><input type="checkbox" class="pool-check" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
+          '<td>'+(l.leadNo?esc(l.leadNo):'<span style="color:var(--faint)">—</span>')+'</td>'+
           '<td>'+esc(l.name||'Sin nombre')+'</td>'+
           '<td>'+(l.email?esc(l.email):'—')+'</td>'+
           '<td>'+phoneCell+'</td>'+
@@ -1930,7 +1958,7 @@
       bar.hidden=!ids.length;
       document.getElementById('pool-selected-count').textContent=ids.length+' seleccionado'+(ids.length===1?'':'s');
     }
-    document.getElementById('pool-search').addEventListener('input', filterAndRenderPool);
+    document.getElementById('pool-search').addEventListener('input', debounce(filterAndRenderPool, 220));
     document.getElementById('pool-list').addEventListener('change', function(e){
       var chk=e.target.closest('[data-pool-check]');
       if(chk){ _poolSelected[chk.getAttribute('data-pool-check')]=chk.checked; updatePoolBulkbar(); }
@@ -1988,6 +2016,7 @@
 
     /* ---------- Importar Excel: leer archivo → mapear columnas → confirmar → escribir en la nube ---------- */
     var COLUMN_HINTS={
+      leadNo:['no. de lead','numero de lead','número de lead','n° de lead','lead no','no lead','id lead'],
       name:['nombre','name','cliente','contacto'],
       email:['email','correo','e-mail','mail'],
       phone:['telefono','teléfono','phone','celular','movil','móvil','tel'],
@@ -1996,7 +2025,9 @@
       status:['status','estado'],
       lastContact:['fecha uc','fecha','date','ultimo contacto','último contacto','ultima fecha','última fecha']
     };
-    var IMPORT_FIELDS=[{key:'name',label:'Nombre',required:true},{key:'email',label:'Correo'},{key:'phone',label:'Teléfono'},{key:'notes',label:'Notas'},{key:'advisor',label:'Asesor (opcional)'},{key:'status',label:'Estado anterior (opcional)'},{key:'lastContact',label:'Última fecha de contacto (opcional)'}];
+    // "Número de contacto" (opcional): el "No. de Lead" que ya trae el Excel del usuario — se guarda
+    // tal cual, sin regenerarlo, para que se pueda comparar fila a fila contra la hoja original.
+    var IMPORT_FIELDS=[{key:'leadNo',label:'Número de contacto (opcional)'},{key:'name',label:'Nombre',required:true},{key:'email',label:'Correo'},{key:'phone',label:'Teléfono'},{key:'notes',label:'Notas'},{key:'advisor',label:'Asesor (opcional)'},{key:'status',label:'Estado anterior (opcional)'},{key:'lastContact',label:'Última fecha de contacto (opcional)'}];
     // Traduce el vocabulario de estado que traiga el Excel a los estados que maneja AORAES.
     // Cualquier texto no reconocido cae en "contactado" — ni se pierde de vista como "nuevo" (el
     // asesor lo re-llamaría sin saber que ya se tocó antes) ni se descarta como "no_interesa" sin
@@ -2032,12 +2063,29 @@
       }
       return -1;
     }
+    // La librería que lee el Excel pesa ~860KB — cargarla en <head> para todo el mundo (incluidos
+    // los asesores, que nunca importan nada) frenaba la carga de la página entera. Ahora solo se pide
+    // la primera vez que el admin abre este modal, no antes.
+    var _xlsxLoading=null;
+    function ensureXLSX(){
+      if(window.XLSX) return Promise.resolve();
+      if(_xlsxLoading) return _xlsxLoading;
+      _xlsxLoading=new Promise(function(resolve,reject){
+        var s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload=function(){ resolve(); };
+        s.onerror=function(){ _xlsxLoading=null; reject(new Error('No se pudo cargar el lector de Excel')); };
+        document.head.appendChild(s);
+      });
+      return _xlsxLoading;
+    }
     function openImportOverlay(){
       document.getElementById('import-overlay').hidden=false;
       document.getElementById('import-step-file').hidden=false;
       document.getElementById('import-step-map').hidden=true;
       document.getElementById('import-step-result').hidden=true;
       document.getElementById('import-file').value='';
+      ensureXLSX().catch(function(e){ console.error('AORAES:',e); });
     }
     function closeImportOverlay(){ document.getElementById('import-overlay').hidden=true; }
     document.getElementById('asesores-import').addEventListener('click', openImportOverlay);
@@ -2070,8 +2118,9 @@
     });
     document.getElementById('import-file').addEventListener('change', function(e){
       var file=e.target.files&&e.target.files[0]; if(!file) return;
-      if(typeof XLSX==='undefined'){ alert('No se pudo cargar el lector de Excel. Comprueba tu conexión e inténtalo de nuevo.'); return; }
-      file.arrayBuffer().then(function(buf){
+      ensureXLSX().then(function(){
+        return file.arrayBuffer();
+      }).then(function(buf){
         _impWb=XLSX.read(buf,{type:'array'});
         if(!_impWb.SheetNames.length){ alert('El archivo no tiene ninguna hoja.'); return null; }
         // Con varias hojas (paneles/plantillas suelen traer resumen + instrucciones + los datos de
@@ -2114,6 +2163,7 @@
     }
     function mappedRow(row, map){
       return {
+        leadNo:(map.leadNo>=0?String(row[map.leadNo]||'').trim():''),
         name:(map.name>=0?String(row[map.name]||'').trim():''),
         email:(map.email>=0?String(row[map.email]||'').trim():''),
         phone:(map.phone>=0?cleanPhone(row[map.phone]):''),
@@ -2146,7 +2196,8 @@
         var notes=[]; grp.forEach(function(r){ if(r.notes && notes.indexOf(r.notes)<0) notes.push(r.notes); });
         var advisorText=grp.map(function(r){return r.advisorText;}).filter(Boolean)[0]||'';
         var lastContactText=grp.map(function(r){return r.lastContactText;}).filter(Boolean)[0]||'';
-        return { name:base.name, email:base.email, phone:phone, notes:notes.join(' / '), advisorText:advisorText, statusText:statusTexts.join(' / '), lastContactText:lastContactText, _dupeCount:grp.length };
+        var leadNos=[]; grp.forEach(function(r){ if(r.leadNo && leadNos.indexOf(r.leadNo)<0) leadNos.push(r.leadNo); });
+        return { leadNo:leadNos.join(', '), name:base.name, email:base.email, phone:phone, notes:notes.join(' / '), advisorText:advisorText, statusText:statusTexts.join(' / '), lastContactText:lastContactText, _dupeCount:grp.length };
       });
       return merged.concat(noEmail);
     }
@@ -2174,6 +2225,7 @@
       if(r._dupeCount>1) noteParts.push('('+r._dupeCount+' filas duplicadas del Excel combinadas aquí)');
       var lead={ id:'lead'+Date.now()+i+Math.floor(Math.random()*1000), name:r.name, email:r.email, phone:r.phone, notes:noteParts.join(' · '), status:triageStatus(r.statusText), importedAt:now };
       if(r.lastContactText) lead.lastContactAt=r.lastContactText;
+      if(r.leadNo) lead.leadNo=r.leadNo;
       return { lead:lead, adv:adv };
     }
     function renderImportPreview(){
@@ -2182,12 +2234,12 @@
       merged.forEach(function(r){ if(matchAdvisor(r.advisorText)) matched++; });
       var tbl=document.getElementById('import-preview');
       var previewRows=merged.slice(0,5);
-      tbl.innerHTML='<thead><tr><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado previo</th><th>Asesor</th></tr></thead><tbody>'+
+      tbl.innerHTML='<thead><tr><th>Nº</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado previo</th><th>Asesor</th></tr></thead><tbody>'+
         previewRows.map(function(r){
           var adv=matchAdvisor(r.advisorText);
           var advTxt=r.advisorText?(adv?('✓ '+esc(adv.name||adv.email)):('⚠ "'+esc(r.advisorText)+'" no reconocido → bolsa')):'— sin asesor → bolsa';
           var dupeTxt=r._dupeCount>1?(' <span style="color:var(--faint)">('+r._dupeCount+'×)</span>'):'';
-          return '<tr><td>'+esc(r.name)+dupeTxt+'</td><td>'+esc(r.email)+'</td><td>'+esc(r.phone)+'</td><td>'+(esc(r.statusText)||'—')+'</td><td>'+advTxt+'</td></tr>';
+          return '<tr><td>'+(esc(r.leadNo)||'—')+'</td><td>'+esc(r.name)+dupeTxt+'</td><td>'+esc(r.email)+'</td><td>'+esc(r.phone)+'</td><td>'+(esc(r.statusText)||'—')+'</td><td>'+advTxt+'</td></tr>';
         }).join('')+'</tbody>';
       var withoutName=_impRows.length-validRows.length;
       var dupeRows=validRows.length-merged.length;
@@ -2253,28 +2305,31 @@
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
         return hay.indexOf(q)>=0;
       });
-      if(!shown.length){ listEl.innerHTML='<div class="cock-empty">'+(_contLeads.length?'Ningún contacto coincide.':'Todavía no tienes contactos asignados. Pídele al admin que te reparta algunos desde Asesores → Importar Excel.')+'</div>'; return; }
-      listEl.innerHTML=shown.map(function(l){
+      if(!shown.length){ listEl.innerHTML='<tr><td colspan="8" class="ase-empty" style="border:0">'+(_contLeads.length?'Ningún contacto coincide.':'Todavía no tienes contactos asignados. Pídele al admin que te reparta algunos desde Asesores → Importar Excel.')+'</td></tr>'; return; }
+      // Igual límite que en la bolsa del admin: sin filtro, solo los primeros 300.
+      var CONT_CAP=300;
+      var capped=shown.length>CONT_CAP && !q && !fs;
+      var toRender=capped?shown.slice(0,CONT_CAP):shown;
+      var capNote=capped?('<tr><td colspan="8" class="ase-empty" style="border:0">Mostrando '+CONT_CAP+' de '+shown.length+' — usa la búsqueda o el filtro para encontrar el resto.</td></tr>'):'';
+      listEl.innerHTML=capNote+toRender.map(function(l){
         var st=l.status||'nuevo', conv=(st==='convertido');
-        var meta=[l.email,l.phone].filter(Boolean).join(' · ');
         var lastContact=fmtLastContact(l.lastContactAt);
         var statusControl=conv
           ? '<span class="ase-badge convertido">Convertido</span>'
           : '<select class="cont-status-select" data-lead="'+esc(l.id)+'" aria-label="Estado">'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
-        return '<div class="ase-row">'+
-          '<div class="ase-body"><div class="ase-email">'+esc(l.name||'Sin nombre')+'</div>'+
-            (meta?'<div class="ase-count">'+esc(meta)+'</div>':'')+
-            (lastContact?'<div class="ase-count">Última vez: '+esc(lastContact)+'</div>':'')+
-            (l.notes?'<div class="ase-count" style="white-space:pre-wrap">'+esc(l.notes)+'</div>':'')+
-          '</div>'+
-          '<div class="ase-acts">'+
-            statusControl+
-            (!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir a cliente</button>':'')+
-          '</div>'+
-        '</div>';
+        return '<tr>'+
+          '<td>'+(l.leadNo?esc(l.leadNo):'<span style="color:var(--faint)">—</span>')+'</td>'+
+          '<td>'+esc(l.name||'Sin nombre')+'</td>'+
+          '<td>'+(l.email?esc(l.email):'—')+'</td>'+
+          '<td>'+(l.phone?esc(l.phone):'—')+'</td>'+
+          '<td>'+statusControl+'</td>'+
+          '<td>'+(lastContact?esc(lastContact):'<span style="color:var(--faint)">—</span>')+'</td>'+
+          '<td class="pool-notes-cell">'+esc(l.notes||'')+'</td>'+
+          '<td>'+(!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir</button>':'')+'</td>'+
+        '</tr>';
       }).join('');
     }
-    document.getElementById('cont-search').addEventListener('input', filterAndRenderContactos);
+    document.getElementById('cont-search').addEventListener('input', debounce(filterAndRenderContactos, 220));
     document.getElementById('cont-status').addEventListener('change', filterAndRenderContactos);
     document.getElementById('cont-list').addEventListener('change', function(e){
       var sel=e.target.closest('.cont-status-select'); if(!sel) return;
