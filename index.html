@@ -1366,16 +1366,6 @@
     function verdict(v){ if(v>=80)return ['Excelente','Las bases están bien cubiertas. El foco pasa a optimizar fiscalidad y rentabilidad.']; if(v>=60)return ['Sólida','Una situación estable con margen para reforzar una o dos áreas concretas.']; if(v>=40)return ['Mejorable','Hay cimientos, pero varias áreas clave necesitan atención a corto plazo.']; return ['Necesita atención','Conviene actuar pronto sobre el flujo de caja y la protección básica.']; }
     function reviewState(iso){ if(!iso)return null; var t=new Date();t.setHours(0,0,0,0); var d=new Date(iso+'T00:00:00'); if(isNaN(d.getTime()))return null; var diff=Math.round((d-t)/86400000); if(diff<0)return {cls:'overdue',txt:'Vencida'}; if(diff===0)return {cls:'today',txt:'Hoy'}; if(diff<=14)return {cls:'soon',txt:'En '+diff+' día'+(diff===1?'':'s')}; return {cls:'',txt:d.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}; }
     function relTime(iso){ var s=Math.round((Date.now()-new Date(iso).getTime())/1000); if(s<60)return 'hace instantes'; if(s<3600)return 'hace '+Math.round(s/60)+' min'; if(s<86400)return 'hace '+Math.round(s/3600)+' h'; return new Date(iso).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'}); }
-    // lastContactAt puede ser: un Timestamp real de Firestore (cuando el propio asesor marca un
-    // estado desde la app), o texto libre tal cual venía en la columna de fecha del Excel importado
-    // (no siempre un formato parseable) — se muestra relativo cuando se puede, y si no, tal cual.
-    function fmtLastContact(v){
-      if(!v) return '';
-      if(typeof v==='object' && v.toDate){ try{ return relTime(v.toDate().toISOString()); }catch(e){ return ''; } }
-      var s=String(v);
-      if(/^\d{4}-\d{2}-\d{2}/.test(s)){ try{ return relTime(s); }catch(e){} }
-      return s;
-    }
     // Valor numérico comparable de lastContactAt, sin importar si es un Timestamp real de Firestore,
     // una fecha ISO, o texto libre tal cual vino del Excel (se intenta parsear igual; si no se puede,
     // cuenta como "sin fecha" y va al final al ordenar de más reciente a más antiguo).
@@ -1385,16 +1375,21 @@
       var t=new Date(v).getTime();
       return isNaN(t) ? 0 : t;
     }
+    // Día local (no UTC) en YYYY-MM-DD — toISOString() convierte a UTC antes de cortar la fecha, así
+    // que un contacto tocado pasada la medianoche en hora española podía mostrar el día anterior.
+    function localDateStr(d){
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    }
     // Valor YYYY-MM-DD para el <input type="date"> editable — si no se puede interpretar como fecha
     // (texto libre raro del Excel), el campo simplemente empieza vacío en vez de romperse; el asesor
     // puede escribir la fecha correcta a mano encima.
     function lastContactDateValue(v){
       if(!v) return '';
-      if(typeof v==='object' && v.toDate){ try{ return v.toDate().toISOString().slice(0,10); }catch(e){ return ''; } }
+      if(typeof v==='object' && v.toDate){ try{ return localDateStr(v.toDate()); }catch(e){ return ''; } }
       var s=String(v);
       if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
       var t=new Date(s);
-      return isNaN(t.getTime()) ? '' : t.toISOString().slice(0,10);
+      return isNaN(t.getTime()) ? '' : localDateStr(t);
     }
     // Valor comparable genérico para ordenar tablas de contactos por cualquier columna — un solo
     // sitio para Bolsa sin asignar y Contactos, ya que comparten exactamente las mismas columnas.
