@@ -239,11 +239,27 @@
   .pool-table{border-collapse:collapse; width:100%; font-size:12px; min-width:600px}
   .pool-table th,.pool-table td{padding:6px 8px; border-bottom:1px solid var(--line-soft); text-align:left; vertical-align:top}
   .pool-table th{background:var(--bg); color:var(--muted); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.02em; white-space:nowrap}
+  .pool-table th.sortable-th{cursor:pointer; user-select:none}
+  /* La columna de acción ("→ Convertir") se fija a la derecha para que nunca quede cortada fuera de
+     vista al hacer scroll horizontal — el fondo explícito es necesario para que tape lo que pasa
+     por debajo al desplazarse. */
+  .cont-action-col{position:sticky; right:0; background:var(--surface); box-shadow:-6px 0 8px -6px rgba(20,33,61,.15)}
+  .pool-table tbody tr:hover .cont-action-col{background:var(--gold-tint)}
+  .pool-table th.sortable-th:hover{color:var(--navy)}
+  .pool-table th.sortable-th.sort-active{color:var(--navy)}
+  .pool-table .sort-arrow{display:inline-block; width:10px; font-size:9px}
   .pool-table tbody tr:last-child td{border-bottom:0}
   .pool-table tbody tr:hover{background:var(--gold-tint)}
   .pool-table .pool-notes-cell{max-width:150px; color:var(--muted); font-size:11.5px}
   .pool-notes-text{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; cursor:pointer}
   .pool-notes-text.expanded{white-space:pre-wrap; overflow:visible; text-overflow:clip}
+  /* Campos editables directo en la tabla: casi invisibles hasta que se pasa el ratón o se enfocan,
+     para no verse como un formulario — pero siempre estuvieron ahí, siempre se pudo corregir. */
+  .cont-field-input{font-family:inherit; font-size:11.5px; padding:3px 5px; border:1px solid transparent; border-radius:5px; background:transparent; width:100%; min-width:70px; box-sizing:border-box; color:var(--ink)}
+  .cont-field-input:hover{border-color:var(--line-strong)}
+  .cont-field-input:focus{border-color:var(--gold); background:var(--surface); outline:none; box-shadow:0 0 0 2px var(--gold-tint)}
+  .cont-date-input{font-family:inherit; font-size:10.5px; padding:3px 4px; border:1px solid var(--line-strong); border-radius:5px; background:var(--surface); max-width:118px; color:var(--ink)}
+  .pool-notes-textarea{width:100%; min-width:140px; font-family:inherit; font-size:11.5px; padding:5px 6px; border:1px solid var(--gold); border-radius:5px; background:var(--surface); resize:vertical; min-height:54px; box-shadow:0 0 0 2px var(--gold-tint)}
   .pool-table tr.pool-dupe-row{background:#fdf3e7}
   .pool-table tr.pool-dupe-row:hover{background:#fbe9d3}
   .pool-dupe-badge{cursor:pointer; background:#f5c344; color:#6b4a00; border:1px solid #e0a92a; border-radius:7px; padding:3px 8px; font-weight:700; font-size:12px; white-space:nowrap; display:inline-block; font-family:inherit}
@@ -824,7 +840,7 @@
         <div style="margin-bottom:12px"><button type="button" id="pool-clear-all" class="danger" style="font-family:inherit;font-size:11.5px;font-weight:700;border-radius:7px;padding:6px 10px;cursor:pointer;border:1px solid #e7c3bb;color:var(--red);background:#fbeae6">🗑 Vaciar toda la bolsa…</button></div>
         <div class="pool-table-wrap">
           <table class="pool-table" data-no-i18n>
-            <thead><tr><th><input type="checkbox" id="pool-check-all" aria-label="Seleccionar todo lo filtrado" title="Seleccionar todo lo filtrado"></th><th>Fecha UC</th><th>Nº</th><th>Status</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Asesor</th><th>Notas</th></tr></thead>
+            <thead><tr id="pool-thead-row"><th><input type="checkbox" id="pool-check-all" aria-label="Seleccionar todo lo filtrado" title="Seleccionar todo lo filtrado"></th><th class="sortable-th" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="status">Status<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="email">Email<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th>Asesor</th><th class="sortable-th" data-sort-key="notes">Notas<span class="sort-arrow"></span></th></tr></thead>
             <tbody id="pool-list"></tbody>
           </table>
         </div>
@@ -870,7 +886,7 @@
       </div>
       <div class="pool-table-wrap">
         <table class="pool-table" data-no-i18n>
-          <thead><tr><th>Fecha UC</th><th>Nº</th><th>Status</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Asesor</th><th>Notas</th><th></th></tr></thead>
+          <thead><tr id="cont-thead-row"><th class="sortable-th" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="status">Status<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="email">Email<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th>Asesor</th><th class="sortable-th" data-sort-key="notes">Notas<span class="sort-arrow"></span></th><th class="cont-action-col"></th></tr></thead>
           <tbody id="cont-list"></tbody>
         </table>
       </div>
@@ -978,6 +994,14 @@
         var uid=viewingUid||currentUid; if(!uid||!leadId) return Promise.resolve();
         return deleteDoc(doc(collection(db,'users',uid,'leads'),leadId)).catch(function(e){ console.error('AORAES cloud: fallo al borrar el contacto',e); });
       },
+      // Guarda cualquier campo suelto (nombre, correo, teléfono, número de lead, notas, fecha
+      // manual...) — siempre habrá erratas al importar de Excel, así que todo se puede corregir a
+      // mano directamente en la tabla, sin un formulario aparte por campo.
+      updateLeadField: function(leadId, field, value){
+        var uid=viewingUid||currentUid; if(!uid||!leadId) return Promise.resolve();
+        var patch={}; patch[field]=value;
+        return updateDoc(doc(collection(db,'users',uid,'leads'),leadId), patch).catch(function(e){ console.error('AORAES cloud: fallo al guardar el campo',field,e); });
+      },
       listPool: function(){
         return getDocs(leadsPoolCol()).then(function(snap){
           var arr=[]; snap.forEach(function(d){ arr.push(d.data()); });
@@ -989,6 +1013,11 @@
       // que ya tenga asesor.
       updatePoolLeadStatus: function(leadId, status){
         return updateDoc(doc(leadsPoolCol(),leadId), {status:status, lastContactAt:serverTimestamp()}).catch(function(e){ console.error('AORAES cloud: fallo al actualizar el estado en la bolsa',e); });
+      },
+      // Mismo criterio que updateLeadField, para contactos que todavía están en la bolsa sin asignar.
+      updatePoolLeadField: function(leadId, field, value){
+        var patch={}; patch[field]=value;
+        return updateDoc(doc(leadsPoolCol(),leadId), patch).catch(function(e){ console.error('AORAES cloud: fallo al guardar el campo',field,e); });
       },
       // Cuenta agregada (getCountFromServer) en vez de descargar los documentos completos — para el
       // número de la pestaña "Bolsa sin asignar" no hace falta traer miles de fichas cada vez que se
@@ -1345,6 +1374,75 @@
       if(/^\d{4}-\d{2}-\d{2}/.test(s)){ try{ return relTime(s); }catch(e){} }
       return s;
     }
+    // Valor numérico comparable de lastContactAt, sin importar si es un Timestamp real de Firestore,
+    // una fecha ISO, o texto libre tal cual vino del Excel (se intenta parsear igual; si no se puede,
+    // cuenta como "sin fecha" y va al final al ordenar de más reciente a más antiguo).
+    function lastContactSortValue(v){
+      if(!v) return 0;
+      if(typeof v==='object' && v.toDate){ try{ return v.toDate().getTime(); }catch(e){ return 0; } }
+      var t=new Date(v).getTime();
+      return isNaN(t) ? 0 : t;
+    }
+    // Valor YYYY-MM-DD para el <input type="date"> editable — si no se puede interpretar como fecha
+    // (texto libre raro del Excel), el campo simplemente empieza vacío en vez de romperse; el asesor
+    // puede escribir la fecha correcta a mano encima.
+    function lastContactDateValue(v){
+      if(!v) return '';
+      if(typeof v==='object' && v.toDate){ try{ return v.toDate().toISOString().slice(0,10); }catch(e){ return ''; } }
+      var s=String(v);
+      if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+      var t=new Date(s);
+      return isNaN(t.getTime()) ? '' : t.toISOString().slice(0,10);
+    }
+    // Valor comparable genérico para ordenar tablas de contactos por cualquier columna — un solo
+    // sitio para Bolsa sin asignar y Contactos, ya que comparten exactamente las mismas columnas.
+    function contactSortValue(l, key){
+      switch(key){
+        case 'lastContactAt': return lastContactSortValue(l.lastContactAt);
+        case 'leadNo': var m=String(l.leadNo||'').match(/\d+/); return m?parseInt(m[0],10):-1;
+        case 'status': return (CONT_STATUS_LABEL[l.status||'nuevo']||'').toLowerCase();
+        case 'name': return (l.name||'').toLowerCase();
+        case 'email': return (l.email||'').toLowerCase();
+        case 'phone': return (l.phone||'').toLowerCase();
+        case 'notes': return (l.notes||'').toLowerCase();
+        default: return '';
+      }
+    }
+    function sortContactRows(rows, key, dir){
+      if(!key) return rows;
+      var mul=dir==='desc'?-1:1;
+      var copy=rows.slice();
+      copy.sort(function(a,b){
+        var va=contactSortValue(a,key), vb=contactSortValue(b,key);
+        if(va<vb) return -1*mul;
+        if(va>vb) return 1*mul;
+        return 0;
+      });
+      return copy;
+    }
+    // Encabezado clicable compartido: el primer clic en una columna ordena ascendente, un segundo
+    // clic en la misma columna invierte a descendente, y clicar otra columna reinicia a ascendente.
+    // theadRowId/sortState son distintos para Bolsa y Contactos, pero la lógica es la misma.
+    function wireSortableThead(theadRowId, sortState, onSort){
+      var row=document.getElementById(theadRowId); if(!row) return;
+      row.addEventListener('click', function(e){
+        var th=e.target.closest('.sortable-th'); if(!th) return;
+        var key=th.getAttribute('data-sort-key');
+        if(sortState.key===key) sortState.dir=(sortState.dir==='asc'?'desc':'asc');
+        else { sortState.key=key; sortState.dir='asc'; }
+        updateSortHeaderUI(row, sortState);
+        onSort();
+      });
+    }
+    function updateSortHeaderUI(row, sortState){
+      row.querySelectorAll('.sortable-th').forEach(function(th){
+        var active=th.getAttribute('data-sort-key')===sortState.key;
+        th.classList.toggle('sort-active', active);
+        var arrow=th.querySelector('.sort-arrow');
+        if(arrow) arrow.textContent=active?(sortState.dir==='asc'?'▲':'▼'):'';
+      });
+    }
+    var _poolSort={key:null, dir:'asc'}, _contSort={key:null, dir:'asc'};
     function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
     // Con miles de contactos en la bolsa, re-renderizar la tabla entera en cada tecla se sentía a
     // tirones — se espera una pausa breve antes de filtrar, en vez de hacerlo letra por letra.
@@ -1955,6 +2053,7 @@
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
         return hay.indexOf(q)>=0;
       });
+      shown=sortContactRows(shown, _poolSort.key, _poolSort.dir);
       // "Seleccionar todo": actúa sobre TODO lo que cumple el filtro actual, no solo las filas
       // pintadas en pantalla (que se limitan a 300 por rendimiento) — así sirve de verdad para
       // asignar/unir/borrar en bloque el resultado completo de una búsqueda.
@@ -1970,24 +2069,25 @@
       listEl.innerHTML=capNote+toRender.map(function(l){
         var st=l.status||'nuevo';
         var dupeKey=_poolDupeByLead[l.id];
-        var phoneCell=l.phone?esc(l.phone):'<span style="color:var(--faint)">—</span>';
-        if(dupeKey) phoneCell='<button type="button" class="pool-dupe-badge" data-dupe-select="'+esc(dupeKey)+'" title="Seleccionar los '+_poolDupeGroups[dupeKey].length+' contactos con este teléfono">'+phoneCell+' · '+_poolDupeGroups[dupeKey].length+'×</button>';
-        var lastContact=fmtLastContact(l.lastContactAt);
+        var dupeBadge=dupeKey?'<button type="button" class="pool-dupe-badge" data-dupe-select="'+esc(dupeKey)+'" title="Seleccionar los '+_poolDupeGroups[dupeKey].length+' contactos con este teléfono">'+_poolDupeGroups[dupeKey].length+'×</button>':'';
+        var lastContactVal=lastContactDateValue(l.lastContactAt);
         // Estado y Asesor son desplegables en vivo, igual que en la plantilla original del usuario:
         // cambiar el estado guarda al instante, y elegir un asesor aquí mismo asigna el contacto —
         // ya no hace falta un botón "Asignar" aparte.
         var statusSel='<select class="pool-status-select" data-pool-status="'+esc(l.id)+'" aria-label="Estado"'+pillStyleAttr(CONT_STATUS_COLOR[st])+'>'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
         var advisorSel='<select class="pool-row-advisor" data-pool-advisor="'+esc(l.id)+'" aria-label="Asesor"><option value="">— Sin asignar —</option>'+advisorOptionsHtml()+'</select>';
+        // Todo se puede corregir a mano directo en la tabla — siempre hay erratas de teléfono/nombre
+        // al importar de Excel, y no tiene sentido obligar a abrir un formulario aparte para eso.
         return '<tr'+(dupeKey?' class="pool-dupe-row"':'')+'>'+
           '<td><input type="checkbox" class="pool-check" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
-          '<td>'+(lastContact?esc(lastContact):'<span style="color:var(--faint)">—</span>')+'</td>'+
-          '<td>'+(l.leadNo?esc(l.leadNo):'<span style="color:var(--faint)">—</span>')+'</td>'+
+          '<td><input type="date" class="cont-date-input" data-pool-field="lastContactAt" data-pool-lead="'+esc(l.id)+'" value="'+lastContactVal+'"></td>'+
+          '<td><input type="text" class="cont-field-input" data-pool-field="leadNo" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
           '<td>'+statusSel+'</td>'+
-          '<td>'+esc(l.name||'Sin nombre')+'</td>'+
-          '<td>'+(l.email?esc(l.email):'—')+'</td>'+
-          '<td>'+phoneCell+'</td>'+
+          '<td><input type="text" class="cont-field-input" data-pool-field="name" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.name||'')+'" placeholder="Sin nombre"></td>'+
+          '<td><input type="text" class="cont-field-input" data-pool-field="email" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.email||'')+'"></td>'+
+          '<td style="white-space:nowrap"><input type="text" class="cont-field-input" style="display:inline-block;width:auto;min-width:90px" data-pool-field="phone" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.phone||'')+'">'+dupeBadge+'</td>'+
           '<td>'+advisorSel+'</td>'+
-          '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle>'+esc(l.notes)+'</span>':'')+'</td>'+
+          '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle data-pool-lead="'+esc(l.id)+'">'+esc(l.notes)+'</span>':'<span class="pool-notes-text" data-notes-toggle data-pool-lead="'+esc(l.id)+'" style="color:var(--faint)">— (clic para añadir)</span>')+'</td>'+
         '</tr>';
       }).join('');
       updatePoolBulkbar();
@@ -2013,6 +2113,7 @@
       _poolShownIds.forEach(function(id){ _poolSelected[id]=checked; });
       filterAndRenderPool();
     });
+    wireSortableThead('pool-thead-row', _poolSort, filterAndRenderPool);
     document.getElementById('pool-search').addEventListener('input', debounce(filterAndRenderPool, 220));
     document.getElementById('pool-list').addEventListener('change', function(e){
       var chk=e.target.closest('[data-pool-check]');
@@ -2037,11 +2138,34 @@
         recolorPillSelect(advSel, colorForAdvisor);
         advSel.disabled=true;
         window.AORAES_CLOUD.assignLeadsBulk([{lead:lead, advisorUid:advisorUid}]).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al asignar el contacto',e); alert('No se pudo asignar. Revisa la consola.'); advSel.disabled=false; });
+        return;
+      }
+      // Cualquier otro campo suelto (nombre, correo, teléfono, número, fecha manual, notas ya
+      // expandidas a textarea) se guarda solo — no se vuelve a pintar la tabla entera al terminar de
+      // editar, para no perder el foco ni reordenar filas a media edición si hay un orden aplicado.
+      var fieldEl=e.target.closest('[data-pool-field]');
+      if(fieldEl){
+        var leadId4=fieldEl.getAttribute('data-pool-lead'), field=fieldEl.getAttribute('data-pool-field'), val=fieldEl.value;
+        window.AORAES_CLOUD.updatePoolLeadField(leadId4, field, val).then(function(){
+          var l4=_pool.filter(function(x){return x.id===leadId4;})[0]; if(l4) l4[field]=val;
+        }).catch(function(e){ console.error('AORAES: fallo al guardar el campo',e); alert('No se pudo guardar. Revisa la consola.'); });
       }
     });
     document.getElementById('pool-list').addEventListener('click', function(e){
       var notesEl=e.target.closest('[data-notes-toggle]');
-      if(notesEl){ notesEl.classList.toggle('expanded'); return; }
+      if(notesEl){
+        var leadId5=notesEl.getAttribute('data-pool-lead');
+        var lead5=_pool.filter(function(x){return x.id===leadId5;})[0];
+        var ta=document.createElement('textarea');
+        ta.className='pool-notes-textarea';
+        ta.value=(lead5&&lead5.notes)||'';
+        ta.setAttribute('data-pool-field','notes');
+        ta.setAttribute('data-pool-lead',leadId5);
+        ta.placeholder='Notas…';
+        notesEl.replaceWith(ta);
+        ta.focus();
+        return;
+      }
       var dupeBtn=e.target.closest('[data-dupe-select]');
       if(dupeBtn){
         var key=dupeBtn.getAttribute('data-dupe-select');
@@ -2414,6 +2538,7 @@
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
         return hay.indexOf(q)>=0;
       });
+      shown=sortContactRows(shown, _contSort.key, _contSort.dir);
       if(!shown.length){ listEl.innerHTML='<tr><td colspan="9" class="ase-empty" style="border:0">'+(_contLeads.length?'Ningún contacto coincide.':'Todavía no tienes contactos asignados. Pídele al admin que te reparta algunos desde Asesores → Importar Excel.')+'</td></tr>'; return; }
       // Igual límite que en la bolsa del admin: sin filtro, solo los primeros 300.
       var CONT_CAP=300;
@@ -2425,38 +2550,64 @@
       var ownerName=window.AORAES_CLOUD.viewingEmail||(window.AORAES_CLOUD.profile&&(window.AORAES_CLOUD.profile.name||window.AORAES_CLOUD.profile.email))||'';
       listEl.innerHTML=capNote+toRender.map(function(l){
         var st=l.status||'nuevo', conv=(st==='convertido');
-        var lastContact=fmtLastContact(l.lastContactAt);
+        var lastContactVal=lastContactDateValue(l.lastContactAt);
         var statusControl=conv
           ? '<span class="ase-badge convertido">Convertido</span>'
           : '<select class="cont-status-select" data-lead="'+esc(l.id)+'" aria-label="Estado"'+pillStyleAttr(CONT_STATUS_COLOR[st])+'>'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
+        // Todo se puede corregir a mano directo en la tabla — siempre hay erratas de teléfono/nombre.
         return '<tr>'+
-          '<td>'+(lastContact?esc(lastContact):'<span style="color:var(--faint)">—</span>')+'</td>'+
-          '<td>'+(l.leadNo?esc(l.leadNo):'<span style="color:var(--faint)">—</span>')+'</td>'+
+          '<td><input type="date" class="cont-date-input" data-field="lastContactAt" data-lead="'+esc(l.id)+'" value="'+lastContactVal+'"></td>'+
+          '<td><input type="text" class="cont-field-input" data-field="leadNo" data-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
           '<td>'+statusControl+'</td>'+
-          '<td>'+esc(l.name||'Sin nombre')+'</td>'+
-          '<td>'+(l.email?esc(l.email):'—')+'</td>'+
-          '<td>'+(l.phone?esc(l.phone):'—')+'</td>'+
+          '<td><input type="text" class="cont-field-input" data-field="name" data-lead="'+esc(l.id)+'" value="'+esc(l.name||'')+'" placeholder="Sin nombre"></td>'+
+          '<td><input type="text" class="cont-field-input" data-field="email" data-lead="'+esc(l.id)+'" value="'+esc(l.email||'')+'"></td>'+
+          '<td><input type="text" class="cont-field-input" data-field="phone" data-lead="'+esc(l.id)+'" value="'+esc(l.phone||'')+'"></td>'+
           '<td>'+(ownerName?esc(ownerName):'<span style="color:var(--faint)">—</span>')+'</td>'+
-          '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle>'+esc(l.notes)+'</span>':'')+'</td>'+
-          '<td>'+(!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir</button>':'')+'</td>'+
+          '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle data-lead="'+esc(l.id)+'">'+esc(l.notes)+'</span>':'<span class="pool-notes-text" data-notes-toggle data-lead="'+esc(l.id)+'" style="color:var(--faint)">— (clic para añadir)</span>')+'</td>'+
+          '<td class="cont-action-col">'+(!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir</button>':'')+'</td>'+
         '</tr>';
       }).join('');
     }
+    wireSortableThead('cont-thead-row', _contSort, filterAndRenderContactos);
     document.getElementById('cont-search').addEventListener('input', debounce(filterAndRenderContactos, 220));
     document.getElementById('cont-status').addEventListener('change', filterAndRenderContactos);
     document.getElementById('cont-list').addEventListener('change', function(e){
-      var sel=e.target.closest('.cont-status-select'); if(!sel) return;
-      var leadId=sel.getAttribute('data-lead'), newSt=sel.value;
-      recolorPillSelect(sel, CONT_STATUS_COLOR);
-      sel.disabled=true;
-      window.AORAES_CLOUD.updateLeadStatus(leadId, newSt).then(function(){
-        var l=_contLeads.filter(function(x){return x.id===leadId;})[0]; if(l){ l.status=newSt; l.lastContactAt=new Date().toISOString(); }
-        filterAndRenderContactos();
-      });
+      var sel=e.target.closest('.cont-status-select');
+      if(sel){
+        var leadId=sel.getAttribute('data-lead'), newSt=sel.value;
+        recolorPillSelect(sel, CONT_STATUS_COLOR);
+        sel.disabled=true;
+        window.AORAES_CLOUD.updateLeadStatus(leadId, newSt).then(function(){
+          var l=_contLeads.filter(function(x){return x.id===leadId;})[0]; if(l){ l.status=newSt; l.lastContactAt=new Date().toISOString(); }
+          filterAndRenderContactos();
+        });
+        return;
+      }
+      // Cualquier otro campo suelto se guarda solo, sin repintar toda la tabla (evita perder el
+      // foco o reordenar filas a media edición si hay un orden aplicado).
+      var fieldEl=e.target.closest('[data-field]');
+      if(fieldEl){
+        var leadId2=fieldEl.getAttribute('data-lead'), field=fieldEl.getAttribute('data-field'), val=fieldEl.value;
+        window.AORAES_CLOUD.updateLeadField(leadId2, field, val).then(function(){
+          var l2=_contLeads.filter(function(x){return x.id===leadId2;})[0]; if(l2) l2[field]=val;
+        }).catch(function(e){ console.error('AORAES: fallo al guardar el campo',e); alert('No se pudo guardar. Revisa la consola.'); });
+      }
     });
     document.getElementById('cont-list').addEventListener('click', function(e){
       var notesEl=e.target.closest('[data-notes-toggle]');
-      if(notesEl){ notesEl.classList.toggle('expanded'); return; }
+      if(notesEl){
+        var leadId3=notesEl.getAttribute('data-lead');
+        var lead3=_contLeads.filter(function(x){return x.id===leadId3;})[0];
+        var ta=document.createElement('textarea');
+        ta.className='pool-notes-textarea';
+        ta.value=(lead3&&lead3.notes)||'';
+        ta.setAttribute('data-field','notes');
+        ta.setAttribute('data-lead',leadId3);
+        ta.placeholder='Notas…';
+        notesEl.replaceWith(ta);
+        ta.focus();
+        return;
+      }
       var b=e.target.closest('[data-cont-convert]'); if(!b) return;
       var id2=b.getAttribute('data-cont-convert');
       var lead=_contLeads.filter(function(x){return x.id===id2;})[0]; if(lead) convertLeadToClient(lead);
