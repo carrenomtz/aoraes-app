@@ -1278,6 +1278,12 @@
       try{ localStorage.setItem(CLIENTS_KEY,JSON.stringify(arr)); }catch(e){}
       if(payload.solution){ try{ var sols=readSolutions(); sols[payload.id]=payload.solution; localStorage.setItem(SOLUTIONS_KEY,JSON.stringify(sols)); }catch(e){} }
       if(payload.medico){ try{ var m=JSON.parse(localStorage.getItem(MED_BY_CLIENT_KEY))||{}; m[payload.id]=payload.medico; localStorage.setItem(MED_BY_CLIENT_KEY,JSON.stringify(m)); }catch(e){} }
+      // Sin esto, importar desde la carpeta Clientes con sesión en la nube activa no servía de
+      // nada: readClients() prefiere la caché de la nube en cuanto existe, así que lo importado no
+      // se veía, y el siguiente snapshot de Firestore reescribía CLIENTS_KEY por encima, borrando
+      // silenciosamente lo recién importado. syncClient ya no hace nada si no hay sesión, así que
+      // es seguro llamarlo siempre.
+      if(window.AORAES_CLOUD) window.AORAES_CLOUD.syncClient(payload);
     }
     function importFromClientesDir(){
       if(!clientesDirHandle) return Promise.resolve();
