@@ -816,6 +816,10 @@
         viewingUid = uid;
         window.AORAES_CLOUD.viewingUid = uid;
         window.AORAES_CLOUD.viewingEmail = email || uid;
+        // Antes de re-suscribir: si no se borra la caché del asesor que se estaba viendo, hay una
+        // ventana hasta que llegue el primer snapshot nuevo en la que el cockpit sigue mostrando
+        // (y cualquier guardado escribiría sobre) la cartera anterior.
+        window.dispatchEvent(new CustomEvent('aoraes-viewing-switch'));
         startListening();
         window.dispatchEvent(new CustomEvent('aoraes-viewing-changed', {detail:{uid:uid, email:email}}));
       },
@@ -823,6 +827,7 @@
         viewingUid = null;
         window.AORAES_CLOUD.viewingUid = null;
         window.AORAES_CLOUD.viewingEmail = null;
+        window.dispatchEvent(new CustomEvent('aoraes-viewing-switch'));
         startListening();
         window.dispatchEvent(new CustomEvent('aoraes-viewing-changed', {detail:{uid:null}}));
       }
@@ -893,6 +898,12 @@
         unsubProfile = onSnapshot(pDoc, function(snap){
           currentProfile = snap.data() || null;
           window.AORAES_CLOUD.profile = currentProfile;
+          // El único momento en que esto puede llegar sin datos es que el admin haya borrado la
+          // cuenta del asesor (deleteAdvisorAccount) mientras seguía con la sesión abierta en este
+          // navegador — el doc de perfil ya existe siempre en este punto (se crea antes de
+          // suscribirse, arriba). Sin forzar el signOut, el panel se quedaba tal cual estaba,
+          // completamente accesible, con la última cartera cargada aún en memoria.
+          if(!currentProfile){ signOut(auth); return; }
           window.dispatchEvent(new CustomEvent('aoraes-profile-update', {detail: currentProfile}));
           if(currentProfile && currentProfile.status==='approved'){
             if(!unsubClients) startListening();
@@ -1087,8 +1098,8 @@
       if(_migrationDone) return; _migrationDone=true;
       var localArr; try{ localArr=JSON.parse(_preLoginClientsRaw)||[]; }catch(e){ localArr=[]; }
       if(!localArr.length || !window.AORAES_CLOUD) return;
-      var sols; try{ sols=JSON.parse(localStorage.getItem(SOLUTIONS_KEY))||{}; }catch(e){ sols={}; }
-      var meds; try{ meds=JSON.parse(localStorage.getItem(MED_BY_CLIENT_KEY))||{}; }catch(e){ meds={}; }
+      var sols; try{ sols=JSON.parse(_preLoginSolutionsRaw)||{}; }catch(e){ sols={}; }
+      var meds; try{ meds=JSON.parse(_preLoginMedRaw)||{}; }catch(e){ meds={}; }
       localArr.forEach(function(rec){
         if(!rec || !rec.id || cloudById[rec.id]) return;
         window.AORAES_CLOUD.syncClient({ id:rec.id, record:rec, solution:sols[rec.id]||null, medico:meds[rec.id]||null, exportedAt:new Date().toISOString() });
@@ -1107,7 +1118,27 @@
       if(firstLoad) migrateLocalClientsToCloud(byId);
       if(typeof renderCockpit==='function') renderCockpit();
     });
-    window.addEventListener('aoraes-signed-out', function(){ _cloudClientsById=null; _migrationDone=false; });
+    window.addEventListener('aoraes-signed-out', function(){
+      _cloudClientsById=null; _migrationDone=false;
+      // Sin esto, si otro asesor inicia sesión en la MISMA pestaña (sin recargar la página), su
+      // primer snapshot dispara de nuevo migrateLocalClientsToCloud, que seguiría usando el
+      // localStorage congelado del asesor ANTERIOR (o del que se estuviera viendo como admin) —
+      // subiendo su cartera entera a la cuenta del nuevo asesor. Se pone a null en vez de al
+      // localStorage actual porque ese localStorage es justo lo que no debe volver a migrarse.
+      _preLoginClientsRaw=null; _preLoginSolutionsRaw=null; _preLoginMedRaw=null;
+      // Y sin esto, hasta que llegue el primer snapshot del nuevo asesor, el cockpit seguiría
+      // mostrando la cartera del que acaba de cerrar sesión (readClients() cae a localStorage).
+      try{ localStorage.removeItem(CLIENTS_KEY); localStorage.removeItem(SOLUTIONS_KEY); localStorage.removeItem(MED_BY_CLIENT_KEY); }catch(e){}
+      if(typeof renderCockpit==='function') renderCockpit();
+    });
+    // El admin cambiando entre "ver cartera de X" y "ver la mía" (viewAsAdvisor/viewMyOwn):
+    // misma limpieza que al cerrar sesión, para no dejar ninguna ventana en la que el cockpit
+    // muestre, o un guardado escriba sobre, la cartera del asesor que se dejó de ver.
+    window.addEventListener('aoraes-viewing-switch', function(){
+      _cloudClientsById=null;
+      try{ localStorage.removeItem(CLIENTS_KEY); localStorage.removeItem(SOLUTIONS_KEY); localStorage.removeItem(MED_BY_CLIENT_KEY); }catch(e){}
+      if(typeof renderCockpit==='function') renderCockpit();
+    });
     function findClient(id){ return readClients().filter(function(c){return c.id===id;})[0]||null; }
     function getActive(){ try{ return localStorage.getItem(ACTIVE_KEY)||null; }catch(e){ return null; } }
     function setActive(id){ try{ if(id)localStorage.setItem(ACTIVE_KEY,id); else localStorage.removeItem(ACTIVE_KEY); }catch(e){} updateActiveChip(); }
@@ -1139,6 +1170,13 @@
       return isNestedSolution(v)?v:{jubilacion:v};
     }
     var MED_BY_CLIENT_KEY='aoraes_med_by_client_v1';
+    // Congelados en el mismo instante que _preLoginClientsRaw (antes de que llegue ningún
+    // snapshot de la nube) para que la migración use exactamente lo que había en este navegador
+    // ANTES de iniciar sesión — si se leyeran de localStorage en el momento de migrar, el propio
+    // snapshot ya los habría sobrescrito con los del asesor actual (ver aoraes-cloud-update),
+    // y la migración subiría cada cliente sin sus soluciones ni su cuestionario médico.
+    var _preLoginSolutionsRaw=localStorage.getItem(SOLUTIONS_KEY);
+    var _preLoginMedRaw=localStorage.getItem(MED_BY_CLIENT_KEY);
 
     /* ---------- Carpeta Clientes (respaldo real en disco) ----------
        localStorage sigue siendo la fuente que usa la app en el día a día (síncrona, sin
@@ -2276,6 +2314,7 @@
       writeClientFile('aoraes_generic');
     }
     function openGenericInmueble(){
+      flushInmuebleSave(); // si había una edición real de cliente a medio guardar, no perderla al saltar aquí
       ensureGenericInmuebleRec();
       var rec=findClient('aoraes_generic'); if(!rec) return;
       teardownWsFrames();
@@ -2391,8 +2430,11 @@
       if(!(principal>0)||!(payment>0)) return 0;
       var r=(annualRatePct||0)/100/12;
       if(Math.abs(r)<1e-9) return Math.ceil(principal/payment);
-      if(payment<=principal*r) return 600; // la cuota no cubre ni el interés: no amortiza — se limita a 50 años en vez de Infinity para no romper el resto del cálculo
-      return Math.min(600,Math.ceil(-Math.log(1-(principal*r)/payment)/Math.log(1+r)));
+      // 1200 meses (100 años) de margen de seguridad — muy por encima de cualquier caso real (el
+      // peor caso alemán habitual, Tilgung inicial muy baja con tipo alto, tarda 50-60 años), para
+      // no truncar plazos genuinos. Si la cuota no cubre ni el interés, jamás se amortiza.
+      if(payment<=principal*r) return 1200;
+      return Math.min(1200,Math.ceil(-Math.log(1-(principal*r)/payment)/Math.log(1+r)));
     }
     function calcInmuebleOption(precio,cfg){
       precio=precio||0;
@@ -2414,11 +2456,21 @@
       // (aquí, precio), independiente del tipo pactado — así lo hacen las Bausparkassen reales
       // (p. ej. Badenia: 6‰ típico). Banco directo: la cuota alemana estándar es
       // capital·(Sollzins + Tilgung inicial)/12 — no se fija un plazo, se fija la Tilgung.
-      var cuotaPrestamo=esBausparvertrag
+      // Si el 100% se cubre con ahorro (capitalPrestamo=0) no hay fase de préstamo — sin esta
+      // guarda, el Tilgungsbeitrag del Bausparvertrag (que se calcula sobre precio, no sobre el
+      // capital prestado) seguía generando una cuota "de préstamo" fantasma de un mes sobre una
+      // deuda de 0 €, contada íntegra como interés.
+      var cuotaPrestamo=(capitalPrestamo<=0)?0:(esBausparvertrag
         ? precio*(cfg.tilgungsbeitragPerMille||0)/1000
-        : capitalPrestamo*(((cfg.interesPrestamo||0)+(cfg.tilgungInicial||0))/100)/12;
-      var mesesPrestamo=Math.max(1,monthsToPayoff(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo));
-      var interesTotalPrestamo=Math.max(0,cuotaPrestamo*mesesPrestamo-capitalPrestamo);
+        : capitalPrestamo*(((cfg.interesPrestamo||0)+(cfg.tilgungInicial||0))/100)/12);
+      var mesesPrestamo=(capitalPrestamo<=0)?0:Math.max(1,monthsToPayoff(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo));
+      // Si monthsToPayoff tuvo que aplicar su tope de seguridad (préstamo que en teoría tardaría
+      // más de 100 años en amortizarse), el capital pendiente en ese mes NO es cero — se calcula
+      // con la misma fórmula de saldo que usa el resto de la app (balanceTrasMeses) en vez de dar
+      // por hecho que ya está pagado del todo, para que el interés total salga coherente con lo
+      // que de verdad se ha amortizado hasta ese mes.
+      var capitalRealmenteAmortizado=(mesesPrestamo<=0)?0:Math.max(0,capitalPrestamo-balanceTrasMeses(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,mesesPrestamo));
+      var interesTotalPrestamo=Math.max(0,cuotaPrestamo*mesesPrestamo-capitalRealmenteAmortizado);
       // Banco directo: la comisión (Bearbeitungsgebühr) sigue siendo un % del PRÉSTAMO realmente
       // desembolsado (capitalPrestamo) — reduce lo que el cliente recibe en mano aunque devuelva el
       // capital completo. En Bausparvertrag ya se ha cobrado en la fase de ahorro (comisionAhorro,
@@ -2589,12 +2641,18 @@
     // que el cliente lo vea de un vistazo, sin tener que leer las cifras. "risk" marca el banco
     // directo porque su certeza de tipo durante TODO el plazo es el caso favorable, no lo habitual
     // (ver aviso de Zinsbindung/Anschlussfinanzierung en la cabecera del bloque).
-    function inmuebleTimeRow(r,maxMeses,isBanco){
-      var pctWidth=maxMeses>0?Math.max(4,Math.round(r.mesesTotal/maxMeses*100)):0;
+    // esperaMeses: en Refinanciar, los meses que aún quedan pagando el crédito ACTUAL antes de que
+    // arranque siquiera la nueva opción — sin sumarlos aquí, la barra y el total "hasta terminar de
+    // pagar" contradecían a la frase de cabecera (inmuebleFraseResumen), que sí los cuenta.
+    function inmuebleTimeRow(r,maxMeses,isBanco,esperaMeses){
+      esperaMeses=esperaMeses||0;
+      var totalConEspera=esperaMeses+r.mesesTotal;
+      var pctWidth=maxMeses>0?Math.max(4,Math.round(totalConEspera/maxMeses*100)):0;
       var detalle=(r.mesesAhorro>0)
         ?(fmtAnos(r.mesesAhorro)+' de ahorro + '+fmtAnos(r.mesesPrestamo)+' de préstamo')
         :(fmtAnos(r.mesesPrestamo)+' de préstamo');
-      return '<div class="inm-time"><div class="inm-time-lab"><span>Tiempo total hasta terminar de pagar</span><b>'+fmtAnos(r.mesesTotal)+'</b></div>'+
+      if(esperaMeses>0) detalle=fmtAnos(esperaMeses)+' de espera + '+detalle;
+      return '<div class="inm-time"><div class="inm-time-lab"><span>Tiempo total hasta terminar de pagar</span><b>'+fmtAnos(totalConEspera)+'</b></div>'+
         '<div class="inm-time-bar'+(isBanco?' risk':'')+'"><span style="width:'+pctWidth+'%"></span></div>'+
         '<div class="inm-time-lab"><span>'+detalle+'</span></div></div>';
     }
@@ -2754,12 +2812,12 @@
       // terminado de pagar solo, no se sigue pagando cuota en ese tramo — se limita al tiempo
       // que el crédito original realmente sigue vivo.
       var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
-      var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision});
+      var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung});
       var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision});
       var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
       var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
       var mejorEsEst=costeEstAbs<=costeBancoAbs;
-      var maxMeses=Math.max(rBanco.mesesTotal,rEst.mesesTotal,1);
+      var maxMeses=Math.max(mesesHastaRefi+rBanco.mesesTotal,mesesHastaRefi+rEst.mesesTotal,1);
       function baseRow(){
         return '<div class="inm-res-card"><h5>Tu crédito actual</h5>'+
           '<div class="inm-res-line"><span>Cuota actual</span><b>'+eur(rem.cuotaOriginal)+'/mes</b></div>'+
@@ -2777,7 +2835,7 @@
           (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(costeAbs)+'</b></div>'+
           '<div class="inm-res-line save '+(ahorroVs>=0?'pos':'neg')+'"><span>'+(ahorroVs>=0?'Ahorras vs. seguir igual':'Más caro que seguir igual')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>'+
-          inmuebleTimeRow(r,maxMeses,isBanco)+
+          inmuebleTimeRow(r,maxMeses,isBanco,mesesHastaRefi)+
           inmuebleCertRow(r,refi.banco.zinsbindung,isBanco)+
         '</div>';
       }
