@@ -818,9 +818,10 @@
           <button type="button" id="pool-bulk-merge">🔗 Unir seleccionados</button>
           <button type="button" id="pool-bulk-delete" class="danger">🗑 Eliminar seleccionados</button>
         </div>
+        <div style="margin-bottom:12px"><button type="button" id="pool-clear-all" class="danger" style="font-family:inherit;font-size:11.5px;font-weight:700;border-radius:7px;padding:6px 10px;cursor:pointer;border:1px solid #e7c3bb;color:var(--red);background:#fbeae6">🗑 Vaciar toda la bolsa…</button></div>
         <div class="pool-table-wrap">
           <table class="pool-table" data-no-i18n>
-            <thead><tr><th></th><th>Nº</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th>Última vez</th><th>Notas</th><th>Asignar a</th></tr></thead>
+            <thead><tr><th></th><th>Fecha UC</th><th>Nº</th><th>Status</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Asesor</th><th>Notas</th><th>Asignar a</th></tr></thead>
             <tbody id="pool-list"></tbody>
           </table>
         </div>
@@ -866,7 +867,7 @@
       </div>
       <div class="pool-table-wrap">
         <table class="pool-table" data-no-i18n>
-          <thead><tr><th>Nº</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th>Última vez</th><th>Notas</th><th></th></tr></thead>
+          <thead><tr><th>Fecha UC</th><th>Nº</th><th>Status</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Asesor</th><th>Notas</th><th></th></tr></thead>
           <tbody id="cont-list"></tbody>
         </table>
       </div>
@@ -1027,6 +1028,22 @@
             return b.commit();
           });
         }, Promise.resolve());
+      },
+      // Borra TODA la bolsa sin asignar de un golpe — pensado para deshacer un import con datos mal
+      // mapeados (p.ej. el teléfono apuntando por error a la columna de profesión) sin tener que
+      // seleccionar miles de filas a mano.
+      clearPool: function(){
+        return getDocs(leadsPoolCol()).then(function(snap){
+          var ids=[]; snap.forEach(function(d){ ids.push(d.id); });
+          var chunks=[]; for(var i=0;i<ids.length;i+=450) chunks.push(ids.slice(i,i+450));
+          return chunks.reduce(function(p,chunk){
+            return p.then(function(){
+              var b=writeBatch(db);
+              chunk.forEach(function(id){ b.delete(doc(leadsPoolCol(),id)); });
+              return b.commit();
+            });
+          }, Promise.resolve()).then(function(){ return ids.length; });
+        });
       },
       // Une varios contactos de la bolsa (normalmente con el mismo teléfono repetido) en uno solo:
       // guarda el combinado y borra el resto en el mismo lote.
@@ -1925,27 +1942,30 @@
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
         return hay.indexOf(q)>=0;
       });
-      if(!shown.length){ listEl.innerHTML='<tr><td colspan="9" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
+      if(!shown.length){ listEl.innerHTML='<tr><td colspan="10" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
       // Con miles de contactos, pintar la tabla entera de una sola vez se sentía lento — sin filtro
       // se muestran solo los primeros 300 (los más recién importados) y se pide buscar para el resto.
       var POOL_CAP=300;
       var capped=shown.length>POOL_CAP && !q;
       var toRender=capped?shown.slice(0,POOL_CAP):shown;
-      var capNote=capped?('<tr><td colspan="9" class="ase-empty" style="border:0">Mostrando '+POOL_CAP+' de '+shown.length+' — usa la búsqueda para encontrar el resto.</td></tr>'):'';
+      var capNote=capped?('<tr><td colspan="10" class="ase-empty" style="border:0">Mostrando '+POOL_CAP+' de '+shown.length+' — usa la búsqueda para encontrar el resto.</td></tr>'):'';
       listEl.innerHTML=capNote+toRender.map(function(l){
         var st=l.status||'nuevo';
         var dupeKey=_poolDupeByLead[l.id];
         var phoneCell=l.phone?esc(l.phone):'<span style="color:var(--faint)">—</span>';
         if(dupeKey) phoneCell='<button type="button" class="pool-dupe-badge" data-dupe-select="'+esc(dupeKey)+'" title="Seleccionar los '+_poolDupeGroups[dupeKey].length+' contactos con este teléfono">'+phoneCell+' · '+_poolDupeGroups[dupeKey].length+'×</button>';
         var lastContact=fmtLastContact(l.lastContactAt);
+        // Sin asignar todavía, así que "Asesor" siempre va vacío aquí — es justo lo que pediste ver
+        // (la casilla existe igual, aunque esté vacía) hasta que se reparta desde esta misma tabla.
         return '<tr'+(dupeKey?' class="pool-dupe-row"':'')+'>'+
           '<td><input type="checkbox" class="pool-check" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
+          '<td>'+(lastContact?esc(lastContact):'<span style="color:var(--faint)">—</span>')+'</td>'+
           '<td>'+(l.leadNo?esc(l.leadNo):'<span style="color:var(--faint)">—</span>')+'</td>'+
+          '<td><span class="ase-badge '+st+'">'+(CONT_STATUS_LABEL[st]||st)+'</span></td>'+
           '<td>'+esc(l.name||'Sin nombre')+'</td>'+
           '<td>'+(l.email?esc(l.email):'—')+'</td>'+
           '<td>'+phoneCell+'</td>'+
-          '<td><span class="ase-badge '+st+'">'+(CONT_STATUS_LABEL[st]||st)+'</span></td>'+
-          '<td>'+(lastContact?esc(lastContact):'<span style="color:var(--faint)">—</span>')+'</td>'+
+          '<td><span style="color:var(--faint)">—</span></td>'+
           '<td class="pool-notes-cell">'+esc(l.notes||'')+'</td>'+
           '<td><select class="pool-row-advisor" data-pool-advisor="'+esc(l.id)+'"><option value="">Asignar a…</option>'+advisorOptionsHtml()+'</select> <button type="button" class="notif-row-act" data-pool-assign="'+esc(l.id)+'">Asignar</button></td>'+
         '</tr>';
@@ -1992,6 +2012,23 @@
       if(!confirm('¿Eliminar '+ids.length+' contacto'+(ids.length===1?'':'s')+' de la bolsa? No se puede deshacer.')) return;
       this.disabled=true;
       window.AORAES_CLOUD.deletePoolLeads(ids).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al eliminar de la bolsa',e); alert('No se pudo eliminar. Revisa la consola.'); }).finally(function(){ document.getElementById('pool-bulk-delete').disabled=false; });
+    });
+    // Vacía la bolsa entera — pensado para deshacer un import con columnas mal mapeadas (p.ej.
+    // "Teléfono" emparejado por error con la columna de profesión) sin seleccionar fila por fila.
+    // Pide escribir "BORRAR" a propósito: es irreversible y puede afectar miles de contactos.
+    document.getElementById('pool-clear-all').addEventListener('click', function(){
+      var n=_pool.length;
+      if(!n){ alert('La bolsa ya está vacía.'); return; }
+      // Se pide el número exacto (no una palabra fija como "BORRAR") a propósito: obliga a leer
+      // cuántos contactos hay antes de confirmar, en vez de escribirlo de memoria sin mirar.
+      var typed=prompt('Esto borra PERMANENTEMENTE los '+n+' contactos de la bolsa sin asignar — ninguno se recupera. Los que ya estén asignados a un asesor NO se tocan.\n\nPara confirmar, escribe el número '+n+':');
+      if(typed===null) return;
+      if(typed.trim()!==String(n)){ alert('No coincide con "'+n+'" — no se borró nada.'); return; }
+      var btn=this; btn.disabled=true; btn.textContent='Borrando…';
+      window.AORAES_CLOUD.clearPool().then(function(deleted){
+        renderAsesores();
+        alert('Se borraron '+deleted+' contactos de la bolsa.');
+      }).catch(function(e){ console.error('AORAES: fallo al vaciar la bolsa',e); alert('No se pudo vaciar la bolsa. Revisa la consola.'); }).finally(function(){ btn.disabled=false; btn.textContent='🗑 Vaciar toda la bolsa…'; });
     });
     // Combina los contactos seleccionados (normalmente el mismo teléfono repartido en varias filas
     // del Excel original) en uno solo: se queda con el que ya tenga un estado trabajado (no "nuevo")
@@ -2305,12 +2342,15 @@
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
         return hay.indexOf(q)>=0;
       });
-      if(!shown.length){ listEl.innerHTML='<tr><td colspan="8" class="ase-empty" style="border:0">'+(_contLeads.length?'Ningún contacto coincide.':'Todavía no tienes contactos asignados. Pídele al admin que te reparta algunos desde Asesores → Importar Excel.')+'</td></tr>'; return; }
+      if(!shown.length){ listEl.innerHTML='<tr><td colspan="9" class="ase-empty" style="border:0">'+(_contLeads.length?'Ningún contacto coincide.':'Todavía no tienes contactos asignados. Pídele al admin que te reparta algunos desde Asesores → Importar Excel.')+'</td></tr>'; return; }
       // Igual límite que en la bolsa del admin: sin filtro, solo los primeros 300.
       var CONT_CAP=300;
       var capped=shown.length>CONT_CAP && !q && !fs;
       var toRender=capped?shown.slice(0,CONT_CAP):shown;
-      var capNote=capped?('<tr><td colspan="8" class="ase-empty" style="border:0">Mostrando '+CONT_CAP+' de '+shown.length+' — usa la búsqueda o el filtro para encontrar el resto.</td></tr>'):'';
+      var capNote=capped?('<tr><td colspan="9" class="ase-empty" style="border:0">Mostrando '+CONT_CAP+' de '+shown.length+' — usa la búsqueda o el filtro para encontrar el resto.</td></tr>'):'';
+      // Estos leads ya están en la colección del asesor que los está viendo — el nombre viene de su
+      // propio perfil (o de a quién está viendo el admin con "Ver cartera"), no del lead en sí.
+      var ownerName=window.AORAES_CLOUD.viewingEmail||(window.AORAES_CLOUD.profile&&(window.AORAES_CLOUD.profile.name||window.AORAES_CLOUD.profile.email))||'';
       listEl.innerHTML=capNote+toRender.map(function(l){
         var st=l.status||'nuevo', conv=(st==='convertido');
         var lastContact=fmtLastContact(l.lastContactAt);
@@ -2318,12 +2358,13 @@
           ? '<span class="ase-badge convertido">Convertido</span>'
           : '<select class="cont-status-select" data-lead="'+esc(l.id)+'" aria-label="Estado">'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
         return '<tr>'+
+          '<td>'+(lastContact?esc(lastContact):'<span style="color:var(--faint)">—</span>')+'</td>'+
           '<td>'+(l.leadNo?esc(l.leadNo):'<span style="color:var(--faint)">—</span>')+'</td>'+
+          '<td>'+statusControl+'</td>'+
           '<td>'+esc(l.name||'Sin nombre')+'</td>'+
           '<td>'+(l.email?esc(l.email):'—')+'</td>'+
           '<td>'+(l.phone?esc(l.phone):'—')+'</td>'+
-          '<td>'+statusControl+'</td>'+
-          '<td>'+(lastContact?esc(lastContact):'<span style="color:var(--faint)">—</span>')+'</td>'+
+          '<td>'+(ownerName?esc(ownerName):'<span style="color:var(--faint)">—</span>')+'</td>'+
           '<td class="pool-notes-cell">'+esc(l.notes||'')+'</td>'+
           '<td>'+(!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir</button>':'')+'</td>'+
         '</tr>';
