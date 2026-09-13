@@ -176,6 +176,8 @@
   .ase-badge.contactado{background:#e8eef7; color:var(--navy-2); border-color:#c7d3e6}
   .ase-badge.no_interesa{background:#fbeae6; color:var(--red); border-color:#e7c3bb}
   .ase-badge.convertido{background:#eaf2ec; color:#4f7358; border-color:#cfe3d4}
+  .ase-badge.no_contesto{background:#eef2f7; color:#5b6b7d; border-color:#d7e0e8}
+  .ase-badge.no_disponible{background:#f3f0fa; color:#6b5b95; border-color:#ddd3ee}
   .ase-acts{display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:0 0 auto}
   .ase-count{font-size:11.5px; color:var(--faint); margin-top:3px}
   .ase-pipe{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px}
@@ -234,6 +236,7 @@
   .imp-bulkbar button#pool-bulk-merge{color:#6b4a00; background:#fdf3e7; border-color:#e0a92a}
   .imp-bulkbar button.danger{color:var(--red); background:#fbeae6; border-color:#e7c3bb}
   .pool-row-advisor{font-family:inherit; font-size:12px; padding:6px 8px; border-radius:7px; border:1px solid var(--line-strong); max-width:170px}
+  .cont-status-select{font-family:inherit; font-size:12.5px; font-weight:700; padding:6px 9px; border-radius:7px; border:1px solid var(--line-strong); background:var(--surface); color:var(--navy); cursor:pointer}
   .pool-table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface)}
   .pool-table{border-collapse:collapse; width:100%; font-size:13px; min-width:760px}
   .pool-table th,.pool-table td{padding:10px 12px; border-bottom:1px solid var(--line-soft); text-align:left; vertical-align:top}
@@ -820,7 +823,7 @@
         </div>
         <div class="pool-table-wrap">
           <table class="pool-table" data-no-i18n>
-            <thead><tr><th></th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th>Notas</th><th>Asignar a</th></tr></thead>
+            <thead><tr><th></th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th>Última vez</th><th>Notas</th><th>Asignar a</th></tr></thead>
             <tbody id="pool-list"></tbody>
           </table>
         </div>
@@ -862,7 +865,7 @@
       <p class="cock-note" style="margin:0 0 18px">Contactos por trabajar todavía, separados de tu cartera de clientes con análisis. Márcalos según avances, y conviértelos en cliente cuando empieces el análisis real — eso los mueve a "Tu cartera de clientes".</p>
       <div class="cock-toolbar">
         <input type="search" id="cont-search" aria-label="Buscar contactos" placeholder="Buscar por nombre, correo o teléfono…" />
-        <select id="cont-status" aria-label="Filtrar por estado"><option value="">Todos (sin convertidos)</option><option value="nuevo">Nuevo</option><option value="contactado">Contactado</option><option value="no_interesa">No interesa</option><option value="convertido">Convertido</option></select>
+        <select id="cont-status" aria-label="Filtrar por estado"><option value="">Todos (sin convertidos)</option><option value="nuevo">Nuevo</option><option value="no_contesto">No contestó</option><option value="no_disponible">Número no disponible</option><option value="contactado">Contactado</option><option value="no_interesa">No interesa</option><option value="convertido">Convertido</option></select>
       </div>
       <div class="cock-list" id="cont-list" data-no-i18n></div>
     </div>
@@ -961,7 +964,9 @@
       },
       updateLeadStatus: function(leadId, status){
         var uid=viewingUid||currentUid; if(!uid||!leadId) return Promise.resolve();
-        return updateDoc(doc(collection(db,'users',uid,'leads'),leadId), {status:status}).catch(function(e){ console.error('AORAES cloud: fallo al actualizar el contacto',e); });
+        // serverTimestamp() (no una fecha calculada en el navegador) para que "última vez contactado"
+        // sea fiable aunque el reloj del dispositivo del asesor esté mal puesto.
+        return updateDoc(doc(collection(db,'users',uid,'leads'),leadId), {status:status, lastContactAt:serverTimestamp()}).catch(function(e){ console.error('AORAES cloud: fallo al actualizar el contacto',e); });
       },
       deleteLead: function(leadId){
         var uid=viewingUid||currentUid; if(!uid||!leadId) return Promise.resolve();
@@ -1297,6 +1302,16 @@
     function verdict(v){ if(v>=80)return ['Excelente','Las bases están bien cubiertas. El foco pasa a optimizar fiscalidad y rentabilidad.']; if(v>=60)return ['Sólida','Una situación estable con margen para reforzar una o dos áreas concretas.']; if(v>=40)return ['Mejorable','Hay cimientos, pero varias áreas clave necesitan atención a corto plazo.']; return ['Necesita atención','Conviene actuar pronto sobre el flujo de caja y la protección básica.']; }
     function reviewState(iso){ if(!iso)return null; var t=new Date();t.setHours(0,0,0,0); var d=new Date(iso+'T00:00:00'); if(isNaN(d.getTime()))return null; var diff=Math.round((d-t)/86400000); if(diff<0)return {cls:'overdue',txt:'Vencida'}; if(diff===0)return {cls:'today',txt:'Hoy'}; if(diff<=14)return {cls:'soon',txt:'En '+diff+' día'+(diff===1?'':'s')}; return {cls:'',txt:d.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}; }
     function relTime(iso){ var s=Math.round((Date.now()-new Date(iso).getTime())/1000); if(s<60)return 'hace instantes'; if(s<3600)return 'hace '+Math.round(s/60)+' min'; if(s<86400)return 'hace '+Math.round(s/3600)+' h'; return new Date(iso).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'}); }
+    // lastContactAt puede ser: un Timestamp real de Firestore (cuando el propio asesor marca un
+    // estado desde la app), o texto libre tal cual venía en la columna de fecha del Excel importado
+    // (no siempre un formato parseable) — se muestra relativo cuando se puede, y si no, tal cual.
+    function fmtLastContact(v){
+      if(!v) return '';
+      if(typeof v==='object' && v.toDate){ try{ return relTime(v.toDate().toISOString()); }catch(e){ return ''; } }
+      var s=String(v);
+      if(/^\d{4}-\d{2}-\d{2}/.test(s)){ try{ return relTime(s); }catch(e){} }
+      return s;
+    }
     function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
     var EUR=new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0});
     function eur(n){ return (n==null||isNaN(n))?'—':EUR.format(Math.round(n)); }
@@ -1889,18 +1904,20 @@
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
         return hay.indexOf(q)>=0;
       });
-      if(!shown.length){ listEl.innerHTML='<tr><td colspan="7" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
+      if(!shown.length){ listEl.innerHTML='<tr><td colspan="8" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
       listEl.innerHTML=shown.map(function(l){
         var st=l.status||'nuevo';
         var dupeKey=_poolDupeByLead[l.id];
         var phoneCell=l.phone?esc(l.phone):'<span style="color:var(--faint)">—</span>';
         if(dupeKey) phoneCell='<button type="button" class="pool-dupe-badge" data-dupe-select="'+esc(dupeKey)+'" title="Seleccionar los '+_poolDupeGroups[dupeKey].length+' contactos con este teléfono">'+phoneCell+' · '+_poolDupeGroups[dupeKey].length+'×</button>';
+        var lastContact=fmtLastContact(l.lastContactAt);
         return '<tr'+(dupeKey?' class="pool-dupe-row"':'')+'>'+
           '<td><input type="checkbox" class="pool-check" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
           '<td>'+esc(l.name||'Sin nombre')+'</td>'+
           '<td>'+(l.email?esc(l.email):'—')+'</td>'+
           '<td>'+phoneCell+'</td>'+
           '<td><span class="ase-badge '+st+'">'+(CONT_STATUS_LABEL[st]||st)+'</span></td>'+
+          '<td>'+(lastContact?esc(lastContact):'<span style="color:var(--faint)">—</span>')+'</td>'+
           '<td class="pool-notes-cell">'+esc(l.notes||'')+'</td>'+
           '<td><select class="pool-row-advisor" data-pool-advisor="'+esc(l.id)+'"><option value="">Asignar a…</option>'+advisorOptionsHtml()+'</select> <button type="button" class="notif-row-act" data-pool-assign="'+esc(l.id)+'">Asignar</button></td>'+
         '</tr>';
@@ -1976,23 +1993,23 @@
       phone:['telefono','teléfono','phone','celular','movil','móvil','tel'],
       notes:['notas','nota','comentario','comentarios','observaciones'],
       advisor:['asesor','advisor','agente','asignado','responsable'],
-      status:['status','estado']
+      status:['status','estado'],
+      lastContact:['fecha uc','fecha','date','ultimo contacto','último contacto','ultima fecha','última fecha']
     };
-    var IMPORT_FIELDS=[{key:'name',label:'Nombre',required:true},{key:'email',label:'Correo'},{key:'phone',label:'Teléfono'},{key:'notes',label:'Notas'},{key:'advisor',label:'Asesor (opcional)'},{key:'status',label:'Estado anterior (opcional)'}];
-    // Traduce el vocabulario de estado que traiga el Excel a los 3 estados que maneja AORAES.
+    var IMPORT_FIELDS=[{key:'name',label:'Nombre',required:true},{key:'email',label:'Correo'},{key:'phone',label:'Teléfono'},{key:'notes',label:'Notas'},{key:'advisor',label:'Asesor (opcional)'},{key:'status',label:'Estado anterior (opcional)'},{key:'lastContact',label:'Última fecha de contacto (opcional)'}];
+    // Traduce el vocabulario de estado que traiga el Excel a los estados que maneja AORAES.
     // Cualquier texto no reconocido cae en "contactado" — ni se pierde de vista como "nuevo" (el
     // asesor lo re-llamaría sin saber que ya se tocó antes) ni se descarta como "no_interesa" sin
     // certeza real. El texto original siempre queda además en las notas, sin importar a qué balde
     // caiga aquí, así que nada se pierde aunque la traducción no sea perfecta.
     var STATUS_TRIAGE={
       'no contactado':'nuevo',
-      'no respondio':'contactado','no respondió':'contactado',
-      'respondio':'contactado','respondió':'contactado',
-      'contacto futuro':'contactado',
-      'numero apagado':'contactado','número apagado':'contactado',
-      'no aparecio':'contactado','no apareció':'contactado',
-      'email':'contactado','analisis':'contactado','análisis':'contactado',
-      'valorando':'contactado','m2':'contactado','m3':'contactado','cierre':'contactado',
+      'no respondio':'no_contesto','no respondió':'no_contesto',
+      'no aparecio':'no_contesto','no apareció':'no_contesto',
+      'numero apagado':'no_disponible','número apagado':'no_disponible',
+      'contacto futuro':'contactado','respondio':'contactado','respondió':'contactado',
+      'email':'contactado','valorando':'contactado','m2':'contactado','m3':'contactado',
+      'analisis':'convertido','análisis':'convertido','cierre':'convertido',
       'no interes':'no_interesa','no interés':'no_interesa',
       'no alemania':'no_interesa','d e a d':'no_interesa','dead':'no_interesa'
     };
@@ -2102,7 +2119,8 @@
         phone:(map.phone>=0?cleanPhone(row[map.phone]):''),
         notes:(map.notes>=0?String(row[map.notes]||'').trim():''),
         advisorText:(map.advisor>=0?String(row[map.advisor]||'').trim():''),
-        statusText:(map.status>=0?String(row[map.status]||'').trim():'')
+        statusText:(map.status>=0?String(row[map.status]||'').trim():''),
+        lastContactText:(map.lastContact>=0?String(row[map.lastContact]||'').trim():'')
       };
     }
     // El mismo Excel de contactos reales puede traer a la misma persona varias veces (p.ej. cada
@@ -2127,7 +2145,8 @@
         var phone=grp.map(function(r){return r.phone;}).filter(Boolean)[0]||'';
         var notes=[]; grp.forEach(function(r){ if(r.notes && notes.indexOf(r.notes)<0) notes.push(r.notes); });
         var advisorText=grp.map(function(r){return r.advisorText;}).filter(Boolean)[0]||'';
-        return { name:base.name, email:base.email, phone:phone, notes:notes.join(' / '), advisorText:advisorText, statusText:statusTexts.join(' / '), _dupeCount:grp.length };
+        var lastContactText=grp.map(function(r){return r.lastContactText;}).filter(Boolean)[0]||'';
+        return { name:base.name, email:base.email, phone:phone, notes:notes.join(' / '), advisorText:advisorText, statusText:statusTexts.join(' / '), lastContactText:lastContactText, _dupeCount:grp.length };
       });
       return merged.concat(noEmail);
     }
@@ -2153,10 +2172,9 @@
       var adv=matchAdvisor(r.advisorText);
       if(r.advisorText && !adv) noteParts.push('Asesor previo (Excel): '+r.advisorText);
       if(r._dupeCount>1) noteParts.push('('+r._dupeCount+' filas duplicadas del Excel combinadas aquí)');
-      return {
-        lead:{ id:'lead'+Date.now()+i+Math.floor(Math.random()*1000), name:r.name, email:r.email, phone:r.phone, notes:noteParts.join(' · '), status:triageStatus(r.statusText), importedAt:now },
-        adv:adv
-      };
+      var lead={ id:'lead'+Date.now()+i+Math.floor(Math.random()*1000), name:r.name, email:r.email, phone:r.phone, notes:noteParts.join(' · '), status:triageStatus(r.statusText), importedAt:now };
+      if(r.lastContactText) lead.lastContactAt=r.lastContactText;
+      return { lead:lead, adv:adv };
     }
     function renderImportPreview(){
       var res=computeMergedRows(), validRows=res.validRows, merged=res.merged;
@@ -2213,7 +2231,9 @@
     /* ---------- Contactos: bolsa fría propia de cada asesor (separada de la cartera de clientes) ----------
        Un contacto importado nunca es un "cliente" hasta que el propio asesor lo convierte desde aquí —
        antes de eso no aparece en Tu cartera de clientes ni cuenta en el pipeline de status. */
-    var CONT_STATUS_LABEL={nuevo:'Nuevo', contactado:'Contactado', no_interesa:'No interesa', convertido:'Convertido'};
+    var CONT_STATUS_LABEL={nuevo:'Nuevo', no_contesto:'No contestó', no_disponible:'Número no disponible', contactado:'Contactado', no_interesa:'No interesa', convertido:'Convertido'};
+    // "convertido" no aparece aquí: solo se llega marcándolo vía "Convertir a cliente", nunca a mano.
+    var CONT_STATUS_OPTIONS=['nuevo','no_contesto','no_disponible','contactado','no_interesa'];
     var _contLeads=[];
     function renderContactos(){
       var listEl=document.getElementById('cont-list');
@@ -2237,15 +2257,18 @@
       listEl.innerHTML=shown.map(function(l){
         var st=l.status||'nuevo', conv=(st==='convertido');
         var meta=[l.email,l.phone].filter(Boolean).join(' · ');
+        var lastContact=fmtLastContact(l.lastContactAt);
+        var statusControl=conv
+          ? '<span class="ase-badge convertido">Convertido</span>'
+          : '<select class="cont-status-select" data-lead="'+esc(l.id)+'" aria-label="Estado">'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
         return '<div class="ase-row">'+
           '<div class="ase-body"><div class="ase-email">'+esc(l.name||'Sin nombre')+'</div>'+
             (meta?'<div class="ase-count">'+esc(meta)+'</div>':'')+
+            (lastContact?'<div class="ase-count">Última vez: '+esc(lastContact)+'</div>':'')+
             (l.notes?'<div class="ase-count" style="white-space:pre-wrap">'+esc(l.notes)+'</div>':'')+
           '</div>'+
           '<div class="ase-acts">'+
-            '<span class="ase-badge '+st+'">'+(CONT_STATUS_LABEL[st]||st)+'</span>'+
-            (!conv&&st!=='contactado'?'<button type="button" class="notif-row-act" data-cont-status="contactado" data-lead="'+esc(l.id)+'">Contactado</button>':'')+
-            (!conv&&st!=='no_interesa'?'<button type="button" class="notif-row-act danger" data-cont-status="no_interesa" data-lead="'+esc(l.id)+'">No interesa</button>':'')+
+            statusControl+
             (!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir a cliente</button>':'')+
           '</div>'+
         '</div>';
@@ -2253,20 +2276,19 @@
     }
     document.getElementById('cont-search').addEventListener('input', filterAndRenderContactos);
     document.getElementById('cont-status').addEventListener('change', filterAndRenderContactos);
+    document.getElementById('cont-list').addEventListener('change', function(e){
+      var sel=e.target.closest('.cont-status-select'); if(!sel) return;
+      var leadId=sel.getAttribute('data-lead'), newSt=sel.value;
+      sel.disabled=true;
+      window.AORAES_CLOUD.updateLeadStatus(leadId, newSt).then(function(){
+        var l=_contLeads.filter(function(x){return x.id===leadId;})[0]; if(l){ l.status=newSt; l.lastContactAt=new Date().toISOString(); }
+        filterAndRenderContactos();
+      });
+    });
     document.getElementById('cont-list').addEventListener('click', function(e){
-      var b=e.target.closest('button'); if(!b) return;
-      if(b.hasAttribute('data-cont-status')){
-        var leadId=b.getAttribute('data-lead'), newSt=b.getAttribute('data-cont-status');
-        window.AORAES_CLOUD.updateLeadStatus(leadId, newSt).then(function(){
-          var l=_contLeads.filter(function(x){return x.id===leadId;})[0]; if(l) l.status=newSt;
-          filterAndRenderContactos();
-        });
-        return;
-      }
-      if(b.hasAttribute('data-cont-convert')){
-        var id2=b.getAttribute('data-cont-convert');
-        var lead=_contLeads.filter(function(x){return x.id===id2;})[0]; if(lead) convertLeadToClient(lead);
-      }
+      var b=e.target.closest('[data-cont-convert]'); if(!b) return;
+      var id2=b.getAttribute('data-cont-convert');
+      var lead=_contLeads.filter(function(x){return x.id===id2;})[0]; if(lead) convertLeadToClient(lead);
     });
     function convertLeadToClient(lead){
       setActive(null);
