@@ -232,15 +232,16 @@
   .imp-bulkbar button#pool-bulk-assign{color:#4f7358; background:#eaf2ec; border-color:#cfe3d4}
   .imp-bulkbar button#pool-bulk-merge{color:#6b4a00; background:#fdf3e7; border-color:#e0a92a}
   .imp-bulkbar button.danger{color:var(--red); background:#fbeae6; border-color:#e7c3bb}
-  .pool-row-advisor{font-family:inherit; font-size:12px; padding:6px 8px; border-radius:7px; border:1px solid var(--line-strong); max-width:170px}
-  .cont-status-select{font-family:inherit; font-size:12.5px; font-weight:700; padding:6px 9px; border-radius:7px; border:1px solid var(--line-strong); background:var(--surface); color:var(--navy); cursor:pointer}
+  .pool-row-advisor{font-family:inherit; font-size:11.5px; padding:5px 6px; border-radius:6px; border:1px solid var(--line-strong); max-width:110px; text-overflow:ellipsis}
+  .cont-status-select{font-family:inherit; font-size:11.5px; font-weight:700; padding:5px 6px; border-radius:6px; border:1px solid var(--line-strong); background:var(--surface); color:var(--navy); cursor:pointer; max-width:130px; text-overflow:ellipsis}
+  .pool-status-select{font-family:inherit; font-size:11.5px; font-weight:700; padding:5px 6px; border-radius:6px; border:1px solid var(--line-strong); background:var(--surface); color:var(--navy); cursor:pointer; max-width:130px; text-overflow:ellipsis}
   .pool-table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface)}
-  .pool-table{border-collapse:collapse; width:100%; font-size:13px; min-width:760px}
-  .pool-table th,.pool-table td{padding:10px 12px; border-bottom:1px solid var(--line-soft); text-align:left; vertical-align:top}
+  .pool-table{border-collapse:collapse; width:100%; font-size:12px; min-width:600px}
+  .pool-table th,.pool-table td{padding:6px 8px; border-bottom:1px solid var(--line-soft); text-align:left; vertical-align:top}
   .pool-table th{background:var(--bg); color:var(--muted); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.02em; white-space:nowrap}
   .pool-table tbody tr:last-child td{border-bottom:0}
   .pool-table tbody tr:hover{background:var(--gold-tint)}
-  .pool-table .pool-notes-cell{max-width:240px; white-space:pre-wrap; color:var(--muted); font-size:12px}
+  .pool-table .pool-notes-cell{max-width:150px; white-space:pre-wrap; color:var(--muted); font-size:11.5px}
   .pool-table tr.pool-dupe-row{background:#fdf3e7}
   .pool-table tr.pool-dupe-row:hover{background:#fbe9d3}
   .pool-dupe-badge{cursor:pointer; background:#f5c344; color:#6b4a00; border:1px solid #e0a92a; border-radius:7px; padding:3px 8px; font-weight:700; font-size:12px; white-space:nowrap; display:inline-block; font-family:inherit}
@@ -1889,7 +1890,12 @@
        ningún asesor — así un Excel a medio repartir no se cuela en la cartera de nadie por error. */
     var _pool=[], _lastApprovedAdvisors=[], _poolSelected={}, _poolDupeGroups={}, _poolDupeByLead={};
     function advisorOptionsHtml(){
-      return _lastApprovedAdvisors.map(function(a){ return '<option value="'+esc(a.uid)+'">'+esc(a.name||a.email||a.uid)+'</option>'; }).join('');
+      return _lastApprovedAdvisors.map(function(a){
+        var c=colorForAdvisor(a.uid);
+        // El fondo de cada <option> es "mejor esfuerzo" (algunos navegadores lo ignoran) — el color
+        // garantizado, en todos los navegadores, es el del <select> ya cerrado (recolorPillSelect()).
+        return '<option value="'+esc(a.uid)+'"'+(c?' style="background:'+c+'33;color:'+c+'"':'')+'>'+esc(a.name||a.email||a.uid)+'</option>';
+      }).join('');
     }
     // Compara solo los últimos 9 dígitos: así "+49 157 5060277" y "015750602771" (el mismo número
     // en formato internacional vs. nacional, típico al importar de un Excel sin normalizar) se
@@ -1963,7 +1969,7 @@
         // Estado y Asesor son desplegables en vivo, igual que en la plantilla original del usuario:
         // cambiar el estado guarda al instante, y elegir un asesor aquí mismo asigna el contacto —
         // ya no hace falta un botón "Asignar" aparte.
-        var statusSel='<select class="pool-status-select" data-pool-status="'+esc(l.id)+'" aria-label="Estado">'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
+        var statusSel='<select class="pool-status-select" data-pool-status="'+esc(l.id)+'" aria-label="Estado"'+pillStyleAttr(CONT_STATUS_COLOR[st])+'>'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
         var advisorSel='<select class="pool-row-advisor" data-pool-advisor="'+esc(l.id)+'" aria-label="Asesor"><option value="">— Sin asignar —</option>'+advisorOptionsHtml()+'</select>';
         return '<tr'+(dupeKey?' class="pool-dupe-row"':'')+'>'+
           '<td><input type="checkbox" class="pool-check" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
@@ -1992,6 +1998,7 @@
       var stSel=e.target.closest('[data-pool-status]');
       if(stSel){
         var leadId2=stSel.getAttribute('data-pool-status'), newSt=stSel.value;
+        recolorPillSelect(stSel, CONT_STATUS_COLOR);
         stSel.disabled=true;
         window.AORAES_CLOUD.updatePoolLeadStatus(leadId2, newSt).then(function(){
           var l2=_pool.filter(function(x){return x.id===leadId2;})[0]; if(l2) l2.status=newSt;
@@ -2005,6 +2012,7 @@
         var leadId=advSel.getAttribute('data-pool-advisor'), advisorUid=advSel.value;
         if(!advisorUid) return;
         var lead=_pool.filter(function(l){ return l.id===leadId; })[0]; if(!lead) return;
+        recolorPillSelect(advSel, colorForAdvisor);
         advSel.disabled=true;
         window.AORAES_CLOUD.assignLeadsBulk([{lead:lead, advisorUid:advisorUid}]).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al asignar el contacto',e); alert('No se pudo asignar. Revisa la consola.'); advSel.disabled=false; });
       }
@@ -2339,6 +2347,28 @@
        Un contacto importado nunca es un "cliente" hasta que el propio asesor lo convierte desde aquí —
        antes de eso no aparece en Tu cartera de clientes ni cuenta en el pipeline de status. */
     var CONT_STATUS_LABEL={nuevo:'Nuevo', no_contesto:'No contestó', no_disponible:'Número no disponible', contactado:'Contactado', no_interesa:'No interesa', convertido:'Convertido'};
+    // Mismos colores que ya usan los badges .ase-badge.<estado> — se repiten aquí como hex porque
+    // recolorPillSelect() los aplica como estilo en línea (igual patrón que recolorStatusPill() en
+    // Análisis), y ahí no se puede referenciar una variable CSS de este documento.
+    var CONT_STATUS_COLOR={nuevo:'#c9a961', no_contesto:'#5b6b7d', no_disponible:'#6b5b95', contactado:'#3a5077', no_interesa:'#b0473a', convertido:'#4f7358'};
+    // Los asesores son dinámicos (se dan de alta/baja), así que no hay una paleta fija asignada a
+    // mano como en la plantilla del usuario — se deriva un color estable a partir de su uid, para
+    // que el mismo asesor se vea siempre del mismo color en cualquier fila.
+    var ADVISOR_PALETTE=['#b0473a','#3a5077','#4f7358','#a8842f','#6b5b95','#2f7d95','#a0522d','#5b6b7d'];
+    function colorForAdvisor(uid){
+      if(!uid) return null;
+      var h=0, s=String(uid);
+      for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; }
+      return ADVISOR_PALETTE[h%ADVISOR_PALETTE.length];
+    }
+    function pillStyleAttr(color){
+      return color ? (' style="background:'+color+'1f;color:'+color+';border-color:'+color+'66"') : '';
+    }
+    function recolorPillSelect(sel, colorMap){
+      var color=typeof colorMap==='function'?colorMap(sel.value):colorMap[sel.value];
+      if(color){ sel.style.background=color+'1f'; sel.style.color=color; sel.style.borderColor=color+'66'; }
+      else{ sel.style.background=''; sel.style.color=''; sel.style.borderColor=''; }
+    }
     // "convertido" no aparece aquí: solo se llega marcándolo vía "Convertir a cliente", nunca a mano.
     var CONT_STATUS_OPTIONS=['nuevo','no_contesto','no_disponible','contactado','no_interesa'];
     var _contLeads=[];
@@ -2374,7 +2404,7 @@
         var lastContact=fmtLastContact(l.lastContactAt);
         var statusControl=conv
           ? '<span class="ase-badge convertido">Convertido</span>'
-          : '<select class="cont-status-select" data-lead="'+esc(l.id)+'" aria-label="Estado">'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
+          : '<select class="cont-status-select" data-lead="'+esc(l.id)+'" aria-label="Estado"'+pillStyleAttr(CONT_STATUS_COLOR[st])+'>'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
         return '<tr>'+
           '<td>'+(lastContact?esc(lastContact):'<span style="color:var(--faint)">—</span>')+'</td>'+
           '<td>'+(l.leadNo?esc(l.leadNo):'<span style="color:var(--faint)">—</span>')+'</td>'+
@@ -2393,6 +2423,7 @@
     document.getElementById('cont-list').addEventListener('change', function(e){
       var sel=e.target.closest('.cont-status-select'); if(!sel) return;
       var leadId=sel.getAttribute('data-lead'), newSt=sel.value;
+      recolorPillSelect(sel, CONT_STATUS_COLOR);
       sel.disabled=true;
       window.AORAES_CLOUD.updateLeadStatus(leadId, newSt).then(function(){
         var l=_contLeads.filter(function(x){return x.id===leadId;})[0]; if(l){ l.status=newSt; l.lastContactAt=new Date().toISOString(); }
