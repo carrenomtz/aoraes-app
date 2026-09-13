@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex, nofollow">
 <title>AORAES · Tu Plan de Jubilación</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1155,8 +1154,13 @@ function calcRiester(){
   const years=Math.max(0,S.retire-S.age);
   const kids=Math.max(0,S.riesterKids||0);
   const zulageBase=RIESTER.grundzulage+kids*RIESTER.kinderzulage;
-  const mindesteigenbeitrag=Math.max(RIESTER.sockelbetrag,S.salary*RIESTER.mindesteigenbeitragPct-zulageBase);
-  const suggestedMonthly=Math.round(mindesteigenbeitrag/12);
+  // §86 EStG: el 4% del sueldo se tope PRIMERO en el Höchstbetrag (2.100€) y solo entonces se le
+  // resta la Zulage — sin este tope, un sueldo alto (>52.500€, ya el ejemplo de 60.000€ por
+  // defecto de esta herramienta) sugería aportar muchísimo más de lo legalmente máximo útil.
+  const mindesteigenbeitrag=Math.max(RIESTER.sockelbetrag,Math.min(RIESTER.hoechstbetrag,S.salary*RIESTER.mindesteigenbeitragPct)-zulageBase);
+  // Ceil, no round: redondear hacia abajo podía dejar la aportación sugerida un euro por debajo
+  // del mínimo exigido, sin llegar nunca al 100% de la Zulage aunque el aviso dijera que sí.
+  const suggestedMonthly=Math.ceil(mindesteigenbeitrag/12);
   const monthly=Math.max(0,S.riesterMonthly!=null?S.riesterMonthly:suggestedMonthly);
   const annualOwn=monthly*12;
   const metRatio=mindesteigenbeitrag>0?Math.min(1,annualOwn/mindesteigenbeitrag):1;
@@ -1397,13 +1401,20 @@ function renderBreakdown(){
   const years=S.retire-S.age;
   const c=calc('generali',years);
   const dep=calcETFonly(years);
-  const grS=c.brva.gross+c.vasp.gross;
-  const netS=c.brva.net+c.vasp.net;
+  // c.vasp y c.etfPart NO son excluyentes: restBase (lo no-R\u00fcrup) va siempre a uno de los dos
+  // seg\u00fan restDest, pero el ahorro fiscal reinvertido (S.reinvest) puede ir al OTRO \u2014 as\u00ed que
+  // pueden tener capital ambos a la vez. Sin sumarlos, "Suma estrategia" perd\u00eda la parte que
+  // viv\u00eda en el que no fuera restDest, y la "Diferencia vs Depot" sal\u00eda con el signo cambiado
+  // (parec\u00eda que la estrategia pierde cuando en realidad gana).
+  const restPart={gross:c.vasp.gross+c.etfPart.gross, net:c.vasp.net+c.etfPart.net};
+  const restLabel=(c.restDest==='etf')?'ETF':'Privatrente';
+  const grS=c.brva.gross+restPart.gross;
+  const netS=c.brva.net+restPart.net;
   const rows=[
-    ['Capital bruto a la jubilaci\u00f3n', dep.gross, c.brva.gross, c.vasp.gross, grS, grS-dep.gross, false],
-    ['Capital neto a la jubilaci\u00f3n', dep.net, c.brva.net, c.vasp.net, netS, netS-dep.net, true],
+    ['Capital bruto a la jubilaci\u00f3n', dep.gross, c.brva.gross, restPart.gross, grS, grS-dep.gross, false],
+    ['Capital neto a la jubilaci\u00f3n', dep.net, c.brva.net, restPart.net, netS, netS-dep.net, true],
   ];
-  let html='<thead><tr><th>Aspecto</th><th>Depot &middot; referencia</th><th>R\u00fcrup</th><th>Privatrente</th><th class="strat">Suma estrategia</th><th class="diff">Diferencia vs Depot</th></tr></thead><tbody>';
+  let html='<thead><tr><th>Aspecto</th><th>Depot &middot; referencia</th><th>R\u00fcrup</th><th>'+restLabel+'</th><th class="strat">Suma estrategia</th><th class="diff">Diferencia vs Depot</th></tr></thead><tbody>';
   rows.forEach(r=>{
     const diff=r[5], diffStr=(diff>0?'+':'')+eurc(diff);
     html+=`<tr class="${r[6]?'final':''}"><td>${r[0]}</td><td class="num">${eurc(r[1])}</td><td class="num">${eurc(r[2])}</td><td class="num">${eurc(r[3])}</td><td class="num strat">${eurc(r[4])}</td><td class="num diff">${diffStr}</td></tr>`;
@@ -1468,23 +1479,34 @@ function render(){
   try{
     var pbEl=$('product-breakdown');
     if(pbEl){
-      var hasR=!!(c.brva && c.brva.has), hasP=!!(c.vasp && c.vasp.has);
+      // Igual que en la tabla 03: c.vasp y c.etfPart pueden tener capital los dos a la vez (el
+      // reinvestment del ahorro fiscal puede ir a un destino distinto de restBase) — sin sumarlos,
+      // la columna "Privatrente"/"ETF" (y el Total) perdían la parte que vivía en el otro.
+      var restPart={
+        gross:c.vasp.gross+c.etfPart.gross, net:c.vasp.net+c.etfPart.net,
+        contribPocket:c.vasp.contribPocket+c.etfPart.contribPocket,
+        has:c.vasp.has||c.etfPart.has
+      };
+      var restLabel=(c.restDest==='etf')?'ETF':'Privatrente';
+      var hasR=!!(c.brva && c.brva.has), hasP=!!(restPart && restPart.has);
       if(hasR || hasP){
         var yrs=S.retire-S.age;
-        var rPocket=hasR?c.brva.contribPocket:0, pPocket=hasP?c.vasp.contribPocket:0;
+        var rPocket=hasR?c.brva.contribPocket:0, pPocket=hasP?restPart.contribPocket:0;
         var rSub=hasR?(c.subsidyTotal||0):0, pSub=0;
         var rNet=Math.max(0,rPocket-rSub), pNet=pPocket;
-        var rGross=hasR?c.brva.gross:0, pGross=hasP?c.vasp.gross:0;
-        var rNetCap=hasR?c.brva.net:0, pNetCap=hasP?c.vasp.net:0;
+        var rGross=hasR?c.brva.gross:0, pGross=hasP?restPart.gross:0;
+        var rNetCap=hasR?c.brva.net:0, pNetCap=hasP?restPart.net:0;
         var tPocket=rPocket+pPocket, tSub=rSub+pSub, tNet=rNet+pNet, tGross=rGross+pGross, tNetCap=rNetCap+pNetCap;
         var reinvDest=(S.reinvest==='vasp'?'tu Privatrente':S.reinvest==='brva'?'tu Rürup':S.reinvest==='etf'?'el ETF':null);
         function cN(v){ return '<td class="pbt-num">'+eur(v)+' €</td>'; }
         function cT(v){ return '<td class="pbt-num pbt-tot">'+eur(v)+' €</td>'; }
         function th(l,s){ return '<th scope="row"><span class="pbt-rl">'+l+'</span><span class="pbt-rs">'+s+'</span></th>'; }
-        var thead='<thead><tr><th class="pbt-corner"><span class="pbt-rl">Tu estrategia</span><span class="pbt-corner-s">'+yrs+' años · '+eur(S.monthly)+' €/mes</span></th><th>Rürup</th><th>Privatrente</th><th class="pbt-tot">Total</th></tr></thead>';
+        var thead='<thead><tr><th class="pbt-corner"><span class="pbt-rl">Tu estrategia</span><span class="pbt-corner-s">'+yrs+' años · '+eur(S.monthly)+' €/mes</span></th><th>Rürup</th><th>'+restLabel+'</th><th class="pbt-tot">Total</th></tr></thead>';
         var subLabel = reinvDest ? ('Hacienda te lo devuelve y se reinvierte en '+reinvDest) : 'Hacienda te lo devuelve en tu declaración';
         var rSubCell = (S.reinvest==='brva') ? '<td class="pbt-num pbt-reinv">'+eur(rSub)+' € ↺</td>' : cN(rSub);
-        var pSubCell = (S.reinvest==='vasp') ? '<td class="pbt-num pbt-reinv">↳ se reinvierte</td>' : cN(pSub);
+        // La columna ahora suma vasp+etfPart, así que el aviso de reinversión aplica igual si el
+        // ahorro fiscal se reinvierte en cualquiera de los dos (ambos acaban en esta columna).
+        var pSubCell = (S.reinvest==='vasp'||S.reinvest==='etf') ? '<td class="pbt-num pbt-reinv">↳ se reinvierte</td>' : cN(pSub);
         var ahorroRow = '<tr class="pbt-good">'+th('Ahorro fiscal',subLabel)+rSubCell+pSubCell+cT(tSub)+'</tr>';
         var tbody='<tbody>'+
           '<tr>'+th('Aporte total','de tu bolsillo, en total')+cN(rPocket)+cN(pPocket)+cT(tPocket)+'</tr>'+
