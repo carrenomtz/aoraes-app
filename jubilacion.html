@@ -2200,7 +2200,7 @@ document.head.appendChild(cs);
   window.aoraesApplyClient = function(data){
     if(!data) return null;
     var nc=document.getElementById('nav-client');
-    var snap={ 's-age':null, 's-retire':null, 's-monthly':null, 's-split':null, restDest:(typeof S!=='undefined'?S.restDest:null), name:(nc?nc.textContent:null) };
+    var snap={ 's-age':null, 's-retire':null, 's-monthly':null, 's-split':null, 's-salary':null, restDest:(typeof S!=='undefined'?S.restDest:null), name:(nc?nc.textContent:null) };
     snap['s-age']     = setSlider('s-age', data.age);
     snap['s-retire']  = setSlider('s-retire', data.retireAge);
     // aportación = monto sugerido del flujo libre a jubilación (fallback: aportación actual)
@@ -2208,6 +2208,11 @@ document.head.appendChild(cs);
     snap['s-monthly'] = setSlider('s-monthly', monthly);
     // por defecto: 50% Rürup / 50% Privatrente (VA)
     snap['s-split']   = setSlider('s-split', 50);
+    // Sueldo bruto real de este cliente (S.9 de Análisis) — antes solo se rellenaba con el último
+    // valor "recordado" globalmente en aoraes_bruto_anual, que podía ser el sueldo de OTRO cliente
+    // si el asesor había consultado el Análisis de alguien distinto justo antes. Con esto, cada vez
+    // que el CRM aplica un cliente concreto, el sueldo se pisa con el suyo (si Análisis lo conoce).
+    if(data.salary!=null) snap['s-salary'] = setSlider('s-salary', data.salary);
     var rv=document.getElementById('rd-vasp');
     if(rv && typeof S!=='undefined' && S.restDest!=='vasp'){ try{ rv.click(); }catch(e){} }
     if(nc && data.name) nc.textContent = data.name;
@@ -2216,7 +2221,7 @@ document.head.appendChild(cs);
   window.aoraesRestore = function(snap){
     if(!snap) return;
     function back(id){ var el=document.getElementById(id); if(el && snap[id]!=null){ el.value=snap[id]; try{ el.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} } }
-    back('s-age'); back('s-retire'); back('s-monthly'); back('s-split');
+    back('s-age'); back('s-retire'); back('s-monthly'); back('s-split'); back('s-salary');
     if(snap.restDest && typeof S!=='undefined' && S.restDest!==snap.restDest){ var b=document.getElementById(snap.restDest==='etf'?'rd-etf':'rd-vasp'); if(b){ try{ b.click(); }catch(e){} } }
     var nc=document.getElementById('nav-client'); if(nc && snap.name!=null) nc.textContent=snap.name;
   };

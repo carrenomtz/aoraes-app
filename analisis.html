@@ -6172,7 +6172,16 @@ window.aoraesGetClient = function () {
   var suggested=null;
   try{ if(typeof window.__aoraesSuggestRetirement==='function') suggested=window.__aoraesSuggestRetirement(); }catch(e){}
   var id=null; try{ if(typeof window.aoraesCurrentClientId==='function') id=window.aoraesCurrentClientId(); }catch(e){}
-  return { id:id, name:name, age:age, retireAge:num('[data-sit="edadJub"]'), monthlyContribution:num('[data-sit="aporteJubilacion"]'), suggestedRetirement:(suggested!=null?Math.round(suggested):null), iban:v('[data-pers="iban_A"]') };
+  // Sueldo bruto ANUAL de Persona A (S.9), para prefiltar el comparador de jubilación con el sueldo
+  // real de este cliente en vez del último valor "recordado" globalmente en este navegador (que
+  // podía ser el de un cliente completamente distinto — ver aoraes_bruto_anual en jubilacion.html).
+  var salary=null;
+  var grossEl=document.querySelector('[data-gross="salarioBruto_A"]'), pagasEl=document.querySelector('[data-gross="numPagas_A"]');
+  if(grossEl && grossEl.value){
+    var grossMonthly=parseFloat(String(grossEl.value).replace(',','.'));
+    if(!isNaN(grossMonthly)) salary=Math.round(grossMonthly*((pagasEl&&parseFloat(pagasEl.value))||12));
+  }
+  return { id:id, name:name, age:age, retireAge:num('[data-sit="edadJub"]'), monthlyContribution:num('[data-sit="aporteJubilacion"]'), suggestedRetirement:(suggested!=null?Math.round(suggested):null), iban:v('[data-pers="iban_A"]'), salary:salary };
 };
 </script>
 </body>
