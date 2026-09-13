@@ -824,6 +824,7 @@
     <div class="cock">
       <div class="cock-head">
         <div><span class="cock-eyebrow">Contactos en frío</span><h1>Tu bolsa de contactos</h1></div>
+        <button type="button" class="cock-new" id="cont-import" hidden>📥 Importar Excel</button>
       </div>
       <p class="cock-note" style="margin:0 0 18px">Contactos por trabajar todavía, separados de tu cartera de clientes con análisis. Márcalos según avances, y conviértelos en cliente cuando empieces el análisis real — eso los mueve a "Tu cartera de clientes".</p>
       <div class="cock-toolbar">
@@ -1119,6 +1120,7 @@
         statusEl.hidden = true;
         document.getElementById('pending-gate').hidden = true;
         document.getElementById('nav-asesores').hidden = true;
+        document.getElementById('cont-import').hidden = true;
         document.getElementById('viewing-banner').classList.remove('on');
         window.dispatchEvent(new CustomEvent('aoraes-signed-out'));
       }
@@ -1215,15 +1217,18 @@
       var msgEl = document.getElementById('pending-msg');
       var navAse = document.getElementById('nav-asesores');
       var notifWrap = document.getElementById('notif-wrap');
+      var contImport = document.getElementById('cont-import');
       if(!profile){ pendingEl.hidden = true; return; }
       if(profile.status === 'approved'){
         pendingEl.hidden = true;
         navAse.hidden = (profile.role !== 'admin');
         notifWrap.hidden = (profile.role !== 'admin');
+        contImport.hidden = (profile.role !== 'admin');
       } else {
         pendingEl.hidden = false;
         navAse.hidden = true;
         notifWrap.hidden = true;
+        contImport.hidden = true;
         msgEl.innerHTML = (profile.status === 'rechazado')
           ? '<p><b>Tu solicitud de acceso fue rechazada.</b></p><p>Si crees que es un error, contacta con el responsable del equipo.</p>'
           : '<p><b>Tu cuenta está pendiente de autorización.</b></p><p>El responsable del equipo debe aprobar tu acceso antes de que puedas ver tu cartera. Esta pantalla se actualizará sola en cuanto te aprueben — no hace falta que recargues.</p>';
@@ -1917,6 +1922,7 @@
     }
     function closeImportOverlay(){ document.getElementById('import-overlay').hidden=true; }
     document.getElementById('asesores-import').addEventListener('click', openImportOverlay);
+    document.getElementById('cont-import').addEventListener('click', openImportOverlay);
     document.getElementById('import-close').addEventListener('click', closeImportOverlay);
     document.getElementById('import-cancel').addEventListener('click', closeImportOverlay);
     document.getElementById('import-overlay').addEventListener('click', function(e){ if(e.target.id==='import-overlay') closeImportOverlay(); });
@@ -2094,7 +2100,13 @@
         alert('Algo falló al guardar en la nube. Revisa la consola e inténtalo de nuevo.');
       }).finally(function(){ btn.disabled=false; btn.textContent='Importar'; });
     });
-    document.getElementById('import-done').addEventListener('click', function(){ closeImportOverlay(); renderAsesores(); });
+    document.getElementById('import-done').addEventListener('click', function(){
+      closeImportOverlay();
+      // Se refresca la pantalla desde la que se abrió el modal (Asesores o Contactos) — si el
+      // propio admin se autoasignó algún contacto, lo ve en su bolsa sin salir y volver a entrar.
+      if(!asesoresScr.hidden) renderAsesores();
+      if(!contactosScr.hidden) renderContactos();
+    });
 
     /* ---------- Contactos: bolsa fría propia de cada asesor (separada de la cartera de clientes) ----------
        Un contacto importado nunca es un "cliente" hasta que el propio asesor lo convierte desde aquí —
