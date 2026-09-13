@@ -789,7 +789,7 @@
           <button type="button" id="pool-bulk-assign">Asignar seleccionados</button>
           <button type="button" id="pool-bulk-delete" class="danger">🗑 Eliminar seleccionados</button>
         </div>
-        <div id="pool-list"></div>
+        <div id="pool-list" data-no-i18n></div>
       </details>
       <div id="asesores-list"></div>
     </div>
@@ -803,9 +803,10 @@
         <input type="file" id="import-file" accept=".xlsx,.xls,.csv">
       </div>
       <div id="import-step-map" hidden>
+        <div class="imp-map-field" id="import-sheet-row" hidden style="max-width:320px;margin-bottom:14px"><label>Hoja del archivo</label><select id="import-sheet"></select></div>
         <p class="cock-note" style="margin:0 0 14px">Confirma qué columna es cada dato. "Nombre" es obligatorio; el resto es opcional.</p>
-        <div class="imp-map-grid" id="import-map-grid"></div>
-        <div class="imp-preview-wrap"><table class="imp-preview" id="import-preview"></table></div>
+        <div class="imp-map-grid" id="import-map-grid" data-no-i18n></div>
+        <div class="imp-preview-wrap"><table class="imp-preview" id="import-preview" data-no-i18n></table></div>
         <div class="cock-note" id="import-summary" style="margin:14px 0 0"></div>
         <div class="imp-actions">
           <button type="button" id="import-cancel">Cancelar</button>
@@ -829,7 +830,7 @@
         <input type="search" id="cont-search" aria-label="Buscar contactos" placeholder="Buscar por nombre, correo o teléfono…" />
         <select id="cont-status" aria-label="Filtrar por estado"><option value="">Todos (sin convertidos)</option><option value="nuevo">Nuevo</option><option value="contactado">Contactado</option><option value="no_interesa">No interesa</option><option value="convertido">Convertido</option></select>
       </div>
-      <div class="cock-list" id="cont-list"></div>
+      <div class="cock-list" id="cont-list" data-no-i18n></div>
     </div>
   </main>
 
@@ -1867,10 +1868,39 @@
       email:['email','correo','e-mail','mail'],
       phone:['telefono','teléfono','phone','celular','movil','móvil','tel'],
       notes:['notas','nota','comentario','comentarios','observaciones'],
-      advisor:['asesor','advisor','agente','asignado','responsable']
+      advisor:['asesor','advisor','agente','asignado','responsable'],
+      status:['status','estado']
     };
-    var IMPORT_FIELDS=[{key:'name',label:'Nombre',required:true},{key:'email',label:'Correo'},{key:'phone',label:'Teléfono'},{key:'notes',label:'Notas'},{key:'advisor',label:'Asesor (opcional)'}];
-    var _impRows=null, _impHeaders=null, _impAdvisors=null;
+    var IMPORT_FIELDS=[{key:'name',label:'Nombre',required:true},{key:'email',label:'Correo'},{key:'phone',label:'Teléfono'},{key:'notes',label:'Notas'},{key:'advisor',label:'Asesor (opcional)'},{key:'status',label:'Estado anterior (opcional)'}];
+    // Traduce el vocabulario de estado que traiga el Excel a los 3 estados que maneja AORAES.
+    // Cualquier texto no reconocido cae en "contactado" — ni se pierde de vista como "nuevo" (el
+    // asesor lo re-llamaría sin saber que ya se tocó antes) ni se descarta como "no_interesa" sin
+    // certeza real. El texto original siempre queda además en las notas, sin importar a qué balde
+    // caiga aquí, así que nada se pierde aunque la traducción no sea perfecta.
+    var STATUS_TRIAGE={
+      'no contactado':'nuevo',
+      'no respondio':'contactado','no respondió':'contactado',
+      'respondio':'contactado','respondió':'contactado',
+      'contacto futuro':'contactado',
+      'numero apagado':'contactado','número apagado':'contactado',
+      'no aparecio':'contactado','no apareció':'contactado',
+      'email':'contactado','analisis':'contactado','análisis':'contactado',
+      'valorando':'contactado','m2':'contactado','m3':'contactado','cierre':'contactado',
+      'no interes':'no_interesa','no interés':'no_interesa',
+      'no alemania':'no_interesa','d e a d':'no_interesa','dead':'no_interesa'
+    };
+    function triageStatus(text){
+      var t=String(text||'').trim().toLowerCase();
+      if(!t) return 'nuevo';
+      return STATUS_TRIAGE[t]||'contactado';
+    }
+    // Limpia formatos de teléfono típicos de Excel: texto que empieza por "=" (alguien escribió
+    // "=+4917..." para que Excel no le recortara el "+"), y errores de fórmula ("#ERROR!", "#N/A").
+    function cleanPhone(raw){
+      var s=String(raw==null?'':raw).trim();
+      if(!s || s.charAt(0)==='#') return '';
+      return s.replace(/^=+/,'').trim();
+    }
     function detectColumn(headers, hints){
       for(var i=0;i<headers.length;i++){
         var h=String(headers[i]==null?'':headers[i]).toLowerCase().trim();
@@ -1890,16 +1920,44 @@
     document.getElementById('import-close').addEventListener('click', closeImportOverlay);
     document.getElementById('import-cancel').addEventListener('click', closeImportOverlay);
     document.getElementById('import-overlay').addEventListener('click', function(e){ if(e.target.id==='import-overlay') closeImportOverlay(); });
+    var _impWb=null, _impRows=null, _impHeaders=null, _impAdvisors=null, _impCurrentSheet=null;
+    // Localiza la fila de cabecera real: algunas plantillas (p. ej. paneles con logo/título en A1)
+    // traen filas sueltas con un solo valor antes de la fila con los nombres de columna de verdad —
+    // tomar "la primera fila no vacía" a secas desalinea todo el mapeo. Se exige al menos 2 celdas
+    // con contenido para contar como cabecera.
+    function loadSheet(sheetName){
+      var sheet=_impWb.Sheets[sheetName];
+      var rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
+      var headerIdx=-1;
+      for(var hi=0; hi<rows.length; hi++){
+        var nonEmpty=rows[hi].filter(function(c){ return String(c||'').trim(); }).length;
+        if(nonEmpty>=2){ headerIdx=hi; break; }
+      }
+      if(headerIdx<0){ alert('No se encontró una fila de cabecera (con al menos 2 columnas) en esta hoja.'); return false; }
+      _impHeaders=rows[headerIdx];
+      _impRows=rows.slice(headerIdx+1).filter(function(r){ return r.some(function(c){ return String(c||'').trim(); }); });
+      if(!_impRows.length){ alert('Esta hoja no tiene filas de datos debajo de la cabecera.'); return false; }
+      _impCurrentSheet=sheetName;
+      return true;
+    }
+    document.getElementById('import-sheet').addEventListener('change', function(){
+      if(loadSheet(this.value)) buildImportMapUI();
+    });
     document.getElementById('import-file').addEventListener('change', function(e){
       var file=e.target.files&&e.target.files[0]; if(!file) return;
       if(typeof XLSX==='undefined'){ alert('No se pudo cargar el lector de Excel. Comprueba tu conexión e inténtalo de nuevo.'); return; }
       file.arrayBuffer().then(function(buf){
-        var wb=XLSX.read(buf,{type:'array'});
-        var sheet=wb.Sheets[wb.SheetNames[0]];
-        var rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
-        rows=rows.filter(function(r){ return r.some(function(c){ return String(c||'').trim(); }); });
-        if(rows.length<2){ alert('El archivo no tiene filas de datos debajo de la cabecera.'); return null; }
-        _impHeaders=rows[0]; _impRows=rows.slice(1);
+        _impWb=XLSX.read(buf,{type:'array'});
+        if(!_impWb.SheetNames.length){ alert('El archivo no tiene ninguna hoja.'); return null; }
+        // Con varias hojas (paneles/plantillas suelen traer resumen + instrucciones + los datos de
+        // verdad), se preselecciona la que tenga más filas — normalmente la hoja de contactos real —
+        // pero el selector de abajo deja cambiarla a mano si acierta con la equivocada.
+        var bestName=_impWb.SheetNames[0], bestRows=-1;
+        _impWb.SheetNames.forEach(function(name){
+          var n=XLSX.utils.sheet_to_json(_impWb.Sheets[name],{header:1,defval:'',raw:false}).length;
+          if(n>bestRows){ bestRows=n; bestName=name; }
+        });
+        if(!loadSheet(bestName)) return null;
         return window.AORAES_CLOUD.listAdvisors();
       }).then(function(advisors){
         if(!advisors) return;
@@ -1910,6 +1968,11 @@
     function buildImportMapUI(){
       document.getElementById('import-step-file').hidden=true;
       document.getElementById('import-step-map').hidden=false;
+      var sheetRow=document.getElementById('import-sheet-row'), sheetSel=document.getElementById('import-sheet');
+      if(_impWb.SheetNames.length>1){
+        sheetRow.hidden=false;
+        sheetSel.innerHTML=_impWb.SheetNames.map(function(n){ return '<option value="'+esc(n)+'"'+(n===_impCurrentSheet?' selected':'')+'>'+esc(n)+'</option>'; }).join('');
+      } else sheetRow.hidden=true;
       var grid=document.getElementById('import-map-grid');
       grid.innerHTML=IMPORT_FIELDS.map(function(f){
         var auto=detectColumn(_impHeaders, COLUMN_HINTS[f.key]);
@@ -1928,10 +1991,37 @@
       return {
         name:(map.name>=0?String(row[map.name]||'').trim():''),
         email:(map.email>=0?String(row[map.email]||'').trim():''),
-        phone:(map.phone>=0?String(row[map.phone]||'').trim():''),
+        phone:(map.phone>=0?cleanPhone(row[map.phone]):''),
         notes:(map.notes>=0?String(row[map.notes]||'').trim():''),
-        advisorText:(map.advisor>=0?String(row[map.advisor]||'').trim():'')
+        advisorText:(map.advisor>=0?String(row[map.advisor]||'').trim():''),
+        statusText:(map.status>=0?String(row[map.status]||'').trim():'')
       };
+    }
+    // El mismo Excel de contactos reales puede traer a la misma persona varias veces (p.ej. cada
+    // reenvío del formulario de un anuncio genera un "No. de Lead" distinto) — sin agrupar por
+    // correo, alguien ya marcado "No Interes" en una fila podía reaparecer como "Nuevo" en otra
+    // copia, y el asesor lo volvería a llamar sin saber que ya se descartó. Se agrupa por correo
+    // (en minúsculas); las filas sin correo no tienen con qué agrupar y se quedan como están.
+    function mergeDuplicates(rows){
+      var byEmail={}, noEmail=[], order=[];
+      rows.forEach(function(r){
+        var key=(r.email||'').trim().toLowerCase();
+        if(!key){ r._dupeCount=1; noEmail.push(r); return; }
+        if(!byEmail[key]){ byEmail[key]=[]; order.push(key); }
+        byEmail[key].push(r);
+      });
+      var merged=order.map(function(key){
+        var grp=byEmail[key];
+        if(grp.length===1){ grp[0]._dupeCount=1; return grp[0]; }
+        var withStatus=grp.filter(function(r){ return r.statusText; });
+        var base=withStatus[0]||grp[0];
+        var statusTexts=[]; grp.forEach(function(r){ if(r.statusText && statusTexts.indexOf(r.statusText)<0) statusTexts.push(r.statusText); });
+        var phone=grp.map(function(r){return r.phone;}).filter(Boolean)[0]||'';
+        var notes=[]; grp.forEach(function(r){ if(r.notes && notes.indexOf(r.notes)<0) notes.push(r.notes); });
+        var advisorText=grp.map(function(r){return r.advisorText;}).filter(Boolean)[0]||'';
+        return { name:base.name, email:base.email, phone:phone, notes:notes.join(' / '), advisorText:advisorText, statusText:statusTexts.join(' / '), _dupeCount:grp.length };
+      });
+      return merged.concat(noEmail);
     }
     function matchAdvisor(text){
       if(!text) return null;
@@ -1940,43 +2030,63 @@
       if(byEmail) return byEmail;
       return _impAdvisors.filter(function(a){ return (a.name||'').toLowerCase().trim()===t; })[0]||null;
     }
-    function renderImportPreview(){
+    // Mapea + descarta filas sin nombre + agrupa duplicados por correo. Usado tanto por la vista
+    // previa como por la importación real, para que el número que ve el admin antes de confirmar
+    // sea exactamente el que se va a escribir.
+    function computeMergedRows(){
       var map=currentMapping();
       var validRows=_impRows.map(function(r){ return mappedRow(r,map); }).filter(function(r){ return r.name; });
+      return { validRows:validRows, merged:mergeDuplicates(validRows) };
+    }
+    function buildLeadFromMerged(r, i, now){
+      var noteParts=[];
+      if(r.notes) noteParts.push(r.notes);
+      if(r.statusText) noteParts.push('Estado previo (Excel): '+r.statusText);
+      var adv=matchAdvisor(r.advisorText);
+      if(r.advisorText && !adv) noteParts.push('Asesor previo (Excel): '+r.advisorText);
+      if(r._dupeCount>1) noteParts.push('('+r._dupeCount+' filas duplicadas del Excel combinadas aquí)');
+      return {
+        lead:{ id:'lead'+Date.now()+i+Math.floor(Math.random()*1000), name:r.name, email:r.email, phone:r.phone, notes:noteParts.join(' · '), status:triageStatus(r.statusText), importedAt:now },
+        adv:adv
+      };
+    }
+    function renderImportPreview(){
+      var res=computeMergedRows(), validRows=res.validRows, merged=res.merged;
       var matched=0;
-      validRows.forEach(function(r){ if(matchAdvisor(r.advisorText)) matched++; });
+      merged.forEach(function(r){ if(matchAdvisor(r.advisorText)) matched++; });
       var tbl=document.getElementById('import-preview');
-      var previewRows=validRows.slice(0,5);
-      tbl.innerHTML='<thead><tr><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Asesor</th></tr></thead><tbody>'+
+      var previewRows=merged.slice(0,5);
+      tbl.innerHTML='<thead><tr><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado previo</th><th>Asesor</th></tr></thead><tbody>'+
         previewRows.map(function(r){
           var adv=matchAdvisor(r.advisorText);
           var advTxt=r.advisorText?(adv?('✓ '+esc(adv.name||adv.email)):('⚠ "'+esc(r.advisorText)+'" no reconocido → bolsa')):'— sin asesor → bolsa';
-          return '<tr><td>'+esc(r.name)+'</td><td>'+esc(r.email)+'</td><td>'+esc(r.phone)+'</td><td>'+advTxt+'</td></tr>';
+          var dupeTxt=r._dupeCount>1?(' <span style="color:var(--faint)">('+r._dupeCount+'×)</span>'):'';
+          return '<tr><td>'+esc(r.name)+dupeTxt+'</td><td>'+esc(r.email)+'</td><td>'+esc(r.phone)+'</td><td>'+(esc(r.statusText)||'—')+'</td><td>'+advTxt+'</td></tr>';
         }).join('')+'</tbody>';
       var withoutName=_impRows.length-validRows.length;
+      var dupeRows=validRows.length-merged.length;
       document.getElementById('import-summary').textContent=
-        validRows.length+' contacto'+(validRows.length===1?'':'s')+' con nombre válido'+
+        merged.length+' contacto'+(merged.length===1?'':'s')+' único'+(merged.length===1?'':'s')+' a importar'+
         (withoutName?' ('+withoutName+' fila'+(withoutName===1?'':'s')+' sin nombre, se ignora'+(withoutName===1?'':'n')+')':'')+
-        ' · '+matched+' se asignan solos · '+(validRows.length-matched)+' van a la bolsa sin asignar.'+
-        (previewRows.length<validRows.length?' Vista previa de las primeras 5.':'');
-      document.getElementById('import-confirm').disabled=!validRows.length;
+        (dupeRows?' ('+dupeRows+' fila'+(dupeRows===1?'':'s')+' duplicada'+(dupeRows===1?'':'s')+' por correo, combinada'+(dupeRows===1?'':'s')+' en un solo contacto)':'')+
+        ' · '+matched+' se asignan solos · '+(merged.length-matched)+' van a la bolsa sin asignar.'+
+        (previewRows.length<merged.length?' Vista previa de los primeros 5.':'');
+      document.getElementById('import-confirm').disabled=!merged.length;
     }
     document.getElementById('import-confirm').addEventListener('click', function(){
-      var map=currentMapping();
-      var validRows=_impRows.map(function(r){ return mappedRow(r,map); }).filter(function(r){ return r.name; });
+      var res=computeMergedRows(), merged=res.merged;
       var now=new Date().toISOString();
       var byAdvisor={}, pool=[];
-      validRows.forEach(function(r,i){
-        var lead={ id:'lead'+Date.now()+i+Math.floor(Math.random()*1000), name:r.name, email:r.email, phone:r.phone, notes:r.notes, status:'nuevo', importedAt:now };
-        var adv=matchAdvisor(r.advisorText);
-        if(adv){ lead.assignedAt=now; (byAdvisor[adv.uid]=byAdvisor[adv.uid]||[]).push(lead); }
-        else pool.push(lead);
+      merged.forEach(function(r,i){
+        var built=buildLeadFromMerged(r,i,now);
+        if(built.adv){ built.lead.assignedAt=now; (byAdvisor[built.adv.uid]=byAdvisor[built.adv.uid]||[]).push(built.lead); }
+        else pool.push(built.lead);
       });
       var btn=this; btn.disabled=true; btn.textContent='Importando…';
       window.AORAES_CLOUD.importLeads(byAdvisor, pool).then(function(){
         document.getElementById('import-step-map').hidden=true;
         document.getElementById('import-step-result').hidden=false;
-        var assignedCount=validRows.length-pool.length;
+        var assignedCount=merged.length-pool.length;
         document.getElementById('import-result-msg').textContent=
           'Listo: '+assignedCount+' contacto'+(assignedCount===1?'':'s')+' asignado'+(assignedCount===1?'':'s')+' directamente a su asesor, '+pool.length+' en la bolsa sin asignar.';
       }).catch(function(e){
@@ -2166,11 +2276,24 @@
     function translateShellEl(root,map){
       if(!root) return; map=map||SHELL_I18N_EN;
       try{
+        // [data-no-i18n]: datos reales del usuario (cabeceras de un Excel importado, nombres/correos/
+        // notas de contactos) que solo COINCIDEN por casualidad con alguna palabra del diccionario de
+        // la app ("Notas", "Nombre"...) — sin esto, importar una columna literalmente llamada "Notas"
+        // la mostraba como "Notizen" en alemán: el mapeo seguía funcionando (usa el índice de columna,
+        // no el texto), pero el admin veía una palabra que no estaba en su archivo.
+        if(root.nodeType===1 && root.closest && root.closest('[data-no-i18n]')) return;
         var w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false), n, list=[];
         while(n=w.nextNode()) list.push(n);
-        list.forEach(function(tn){ var v=tn.nodeValue; if(!v||!/\S/.test(v)) return; var t=translateShellStr(v,map); if(t!==v) tn.nodeValue=t; });
+        list.forEach(function(tn){
+          var v=tn.nodeValue; if(!v||!/\S/.test(v)) return;
+          if(tn.parentElement && tn.parentElement.closest && tn.parentElement.closest('[data-no-i18n]')) return;
+          var t=translateShellStr(v,map); if(t!==v) tn.nodeValue=t;
+        });
         root.querySelectorAll && ['placeholder','title','aria-label'].forEach(function(attr){
-          root.querySelectorAll('['+attr+']').forEach(function(e){ var o=e.getAttribute(attr),t=translateShellStr(o,map); if(t!==o) e.setAttribute(attr,t); });
+          root.querySelectorAll('['+attr+']').forEach(function(e){
+            if(e.closest('[data-no-i18n]')) return;
+            var o=e.getAttribute(attr),t=translateShellStr(o,map); if(t!==o) e.setAttribute(attr,t);
+          });
         });
       }catch(e){}
     }
