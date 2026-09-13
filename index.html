@@ -981,7 +981,9 @@
       myLeads: function(){
         var uid=viewingUid||currentUid; if(!uid) return Promise.resolve([]);
         return getDocs(collection(db,'users',uid,'leads')).then(function(snap){
-          var arr=[]; snap.forEach(function(d){ arr.push(d.data()); }); return arr;
+          // El id del documento manda sobre lo que traiga guardado dentro (por si algún día un lead
+          // se crea sin ese campo en el propio dato) — así nunca se rompe la edición en la tabla.
+          var arr=[]; snap.forEach(function(d){ arr.push(Object.assign({}, d.data(), {id:d.id})); }); return arr;
         });
       },
       updateLeadStatus: function(leadId, status){
@@ -1004,7 +1006,7 @@
       },
       listPool: function(){
         return getDocs(leadsPoolCol()).then(function(snap){
-          var arr=[]; snap.forEach(function(d){ arr.push(d.data()); });
+          var arr=[]; snap.forEach(function(d){ arr.push(Object.assign({}, d.data(), {id:d.id})); });
           arr.sort(function(a,b){ return (b.importedAt||'').localeCompare(a.importedAt||''); });
           return arr;
         });
@@ -2148,6 +2150,12 @@
         var leadId4=fieldEl.getAttribute('data-pool-lead'), field=fieldEl.getAttribute('data-pool-field'), val=fieldEl.value;
         window.AORAES_CLOUD.updatePoolLeadField(leadId4, field, val).then(function(){
           var l4=_pool.filter(function(x){return x.id===leadId4;})[0]; if(l4) l4[field]=val;
+          // El teléfono es la base del aviso de duplicados (fila ámbar + contador) — si se corrige a
+          // mano, hay que recalcular los grupos, si no el aviso se queda con el número viejo.
+          if(field==='phone'){
+            var dupes=computePoolDupes(_pool); _poolDupeGroups=dupes.groups; _poolDupeByLead=dupes.byLead;
+            filterAndRenderPool();
+          }
         }).catch(function(e){ console.error('AORAES: fallo al guardar el campo',e); alert('No se pudo guardar. Revisa la consola.'); });
       }
     });
