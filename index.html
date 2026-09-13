@@ -840,7 +840,7 @@
         <div style="margin-bottom:12px"><button type="button" id="pool-clear-all" class="danger" style="font-family:inherit;font-size:11.5px;font-weight:700;border-radius:7px;padding:6px 10px;cursor:pointer;border:1px solid #e7c3bb;color:var(--red);background:#fbeae6">🗑 Vaciar toda la bolsa…</button></div>
         <div class="pool-table-wrap">
           <table class="pool-table" data-no-i18n>
-            <thead><tr id="pool-thead-row"><th><input type="checkbox" id="pool-check-all" aria-label="Seleccionar todo lo filtrado" title="Seleccionar todo lo filtrado"></th><th class="sortable-th" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="status">Status<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="email">Email<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th>Asesor</th><th class="sortable-th" data-sort-key="notes">Notas<span class="sort-arrow"></span></th></tr></thead>
+            <thead><tr id="pool-thead-row"><th scope="col"><input type="checkbox" id="pool-check-all" aria-label="Seleccionar todo lo filtrado" title="Seleccionar todo lo filtrado"></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="status">Status<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="email">Email<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th scope="col">Asesor</th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="notes">Notas<span class="sort-arrow"></span></th></tr></thead>
             <tbody id="pool-list"></tbody>
           </table>
         </div>
@@ -886,7 +886,7 @@
       </div>
       <div class="pool-table-wrap">
         <table class="pool-table" data-no-i18n>
-          <thead><tr id="cont-thead-row"><th class="sortable-th" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="status">Status<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="email">Email<span class="sort-arrow"></span></th><th class="sortable-th" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th>Asesor</th><th class="sortable-th" data-sort-key="notes">Notas<span class="sort-arrow"></span></th><th class="cont-action-col"></th></tr></thead>
+          <thead><tr id="cont-thead-row"><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="status">Status<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="email">Email<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th scope="col">Asesor</th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="notes">Notas<span class="sort-arrow"></span></th><th scope="col" class="cont-action-col"></th></tr></thead>
           <tbody id="cont-list"></tbody>
         </table>
       </div>
@@ -1427,19 +1427,32 @@
     // theadRowId/sortState son distintos para Bolsa y Contactos, pero la lógica es la misma.
     function wireSortableThead(theadRowId, sortState, onSort){
       var row=document.getElementById(theadRowId); if(!row) return;
-      row.addEventListener('click', function(e){
-        var th=e.target.closest('.sortable-th'); if(!th) return;
+      function applySort(th){
         var key=th.getAttribute('data-sort-key');
         if(sortState.key===key) sortState.dir=(sortState.dir==='asc'?'desc':'asc');
         else { sortState.key=key; sortState.dir='asc'; }
         updateSortHeaderUI(row, sortState);
         onSort();
+      }
+      row.addEventListener('click', function(e){
+        var th=e.target.closest('.sortable-th'); if(!th) return;
+        applySort(th);
+      });
+      // role="button" en un <th> no lo hace operable por teclado por sí solo (a diferencia de un
+      // <button> real) — Enter/Espacio son los que activa un lector de pantalla o navegación por
+      // teclado sobre ese rol, así que hace falta este handler aparte del click del ratón.
+      row.addEventListener('keydown', function(e){
+        if(e.key!=='Enter' && e.key!==' ') return;
+        var th=e.target.closest('.sortable-th'); if(!th) return;
+        e.preventDefault();
+        applySort(th);
       });
     }
     function updateSortHeaderUI(row, sortState){
       row.querySelectorAll('.sortable-th').forEach(function(th){
         var active=th.getAttribute('data-sort-key')===sortState.key;
         th.classList.toggle('sort-active', active);
+        th.setAttribute('aria-sort', active?(sortState.dir==='asc'?'ascending':'descending'):'none');
         var arrow=th.querySelector('.sort-arrow');
         if(arrow) arrow.textContent=active?(sortState.dir==='asc'?'▲':'▼'):'';
       });
@@ -1912,7 +1925,7 @@
             }
             items+='<button type="button" class="danger" data-ase-delete="'+esc(p.uid)+'" data-ase-delete-email="'+esc(p.email||'')+'">🗑 Borrar cuenta…</button>';
           }
-          var menu=(!isSelf && items) ? ('<div class="ase-menu-wrap"><button type="button" class="ase-menu-btn" data-ase-menu-toggle="'+esc(p.uid)+'" aria-label="Opciones" aria-haspopup="true">⋮</button><div class="ase-menu" id="ase-menu-'+esc(p.uid)+'" hidden>'+items+'</div></div>') : '';
+          var menu=(!isSelf && items) ? ('<div class="ase-menu-wrap"><button type="button" class="ase-menu-btn" data-ase-menu-toggle="'+esc(p.uid)+'" aria-label="Opciones" aria-haspopup="true" aria-expanded="false" aria-controls="ase-menu-'+esc(p.uid)+'">⋮</button><div class="ase-menu" role="menu" id="ase-menu-'+esc(p.uid)+'" hidden>'+items+'</div></div>') : '';
 
           var primaryLabel=esc(p.name||p.email||p.uid);
           var subEmail=(p.name && p.email) ? '<div style="font-size:12px;color:var(--faint);font-weight:500">'+esc(p.email)+'</div>' : '';
@@ -1944,17 +1957,22 @@
       });
     }
     document.getElementById('asesores-refresh').addEventListener('click', renderAsesores);
+    function closeAseMenus(){
+      document.querySelectorAll('#asesores-list .ase-menu').forEach(function(m){ m.hidden=true; });
+      document.querySelectorAll('#asesores-list [data-ase-menu-toggle]').forEach(function(t){ t.setAttribute('aria-expanded','false'); });
+    }
     document.getElementById('asesores-list').addEventListener('click', function(e){
       var toggle=e.target.closest('[data-ase-menu-toggle]');
       if(toggle){
         var menu=document.getElementById('ase-menu-'+toggle.getAttribute('data-ase-menu-toggle'));
         var wasOpen=!menu.hidden;
-        document.querySelectorAll('#asesores-list .ase-menu').forEach(function(m){ m.hidden=true; });
+        closeAseMenus();
         menu.hidden=wasOpen;
+        toggle.setAttribute('aria-expanded', wasOpen?'false':'true');
         return;
       }
       var b=e.target.closest('button'); if(!b) return;
-      document.querySelectorAll('#asesores-list .ase-menu').forEach(function(m){ m.hidden=true; });
+      closeAseMenus();
       if(b.hasAttribute('data-ase-approve')) window.AORAES_CLOUD.approveAdvisor(b.getAttribute('data-ase-approve')).then(renderAsesores);
       else if(b.hasAttribute('data-ase-reject')){
         var wasApproved=(b.textContent.indexOf('Restringir')===0);
@@ -1983,7 +2001,7 @@
     });
     document.addEventListener('click', function(e){
       if(e.target.closest('.ase-menu-wrap')) return;
-      document.querySelectorAll('#asesores-list .ase-menu').forEach(function(m){ m.hidden=true; });
+      closeAseMenus();
     });
     window.addEventListener('aoraes-viewing-changed', function(){ if(!asesoresScr.hidden) renderAsesores(); });
 
@@ -2080,14 +2098,15 @@
         var advisorSel='<select class="pool-row-advisor" data-pool-advisor="'+esc(l.id)+'" aria-label="Asesor"><option value="">— Sin asignar —</option>'+advisorOptionsHtml()+'</select>';
         // Todo se puede corregir a mano directo en la tabla — siempre hay erratas de teléfono/nombre
         // al importar de Excel, y no tiene sentido obligar a abrir un formulario aparte para eso.
+        var rowWho=l.name||l.email||l.phone||'este contacto';
         return '<tr'+(dupeKey?' class="pool-dupe-row"':'')+'>'+
-          '<td><input type="checkbox" class="pool-check" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
-          '<td><input type="date" class="cont-date-input" data-pool-field="lastContactAt" data-pool-lead="'+esc(l.id)+'" value="'+lastContactVal+'"></td>'+
-          '<td><input type="text" class="cont-field-input" data-pool-field="leadNo" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
+          '<td><input type="checkbox" class="pool-check" aria-label="Seleccionar a '+esc(rowWho)+'" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
+          '<td><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-pool-field="lastContactAt" data-pool-lead="'+esc(l.id)+'" value="'+lastContactVal+'"></td>'+
+          '<td><input type="text" class="cont-field-input" aria-label="Número de lead" data-pool-field="leadNo" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
           '<td>'+statusSel+'</td>'+
-          '<td><input type="text" class="cont-field-input" data-pool-field="name" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.name||'')+'" placeholder="Sin nombre"></td>'+
-          '<td><input type="text" class="cont-field-input" data-pool-field="email" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.email||'')+'"></td>'+
-          '<td style="white-space:nowrap"><input type="text" class="cont-field-input" style="display:inline-block;width:auto;min-width:90px" data-pool-field="phone" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.phone||'')+'">'+dupeBadge+'</td>'+
+          '<td><input type="text" class="cont-field-input" aria-label="Nombre" data-pool-field="name" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.name||'')+'" placeholder="Sin nombre"></td>'+
+          '<td><input type="text" class="cont-field-input" aria-label="Correo electrónico" data-pool-field="email" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.email||'')+'"></td>'+
+          '<td style="white-space:nowrap"><input type="text" class="cont-field-input" aria-label="Teléfono" style="display:inline-block;width:auto;min-width:90px" data-pool-field="phone" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.phone||'')+'">'+dupeBadge+'</td>'+
           '<td>'+advisorSel+'</td>'+
           '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle data-pool-lead="'+esc(l.id)+'">'+esc(l.notes)+'</span>':'<span class="pool-notes-text" data-notes-toggle data-pool-lead="'+esc(l.id)+'" style="color:var(--faint)">— (clic para añadir)</span>')+'</td>'+
         '</tr>';
@@ -2169,6 +2188,7 @@
         ta.value=(lead5&&lead5.notes)||'';
         ta.setAttribute('data-pool-field','notes');
         ta.setAttribute('data-pool-lead',leadId5);
+        ta.setAttribute('aria-label','Notas');
         ta.placeholder='Notas…';
         notesEl.replaceWith(ta);
         ta.focus();
@@ -2564,12 +2584,12 @@
           : '<select class="cont-status-select" data-lead="'+esc(l.id)+'" aria-label="Estado"'+pillStyleAttr(CONT_STATUS_COLOR[st])+'>'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
         // Todo se puede corregir a mano directo en la tabla — siempre hay erratas de teléfono/nombre.
         return '<tr>'+
-          '<td><input type="date" class="cont-date-input" data-field="lastContactAt" data-lead="'+esc(l.id)+'" value="'+lastContactVal+'"></td>'+
-          '<td><input type="text" class="cont-field-input" data-field="leadNo" data-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
+          '<td><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-field="lastContactAt" data-lead="'+esc(l.id)+'" value="'+lastContactVal+'"></td>'+
+          '<td><input type="text" class="cont-field-input" aria-label="Número de lead" data-field="leadNo" data-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
           '<td>'+statusControl+'</td>'+
-          '<td><input type="text" class="cont-field-input" data-field="name" data-lead="'+esc(l.id)+'" value="'+esc(l.name||'')+'" placeholder="Sin nombre"></td>'+
-          '<td><input type="text" class="cont-field-input" data-field="email" data-lead="'+esc(l.id)+'" value="'+esc(l.email||'')+'"></td>'+
-          '<td><input type="text" class="cont-field-input" data-field="phone" data-lead="'+esc(l.id)+'" value="'+esc(l.phone||'')+'"></td>'+
+          '<td><input type="text" class="cont-field-input" aria-label="Nombre" data-field="name" data-lead="'+esc(l.id)+'" value="'+esc(l.name||'')+'" placeholder="Sin nombre"></td>'+
+          '<td><input type="text" class="cont-field-input" aria-label="Correo electrónico" data-field="email" data-lead="'+esc(l.id)+'" value="'+esc(l.email||'')+'"></td>'+
+          '<td><input type="text" class="cont-field-input" aria-label="Teléfono" data-field="phone" data-lead="'+esc(l.id)+'" value="'+esc(l.phone||'')+'"></td>'+
           '<td>'+(ownerName?esc(ownerName):'<span style="color:var(--faint)">—</span>')+'</td>'+
           '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle data-lead="'+esc(l.id)+'">'+esc(l.notes)+'</span>':'<span class="pool-notes-text" data-notes-toggle data-lead="'+esc(l.id)+'" style="color:var(--faint)">— (clic para añadir)</span>')+'</td>'+
           '<td class="cont-action-col">'+(!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir</button>':'')+'</td>'+
@@ -2611,6 +2631,7 @@
         ta.value=(lead3&&lead3.notes)||'';
         ta.setAttribute('data-field','notes');
         ta.setAttribute('data-lead',leadId3);
+        ta.setAttribute('aria-label','Notas');
         ta.placeholder='Notas…';
         notesEl.replaceWith(ta);
         ta.focus();
