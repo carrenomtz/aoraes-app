@@ -6118,6 +6118,20 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     // "+ Nuevo cliente" desde el panel principal (index.html) nunca podía crear una empresa. Ahora
     // ambos caminos llevan al mismo selector de tipo.
     window.aoraesNewClient=function(){ try{ showScreen('clients'); var ov=$('#newtype-overlay'); if(ov) ov.classList.add('open'); return true; }catch(e){ console.error('AORAES: aoraesNewClient falló',e); return false; } };
+    // Puente desde "Convertir a cliente" en la pantalla Contactos de index.html: abre un análisis
+    // privado en blanco (mismo camino que elegir "Persona" en el selector de tipo) con el nombre y
+    // contacto del lead ya rellenos, pero SIN guardar nada todavía — el asesor sigue viendo el
+    // formulario y decide él cuándo pulsar Guardar, igual que si lo hubiera escrito a mano.
+    window.aoraesNewClientFromLead=function(data){
+      try{
+        data=data||{};
+        newAnalysis(); showScreen('workspace');
+        var nameEl=$('#m_cliente'); if(nameEl) nameEl.value=data.name||'';
+        var emailEl=document.querySelector('[data-pers="email_A"]'); if(emailEl && data.email) emailEl.value=data.email;
+        var phoneEl=document.querySelector('[data-pers="telefono_A"]'); if(phoneEl && data.phone) phoneEl.value=data.phone;
+        return true;
+      }catch(e){ console.error('AORAES: aoraesNewClientFromLead falló',e); return false; }
+    };
     window.aoraesListClients=function(){ try{ return loadClients(); }catch(e){ return []; } };
     window.__aoraesSuggestRetirement=function(){
       try{

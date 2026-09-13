@@ -10,6 +10,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="AORAES" />
 <meta name="theme-color" content="#14213d" />
+<!-- Solo para el admin: lee el Excel/CSV de contactos en el navegador, sin subirlo a ningún
+     servidor externo — necesaria para "Importar Excel" en el panel de Asesores. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
@@ -169,6 +172,10 @@
   .ase-badge.approved{background:#eaf2ec; color:#4f7358; border-color:#cfe3d4}
   .ase-badge.rechazado{background:#fbeae6; color:var(--red); border-color:#e7c3bb}
   .ase-badge.admin{background:var(--navy); color:#fff; border-color:var(--navy)}
+  .ase-badge.nuevo{background:var(--gold-tint); color:var(--amber); border-color:var(--gold-soft)}
+  .ase-badge.contactado{background:#e8eef7; color:var(--navy-2); border-color:#c7d3e6}
+  .ase-badge.no_interesa{background:#fbeae6; color:var(--red); border-color:#e7c3bb}
+  .ase-badge.convertido{background:#eaf2ec; color:#4f7358; border-color:#cfe3d4}
   .ase-acts{display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:0 0 auto}
   .ase-count{font-size:11.5px; color:var(--faint); margin-top:3px}
   .ase-pipe{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px}
@@ -192,6 +199,35 @@
   .ase-menu button:hover{background:var(--gold-tint)}
   .ase-menu button.danger{color:var(--red)}
   .ase-menu button.danger:hover{background:#fbeae6}
+  .notif-row-act.ghost{color:var(--muted); background:var(--surface); border-color:var(--line-strong)}
+  .notif-row-act.danger{color:var(--red); background:#fbeae6; border-color:#e7c3bb}
+
+  /* ---------- Importar Excel / bolsa de contactos ---------- */
+  .imp-overlay{position:fixed; inset:0; background:rgba(20,33,61,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:200}
+  .imp-overlay[hidden]{display:none}
+  .imp-box{background:var(--surface); border-radius:var(--r-lg); box-shadow:var(--sh-3); max-width:720px; width:100%; max-height:88vh; overflow:auto; padding:26px}
+  .imp-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px}
+  .imp-head h2{margin:0; font-size:19px; color:var(--navy)}
+  .imp-x{width:32px; height:32px; border-radius:50%; border:1px solid var(--line-strong); background:var(--surface); color:var(--muted); font-size:14px; cursor:pointer; flex:0 0 auto}
+  .imp-x:hover{background:var(--gold-tint)}
+  #import-file{border:1px dashed var(--line-strong); border-radius:var(--r-md); padding:16px; width:100%; box-sizing:border-box; font-family:inherit; font-size:13px}
+  .imp-map-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px; margin-bottom:16px}
+  .imp-map-field label{display:block; font-size:11px; font-weight:700; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.03em}
+  .imp-map-field select{width:100%; box-sizing:border-box; font-family:inherit; font-size:13.5px; padding:9px 11px; border-radius:var(--r-sm); border:1px solid var(--line-strong); background:var(--surface)}
+  .imp-preview-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r-sm)}
+  .imp-preview{border-collapse:collapse; width:100%; font-size:12.5px}
+  .imp-preview th,.imp-preview td{padding:7px 10px; border-bottom:1px solid var(--line-soft); text-align:left; white-space:nowrap}
+  .imp-preview th{background:var(--bg); color:var(--muted); font-weight:700}
+  .imp-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:18px}
+  .imp-actions button{font-family:inherit; font-size:13.5px; font-weight:700; padding:10px 18px; border-radius:var(--r-sm); cursor:pointer; border:0}
+  .imp-actions button#import-cancel{background:var(--surface); border:1px solid var(--line-strong); color:var(--muted)}
+  .imp-bulkbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--gold-tint); border:1px solid var(--gold-soft); border-radius:var(--r-sm); padding:10px 14px; margin:14px 0}
+  .imp-bulkbar[hidden]{display:none}
+  .imp-bulkbar select{font-family:inherit; font-size:12.5px; padding:6px 9px; border-radius:7px; border:1px solid var(--line-strong)}
+  .imp-bulkbar button{font-family:inherit; font-size:11.5px; font-weight:700; border-radius:7px; padding:6px 10px; cursor:pointer; border:1px solid}
+  .imp-bulkbar button#pool-bulk-assign{color:#4f7358; background:#eaf2ec; border-color:#cfe3d4}
+  .imp-bulkbar button.danger{color:var(--red); background:#fbeae6; border-color:#e7c3bb}
+  .pool-row-advisor{font-family:inherit; font-size:12px; padding:6px 8px; border-radius:7px; border:1px solid var(--line-strong); max-width:170px}
   .ase-menu hr{border:0; border-top:1px solid var(--line-soft); margin:4px 2px}
   .appbar{
     position:sticky; top:0; z-index:30; flex:0 0 auto;
@@ -632,6 +668,7 @@
     <div class="appbar-menu" id="appbar-menu">
       <nav class="switch" id="switch">
         <button type="button" data-go="home" class="active">Inicio</button>
+        <button type="button" data-go="contactos" id="nav-contactos">Contactos</button>
         <div class="switch-more-wrap">
           <button type="button" class="switch-more" id="switch-more" aria-haspopup="true" aria-expanded="false">Herramientas <span class="sm-caret" aria-hidden="true">▾</span></button>
           <div class="switch-more-menu" id="switch-more-menu" hidden>
@@ -735,10 +772,64 @@
     <div class="cock">
       <div class="cock-head">
         <div><span class="cock-eyebrow">Administración</span><h1>Asesores</h1></div>
-        <button type="button" class="cock-new" id="asesores-refresh">↻ Actualizar</button>
+        <div style="display:flex; gap:9px; flex-wrap:wrap">
+          <button type="button" class="cock-new" id="asesores-import">📥 Importar Excel</button>
+          <button type="button" class="cock-new" id="asesores-refresh">↻ Actualizar</button>
+        </div>
       </div>
       <p class="cock-note" style="margin:0 0 18px">"Restringir acceso" nunca borra la cartera de un asesor — solo le quita su propio acceso. Tú sigues viendo y editando sus clientes en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar". Solo "Borrar cuenta" (⋮) elimina datos, y pide confirmarlo escribiendo el correo.</p>
+      <details class="cock-impulsos cock-gaps" id="pool-box" hidden style="margin-bottom:20px">
+        <summary class="ci-head"><span class="ci-eyebrow">Contactos importados</span><span class="ci-title">Bolsa sin asignar (<span id="pool-count">0</span>)</span></summary>
+        <div class="cock-toolbar" style="margin-top:14px">
+          <input type="search" id="pool-search" aria-label="Buscar en la bolsa" placeholder="Buscar por nombre, correo o teléfono…" />
+        </div>
+        <div class="imp-bulkbar" id="pool-bulkbar" hidden>
+          <span id="pool-selected-count"></span>
+          <select id="pool-bulk-advisor" aria-label="Asignar seleccionados a"></select>
+          <button type="button" id="pool-bulk-assign">Asignar seleccionados</button>
+          <button type="button" id="pool-bulk-delete" class="danger">🗑 Eliminar seleccionados</button>
+        </div>
+        <div id="pool-list"></div>
+      </details>
       <div id="asesores-list"></div>
+    </div>
+  </main>
+
+  <div class="imp-overlay" id="import-overlay" hidden>
+    <div class="imp-box">
+      <div class="imp-head"><h2>Importar contactos desde Excel</h2><button type="button" class="imp-x" id="import-close" aria-label="Cerrar">&#10005;</button></div>
+      <div id="import-step-file">
+        <p class="cock-note" style="margin:0 0 16px">Sube un archivo .xlsx, .xls o .csv. Si una columna indica el asesor (nombre o correo exacto), esos contactos se asignan solos; el resto queda en la bolsa sin asignar para repartir a mano.</p>
+        <input type="file" id="import-file" accept=".xlsx,.xls,.csv">
+      </div>
+      <div id="import-step-map" hidden>
+        <p class="cock-note" style="margin:0 0 14px">Confirma qué columna es cada dato. "Nombre" es obligatorio; el resto es opcional.</p>
+        <div class="imp-map-grid" id="import-map-grid"></div>
+        <div class="imp-preview-wrap"><table class="imp-preview" id="import-preview"></table></div>
+        <div class="cock-note" id="import-summary" style="margin:14px 0 0"></div>
+        <div class="imp-actions">
+          <button type="button" id="import-cancel">Cancelar</button>
+          <button type="button" class="cock-new" id="import-confirm">Importar</button>
+        </div>
+      </div>
+      <div id="import-step-result" hidden>
+        <div class="cock-note" id="import-result-msg" style="margin:0"></div>
+        <div class="imp-actions"><button type="button" class="cock-new" id="import-done">Listo</button></div>
+      </div>
+    </div>
+  </div>
+
+  <main class="scr home" id="contactos" hidden>
+    <div class="cock">
+      <div class="cock-head">
+        <div><span class="cock-eyebrow">Contactos en frío</span><h1>Tu bolsa de contactos</h1></div>
+      </div>
+      <p class="cock-note" style="margin:0 0 18px">Contactos por trabajar todavía, separados de tu cartera de clientes con análisis. Márcalos según avances, y conviértelos en cliente cuando empieces el análisis real — eso los mueve a "Tu cartera de clientes".</p>
+      <div class="cock-toolbar">
+        <input type="search" id="cont-search" aria-label="Buscar contactos" placeholder="Buscar por nombre, correo o teléfono…" />
+        <select id="cont-status" aria-label="Filtrar por estado"><option value="">Todos (sin convertidos)</option><option value="nuevo">Nuevo</option><option value="contactado">Contactado</option><option value="no_interesa">No interesa</option><option value="convertido">Convertido</option></select>
+      </div>
+      <div class="cock-list" id="cont-list"></div>
     </div>
   </main>
 
@@ -752,7 +843,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, collectionGroup, query, where, orderBy, limit as fsLimit, getDocs, onSnapshot, serverTimestamp }
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, collectionGroup, query, where, orderBy, limit as fsLimit, getDocs, onSnapshot, serverTimestamp, writeBatch }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     var firebaseConfig = {
@@ -776,6 +867,10 @@
 
     function clientsCol(uid){ return collection(db, 'users', uid || viewingUid || currentUid, 'clients'); }
     function profileDoc(uid){ return doc(db, 'users', uid); }
+    // Colección aparte (no colgada de ningún asesor) para los contactos importados desde Excel que
+    // todavía no tienen dueño — solo el admin la lee/escribe. Requiere su propia regla en
+    // Firestore (no hereda nada de "users/*/clients"); ver nota en el commit.
+    function leadsPoolCol(){ return collection(db, 'leadsPool'); }
 
     window.AORAES_CLOUD = {
       ready: false,
@@ -818,13 +913,81 @@
           return {total:total, byStatus:byStatus};
         });
       },
+      // ---- contactos en frío: bolsa sin asignar (leadsPool) y cartera fría por asesor (users/*/leads) ----
+      // Deliberadamente NUNCA tocan users/*/clients: un contacto importado del Excel no es un cliente
+      // con análisis hasta que el asesor mismo lo convierte desde la pantalla "Contactos" — así el
+      // cockpit y el pipeline de clientes nunca se mezclan con nombres sin trabajar.
+      countLeads: function(uid){ return getDocs(collection(db,'users',uid,'leads')).then(function(snap){ return snap.size; }); },
+      myLeads: function(){
+        var uid=viewingUid||currentUid; if(!uid) return Promise.resolve([]);
+        return getDocs(collection(db,'users',uid,'leads')).then(function(snap){
+          var arr=[]; snap.forEach(function(d){ arr.push(d.data()); }); return arr;
+        });
+      },
+      updateLeadStatus: function(leadId, status){
+        var uid=viewingUid||currentUid; if(!uid||!leadId) return Promise.resolve();
+        return updateDoc(doc(collection(db,'users',uid,'leads'),leadId), {status:status}).catch(function(e){ console.error('AORAES cloud: fallo al actualizar el contacto',e); });
+      },
+      deleteLead: function(leadId){
+        var uid=viewingUid||currentUid; if(!uid||!leadId) return Promise.resolve();
+        return deleteDoc(doc(collection(db,'users',uid,'leads'),leadId)).catch(function(e){ console.error('AORAES cloud: fallo al borrar el contacto',e); });
+      },
+      listPool: function(){
+        return getDocs(leadsPoolCol()).then(function(snap){
+          var arr=[]; snap.forEach(function(d){ arr.push(d.data()); });
+          arr.sort(function(a,b){ return (b.importedAt||'').localeCompare(a.importedAt||''); });
+          return arr;
+        });
+      },
+      // Escritura en lote de la importación: payloadsByAdvisor={uid:[lead,...]}, poolPayloads=[lead,...].
+      // Firestore limita cada batch a 500 operaciones — se trocea para Excel grandes.
+      importLeads: function(payloadsByAdvisor, poolPayloads){
+        var ops=[];
+        Object.keys(payloadsByAdvisor||{}).forEach(function(uid){
+          (payloadsByAdvisor[uid]||[]).forEach(function(lead){ ops.push({ref:doc(collection(db,'users',uid,'leads'),lead.id), data:lead}); });
+        });
+        (poolPayloads||[]).forEach(function(lead){ ops.push({ref:doc(leadsPoolCol(),lead.id), data:lead}); });
+        var chunks=[]; for(var i=0;i<ops.length;i+=450) chunks.push(ops.slice(i,i+450));
+        return chunks.reduce(function(p,chunk){
+          return p.then(function(){
+            var b=writeBatch(db);
+            chunk.forEach(function(op){ b.set(op.ref,op.data); });
+            return b.commit();
+          });
+        }, Promise.resolve());
+      },
+      // items=[{lead, advisorUid}] — mueve cada contacto de la bolsa al asesor elegido en un solo lote.
+      assignLeadsBulk: function(items){
+        var chunks=[]; for(var i=0;i<items.length;i+=200) chunks.push(items.slice(i,i+200)); // set+delete = 2 ops/item
+        return chunks.reduce(function(p,chunk){
+          return p.then(function(){
+            var b=writeBatch(db);
+            chunk.forEach(function(it){
+              b.set(doc(collection(db,'users',it.advisorUid,'leads'),it.lead.id), it.lead);
+              b.delete(doc(leadsPoolCol(),it.lead.id));
+            });
+            return b.commit();
+          });
+        }, Promise.resolve());
+      },
+      deletePoolLeads: function(leadIds){
+        var chunks=[]; for(var i=0;i<leadIds.length;i+=450) chunks.push(leadIds.slice(i,i+450));
+        return chunks.reduce(function(p,chunk){
+          return p.then(function(){
+            var b=writeBatch(db);
+            chunk.forEach(function(id){ b.delete(doc(leadsPoolCol(),id)); });
+            return b.commit();
+          });
+        }, Promise.resolve());
+      },
       // Borra el perfil Y todos los clientes del asesor de la nube — no borra su acceso de inicio de
       // sesión (eso necesitaría un backend con permisos de administrador que hoy no existe), pero deja
       // su cuenta sin ningún dato: si vuelve a entrar, arrancaría de cero como un asesor nuevo pendiente.
       deleteAdvisorAccount: function(uid){
-        return getDocs(collection(db,'users',uid,'clients')).then(function(snap){
-          return Promise.all(snap.docs.map(function(d){ return deleteDoc(d.ref); }));
-        }).then(function(){
+        return Promise.all([
+          getDocs(collection(db,'users',uid,'clients')).then(function(snap){ return Promise.all(snap.docs.map(function(d){ return deleteDoc(d.ref); })); }),
+          getDocs(collection(db,'users',uid,'leads')).then(function(snap){ return Promise.all(snap.docs.map(function(d){ return deleteDoc(d.ref); })); })
+        ]).then(function(){
           return deleteDoc(profileDoc(uid));
         }).catch(function(e){ console.error('AORAES cloud: fallo al borrar la cuenta del asesor',e); throw e; });
       },
@@ -1376,7 +1539,7 @@
     }
 
     var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, ninos:{url:'./plan-futuro.html',el:null,ready:false}, vsp:{url:'./vsp.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false} };
-    var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames'), asesoresScr=document.getElementById('asesores');
+    var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames'), asesoresScr=document.getElementById('asesores'), contactosScr=document.getElementById('contactos');
     var stage=document.getElementById('frame-stage'), sw=document.getElementById('switch'), banner=document.getElementById('bridge-banner');
     var insEl=document.getElementById('cock-insights'), listEl=document.getElementById('cock-list');
     var searchEl=document.getElementById('cock-search'), statusEl=document.getElementById('cock-status'), sortEl=document.getElementById('cock-sort'), advisorEl=document.getElementById('cock-advisor');
@@ -1393,7 +1556,7 @@
       var smb=document.getElementById('switch-more'); if(smb) smb.classList.toggle('active', SWITCH_MORE_VIEWS.indexOf(view)>=0);
     }
     function updateActiveChip(){ var id=getActive(); var rec=id?findClient(id):null; if(rec){ acName.textContent=rec.name||'Cliente'; acChip.classList.add('on'); } else acChip.classList.remove('on'); }
-    function screenTo(name){ home.hidden=(name!=='home'); wsScreen.hidden=(name!=='workspace'); frames.hidden=(name!=='frames'); asesoresScr.hidden=(name!=='asesores'); }
+    function screenTo(name){ home.hidden=(name!=='home'); wsScreen.hidden=(name!=='workspace'); frames.hidden=(name!=='frames'); asesoresScr.hidden=(name!=='asesores'); contactosScr.hidden=(name!=='contactos'); }
     window.aoraesGoHome=function(){ show('home'); };
 
     /* ---------- iframe plumbing ---------- */
@@ -1452,6 +1615,7 @@
 
     function show(view){
       if(view==='asesores'){ screenTo('asesores'); for(var k0 in MOD){ if(MOD[k0].el)MOD[k0].el.style.display='none'; } setActiveTab('asesores'); renderAsesores(); if(location.hash.slice(1)!=='asesores')history.replaceState(null,'','#asesores'); return; }
+      if(view==='contactos'){ screenTo('contactos'); for(var k1 in MOD){ if(MOD[k1].el)MOD[k1].el.style.display='none'; } setActiveTab('contactos'); renderContactos(); if(location.hash.slice(1)!=='contactos')history.replaceState(null,'','#contactos'); return; }
       if(view==='home'||!MOD[view]){ screenTo('home'); for(var k in MOD){ if(MOD[k].el)MOD[k].el.style.display='none'; } setActiveTab('home'); renderCockpit(); updateActiveChip(); if(location.hash)history.replaceState(null,'','#'); return; }
       screenTo('frames'); ensureFrame(view);
       for(var j in MOD){ if(MOD[j].el)MOD[j].el.style.display=(j===view)?'block':'none'; }
@@ -1491,7 +1655,10 @@
         clearTimeout(timeoutId);
         if(!list.length){ listEl.innerHTML='<div class="ase-empty">Todavía no hay asesores registrados.</div>'; return; }
         return Promise.all(list.map(function(p){
-          return window.AORAES_CLOUD.clientPipeline(p.uid).then(function(pipe){ p._count=pipe.total; p._pipeline=pipe.byStatus; }).catch(function(){ p._count=null; p._pipeline=null; });
+          return Promise.all([
+            window.AORAES_CLOUD.clientPipeline(p.uid).then(function(pipe){ p._count=pipe.total; p._pipeline=pipe.byStatus; }).catch(function(){ p._count=null; p._pipeline=null; }),
+            window.AORAES_CLOUD.countLeads(p.uid).then(function(n){ p._leadCount=n; }).catch(function(){ p._leadCount=null; })
+          ]);
         })).then(function(){ return list; });
       }).then(function(list){
         if(!list) return;
@@ -1524,8 +1691,9 @@
           var badges='<span class="ase-badge '+statusCls+'">'+(STATUS_LABEL[p.status]||p.status||'—')+'</span>';
           if(p.role==='admin') badges+=' <span class="ase-badge admin">Admin</span>';
           var countTxt=(p._count==null)?'':(p._count+' cliente'+(p._count===1?'':'s'));
+          var leadTxt=(p._leadCount) ? (p._leadCount+' contacto'+(p._leadCount===1?'':'s')+' en frío') : '';
           var loginTxt=fmtLastLogin(p.lastLoginAt);
-          var metaLine=[countTxt,loginTxt].filter(Boolean).join(' · ');
+          var metaLine=[countTxt,leadTxt,loginTxt].filter(Boolean).join(' · ');
 
           // "Aprobar" es la acción más urgente y frecuente del admin (la campana de notificaciones
           // existe justo para avisar de esto) — se muestra siempre visible, no escondida detrás del
@@ -1565,6 +1733,8 @@
           }
           return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+primaryLabel+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+editNameBtn+'</div>'+subEmail+'<div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+pipeHtml+'</div><div class="ase-acts">'+approveBtn+menu+'</div></div>';
         }).join('')+'</div>';
+        _lastApprovedAdvisors=list.filter(function(p){ return p.status==='approved'; });
+        renderPool();
       }).catch(function(e){
         clearTimeout(timeoutId);
         if(timedOut) return;
@@ -1615,6 +1785,281 @@
       document.querySelectorAll('#asesores-list .ase-menu').forEach(function(m){ m.hidden=true; });
     });
     window.addEventListener('aoraes-viewing-changed', function(){ if(!asesoresScr.hidden) renderAsesores(); });
+
+    /* ---------- Bolsa sin asignar: contactos importados que aún no tienen asesor ----------
+       Vive en su propia colección (leadsPool), nunca colgada de la cartera ni de la bolsa fría de
+       ningún asesor — así un Excel a medio repartir no se cuela en la cartera de nadie por error. */
+    var _pool=[], _lastApprovedAdvisors=[], _poolSelected={};
+    function advisorOptionsHtml(){
+      return _lastApprovedAdvisors.map(function(a){ return '<option value="'+esc(a.uid)+'">'+esc(a.name||a.email||a.uid)+'</option>'; }).join('');
+    }
+    function renderPool(){
+      var box=document.getElementById('pool-box'), listEl=document.getElementById('pool-list'), countEl=document.getElementById('pool-count');
+      if(!box||!window.AORAES_CLOUD||!window.AORAES_CLOUD.listPool) return;
+      window.AORAES_CLOUD.listPool().then(function(arr){
+        _pool=arr||[]; _poolSelected={};
+        countEl.textContent=_pool.length;
+        box.hidden=!_pool.length;
+        document.getElementById('pool-bulk-advisor').innerHTML=advisorOptionsHtml();
+        filterAndRenderPool();
+      }).catch(function(e){ console.error('AORAES: fallo al listar la bolsa de contactos',e); });
+    }
+    function filterAndRenderPool(){
+      var listEl=document.getElementById('pool-list'); if(!listEl) return;
+      var q=(document.getElementById('pool-search').value||'').trim().toLowerCase();
+      var shown=_pool.filter(function(l){
+        if(!q) return true;
+        var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
+        return hay.indexOf(q)>=0;
+      });
+      if(!shown.length){ listEl.innerHTML='<div class="ase-empty">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</div>'; updatePoolBulkbar(); return; }
+      listEl.innerHTML=shown.map(function(l){
+        var meta=[l.email,l.phone].filter(Boolean).join(' · ');
+        return '<div class="ase-row">'+
+          '<input type="checkbox" class="pool-check" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'>'+
+          '<div class="ase-body"><div class="ase-email">'+esc(l.name||'Sin nombre')+'</div>'+(meta?'<div class="ase-count">'+esc(meta)+'</div>':'')+'</div>'+
+          '<div class="ase-acts">'+
+            '<select class="pool-row-advisor" data-pool-advisor="'+esc(l.id)+'"><option value="">Asignar a…</option>'+advisorOptionsHtml()+'</select>'+
+            '<button type="button" class="notif-row-act" data-pool-assign="'+esc(l.id)+'">Asignar</button>'+
+          '</div>'+
+        '</div>';
+      }).join('');
+      updatePoolBulkbar();
+    }
+    function updatePoolBulkbar(){
+      var ids=Object.keys(_poolSelected).filter(function(id){ return _poolSelected[id]; });
+      var bar=document.getElementById('pool-bulkbar');
+      bar.hidden=!ids.length;
+      document.getElementById('pool-selected-count').textContent=ids.length+' seleccionado'+(ids.length===1?'':'s');
+    }
+    document.getElementById('pool-search').addEventListener('input', filterAndRenderPool);
+    document.getElementById('pool-list').addEventListener('change', function(e){
+      var chk=e.target.closest('[data-pool-check]');
+      if(chk){ _poolSelected[chk.getAttribute('data-pool-check')]=chk.checked; updatePoolBulkbar(); }
+    });
+    document.getElementById('pool-list').addEventListener('click', function(e){
+      var b=e.target.closest('[data-pool-assign]'); if(!b) return;
+      var leadId=b.getAttribute('data-pool-assign');
+      var sel=document.querySelector('[data-pool-advisor="'+leadId+'"]');
+      var advisorUid=sel&&sel.value;
+      if(!advisorUid){ alert('Elige a qué asesor asignarlo primero.'); return; }
+      var lead=_pool.filter(function(l){ return l.id===leadId; })[0]; if(!lead) return;
+      b.disabled=true;
+      window.AORAES_CLOUD.assignLeadsBulk([{lead:lead, advisorUid:advisorUid}]).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al asignar el contacto',e); alert('No se pudo asignar. Revisa la consola.'); b.disabled=false; });
+    });
+    document.getElementById('pool-bulk-assign').addEventListener('click', function(){
+      var advisorUid=document.getElementById('pool-bulk-advisor').value; if(!advisorUid){ alert('Elige a qué asesor asignar los seleccionados.'); return; }
+      var ids=Object.keys(_poolSelected).filter(function(id){ return _poolSelected[id]; }); if(!ids.length) return;
+      var items=ids.map(function(id){ return {lead:_pool.filter(function(l){return l.id===id;})[0], advisorUid:advisorUid}; }).filter(function(it){ return it.lead; });
+      this.disabled=true;
+      window.AORAES_CLOUD.assignLeadsBulk(items).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al asignar en bloque',e); alert('No se pudo asignar. Revisa la consola.'); }).finally(function(){ document.getElementById('pool-bulk-assign').disabled=false; });
+    });
+    document.getElementById('pool-bulk-delete').addEventListener('click', function(){
+      var ids=Object.keys(_poolSelected).filter(function(id){ return _poolSelected[id]; }); if(!ids.length) return;
+      if(!confirm('¿Eliminar '+ids.length+' contacto'+(ids.length===1?'':'s')+' de la bolsa? No se puede deshacer.')) return;
+      this.disabled=true;
+      window.AORAES_CLOUD.deletePoolLeads(ids).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al eliminar de la bolsa',e); alert('No se pudo eliminar. Revisa la consola.'); }).finally(function(){ document.getElementById('pool-bulk-delete').disabled=false; });
+    });
+
+    /* ---------- Importar Excel: leer archivo → mapear columnas → confirmar → escribir en la nube ---------- */
+    var COLUMN_HINTS={
+      name:['nombre','name','cliente','contacto'],
+      email:['email','correo','e-mail','mail'],
+      phone:['telefono','teléfono','phone','celular','movil','móvil','tel'],
+      notes:['notas','nota','comentario','comentarios','observaciones'],
+      advisor:['asesor','advisor','agente','asignado','responsable']
+    };
+    var IMPORT_FIELDS=[{key:'name',label:'Nombre',required:true},{key:'email',label:'Correo'},{key:'phone',label:'Teléfono'},{key:'notes',label:'Notas'},{key:'advisor',label:'Asesor (opcional)'}];
+    var _impRows=null, _impHeaders=null, _impAdvisors=null;
+    function detectColumn(headers, hints){
+      for(var i=0;i<headers.length;i++){
+        var h=String(headers[i]==null?'':headers[i]).toLowerCase().trim();
+        for(var j=0;j<hints.length;j++){ if(h===hints[j]||h.indexOf(hints[j])>=0) return i; }
+      }
+      return -1;
+    }
+    function openImportOverlay(){
+      document.getElementById('import-overlay').hidden=false;
+      document.getElementById('import-step-file').hidden=false;
+      document.getElementById('import-step-map').hidden=true;
+      document.getElementById('import-step-result').hidden=true;
+      document.getElementById('import-file').value='';
+    }
+    function closeImportOverlay(){ document.getElementById('import-overlay').hidden=true; }
+    document.getElementById('asesores-import').addEventListener('click', openImportOverlay);
+    document.getElementById('import-close').addEventListener('click', closeImportOverlay);
+    document.getElementById('import-cancel').addEventListener('click', closeImportOverlay);
+    document.getElementById('import-overlay').addEventListener('click', function(e){ if(e.target.id==='import-overlay') closeImportOverlay(); });
+    document.getElementById('import-file').addEventListener('change', function(e){
+      var file=e.target.files&&e.target.files[0]; if(!file) return;
+      if(typeof XLSX==='undefined'){ alert('No se pudo cargar el lector de Excel. Comprueba tu conexión e inténtalo de nuevo.'); return; }
+      file.arrayBuffer().then(function(buf){
+        var wb=XLSX.read(buf,{type:'array'});
+        var sheet=wb.Sheets[wb.SheetNames[0]];
+        var rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
+        rows=rows.filter(function(r){ return r.some(function(c){ return String(c||'').trim(); }); });
+        if(rows.length<2){ alert('El archivo no tiene filas de datos debajo de la cabecera.'); return null; }
+        _impHeaders=rows[0]; _impRows=rows.slice(1);
+        return window.AORAES_CLOUD.listAdvisors();
+      }).then(function(advisors){
+        if(!advisors) return;
+        _impAdvisors=advisors.filter(function(p){ return p.status==='approved'; });
+        buildImportMapUI();
+      }).catch(function(err){ console.error('AORAES: fallo al leer el Excel',err); alert('No se pudo leer el archivo. Comprueba que sea un .xlsx/.xls/.csv válido.'); });
+    });
+    function buildImportMapUI(){
+      document.getElementById('import-step-file').hidden=true;
+      document.getElementById('import-step-map').hidden=false;
+      var grid=document.getElementById('import-map-grid');
+      grid.innerHTML=IMPORT_FIELDS.map(function(f){
+        var auto=detectColumn(_impHeaders, COLUMN_HINTS[f.key]);
+        var opts='<option value="-1">— No usar —</option>'+_impHeaders.map(function(h,i){ return '<option value="'+i+'"'+(i===auto?' selected':'')+'>'+esc(String(h||'(columna '+(i+1)+')'))+'</option>'; }).join('');
+        return '<div class="imp-map-field"><label>'+f.label+(f.required?' *':'')+'</label><select data-map-field="'+f.key+'">'+opts+'</select></div>';
+      }).join('');
+      Array.prototype.forEach.call(grid.querySelectorAll('select'), function(s){ s.addEventListener('change', renderImportPreview); });
+      renderImportPreview();
+    }
+    function currentMapping(){
+      var map={};
+      Array.prototype.forEach.call(document.querySelectorAll('#import-map-grid select'), function(s){ map[s.getAttribute('data-map-field')]=parseInt(s.value,10); });
+      return map;
+    }
+    function mappedRow(row, map){
+      return {
+        name:(map.name>=0?String(row[map.name]||'').trim():''),
+        email:(map.email>=0?String(row[map.email]||'').trim():''),
+        phone:(map.phone>=0?String(row[map.phone]||'').trim():''),
+        notes:(map.notes>=0?String(row[map.notes]||'').trim():''),
+        advisorText:(map.advisor>=0?String(row[map.advisor]||'').trim():'')
+      };
+    }
+    function matchAdvisor(text){
+      if(!text) return null;
+      var t=text.trim().toLowerCase(); if(!t) return null;
+      var byEmail=_impAdvisors.filter(function(a){ return (a.email||'').toLowerCase().trim()===t; })[0];
+      if(byEmail) return byEmail;
+      return _impAdvisors.filter(function(a){ return (a.name||'').toLowerCase().trim()===t; })[0]||null;
+    }
+    function renderImportPreview(){
+      var map=currentMapping();
+      var validRows=_impRows.map(function(r){ return mappedRow(r,map); }).filter(function(r){ return r.name; });
+      var matched=0;
+      validRows.forEach(function(r){ if(matchAdvisor(r.advisorText)) matched++; });
+      var tbl=document.getElementById('import-preview');
+      var previewRows=validRows.slice(0,5);
+      tbl.innerHTML='<thead><tr><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Asesor</th></tr></thead><tbody>'+
+        previewRows.map(function(r){
+          var adv=matchAdvisor(r.advisorText);
+          var advTxt=r.advisorText?(adv?('✓ '+esc(adv.name||adv.email)):('⚠ "'+esc(r.advisorText)+'" no reconocido → bolsa')):'— sin asesor → bolsa';
+          return '<tr><td>'+esc(r.name)+'</td><td>'+esc(r.email)+'</td><td>'+esc(r.phone)+'</td><td>'+advTxt+'</td></tr>';
+        }).join('')+'</tbody>';
+      var withoutName=_impRows.length-validRows.length;
+      document.getElementById('import-summary').textContent=
+        validRows.length+' contacto'+(validRows.length===1?'':'s')+' con nombre válido'+
+        (withoutName?' ('+withoutName+' fila'+(withoutName===1?'':'s')+' sin nombre, se ignora'+(withoutName===1?'':'n')+')':'')+
+        ' · '+matched+' se asignan solos · '+(validRows.length-matched)+' van a la bolsa sin asignar.'+
+        (previewRows.length<validRows.length?' Vista previa de las primeras 5.':'');
+      document.getElementById('import-confirm').disabled=!validRows.length;
+    }
+    document.getElementById('import-confirm').addEventListener('click', function(){
+      var map=currentMapping();
+      var validRows=_impRows.map(function(r){ return mappedRow(r,map); }).filter(function(r){ return r.name; });
+      var now=new Date().toISOString();
+      var byAdvisor={}, pool=[];
+      validRows.forEach(function(r,i){
+        var lead={ id:'lead'+Date.now()+i+Math.floor(Math.random()*1000), name:r.name, email:r.email, phone:r.phone, notes:r.notes, status:'nuevo', importedAt:now };
+        var adv=matchAdvisor(r.advisorText);
+        if(adv){ lead.assignedAt=now; (byAdvisor[adv.uid]=byAdvisor[adv.uid]||[]).push(lead); }
+        else pool.push(lead);
+      });
+      var btn=this; btn.disabled=true; btn.textContent='Importando…';
+      window.AORAES_CLOUD.importLeads(byAdvisor, pool).then(function(){
+        document.getElementById('import-step-map').hidden=true;
+        document.getElementById('import-step-result').hidden=false;
+        var assignedCount=validRows.length-pool.length;
+        document.getElementById('import-result-msg').textContent=
+          'Listo: '+assignedCount+' contacto'+(assignedCount===1?'':'s')+' asignado'+(assignedCount===1?'':'s')+' directamente a su asesor, '+pool.length+' en la bolsa sin asignar.';
+      }).catch(function(e){
+        console.error('AORAES: fallo al importar',e);
+        alert('Algo falló al guardar en la nube. Revisa la consola e inténtalo de nuevo.');
+      }).finally(function(){ btn.disabled=false; btn.textContent='Importar'; });
+    });
+    document.getElementById('import-done').addEventListener('click', function(){ closeImportOverlay(); renderAsesores(); });
+
+    /* ---------- Contactos: bolsa fría propia de cada asesor (separada de la cartera de clientes) ----------
+       Un contacto importado nunca es un "cliente" hasta que el propio asesor lo convierte desde aquí —
+       antes de eso no aparece en Tu cartera de clientes ni cuenta en el pipeline de status. */
+    var CONT_STATUS_LABEL={nuevo:'Nuevo', contactado:'Contactado', no_interesa:'No interesa', convertido:'Convertido'};
+    var _contLeads=[];
+    function renderContactos(){
+      var listEl=document.getElementById('cont-list');
+      listEl.innerHTML='<div class="cock-empty">Cargando contactos…</div>';
+      if(!window.AORAES_CLOUD||!window.AORAES_CLOUD.myLeads){ listEl.innerHTML='<div class="cock-empty">La nube no está lista todavía.</div>'; return; }
+      window.AORAES_CLOUD.myLeads().then(function(list){ _contLeads=list||[]; filterAndRenderContactos(); })
+        .catch(function(e){ console.error('AORAES: fallo al listar contactos',e); listEl.innerHTML='<div class="cock-empty">No se pudieron cargar. Revisa la consola.</div>'; });
+    }
+    function filterAndRenderContactos(){
+      var listEl=document.getElementById('cont-list'); if(!listEl) return;
+      var q=(document.getElementById('cont-search').value||'').trim().toLowerCase();
+      var fs=document.getElementById('cont-status').value;
+      var shown=_contLeads.filter(function(l){
+        var st=l.status||'nuevo';
+        if(fs){ if(st!==fs) return false; } else if(st==='convertido') return false;
+        if(!q) return true;
+        var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
+        return hay.indexOf(q)>=0;
+      });
+      if(!shown.length){ listEl.innerHTML='<div class="cock-empty">'+(_contLeads.length?'Ningún contacto coincide.':'Todavía no tienes contactos asignados. Pídele al admin que te reparta algunos desde Asesores → Importar Excel.')+'</div>'; return; }
+      listEl.innerHTML=shown.map(function(l){
+        var st=l.status||'nuevo', conv=(st==='convertido');
+        var meta=[l.email,l.phone].filter(Boolean).join(' · ');
+        return '<div class="ase-row">'+
+          '<div class="ase-body"><div class="ase-email">'+esc(l.name||'Sin nombre')+'</div>'+
+            (meta?'<div class="ase-count">'+esc(meta)+'</div>':'')+
+            (l.notes?'<div class="ase-count" style="white-space:pre-wrap">'+esc(l.notes)+'</div>':'')+
+          '</div>'+
+          '<div class="ase-acts">'+
+            '<span class="ase-badge '+st+'">'+(CONT_STATUS_LABEL[st]||st)+'</span>'+
+            (!conv&&st!=='contactado'?'<button type="button" class="notif-row-act" data-cont-status="contactado" data-lead="'+esc(l.id)+'">Contactado</button>':'')+
+            (!conv&&st!=='no_interesa'?'<button type="button" class="notif-row-act danger" data-cont-status="no_interesa" data-lead="'+esc(l.id)+'">No interesa</button>':'')+
+            (!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir a cliente</button>':'')+
+          '</div>'+
+        '</div>';
+      }).join('');
+    }
+    document.getElementById('cont-search').addEventListener('input', filterAndRenderContactos);
+    document.getElementById('cont-status').addEventListener('change', filterAndRenderContactos);
+    document.getElementById('cont-list').addEventListener('click', function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      if(b.hasAttribute('data-cont-status')){
+        var leadId=b.getAttribute('data-lead'), newSt=b.getAttribute('data-cont-status');
+        window.AORAES_CLOUD.updateLeadStatus(leadId, newSt).then(function(){
+          var l=_contLeads.filter(function(x){return x.id===leadId;})[0]; if(l) l.status=newSt;
+          filterAndRenderContactos();
+        });
+        return;
+      }
+      if(b.hasAttribute('data-cont-convert')){
+        var id2=b.getAttribute('data-cont-convert');
+        var lead=_contLeads.filter(function(x){return x.id===id2;})[0]; if(lead) convertLeadToClient(lead);
+      }
+    });
+    function convertLeadToClient(lead){
+      setActive(null);
+      ensureFrame('analisis');
+      var doConvert=function(){
+        callAnalisis('aoraesNewClientFromLead', {name:lead.name, email:lead.email, phone:lead.phone});
+        show('analisis');
+        // No se borra: se marca "convertido" y desaparece del filtro por defecto. Si el asesor abre
+        // el formulario y no llega a guardar nada, el contacto no se pierde — sigue ahí bajo el
+        // filtro "Convertido" y puede reintentarlo, en vez de perder el dato para siempre.
+        window.AORAES_CLOUD.updateLeadStatus(lead.id, 'convertido').then(function(){
+          lead.status='convertido';
+          filterAndRenderContactos();
+        });
+      };
+      if(MOD.analisis.ready) doConvert(); else pendingOpen=doConvert;
+    }
 
     /* ---------- Campana de notificaciones (admin) ----------
        Dos fuentes en vivo alimentadas por el módulo Firebase: solicitudes de asesor pendientes y
