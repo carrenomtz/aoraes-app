@@ -6104,6 +6104,12 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   /* AORAES hub: expose navigation so the cockpit can drive this module */
   try{
     window.aoraesOpenClient=function(id){ try{ openClient(id); return true; }catch(e){ console.error('AORAES: aoraesOpenClient falló para',id,e); return false; } };
+    // currentId vive dentro de este cierre y no es visible desde el bloque <script> final donde
+    // está aoraesGetClient — sin este getter, index.html no tenía forma de saber a qué cliente
+    // corresponde de verdad lo que hay cargado en este iframe cuando se abre como herramienta suelta
+    // (menú Herramientas), y acababa guardando el escenario de Jubilación/VSP sobre el cliente
+    // ACTIVO global en vez del que realmente se estaba viendo aquí (dos cosas que pueden diferir).
+    window.aoraesCurrentClientId=function(){ return currentId; };
     window.aoraesSetView=function(v){ try{ setView(v); return true; }catch(e){ console.error('AORAES: aoraesSetView falló para',v,e); return false; } };
     window.aoraesOpenInforme=function(){ try{ openInforme(); return true; }catch(e){ console.error('AORAES: aoraesOpenInforme falló',e); return false; } };
     window.aoraesCloseInforme=function(){ try{ closeInforme(); return true; }catch(e){ return false; } };
@@ -6165,7 +6171,8 @@ window.aoraesGetClient = function () {
   function num(sel){ var s=v(sel); if(s==='') return null; var n=parseFloat(s.replace(',','.')); return isNaN(n)?null:n; }
   var suggested=null;
   try{ if(typeof window.__aoraesSuggestRetirement==='function') suggested=window.__aoraesSuggestRetirement(); }catch(e){}
-  return { name:name, age:age, retireAge:num('[data-sit="edadJub"]'), monthlyContribution:num('[data-sit="aporteJubilacion"]'), suggestedRetirement:(suggested!=null?Math.round(suggested):null), iban:v('[data-pers="iban_A"]') };
+  var id=null; try{ if(typeof window.aoraesCurrentClientId==='function') id=window.aoraesCurrentClientId(); }catch(e){}
+  return { id:id, name:name, age:age, retireAge:num('[data-sit="edadJub"]'), monthlyContribution:num('[data-sit="aporteJubilacion"]'), suggestedRetirement:(suggested!=null?Math.round(suggested):null), iban:v('[data-pers="iban_A"]') };
 };
 </script>
 </body>

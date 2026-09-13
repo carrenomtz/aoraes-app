@@ -1407,7 +1407,12 @@
       banner.innerHTML='<div class="bb-inner"><span class="bb-ico">&#8596;</span><span class="bb-txt">Cargado desde el CRM: <b>'+esc(data.name)+'</b>'+(bits.length?' &middot; '+bits.join(' &middot; '):'')+'</span><button type="button" class="bb-save">Guardar solución en la ficha</button><button type="button" class="bb-undo">Deshacer</button><button type="button" class="bb-close" aria-label="Cerrar">&#10005;</button></div>';
       banner.hidden=false;
       var sv=banner.querySelector('.bb-save');
-      if(sv) sv.onclick=function(){ var id=getActive(); if(!id)return; var scen=null; try{ var f=MOD[view].el; if(f&&f.contentWindow.aoraesGetScenario) scen=f.contentWindow.aoraesGetScenario(); }catch(e){} if(scen){ saveSolution(id,scen,view); var bumped=advanceStatusToPropuesta(id); sv.textContent=bumped?'✓ Guardada · estado → Propuesta':'✓ Guardada en la ficha'; sv.disabled=true; } else { sv.textContent='No se pudo leer el escenario'; } };
+      // El escenario debe guardarse en el cliente que de verdad está cargado en el iframe de
+      // Análisis (data.id) — que puede NO ser el mismo que el cliente "activo" global si el asesor
+      // abrió esta herramienta desde el menú Herramientas mientras navegaba con Análisis abierto en
+      // otro cliente. getActive() se deja solo como respaldo si data.id no llegara (fichas
+      // antiguas de un iframe aún no actualizado con el getter).
+      if(sv) sv.onclick=function(){ var id=data.id||getActive(); if(!id)return; var scen=null; try{ var f=MOD[view].el; if(f&&f.contentWindow.aoraesGetScenario) scen=f.contentWindow.aoraesGetScenario(); }catch(e){} if(scen){ saveSolution(id,scen,view); var bumped=advanceStatusToPropuesta(id); sv.textContent=bumped?'✓ Guardada · estado → Propuesta':'✓ Guardada en la ficha'; sv.disabled=true; } else { sv.textContent='No se pudo leer el escenario'; } };
       banner.querySelector('.bb-undo').onclick=function(){ try{ var f=MOD[view].el; if(f&&f.contentWindow.aoraesRestore)f.contentWindow.aoraesRestore(snap); }catch(e){} hideBanner(); };
       banner.querySelector('.bb-close').onclick=hideBanner;
     }
