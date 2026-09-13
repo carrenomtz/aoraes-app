@@ -231,8 +231,20 @@
   .imp-bulkbar select{font-family:inherit; font-size:12.5px; padding:6px 9px; border-radius:7px; border:1px solid var(--line-strong)}
   .imp-bulkbar button{font-family:inherit; font-size:11.5px; font-weight:700; border-radius:7px; padding:6px 10px; cursor:pointer; border:1px solid}
   .imp-bulkbar button#pool-bulk-assign{color:#4f7358; background:#eaf2ec; border-color:#cfe3d4}
+  .imp-bulkbar button#pool-bulk-merge{color:#6b4a00; background:#fdf3e7; border-color:#e0a92a}
   .imp-bulkbar button.danger{color:var(--red); background:#fbeae6; border-color:#e7c3bb}
   .pool-row-advisor{font-family:inherit; font-size:12px; padding:6px 8px; border-radius:7px; border:1px solid var(--line-strong); max-width:170px}
+  .pool-table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface)}
+  .pool-table{border-collapse:collapse; width:100%; font-size:13px; min-width:760px}
+  .pool-table th,.pool-table td{padding:10px 12px; border-bottom:1px solid var(--line-soft); text-align:left; vertical-align:top}
+  .pool-table th{background:var(--bg); color:var(--muted); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.02em; white-space:nowrap}
+  .pool-table tbody tr:last-child td{border-bottom:0}
+  .pool-table tbody tr:hover{background:var(--gold-tint)}
+  .pool-table .pool-notes-cell{max-width:240px; white-space:pre-wrap; color:var(--muted); font-size:12px}
+  .pool-table tr.pool-dupe-row{background:#fdf3e7}
+  .pool-table tr.pool-dupe-row:hover{background:#fbe9d3}
+  .pool-dupe-badge{cursor:pointer; background:#f5c344; color:#6b4a00; border:1px solid #e0a92a; border-radius:7px; padding:3px 8px; font-weight:700; font-size:12px; white-space:nowrap; display:inline-block; font-family:inherit}
+  .pool-dupe-badge:hover{background:#eeb52e}
   .ase-menu hr{border:0; border-top:1px solid var(--line-soft); margin:4px 2px}
   .appbar{
     position:sticky; top:0; z-index:30; flex:0 0 auto;
@@ -795,7 +807,7 @@
         <div id="asesores-list"></div>
       </div>
       <div id="admin-tab-pool" hidden>
-        <p class="cock-note" style="margin:0 0 18px">Contactos importados desde Excel que no se pudieron asignar solos (sin columna de asesor, o el nombre no coincidía con ninguna cuenta). Asígnalos a mano, de uno en uno o seleccionando varios.</p>
+        <p class="cock-note" style="margin:0 0 18px">Contactos importados desde Excel que no se pudieron asignar solos (sin columna de asesor, o el nombre no coincidía con ninguna cuenta). Los que comparten teléfono se marcan en <span style="color:#6b4a00;font-weight:700">ámbar</span> — pulsa el número para seleccionarlos y unirlos en uno solo.</p>
         <div class="cock-toolbar">
           <input type="search" id="pool-search" aria-label="Buscar en la bolsa" placeholder="Buscar por nombre, correo o teléfono…" />
         </div>
@@ -803,9 +815,15 @@
           <span id="pool-selected-count"></span>
           <select id="pool-bulk-advisor" aria-label="Asignar seleccionados a"></select>
           <button type="button" id="pool-bulk-assign">Asignar seleccionados</button>
+          <button type="button" id="pool-bulk-merge">🔗 Unir seleccionados</button>
           <button type="button" id="pool-bulk-delete" class="danger">🗑 Eliminar seleccionados</button>
         </div>
-        <div id="pool-list" data-no-i18n></div>
+        <div class="pool-table-wrap">
+          <table class="pool-table" data-no-i18n>
+            <thead><tr><th></th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th>Notas</th><th>Asignar a</th></tr></thead>
+            <tbody id="pool-list"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </main>
@@ -996,6 +1014,14 @@
             return b.commit();
           });
         }, Promise.resolve());
+      },
+      // Une varios contactos de la bolsa (normalmente con el mismo teléfono repetido) en uno solo:
+      // guarda el combinado y borra el resto en el mismo lote.
+      mergePoolLeads: function(mergedLead, deleteIds){
+        var b=writeBatch(db);
+        b.set(doc(leadsPoolCol(), mergedLead.id), mergedLead);
+        deleteIds.forEach(function(id){ if(id!==mergedLead.id) b.delete(doc(leadsPoolCol(), id)); });
+        return b.commit();
       },
       // Borra el perfil Y todos los clientes del asesor de la nube — no borra su acceso de inicio de
       // sesión (eso necesitaría un backend con permisos de administrador que hoy no existe), pero deja
@@ -1810,15 +1836,35 @@
     /* ---------- Bolsa sin asignar: contactos importados que aún no tienen asesor ----------
        Vive en su propia colección (leadsPool), nunca colgada de la cartera ni de la bolsa fría de
        ningún asesor — así un Excel a medio repartir no se cuela en la cartera de nadie por error. */
-    var _pool=[], _lastApprovedAdvisors=[], _poolSelected={};
+    var _pool=[], _lastApprovedAdvisors=[], _poolSelected={}, _poolDupeGroups={}, _poolDupeByLead={};
     function advisorOptionsHtml(){
       return _lastApprovedAdvisors.map(function(a){ return '<option value="'+esc(a.uid)+'">'+esc(a.name||a.email||a.uid)+'</option>'; }).join('');
+    }
+    // Compara solo los últimos 9 dígitos: así "+49 157 5060277" y "015750602771" (el mismo número
+    // en formato internacional vs. nacional, típico al importar de un Excel sin normalizar) se
+    // reconocen como el mismo teléfono aunque el prefijo no coincida letra por letra.
+    function normPhone(p){
+      var digits=String(p||'').replace(/\D/g,'');
+      return digits.length>=6 ? digits.slice(-9) : '';
+    }
+    function computePoolDupes(pool){
+      var byPhone={};
+      pool.forEach(function(l){
+        var key=normPhone(l.phone); if(!key) return;
+        (byPhone[key]=byPhone[key]||[]).push(l.id);
+      });
+      var byLead={}, groups={};
+      Object.keys(byPhone).forEach(function(key){
+        if(byPhone[key].length>1){ groups[key]=byPhone[key]; byPhone[key].forEach(function(id){ byLead[id]=key; }); }
+      });
+      return {groups:groups, byLead:byLead};
     }
     function renderPool(){
       var badge=document.getElementById('admin-pool-badge');
       if(!badge||!window.AORAES_CLOUD||!window.AORAES_CLOUD.listPool) return;
       window.AORAES_CLOUD.listPool().then(function(arr){
         _pool=arr||[]; _poolSelected={};
+        var dupes=computePoolDupes(_pool); _poolDupeGroups=dupes.groups; _poolDupeByLead=dupes.byLead;
         badge.textContent=_pool.length;
         badge.hidden=!_pool.length;
         document.getElementById('pool-bulk-advisor').innerHTML=advisorOptionsHtml();
@@ -1843,17 +1889,21 @@
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
         return hay.indexOf(q)>=0;
       });
-      if(!shown.length){ listEl.innerHTML='<div class="ase-empty">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</div>'; updatePoolBulkbar(); return; }
+      if(!shown.length){ listEl.innerHTML='<tr><td colspan="7" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
       listEl.innerHTML=shown.map(function(l){
-        var meta=[l.email,l.phone].filter(Boolean).join(' · ');
-        return '<div class="ase-row">'+
-          '<input type="checkbox" class="pool-check" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'>'+
-          '<div class="ase-body"><div class="ase-email">'+esc(l.name||'Sin nombre')+'</div>'+(meta?'<div class="ase-count">'+esc(meta)+'</div>':'')+'</div>'+
-          '<div class="ase-acts">'+
-            '<select class="pool-row-advisor" data-pool-advisor="'+esc(l.id)+'"><option value="">Asignar a…</option>'+advisorOptionsHtml()+'</select>'+
-            '<button type="button" class="notif-row-act" data-pool-assign="'+esc(l.id)+'">Asignar</button>'+
-          '</div>'+
-        '</div>';
+        var st=l.status||'nuevo';
+        var dupeKey=_poolDupeByLead[l.id];
+        var phoneCell=l.phone?esc(l.phone):'<span style="color:var(--faint)">—</span>';
+        if(dupeKey) phoneCell='<button type="button" class="pool-dupe-badge" data-dupe-select="'+esc(dupeKey)+'" title="Seleccionar los '+_poolDupeGroups[dupeKey].length+' contactos con este teléfono">'+phoneCell+' · '+_poolDupeGroups[dupeKey].length+'×</button>';
+        return '<tr'+(dupeKey?' class="pool-dupe-row"':'')+'>'+
+          '<td><input type="checkbox" class="pool-check" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
+          '<td>'+esc(l.name||'Sin nombre')+'</td>'+
+          '<td>'+(l.email?esc(l.email):'—')+'</td>'+
+          '<td>'+phoneCell+'</td>'+
+          '<td><span class="ase-badge '+st+'">'+(CONT_STATUS_LABEL[st]||st)+'</span></td>'+
+          '<td class="pool-notes-cell">'+esc(l.notes||'')+'</td>'+
+          '<td><select class="pool-row-advisor" data-pool-advisor="'+esc(l.id)+'"><option value="">Asignar a…</option>'+advisorOptionsHtml()+'</select> <button type="button" class="notif-row-act" data-pool-assign="'+esc(l.id)+'">Asignar</button></td>'+
+        '</tr>';
       }).join('');
       updatePoolBulkbar();
     }
@@ -1869,6 +1919,13 @@
       if(chk){ _poolSelected[chk.getAttribute('data-pool-check')]=chk.checked; updatePoolBulkbar(); }
     });
     document.getElementById('pool-list').addEventListener('click', function(e){
+      var dupeBtn=e.target.closest('[data-dupe-select]');
+      if(dupeBtn){
+        var key=dupeBtn.getAttribute('data-dupe-select');
+        (_poolDupeGroups[key]||[]).forEach(function(id){ _poolSelected[id]=true; });
+        filterAndRenderPool();
+        return;
+      }
       var b=e.target.closest('[data-pool-assign]'); if(!b) return;
       var leadId=b.getAttribute('data-pool-assign');
       var sel=document.querySelector('[data-pool-advisor="'+leadId+'"]');
@@ -1890,6 +1947,26 @@
       if(!confirm('¿Eliminar '+ids.length+' contacto'+(ids.length===1?'':'s')+' de la bolsa? No se puede deshacer.')) return;
       this.disabled=true;
       window.AORAES_CLOUD.deletePoolLeads(ids).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al eliminar de la bolsa',e); alert('No se pudo eliminar. Revisa la consola.'); }).finally(function(){ document.getElementById('pool-bulk-delete').disabled=false; });
+    });
+    // Combina los contactos seleccionados (normalmente el mismo teléfono repartido en varias filas
+    // del Excel original) en uno solo: se queda con el que ya tenga un estado trabajado (no "nuevo")
+    // como base, junta todas las notas distintas, y se queda con el primer correo/teléfono no vacío
+    // del grupo — igual de criterio que el deduplicado que ya hace el importador, pero aplicado a
+    // contactos que ya viven en la bolsa.
+    document.getElementById('pool-bulk-merge').addEventListener('click', function(){
+      var ids=Object.keys(_poolSelected).filter(function(id){ return _poolSelected[id]; });
+      if(ids.length<2){ alert('Selecciona al menos 2 contactos para unirlos (pulsa el teléfono marcado en ámbar para seleccionar un grupo entero).'); return; }
+      var group=ids.map(function(id){ return _pool.filter(function(l){return l.id===id;})[0]; }).filter(Boolean);
+      if(!confirm('¿Unir estos '+group.length+' contactos en uno solo? Se conserva el que tenga más información y se borran los demás. No se puede deshacer.')) return;
+      var withStatus=group.filter(function(l){ return l.status && l.status!=='nuevo'; });
+      var base=withStatus[0]||group[0];
+      var email=group.map(function(l){return l.email;}).filter(Boolean)[0]||'';
+      var phone=group.map(function(l){return l.phone;}).filter(Boolean)[0]||'';
+      var notes=[]; group.forEach(function(l){ if(l.notes && notes.indexOf(l.notes)<0) notes.push(l.notes); });
+      var merged={ id:base.id, name:base.name, email:email, phone:phone, notes:notes.join(' · '), status:base.status||'nuevo', importedAt:base.importedAt||new Date().toISOString() };
+      var deleteIds=group.map(function(l){ return l.id; });
+      this.disabled=true;
+      window.AORAES_CLOUD.mergePoolLeads(merged, deleteIds).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al unir contactos',e); alert('No se pudo unir. Revisa la consola.'); }).finally(function(){ document.getElementById('pool-bulk-merge').disabled=false; });
     });
 
     /* ---------- Importar Excel: leer archivo → mapear columnas → confirmar → escribir en la nube ---------- */
