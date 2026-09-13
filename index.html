@@ -241,7 +241,9 @@
   .pool-table th{background:var(--bg); color:var(--muted); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.02em; white-space:nowrap}
   .pool-table tbody tr:last-child td{border-bottom:0}
   .pool-table tbody tr:hover{background:var(--gold-tint)}
-  .pool-table .pool-notes-cell{max-width:150px; white-space:pre-wrap; color:var(--muted); font-size:11.5px}
+  .pool-table .pool-notes-cell{max-width:150px; color:var(--muted); font-size:11.5px}
+  .pool-notes-text{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; cursor:pointer}
+  .pool-notes-text.expanded{white-space:pre-wrap; overflow:visible; text-overflow:clip}
   .pool-table tr.pool-dupe-row{background:#fdf3e7}
   .pool-table tr.pool-dupe-row:hover{background:#fbe9d3}
   .pool-dupe-badge{cursor:pointer; background:#f5c344; color:#6b4a00; border:1px solid #e0a92a; border-radius:7px; padding:3px 8px; font-weight:700; font-size:12px; white-space:nowrap; display:inline-block; font-family:inherit}
@@ -1985,7 +1987,7 @@
           '<td>'+(l.email?esc(l.email):'—')+'</td>'+
           '<td>'+phoneCell+'</td>'+
           '<td>'+advisorSel+'</td>'+
-          '<td class="pool-notes-cell">'+esc(l.notes||'')+'</td>'+
+          '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle>'+esc(l.notes)+'</span>':'')+'</td>'+
         '</tr>';
       }).join('');
       updatePoolBulkbar();
@@ -2038,6 +2040,8 @@
       }
     });
     document.getElementById('pool-list').addEventListener('click', function(e){
+      var notesEl=e.target.closest('[data-notes-toggle]');
+      if(notesEl){ notesEl.classList.toggle('expanded'); return; }
       var dupeBtn=e.target.closest('[data-dupe-select]');
       if(dupeBtn){
         var key=dupeBtn.getAttribute('data-dupe-select');
@@ -2433,7 +2437,7 @@
           '<td>'+(l.email?esc(l.email):'—')+'</td>'+
           '<td>'+(l.phone?esc(l.phone):'—')+'</td>'+
           '<td>'+(ownerName?esc(ownerName):'<span style="color:var(--faint)">—</span>')+'</td>'+
-          '<td class="pool-notes-cell">'+esc(l.notes||'')+'</td>'+
+          '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle>'+esc(l.notes)+'</span>':'')+'</td>'+
           '<td>'+(!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir</button>':'')+'</td>'+
         '</tr>';
       }).join('');
@@ -2451,6 +2455,8 @@
       });
     });
     document.getElementById('cont-list').addEventListener('click', function(e){
+      var notesEl=e.target.closest('[data-notes-toggle]');
+      if(notesEl){ notesEl.classList.toggle('expanded'); return; }
       var b=e.target.closest('[data-cont-convert]'); if(!b) return;
       var id2=b.getAttribute('data-cont-convert');
       var lead=_contLeads.filter(function(x){return x.id===id2;})[0]; if(lead) convertLeadToClient(lead);
