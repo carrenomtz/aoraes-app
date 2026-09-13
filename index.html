@@ -171,6 +171,8 @@
   .ase-badge.admin{background:var(--navy); color:#fff; border-color:var(--navy)}
   .ase-acts{display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:0 0 auto}
   .ase-count{font-size:11.5px; color:var(--faint); margin-top:3px}
+  .ase-pipe{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px}
+  .ase-pipe-chip{font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid; white-space:nowrap}
   .ase-menu-wrap{position:relative; flex:0 0 auto}
   .ase-menu-btn{
     width:34px; height:34px; border-radius:var(--r-sm); border:1px solid var(--line-strong); background:var(--surface);
@@ -801,7 +803,21 @@
       approveAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'approved'}).catch(function(e){ console.error('AORAES cloud: fallo al aprobar',e); }); },
       rejectAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'rechazado'}).catch(function(e){ console.error('AORAES cloud: fallo al rechazar',e); }); },
       updateOwnName: function(name){ if(!currentUid) return Promise.resolve(); return updateDoc(profileDoc(currentUid), {name:name}).catch(function(e){ console.error('AORAES cloud: fallo al guardar el nombre',e); }); },
-      countClients: function(uid){ return getDocs(collection(db,'users',uid,'clients')).then(function(snap){ var n=0; snap.forEach(function(d){ var r=(d.data()||{}).record; if(!r||!r._generic) n++; }); return n; }); },
+      // Mismo filtro que aplica el cockpit a su propia lista (sin genéricos, sin fichas de empresa,
+      // que no recorren este pipeline de persona) — así el total cuadra exactamente con la suma del
+      // desglose por estado, y con lo que el asesor ve si el admin entra con "Ver cartera".
+      clientPipeline: function(uid){
+        return getDocs(collection(db,'users',uid,'clients')).then(function(snap){
+          var byStatus={}, total=0;
+          snap.forEach(function(d){
+            var r=(d.data()||{}).record;
+            if(!r || r._generic || r.analysis_type==='BUSINESS') return;
+            var st=(r.crm&&r.crm.status)||'prospecto';
+            byStatus[st]=(byStatus[st]||0)+1; total++;
+          });
+          return {total:total, byStatus:byStatus};
+        });
+      },
       // Borra el perfil Y todos los clientes del asesor de la nube — no borra su acceso de inicio de
       // sesión (eso necesitaría un backend con permisos de administrador que hoy no existe), pero deja
       // su cuenta sin ningún dato: si vuelve a entrar, arrancaría de cero como un asesor nuevo pendiente.
@@ -1448,6 +1464,7 @@
        Solo lo ve el admin (nav-asesores permanece hidden para el resto vía aoraes-profile-update).
        Lee/escribe directo contra window.AORAES_CLOUD — sin duplicar el modelo de datos del módulo Firebase. */
     var STATUS_LABEL={pending:'Pendiente',approved:'Aprobado',rechazado:'Restringido'};
+    var PIPE_ORDER=['prospecto','contactado','analisis_pendiente','analisis','propuesta','implementacion','cliente','inactivo'];
     function fmtLastLogin(ts){
       try{ var d=ts&&ts.toDate?ts.toDate():null; if(!d)return 'Sin conexión registrada'; return 'Última conexión '+relTime(d.toISOString()); }catch(e){ return ''; }
     }
@@ -1474,7 +1491,7 @@
         clearTimeout(timeoutId);
         if(!list.length){ listEl.innerHTML='<div class="ase-empty">Todavía no hay asesores registrados.</div>'; return; }
         return Promise.all(list.map(function(p){
-          return window.AORAES_CLOUD.countClients(p.uid).then(function(n){ p._count=n; }).catch(function(){ p._count=null; });
+          return window.AORAES_CLOUD.clientPipeline(p.uid).then(function(pipe){ p._count=pipe.total; p._pipeline=pipe.byStatus; }).catch(function(){ p._count=null; p._pipeline=null; });
         })).then(function(){ return list; });
       }).then(function(list){
         if(!list) return;
@@ -1534,7 +1551,19 @@
           var primaryLabel=esc(p.name||p.email||p.uid);
           var subEmail=(p.name && p.email) ? '<div style="font-size:12px;color:var(--faint);font-weight:500">'+esc(p.email)+'</div>' : '';
           var editNameBtn=isSelf ? ' <button type="button" data-ase-edit-name="1" style="background:none;border:none;color:var(--faint);cursor:pointer;font-size:12.5px;text-decoration:underline;padding:0">✏️ editar nombre</button>' : '';
-          return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+primaryLabel+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+editNameBtn+'</div>'+subEmail+'<div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+'</div><div class="ase-acts">'+approveBtn+menu+'</div></div>';
+          // Desglose del pipeline: un chip por cada estado con al menos un cliente, en el mismo orden
+          // y con los mismos colores que ya usa CRM_STATUS en las tarjetas del cockpit — así el admin
+          // reconoce de un vistazo quién tiene la cartera estancada en "Prospecto" y quién la está
+          // moviendo hacia "Cliente activo", sin tener que entrar en "Ver cartera" uno por uno.
+          var pipeHtml='';
+          if(p._pipeline){
+            var chips=PIPE_ORDER.filter(function(st){ return p._pipeline[st]>0; }).map(function(st){
+              var meta=CRM_STATUS[st];
+              return '<span class="ase-pipe-chip" style="background:'+meta.c+'22;color:'+meta.c+';border-color:'+meta.c+'66">'+p._pipeline[st]+' '+esc(meta.l)+'</span>';
+            }).join('');
+            if(chips) pipeHtml='<div class="ase-pipe">'+chips+'</div>';
+          }
+          return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+primaryLabel+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+editNameBtn+'</div>'+subEmail+'<div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+pipeHtml+'</div><div class="ase-acts">'+approveBtn+menu+'</div></div>';
         }).join('')+'</div>';
       }).catch(function(e){
         clearTimeout(timeoutId);
