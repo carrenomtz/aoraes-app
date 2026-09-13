@@ -822,7 +822,7 @@
         <div style="margin-bottom:12px"><button type="button" id="pool-clear-all" class="danger" style="font-family:inherit;font-size:11.5px;font-weight:700;border-radius:7px;padding:6px 10px;cursor:pointer;border:1px solid #e7c3bb;color:var(--red);background:#fbeae6">🗑 Vaciar toda la bolsa…</button></div>
         <div class="pool-table-wrap">
           <table class="pool-table" data-no-i18n>
-            <thead><tr><th></th><th>Fecha UC</th><th>Nº</th><th>Status</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Asesor</th><th>Notas</th></tr></thead>
+            <thead><tr><th><input type="checkbox" id="pool-check-all" aria-label="Seleccionar todo lo filtrado" title="Seleccionar todo lo filtrado"></th><th>Fecha UC</th><th>Nº</th><th>Status</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Asesor</th><th>Notas</th></tr></thead>
             <tbody id="pool-list"></tbody>
           </table>
         </div>
@@ -1888,7 +1888,7 @@
     /* ---------- Bolsa sin asignar: contactos importados que aún no tienen asesor ----------
        Vive en su propia colección (leadsPool), nunca colgada de la cartera ni de la bolsa fría de
        ningún asesor — así un Excel a medio repartir no se cuela en la cartera de nadie por error. */
-    var _pool=[], _lastApprovedAdvisors=[], _poolSelected={}, _poolDupeGroups={}, _poolDupeByLead={};
+    var _pool=[], _lastApprovedAdvisors=[], _poolSelected={}, _poolDupeGroups={}, _poolDupeByLead={}, _poolShownIds=[];
     function advisorOptionsHtml(){
       return _lastApprovedAdvisors.map(function(a){
         var c=colorForAdvisor(a.uid);
@@ -1953,6 +1953,11 @@
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
         return hay.indexOf(q)>=0;
       });
+      // "Seleccionar todo": actúa sobre TODO lo que cumple el filtro actual, no solo las filas
+      // pintadas en pantalla (que se limitan a 300 por rendimiento) — así sirve de verdad para
+      // asignar/unir/borrar en bloque el resultado completo de una búsqueda.
+      _poolShownIds=shown.map(function(l){ return l.id; });
+      updatePoolCheckAll();
       if(!shown.length){ listEl.innerHTML='<tr><td colspan="9" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
       // Con miles de contactos, pintar la tabla entera de una sola vez se sentía lento — sin filtro
       // se muestran solo los primeros 300 (los más recién importados) y se pide buscar para el resto.
@@ -1990,7 +1995,22 @@
       var bar=document.getElementById('pool-bulkbar');
       bar.hidden=!ids.length;
       document.getElementById('pool-selected-count').textContent=ids.length+' seleccionado'+(ids.length===1?'':'s');
+      updatePoolCheckAll();
     }
+    // El checkbox del encabezado refleja si TODO lo filtrado ya está seleccionado (marcado), nada
+    // (vacío) o solo parte (indeterminado) — igual que "seleccionar todo" en Gmail o Sheets.
+    function updatePoolCheckAll(){
+      var cb=document.getElementById('pool-check-all'); if(!cb) return;
+      if(!_poolShownIds.length){ cb.checked=false; cb.indeterminate=false; return; }
+      var selectedCount=_poolShownIds.filter(function(id){ return _poolSelected[id]; }).length;
+      cb.checked=selectedCount===_poolShownIds.length;
+      cb.indeterminate=selectedCount>0 && selectedCount<_poolShownIds.length;
+    }
+    document.getElementById('pool-check-all').addEventListener('change', function(){
+      var checked=this.checked;
+      _poolShownIds.forEach(function(id){ _poolSelected[id]=checked; });
+      filterAndRenderPool();
+    });
     document.getElementById('pool-search').addEventListener('input', debounce(filterAndRenderPool, 220));
     document.getElementById('pool-list').addEventListener('change', function(e){
       var chk=e.target.closest('[data-pool-check]');
