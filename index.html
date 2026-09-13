@@ -203,6 +203,11 @@
   .notif-row-act.danger{color:var(--red); background:#fbeae6; border-color:#e7c3bb}
 
   /* ---------- Importar Excel / bolsa de contactos ---------- */
+  .admin-tabs{display:flex; gap:6px; border-bottom:1px solid var(--line); margin-bottom:20px; flex-wrap:wrap}
+  .admin-tabs button{font-family:inherit; font-size:13.5px; font-weight:700; color:var(--muted); background:none; border:0; border-bottom:2px solid transparent; padding:10px 4px; margin-bottom:-1px; cursor:pointer; display:flex; align-items:center; gap:7px}
+  .admin-tabs button:hover{color:var(--navy)}
+  .admin-tabs button.active{color:var(--navy); border-bottom-color:var(--gold)}
+  .admin-tab-badge{font-size:10.5px; font-weight:700; background:var(--gold-tint); color:var(--amber); border:1px solid var(--gold-soft); border-radius:999px; padding:1px 7px}
   .imp-overlay{position:fixed; inset:0; background:rgba(20,33,61,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:200}
   .imp-overlay[hidden]{display:none}
   .imp-box{background:var(--surface); border-radius:var(--r-lg); box-shadow:var(--sh-3); max-width:720px; width:100%; max-height:88vh; overflow:auto; padding:26px}
@@ -680,7 +685,7 @@
             <button type="button" id="nav-inmueble">Proyecto inmobiliario</button>
           </div>
         </div>
-        <button type="button" data-go="asesores" id="nav-asesores" hidden>Asesores</button>
+        <button type="button" data-go="asesores" id="nav-asesores" hidden>Admin</button>
       </nav>
       <div class="notif-wrap" id="notif-wrap" hidden>
         <button type="button" class="notif-bell" id="notif-bell" aria-label="Notificaciones" aria-haspopup="true">🔔<span class="notif-badge" id="notif-badge" hidden>0</span></button>
@@ -768,19 +773,30 @@
     <div class="frame-stage" id="frame-stage"></div>
   </div>
 
+  <!-- El panel se sigue llamando "asesores" por dentro (id, funciones renderAsesores()/renderPool(),
+       clases) para no arriesgar una renombrada masiva de referencias ya probadas — visualmente ahora
+       es "Admin", con pestañas propias que agrupan Asesores, Bolsa sin asignar e Importar Excel, que
+       antes vivían repartidos entre el menú y un <details> escondido dentro de la lista de asesores. -->
   <main class="scr home" id="asesores" hidden>
     <div class="cock">
       <div class="cock-head">
-        <div><span class="cock-eyebrow">Administración</span><h1>Asesores</h1></div>
+        <div><span class="cock-eyebrow">Administración</span><h1>Admin</h1></div>
         <div style="display:flex; gap:9px; flex-wrap:wrap">
           <button type="button" class="cock-new" id="asesores-import">📥 Importar Excel</button>
           <button type="button" class="cock-new" id="asesores-refresh">↻ Actualizar</button>
         </div>
       </div>
-      <p class="cock-note" style="margin:0 0 18px">"Restringir acceso" nunca borra la cartera de un asesor — solo le quita su propio acceso. Tú sigues viendo y editando sus clientes en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar". Solo "Borrar cuenta" (⋮) elimina datos, y pide confirmarlo escribiendo el correo.</p>
-      <details class="cock-impulsos cock-gaps" id="pool-box" hidden style="margin-bottom:20px">
-        <summary class="ci-head"><span class="ci-eyebrow">Contactos importados</span><span class="ci-title">Bolsa sin asignar (<span id="pool-count">0</span>)</span></summary>
-        <div class="cock-toolbar" style="margin-top:14px">
+      <nav class="admin-tabs" id="admin-tabs">
+        <button type="button" data-admin-tab="asesores" class="active">Asesores</button>
+        <button type="button" data-admin-tab="pool">Bolsa sin asignar <span class="admin-tab-badge" id="admin-pool-badge" hidden>0</span></button>
+      </nav>
+      <div id="admin-tab-asesores">
+        <p class="cock-note" style="margin:0 0 18px">"Restringir acceso" nunca borra la cartera de un asesor — solo le quita su propio acceso. Tú sigues viendo y editando sus clientes en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar". Solo "Borrar cuenta" (⋮) elimina datos, y pide confirmarlo escribiendo el correo.</p>
+        <div id="asesores-list"></div>
+      </div>
+      <div id="admin-tab-pool" hidden>
+        <p class="cock-note" style="margin:0 0 18px">Contactos importados desde Excel que no se pudieron asignar solos (sin columna de asesor, o el nombre no coincidía con ninguna cuenta). Asígnalos a mano, de uno en uno o seleccionando varios.</p>
+        <div class="cock-toolbar">
           <input type="search" id="pool-search" aria-label="Buscar en la bolsa" placeholder="Buscar por nombre, correo o teléfono…" />
         </div>
         <div class="imp-bulkbar" id="pool-bulkbar" hidden>
@@ -790,8 +806,7 @@
           <button type="button" id="pool-bulk-delete" class="danger">🗑 Eliminar seleccionados</button>
         </div>
         <div id="pool-list" data-no-i18n></div>
-      </details>
-      <div id="asesores-list"></div>
+      </div>
     </div>
   </main>
 
@@ -1620,7 +1635,7 @@
     }
 
     function show(view){
-      if(view==='asesores'){ screenTo('asesores'); for(var k0 in MOD){ if(MOD[k0].el)MOD[k0].el.style.display='none'; } setActiveTab('asesores'); renderAsesores(); if(location.hash.slice(1)!=='asesores')history.replaceState(null,'','#asesores'); return; }
+      if(view==='asesores'){ screenTo('asesores'); for(var k0 in MOD){ if(MOD[k0].el)MOD[k0].el.style.display='none'; } setActiveTab('asesores'); showAdminTab('asesores'); renderAsesores(); if(location.hash.slice(1)!=='asesores')history.replaceState(null,'','#asesores'); return; }
       if(view==='contactos'){ screenTo('contactos'); for(var k1 in MOD){ if(MOD[k1].el)MOD[k1].el.style.display='none'; } setActiveTab('contactos'); renderContactos(); if(location.hash.slice(1)!=='contactos')history.replaceState(null,'','#contactos'); return; }
       if(view==='home'||!MOD[view]){ screenTo('home'); for(var k in MOD){ if(MOD[k].el)MOD[k].el.style.display='none'; } setActiveTab('home'); renderCockpit(); updateActiveChip(); if(location.hash)history.replaceState(null,'','#'); return; }
       screenTo('frames'); ensureFrame(view);
@@ -1800,16 +1815,26 @@
       return _lastApprovedAdvisors.map(function(a){ return '<option value="'+esc(a.uid)+'">'+esc(a.name||a.email||a.uid)+'</option>'; }).join('');
     }
     function renderPool(){
-      var box=document.getElementById('pool-box'), listEl=document.getElementById('pool-list'), countEl=document.getElementById('pool-count');
-      if(!box||!window.AORAES_CLOUD||!window.AORAES_CLOUD.listPool) return;
+      var badge=document.getElementById('admin-pool-badge');
+      if(!badge||!window.AORAES_CLOUD||!window.AORAES_CLOUD.listPool) return;
       window.AORAES_CLOUD.listPool().then(function(arr){
         _pool=arr||[]; _poolSelected={};
-        countEl.textContent=_pool.length;
-        box.hidden=!_pool.length;
+        badge.textContent=_pool.length;
+        badge.hidden=!_pool.length;
         document.getElementById('pool-bulk-advisor').innerHTML=advisorOptionsHtml();
         filterAndRenderPool();
       }).catch(function(e){ console.error('AORAES: fallo al listar la bolsa de contactos',e); });
     }
+    /* ---------- Pestañas del panel Admin: Asesores / Bolsa sin asignar ---------- */
+    var ADMIN_TABS=['asesores','pool'];
+    function showAdminTab(tab){
+      ADMIN_TABS.forEach(function(t){ var el=document.getElementById('admin-tab-'+t); if(el) el.hidden=(t!==tab); });
+      document.querySelectorAll('#admin-tabs [data-admin-tab]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-admin-tab')===tab); });
+    }
+    document.getElementById('admin-tabs').addEventListener('click', function(e){
+      var b=e.target.closest('[data-admin-tab]'); if(!b) return;
+      showAdminTab(b.getAttribute('data-admin-tab'));
+    });
     function filterAndRenderPool(){
       var listEl=document.getElementById('pool-list'); if(!listEl) return;
       var q=(document.getElementById('pool-search').value||'').trim().toLowerCase();
