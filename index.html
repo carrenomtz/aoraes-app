@@ -1359,7 +1359,7 @@
     var insEl=document.getElementById('cock-insights'), listEl=document.getElementById('cock-list');
     var searchEl=document.getElementById('cock-search'), statusEl=document.getElementById('cock-status'), sortEl=document.getElementById('cock-sort'), advisorEl=document.getElementById('cock-advisor');
     var acChip=document.getElementById('active-chip'), acName=document.getElementById('ac-name');
-    var lastSigByView={}, pendingApply=null, pendingOpen=null, pendingSummary=null, wsId=null, wsStep='diagnostico', wsRec=null, inmSaveTimer=null, cockQuickFilter=null;
+    var lastSigByView={}, pendingApplyByView={}, pendingOpen=null, pendingSummary=null, wsId=null, wsStep='diagnostico', wsRec=null, inmSaveTimer=null, cockQuickFilter=null;
 
     var SWITCH_MORE_VIEWS=['analisis','jubilacion','ninos','vsp','medico'];
     function setActiveTab(view){
@@ -1382,7 +1382,12 @@
       f.addEventListener('load',function(){
         MOD[view].ready=true;
         if(view==='analisis'){ if(pendingOpen){ var o=pendingOpen; pendingOpen=null; try{o();}catch(e){} } if(pendingSummary){ var s=pendingSummary; pendingSummary=null; try{s();}catch(e){} } }
-        if(view==='jubilacion' && pendingApply){ var p=pendingApply; pendingApply=null; try{p();}catch(e){} }
+        // Antes esto solo comprobaba view==='jubilacion': si VSP era la primera herramienta puente
+        // que se abría (su iframe aún sin cargar), maybeBridge guardaba su pendingApply, pero como
+        // nadie lo consumía al terminar de cargar el iframe de VSP, el puente se quedaba mudo la
+        // primera vez — sin banner, sin aviso, sin error. pendingApplyByView es genérico por vista
+        // (jubilacion/vsp), así que también evita que una vista sobrescriba el pendiente de la otra.
+        if(pendingApplyByView[view]){ var p=pendingApplyByView[view]; pendingApplyByView[view]=null; try{p();}catch(e){} }
         if(view==='medico') syncMedico();
       });
       stage.appendChild(f); MOD[view].el=f; return f;
@@ -1420,7 +1425,7 @@
       view=view||'jubilacion';
       var c=getClient(), sig=sigOf(c); if(!c||!c.name||sig===lastSigByView[view])return;
       var run=function(){ try{ var f=MOD[view].el; if(f&&f.contentWindow.aoraesApplyClient){ var snap=f.contentWindow.aoraesApplyClient(c); showBanner(c,snap,view); lastSigByView[view]=sig; } }catch(e){} };
-      if(MOD[view].ready)run(); else pendingApply=run;
+      if(MOD[view].ready)run(); else pendingApplyByView[view]=run;
     }
 
     function show(view){
@@ -3151,6 +3156,18 @@
     var _impulsosFrameReady=false, _impulsosPendingArr=null;
     function ensureImpulsosFrame(){
       var f=document.getElementById('impulsos-frame'); if(!f || _impulsosFrameReady) return;
+      // El iframe está en el HTML desde el arranque de la página (carga en paralelo, sin esperar a
+      // esta función) — para cuando esto se llama por primera vez (al primer renderCockpit), puede
+      // que YA haya terminado de cargar. En ese caso su evento 'load' ya pasó y nunca vuelve a
+      // dispararse: _impulsosFrameReady se quedaba en false para siempre y la sección "Impulsos" del
+      // cockpit desaparecía sin ningún aviso, sin importar cuántos clientes necesitaran atención.
+      try{
+        if(f.contentDocument && f.contentDocument.readyState==='complete'){
+          _impulsosFrameReady=true;
+          if(_impulsosPendingArr) renderImpulsos(_impulsosPendingArr);
+          return;
+        }
+      }catch(e){}
       f.addEventListener('load',function(){
         _impulsosFrameReady=true;
         if(_impulsosPendingArr) renderImpulsos(_impulsosPendingArr);
@@ -3438,10 +3455,17 @@
           for(var i=0;i<arr.length;i++){ if(arr[i].id===targetId){ idx=i; break; } }
           if(idx>=0){
             arr[idx].inmueble=wsRec.inmueble; arr[idx].savedAt=new Date().toISOString();
-            try{ localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr)); }catch(err){}
-            if(_cloudClientsById && _cloudClientsById[targetId]) _cloudClientsById[targetId].record=arr[idx];
-            writeClientFile(targetId);
-            gs.textContent='✓ Guardado en la ficha'; gs.disabled=true;
+            var savedOk=true;
+            try{ localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr)); }catch(err){ savedOk=false; }
+            if(savedOk){
+              if(_cloudClientsById && _cloudClientsById[targetId]) _cloudClientsById[targetId].record=arr[idx];
+              writeClientFile(targetId);
+              gs.textContent='✓ Guardado en la ficha'; gs.disabled=true;
+            } else {
+              // Antes esto se tragaba el error (p. ej. QuotaExceededError) y mostraba "✓ Guardado"
+              // igualmente — el proyecto inmobiliario del cliente se perdía sin que nadie lo notara.
+              gs.textContent='No se pudo guardar (almacenamiento lleno)';
+            }
           }
         }
         return;
