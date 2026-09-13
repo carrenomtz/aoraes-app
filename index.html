@@ -821,7 +821,7 @@
         <div style="margin-bottom:12px"><button type="button" id="pool-clear-all" class="danger" style="font-family:inherit;font-size:11.5px;font-weight:700;border-radius:7px;padding:6px 10px;cursor:pointer;border:1px solid #e7c3bb;color:var(--red);background:#fbeae6">🗑 Vaciar toda la bolsa…</button></div>
         <div class="pool-table-wrap">
           <table class="pool-table" data-no-i18n>
-            <thead><tr><th></th><th>Fecha UC</th><th>Nº</th><th>Status</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Asesor</th><th>Notas</th><th>Asignar a</th></tr></thead>
+            <thead><tr><th></th><th>Fecha UC</th><th>Nº</th><th>Status</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Asesor</th><th>Notas</th></tr></thead>
             <tbody id="pool-list"></tbody>
           </table>
         </div>
@@ -981,6 +981,11 @@
           arr.sort(function(a,b){ return (b.importedAt||'').localeCompare(a.importedAt||''); });
           return arr;
         });
+      },
+      // Cambiar el estado de un contacto que todavía está en la bolsa (sin asignar) — no requiere
+      // que ya tenga asesor.
+      updatePoolLeadStatus: function(leadId, status){
+        return updateDoc(doc(leadsPoolCol(),leadId), {status:status, lastContactAt:serverTimestamp()}).catch(function(e){ console.error('AORAES cloud: fallo al actualizar el estado en la bolsa',e); });
       },
       // Cuenta agregada (getCountFromServer) en vez de descargar los documentos completos — para el
       // número de la pestaña "Bolsa sin asignar" no hace falta traer miles de fichas cada vez que se
@@ -1942,32 +1947,34 @@
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
         return hay.indexOf(q)>=0;
       });
-      if(!shown.length){ listEl.innerHTML='<tr><td colspan="10" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
+      if(!shown.length){ listEl.innerHTML='<tr><td colspan="9" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
       // Con miles de contactos, pintar la tabla entera de una sola vez se sentía lento — sin filtro
       // se muestran solo los primeros 300 (los más recién importados) y se pide buscar para el resto.
       var POOL_CAP=300;
       var capped=shown.length>POOL_CAP && !q;
       var toRender=capped?shown.slice(0,POOL_CAP):shown;
-      var capNote=capped?('<tr><td colspan="10" class="ase-empty" style="border:0">Mostrando '+POOL_CAP+' de '+shown.length+' — usa la búsqueda para encontrar el resto.</td></tr>'):'';
+      var capNote=capped?('<tr><td colspan="9" class="ase-empty" style="border:0">Mostrando '+POOL_CAP+' de '+shown.length+' — usa la búsqueda para encontrar el resto.</td></tr>'):'';
       listEl.innerHTML=capNote+toRender.map(function(l){
         var st=l.status||'nuevo';
         var dupeKey=_poolDupeByLead[l.id];
         var phoneCell=l.phone?esc(l.phone):'<span style="color:var(--faint)">—</span>';
         if(dupeKey) phoneCell='<button type="button" class="pool-dupe-badge" data-dupe-select="'+esc(dupeKey)+'" title="Seleccionar los '+_poolDupeGroups[dupeKey].length+' contactos con este teléfono">'+phoneCell+' · '+_poolDupeGroups[dupeKey].length+'×</button>';
         var lastContact=fmtLastContact(l.lastContactAt);
-        // Sin asignar todavía, así que "Asesor" siempre va vacío aquí — es justo lo que pediste ver
-        // (la casilla existe igual, aunque esté vacía) hasta que se reparta desde esta misma tabla.
+        // Estado y Asesor son desplegables en vivo, igual que en la plantilla original del usuario:
+        // cambiar el estado guarda al instante, y elegir un asesor aquí mismo asigna el contacto —
+        // ya no hace falta un botón "Asignar" aparte.
+        var statusSel='<select class="pool-status-select" data-pool-status="'+esc(l.id)+'" aria-label="Estado">'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
+        var advisorSel='<select class="pool-row-advisor" data-pool-advisor="'+esc(l.id)+'" aria-label="Asesor"><option value="">— Sin asignar —</option>'+advisorOptionsHtml()+'</select>';
         return '<tr'+(dupeKey?' class="pool-dupe-row"':'')+'>'+
           '<td><input type="checkbox" class="pool-check" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
           '<td>'+(lastContact?esc(lastContact):'<span style="color:var(--faint)">—</span>')+'</td>'+
           '<td>'+(l.leadNo?esc(l.leadNo):'<span style="color:var(--faint)">—</span>')+'</td>'+
-          '<td><span class="ase-badge '+st+'">'+(CONT_STATUS_LABEL[st]||st)+'</span></td>'+
+          '<td>'+statusSel+'</td>'+
           '<td>'+esc(l.name||'Sin nombre')+'</td>'+
           '<td>'+(l.email?esc(l.email):'—')+'</td>'+
           '<td>'+phoneCell+'</td>'+
-          '<td><span style="color:var(--faint)">—</span></td>'+
+          '<td>'+advisorSel+'</td>'+
           '<td class="pool-notes-cell">'+esc(l.notes||'')+'</td>'+
-          '<td><select class="pool-row-advisor" data-pool-advisor="'+esc(l.id)+'"><option value="">Asignar a…</option>'+advisorOptionsHtml()+'</select> <button type="button" class="notif-row-act" data-pool-assign="'+esc(l.id)+'">Asignar</button></td>'+
         '</tr>';
       }).join('');
       updatePoolBulkbar();
@@ -1981,7 +1988,26 @@
     document.getElementById('pool-search').addEventListener('input', debounce(filterAndRenderPool, 220));
     document.getElementById('pool-list').addEventListener('change', function(e){
       var chk=e.target.closest('[data-pool-check]');
-      if(chk){ _poolSelected[chk.getAttribute('data-pool-check')]=chk.checked; updatePoolBulkbar(); }
+      if(chk){ _poolSelected[chk.getAttribute('data-pool-check')]=chk.checked; updatePoolBulkbar(); return; }
+      var stSel=e.target.closest('[data-pool-status]');
+      if(stSel){
+        var leadId2=stSel.getAttribute('data-pool-status'), newSt=stSel.value;
+        stSel.disabled=true;
+        window.AORAES_CLOUD.updatePoolLeadStatus(leadId2, newSt).then(function(){
+          var l2=_pool.filter(function(x){return x.id===leadId2;})[0]; if(l2) l2.status=newSt;
+        }).catch(function(e){ console.error('AORAES: fallo al cambiar el estado',e); alert('No se pudo cambiar el estado. Revisa la consola.'); }).finally(function(){ stSel.disabled=false; });
+        return;
+      }
+      // Elegir un asesor aquí mismo asigna de una — sin un botón "Asignar" aparte, igual que
+      // cambiar el desplegable de asesor en la plantilla original del usuario.
+      var advSel=e.target.closest('[data-pool-advisor]');
+      if(advSel){
+        var leadId=advSel.getAttribute('data-pool-advisor'), advisorUid=advSel.value;
+        if(!advisorUid) return;
+        var lead=_pool.filter(function(l){ return l.id===leadId; })[0]; if(!lead) return;
+        advSel.disabled=true;
+        window.AORAES_CLOUD.assignLeadsBulk([{lead:lead, advisorUid:advisorUid}]).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al asignar el contacto',e); alert('No se pudo asignar. Revisa la consola.'); advSel.disabled=false; });
+      }
     });
     document.getElementById('pool-list').addEventListener('click', function(e){
       var dupeBtn=e.target.closest('[data-dupe-select]');
@@ -1991,14 +2017,6 @@
         filterAndRenderPool();
         return;
       }
-      var b=e.target.closest('[data-pool-assign]'); if(!b) return;
-      var leadId=b.getAttribute('data-pool-assign');
-      var sel=document.querySelector('[data-pool-advisor="'+leadId+'"]');
-      var advisorUid=sel&&sel.value;
-      if(!advisorUid){ alert('Elige a qué asesor asignarlo primero.'); return; }
-      var lead=_pool.filter(function(l){ return l.id===leadId; })[0]; if(!lead) return;
-      b.disabled=true;
-      window.AORAES_CLOUD.assignLeadsBulk([{lead:lead, advisorUid:advisorUid}]).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al asignar el contacto',e); alert('No se pudo asignar. Revisa la consola.'); b.disabled=false; });
     });
     document.getElementById('pool-bulk-assign').addEventListener('click', function(){
       var advisorUid=document.getElementById('pool-bulk-advisor').value; if(!advisorUid){ alert('Elige a qué asesor asignar los seleccionados.'); return; }
