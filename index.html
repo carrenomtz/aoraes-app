@@ -903,7 +903,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, collectionGroup, query, where, orderBy, limit as fsLimit, getDocs, getCountFromServer, onSnapshot, serverTimestamp, writeBatch }
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, collectionGroup, query, where, orderBy, limit as fsLimit, startAfter, getDocs, getCountFromServer, onSnapshot, serverTimestamp, writeBatch }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     var firebaseConfig = {
@@ -1009,6 +1009,19 @@
           var arr=[]; snap.forEach(function(d){ arr.push(Object.assign({}, d.data(), {id:d.id})); });
           arr.sort(function(a,b){ return (b.importedAt||'').localeCompare(a.importedAt||''); });
           return arr;
+        });
+      },
+      // Trae la bolsa de a poco (importLeads y mergePoolLeads siempre escriben importedAt, así que
+      // ningún contacto se queda fuera del orderBy) — para no descargar miles de documentos solo para
+      // abrir la pestaña. afterDoc es el snapshot crudo del último documento de la página anterior
+      // (lo que devuelve esta misma función); pásalo tal cual para pedir la siguiente página.
+      listPoolPage: function(afterDoc, pageSize){
+        pageSize = pageSize || 100;
+        var constraints = [orderBy('importedAt','desc'), fsLimit(pageSize)];
+        if(afterDoc) constraints.push(startAfter(afterDoc));
+        return getDocs(query.apply(null, [leadsPoolCol()].concat(constraints))).then(function(snap){
+          var items=[]; snap.forEach(function(d){ items.push(Object.assign({}, d.data(), {id:d.id})); });
+          return { items:items, lastDoc: snap.docs.length ? snap.docs[snap.docs.length-1] : null, hasMore: snap.docs.length===pageSize };
         });
       },
       // Cambiar el estado de un contacto que todavía está en la bolsa (sin asignar) — no requiere
@@ -2004,6 +2017,15 @@
        Vive en su propia colección (leadsPool), nunca colgada de la cartera ni de la bolsa fría de
        ningún asesor — así un Excel a medio repartir no se cuela en la cartera de nadie por error. */
     var _pool=[], _lastApprovedAdvisors=[], _poolSelected={}, _poolDupeGroups={}, _poolDupeByLead={}, _poolShownIds=[];
+    // Paginación de la bolsa: por defecto se trae de 100 en 100 (con "Cargar más") en vez de los
+    // miles de documentos completos de golpe — más barato y rápido para el caso normal de solo
+    // hojear o revisar los últimos importados. En cuanto el admin busca algo, sí hace falta traer
+    // TODO (Firestore no tiene búsqueda de texto libre), así que ese momento cambia a modo completo
+    // una sola vez y desde ahí la búsqueda vuelve a ser instantánea en memoria, como antes.
+    var _poolCursor=null, _poolHasMore=false, _poolFullyLoaded=false, _poolLoadingMore=false, _poolLoadingFull=false;
+    function refreshPoolDupes(){
+      var dupes=computePoolDupes(_pool); _poolDupeGroups=dupes.groups; _poolDupeByLead=dupes.byLead;
+    }
     function advisorOptionsHtml(){
       return _lastApprovedAdvisors.map(function(a){
         var c=colorForAdvisor(a.uid);
@@ -2033,15 +2055,38 @@
     }
     function renderPool(){
       var badge=document.getElementById('admin-pool-badge');
-      if(!badge||!window.AORAES_CLOUD||!window.AORAES_CLOUD.listPool) return;
-      window.AORAES_CLOUD.listPool().then(function(arr){
-        _pool=arr||[]; _poolSelected={};
-        var dupes=computePoolDupes(_pool); _poolDupeGroups=dupes.groups; _poolDupeByLead=dupes.byLead;
-        badge.textContent=_pool.length;
-        badge.hidden=!_pool.length;
+      if(!badge||!window.AORAES_CLOUD||!window.AORAES_CLOUD.listPoolPage) return;
+      refreshPoolBadge();
+      _poolCursor=null; _poolHasMore=false; _poolFullyLoaded=false; _poolLoadingMore=false; _poolLoadingFull=false;
+      window.AORAES_CLOUD.listPoolPage(null, 100).then(function(res){
+        _pool=res.items||[]; _poolSelected={}; _poolCursor=res.lastDoc; _poolHasMore=res.hasMore;
+        if(!_poolHasMore) _poolFullyLoaded=true; // ya no queda nada más por paginar: es lo mismo que haberla traído entera
+        refreshPoolDupes();
         document.getElementById('pool-bulk-advisor').innerHTML=advisorOptionsHtml();
         filterAndRenderPool();
       }).catch(function(e){ console.error('AORAES: fallo al listar la bolsa de contactos',e); });
+    }
+    function loadMorePool(){
+      if(_poolLoadingMore || !_poolHasMore || !window.AORAES_CLOUD.listPoolPage) return;
+      _poolLoadingMore=true; filterAndRenderPool();
+      window.AORAES_CLOUD.listPoolPage(_poolCursor, 100).then(function(res){
+        _pool=_pool.concat(res.items||[]); _poolCursor=res.lastDoc; _poolHasMore=res.hasMore;
+        if(!_poolHasMore) _poolFullyLoaded=true;
+        refreshPoolDupes();
+      }).catch(function(e){ console.error('AORAES: fallo al cargar más contactos',e); })
+        .finally(function(){ _poolLoadingMore=false; filterAndRenderPool(); });
+    }
+    // Solo se dispara la primera vez que el admin escribe algo en el buscador (mientras la bolsa
+    // sigue paginada): Firestore no hace búsqueda de texto libre, así que buscar de verdad necesita
+    // tener TODO en memoria. Después de esto, _poolFullyLoaded queda en true y ya no se repite.
+    function loadFullPoolForSearch(){
+      if(_poolFullyLoaded || _poolLoadingFull || !window.AORAES_CLOUD.listPool) return Promise.resolve();
+      _poolLoadingFull=true; filterAndRenderPool();
+      return window.AORAES_CLOUD.listPool().then(function(arr){
+        _pool=arr||[]; _poolFullyLoaded=true; _poolHasMore=false;
+        refreshPoolDupes();
+      }).catch(function(e){ console.error('AORAES: fallo al cargar toda la bolsa para buscar',e); })
+        .finally(function(){ _poolLoadingFull=false; filterAndRenderPool(); });
     }
     function refreshPoolBadge(){
       var badge=document.getElementById('admin-pool-badge');
@@ -2063,6 +2108,19 @@
     function filterAndRenderPool(){
       var listEl=document.getElementById('pool-list'); if(!listEl) return;
       var q=(document.getElementById('pool-search').value||'').trim().toLowerCase();
+      var checkAll=document.getElementById('pool-check-all');
+      if(checkAll){
+        var checkAllLabel=_poolFullyLoaded?'Seleccionar todo lo filtrado':'Seleccionar todo lo cargado hasta ahora';
+        checkAll.setAttribute('aria-label', checkAllLabel); checkAll.title=checkAllLabel;
+      }
+      // Mientras se trae toda la bolsa para poder buscar en ella, no hay nada útil que mostrar
+      // todavía — sin este corte se veía "ningún contacto coincide" un instante antes de que
+      // llegaran los datos reales, como si la búsqueda no hubiera encontrado nada.
+      if(q && _poolLoadingFull){
+        listEl.innerHTML='<tr><td colspan="9" class="ase-empty" style="border:0">Cargando toda la bolsa para poder buscar en ella…</td></tr>';
+        updatePoolBulkbar();
+        return;
+      }
       var shown=_pool.filter(function(l){
         if(!q) return true;
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
@@ -2071,7 +2129,8 @@
       shown=sortContactRows(shown, _poolSort.key, _poolSort.dir);
       // "Seleccionar todo": actúa sobre TODO lo que cumple el filtro actual, no solo las filas
       // pintadas en pantalla (que se limitan a 300 por rendimiento) — así sirve de verdad para
-      // asignar/unir/borrar en bloque el resultado completo de una búsqueda.
+      // asignar/unir/borrar en bloque el resultado completo de una búsqueda. Ojo: si la bolsa
+      // todavía está paginada (sin buscar), esto solo cubre lo ya cargado, no la bolsa entera.
       _poolShownIds=shown.map(function(l){ return l.id; });
       updatePoolCheckAll();
       if(!shown.length){ listEl.innerHTML='<tr><td colspan="9" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
@@ -2081,6 +2140,16 @@
       var capped=shown.length>POOL_CAP && !q;
       var toRender=capped?shown.slice(0,POOL_CAP):shown;
       var capNote=capped?('<tr><td colspan="9" class="ase-empty" style="border:0">Mostrando '+POOL_CAP+' de '+shown.length+' — usa la búsqueda para encontrar el resto.</td></tr>'):'';
+      // Botón para pedir la siguiente página — solo tiene sentido hojeando sin buscar (buscar ya
+      // trae la bolsa completa de una vez). Los duplicados solo se detectan entre lo ya cargado, así
+      // que se avisa mientras falte por traer el resto.
+      var loadMoreRow='';
+      if(!q && !_poolFullyLoaded){
+        loadMoreRow='<tr><td colspan="9" style="border:0;padding:10px 8px">'+
+          (_poolHasMore?'<button type="button" id="pool-load-more" class="cock-new" style="padding:7px 14px;font-size:12.5px"'+(_poolLoadingMore?' disabled':'')+'>'+(_poolLoadingMore?'Cargando…':'⬇ Cargar 100 más')+'</button> ':'')+
+          '<span style="color:var(--faint);font-size:11.5px">'+_pool.length+' cargados de momento — los duplicados por teléfono solo se detectan entre estos. Busca algo para traer y revisar la bolsa completa de una vez.</span>'+
+        '</td></tr>';
+      }
       listEl.innerHTML=capNote+toRender.map(function(l){
         var st=l.status||'nuevo';
         var dupeKey=_poolDupeByLead[l.id];
@@ -2105,7 +2174,7 @@
           '<td>'+advisorSel+'</td>'+
           '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle data-pool-lead="'+esc(l.id)+'">'+esc(l.notes)+'</span>':'<span class="pool-notes-text" data-notes-toggle data-pool-lead="'+esc(l.id)+'" style="color:var(--faint)">— (clic para añadir)</span>')+'</td>'+
         '</tr>';
-      }).join('');
+      }).join('')+loadMoreRow;
       updatePoolBulkbar();
     }
     function updatePoolBulkbar(){
@@ -2130,7 +2199,10 @@
       filterAndRenderPool();
     });
     wireSortableThead('pool-thead-row', _poolSort, filterAndRenderPool);
-    document.getElementById('pool-search').addEventListener('input', debounce(filterAndRenderPool, 220));
+    document.getElementById('pool-search').addEventListener('input', debounce(function(){
+      var q=(document.getElementById('pool-search').value||'').trim();
+      if(q && !_poolFullyLoaded) loadFullPoolForSearch(); else filterAndRenderPool();
+    }, 220));
     document.getElementById('pool-list').addEventListener('change', function(e){
       var chk=e.target.closest('[data-pool-check]');
       if(chk){ _poolSelected[chk.getAttribute('data-pool-check')]=chk.checked; updatePoolBulkbar(); return; }
@@ -2174,6 +2246,7 @@
       }
     });
     document.getElementById('pool-list').addEventListener('click', function(e){
+      if(e.target.closest('#pool-load-more')){ loadMorePool(); return; }
       var notesEl=e.target.closest('[data-notes-toggle]');
       if(notesEl){
         var leadId5=notesEl.getAttribute('data-pool-lead');
