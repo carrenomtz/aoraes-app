@@ -262,8 +262,8 @@
   .cont-date-cell{display:flex; align-items:center; gap:4px; white-space:nowrap}
   /* Un solo clic para marcar "lo intenté contactar hoy" — sin esto, había que abrir el selector de
      fecha y buscar el día de hoy a mano cada vez, que es la acción más repetida de toda la tabla. */
-  .cont-today-btn{cursor:pointer; background:var(--gold-tint); color:var(--navy); border:1px solid var(--gold-soft); border-radius:5px; padding:3px 6px; font-weight:700; font-size:10px; white-space:nowrap; font-family:inherit; flex:0 0 auto}
-  .cont-today-btn:hover{background:var(--gold); color:#fff}
+  .cont-today-btn{cursor:pointer; background:#e8eef7; color:var(--navy-2); border:1px solid #c7d3e6; border-radius:5px; width:22px; height:22px; padding:0; display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1; font-weight:700; flex:0 0 auto; font-family:inherit}
+  .cont-today-btn:hover{background:#c7d3e6}
   .pool-notes-textarea{width:100%; min-width:140px; font-family:inherit; font-size:11.5px; padding:5px 6px; border:1px solid var(--gold); border-radius:5px; background:var(--surface); resize:vertical; min-height:54px; box-shadow:0 0 0 2px var(--gold-tint)}
   .pool-table tr.pool-dupe-row{background:#fdf3e7}
   .pool-table tr.pool-dupe-row:hover{background:#fbe9d3}
@@ -2174,7 +2174,7 @@
         var rowWho=l.name||l.email||l.phone||'este contacto';
         return '<tr'+(dupeKey?' class="pool-dupe-row"':'')+'>'+
           '<td><input type="checkbox" class="pool-check" aria-label="Seleccionar a '+esc(rowWho)+'" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
-          '<td><div class="cont-date-cell"><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-pool-field="lastContactAt" data-pool-lead="'+esc(l.id)+'" value="'+lastContactVal+'"><button type="button" class="cont-today-btn" data-pool-today="'+esc(l.id)+'" title="Poner la fecha de hoy">Hoy</button></div></td>'+
+          '<td><div class="cont-date-cell"><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-pool-field="lastContactAt" data-pool-lead="'+esc(l.id)+'" value="'+lastContactVal+'"><button type="button" class="cont-today-btn" data-pool-today="'+esc(l.id)+'" title="Poner la fecha de hoy" aria-label="Poner la fecha de hoy">↓</button></div></td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Número de lead" data-pool-field="leadNo" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
           '<td>'+statusSel+'</td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Nombre" data-pool-field="name" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.name||'')+'" placeholder="Sin nombre"></td>'+
@@ -2664,7 +2664,7 @@
           : '<select class="cont-status-select" data-lead="'+esc(l.id)+'" aria-label="Estado"'+pillStyleAttr(CONT_STATUS_COLOR[st])+'>'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
         // Todo se puede corregir a mano directo en la tabla — siempre hay erratas de teléfono/nombre.
         return '<tr>'+
-          '<td><div class="cont-date-cell"><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-field="lastContactAt" data-lead="'+esc(l.id)+'" value="'+lastContactVal+'"><button type="button" class="cont-today-btn" data-today="'+esc(l.id)+'" title="Poner la fecha de hoy">Hoy</button></div></td>'+
+          '<td><div class="cont-date-cell"><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-field="lastContactAt" data-lead="'+esc(l.id)+'" value="'+lastContactVal+'"><button type="button" class="cont-today-btn" data-today="'+esc(l.id)+'" title="Poner la fecha de hoy" aria-label="Poner la fecha de hoy">↓</button></div></td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Número de lead" data-field="leadNo" data-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
           '<td>'+statusControl+'</td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Nombre" data-field="name" data-lead="'+esc(l.id)+'" value="'+esc(l.name||'')+'" placeholder="Sin nombre"></td>'+
