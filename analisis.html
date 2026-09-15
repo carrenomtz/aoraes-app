@@ -5321,6 +5321,13 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     }
   }
   setInterval(autosaveTick, 20*1000);
+  // Cerrar la pestaña (o cambiar a otra) no espera al siguiente tick de 20s — sin esto, lo escrito
+  // en esos últimos segundos se perdía igual. 'visibilitychange' a 'hidden' es la señal que de verdad
+  // llega siempre (a diferencia de 'beforeunload', que algunos navegadores móviles pueden saltarse);
+  // 'pagehide' queda como respaldo. Ninguno de los dos muestra ningún aviso al asesor — es el mismo
+  // guardado silencioso de siempre, solo que disparado por "te estás yendo" en vez de por el reloj.
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') autosaveTick(); });
+  window.addEventListener('pagehide',autosaveTick);
   document.addEventListener('change',function(e){
     if(e.target.matches('.tipo-reflow-select')) onContractTipoChange(e.target);
     if(e.target.closest('#contract-propuesta-body')) render();
