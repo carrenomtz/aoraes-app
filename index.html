@@ -159,6 +159,11 @@
   .viewing-banner button:hover{background:var(--gold-tint)}
   .ase-stats{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px}
   .ase-list{display:flex; flex-direction:column; gap:11px}
+  /* Sección aparte para las solicitudes pendientes — antes solo iban primero en la misma lista que
+     el resto de asesores, y con suficientes asesores activos era fácil pasarlas por alto sin querer. */
+  .ase-pending-section{background:var(--gold-tint); border:1px solid var(--gold-soft); border-radius:var(--r-lg); padding:14px; margin-bottom:18px}
+  .ase-pending-heading{font-weight:700; color:var(--gold-deep); font-size:13px; margin-bottom:11px}
+  .ase-pending-section .ase-row{background:var(--surface)}
   .ase-empty{text-align:center; color:var(--muted); background:var(--surface); border:1px dashed var(--line-strong); border-radius:var(--r-lg); padding:40px 24px; font-size:14px}
   .ase-row{display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:14px 17px; box-shadow:var(--sh-1); flex-wrap:wrap}
   .ase-body{min-width:0; flex:1 1 220px}
@@ -1909,7 +1914,7 @@
           '<div class="ins"><div class="ins-num">'+approvedCount+'</div><div class="ins-lbl">Asesor'+(approvedCount===1?'':'es')+' activo'+(approvedCount===1?'':'s')+'</div></div>'+
           '<div class="ins"><div class="ins-num">'+totalClients+'</div><div class="ins-lbl">Clientes en toda la cartera</div></div>'+
         '</div>';
-        listEl.innerHTML=statsHtml+'<div class="ase-list">'+list.map(function(p){
+        function buildAseRow(p){
           var isSelf=(p.uid===window.AORAES_CLOUD.uid);
           var statusCls=p.status==='approved'?'approved':(p.status==='rechazado'?'rechazado':'pending');
           var badges='<span class="ase-badge '+statusCls+'">'+(STATUS_LABEL[p.status]||p.status||'—')+'</span>';
@@ -1959,7 +1964,17 @@
             if(chips) pipeHtml='<div class="ase-pipe">'+chips+'</div>';
           }
           return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+primaryLabel+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+editNameBtn+'</div>'+subEmail+'<div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+pipeHtml+'</div><div class="ase-acts">'+approveBtn+menu+'</div></div>';
-        }).join('')+'</div>';
+        }
+        // Sección propia arriba de todo para las solicitudes pendientes — antes solo iban primero en
+        // la misma lista que el resto de asesores, y con suficientes asesores activos era fácil
+        // pasarlas por alto sin querer y perder de vista a quién le falta aprobar el acceso.
+        var pendingList=list.filter(function(p){ return p.status==='pending'; });
+        var otherList=list.filter(function(p){ return p.status!=='pending'; });
+        // El contador va en un <span> aparte del rótulo: el traductor de la app busca coincidencia
+        // exacta de cada nodo de texto contra el diccionario, así que un número variable dentro del
+        // mismo texto nunca encontraría coincidencia — separado, el rótulo sí se traduce.
+        var pendingHtml=pendingList.length ? ('<div class="ase-pending-section"><div class="ase-pending-heading">🔔 Solicitudes pendientes de aprobar <span>('+pendingList.length+')</span></div><div class="ase-list">'+pendingList.map(buildAseRow).join('')+'</div></div>') : '';
+        listEl.innerHTML=statsHtml+pendingHtml+'<div class="ase-list">'+otherList.map(buildAseRow).join('')+'</div>';
         _lastApprovedAdvisors=list.filter(function(p){ return p.status==='approved'; });
         // Solo se trae la bolsa completa (miles de documentos) si esa pestaña ya está abierta — si no,
         // basta un conteo agregado (barato) para el número que se ve junto a "Bolsa sin asignar".
@@ -2950,7 +2965,7 @@
       'Admin':'Admin','(tú)':'(you)','{0} cliente':'{0} client','{0} clientes':'{0} clients',
       'Solicitado {0}':'Requested {0}','Opciones':'Options',
       '✓ Aprobar':'✓ Approve','↺ Dejar de ver esta cartera':'↺ Stop viewing this portfolio',
-      '👁 Ver cartera':'👁 View portfolio','📇 Ver contactos en frío':'📇 View cold contacts','Restringir acceso al asesor':"Restrict advisor's access",
+      '👁 Ver cartera':'👁 View portfolio','📇 Ver contactos en frío':'📇 View cold contacts','🔔 Solicitudes pendientes de aprobar':'🔔 Pending requests to approve','Restringir acceso al asesor':"Restrict advisor's access",
       'Rechazar solicitud':'Reject request','🗑 Borrar cuenta…':'🗑 Delete account…',
       'este asesor':'this advisor',
       '¿Restringir el acceso de {0}?\n\nYa no podrá entrar a su cuenta, pero sus clientes NO se borran — tú los sigues viendo y editando en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar".':'Restrict access for {0}?\n\nThey will no longer be able to sign in, but their clients are NOT deleted — you still see and edit them under "View portfolio", and can restore their access anytime with "Approve".',
@@ -3242,7 +3257,7 @@
       'Admin':'Admin','(tú)':'(du)','{0} cliente':'{0} Kunde','{0} clientes':'{0} Kunden',
       'Solicitado {0}':'Angefragt {0}','Opciones':'Optionen',
       '✓ Aprobar':'✓ Genehmigen','↺ Dejar de ver esta cartera':'↺ Diese Kartei nicht mehr ansehen',
-      '👁 Ver cartera':'👁 Kartei ansehen','📇 Ver contactos en frío':'📇 Kaltkontakte ansehen','Restringir acceso al asesor':'Zugriff des Beraters einschränken',
+      '👁 Ver cartera':'👁 Kartei ansehen','📇 Ver contactos en frío':'📇 Kaltkontakte ansehen','🔔 Solicitudes pendientes de aprobar':'🔔 Ausstehende Anfragen','Restringir acceso al asesor':'Zugriff des Beraters einschränken',
       'Rechazar solicitud':'Anfrage ablehnen','🗑 Borrar cuenta…':'🗑 Konto löschen…',
       'este asesor':'diesen Berater',
       '¿Restringir el acceso de {0}?\n\nYa no podrá entrar a su cuenta, pero sus clientes NO se borran — tú los sigues viendo y editando en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar".':'Zugriff für {0} einschränken?\n\nDie Person kann sich nicht mehr anmelden, aber ihre Kunden werden NICHT gelöscht — du siehst und bearbeitest sie weiterhin über "Kartei ansehen" und kannst den Zugriff jederzeit mit "Genehmigen" wiederherstellen.',
