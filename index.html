@@ -1923,6 +1923,9 @@
             items+=(viewing===p.uid)
               ? '<button type="button" data-ase-unview="1">↺ Dejar de ver esta cartera</button>'
               : '<button type="button" data-ase-view="'+esc(p.uid)+'" data-ase-view-email="'+esc(p.email||'')+'">👁 Ver cartera</button>';
+            // Atajo directo a sus contactos en frío (Contactos), sin pasar antes por "Ver cartera" →
+            // Inicio — reutiliza el mismo viewAsAdvisor(), solo cambia a qué pantalla se navega.
+            items+='<button type="button" data-ase-view-contacts="'+esc(p.uid)+'" data-ase-view-contacts-email="'+esc(p.email||'')+'">📇 Ver contactos en frío</button>';
           }
           if(p.role!=='admin'){
             if(items) items+='<hr>';
@@ -1998,6 +2001,7 @@
         window.AORAES_CLOUD.deleteAdvisorAccount(delUid).then(renderAsesores).catch(function(){ alert('No se pudo borrar. Revisa la consola.'); });
       }
       else if(b.hasAttribute('data-ase-view')){ window.AORAES_CLOUD.viewAsAdvisor(b.getAttribute('data-ase-view'), b.getAttribute('data-ase-view-email')); setActive(null); show('home'); }
+      else if(b.hasAttribute('data-ase-view-contacts')){ window.AORAES_CLOUD.viewAsAdvisor(b.getAttribute('data-ase-view-contacts'), b.getAttribute('data-ase-view-contacts-email')); setActive(null); show('contactos'); }
       else if(b.hasAttribute('data-ase-unview')){ window.AORAES_CLOUD.viewMyOwn(); setActive(null); renderAsesores(); }
       else if(b.hasAttribute('data-ase-edit-name')){
         var newName=prompt('¿Cómo quieres que aparezca tu nombre en la lista de asesores?');
@@ -2933,7 +2937,7 @@
       'Admin':'Admin','(tú)':'(you)','{0} cliente':'{0} client','{0} clientes':'{0} clients',
       'Solicitado {0}':'Requested {0}','Opciones':'Options',
       '✓ Aprobar':'✓ Approve','↺ Dejar de ver esta cartera':'↺ Stop viewing this portfolio',
-      '👁 Ver cartera':'👁 View portfolio','Restringir acceso al asesor':"Restrict advisor's access",
+      '👁 Ver cartera':'👁 View portfolio','📇 Ver contactos en frío':'📇 View cold contacts','Restringir acceso al asesor':"Restrict advisor's access",
       'Rechazar solicitud':'Reject request','🗑 Borrar cuenta…':'🗑 Delete account…',
       'este asesor':'this advisor',
       '¿Restringir el acceso de {0}?\n\nYa no podrá entrar a su cuenta, pero sus clientes NO se borran — tú los sigues viendo y editando en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar".':'Restrict access for {0}?\n\nThey will no longer be able to sign in, but their clients are NOT deleted — you still see and edit them under "View portfolio", and can restore their access anytime with "Approve".',
@@ -3225,7 +3229,7 @@
       'Admin':'Admin','(tú)':'(du)','{0} cliente':'{0} Kunde','{0} clientes':'{0} Kunden',
       'Solicitado {0}':'Angefragt {0}','Opciones':'Optionen',
       '✓ Aprobar':'✓ Genehmigen','↺ Dejar de ver esta cartera':'↺ Diese Kartei nicht mehr ansehen',
-      '👁 Ver cartera':'👁 Kartei ansehen','Restringir acceso al asesor':'Zugriff des Beraters einschränken',
+      '👁 Ver cartera':'👁 Kartei ansehen','📇 Ver contactos en frío':'📇 Kaltkontakte ansehen','Restringir acceso al asesor':'Zugriff des Beraters einschränken',
       'Rechazar solicitud':'Anfrage ablehnen','🗑 Borrar cuenta…':'🗑 Konto löschen…',
       'este asesor':'diesen Berater',
       '¿Restringir el acceso de {0}?\n\nYa no podrá entrar a su cuenta, pero sus clientes NO se borran — tú los sigues viendo y editando en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar".':'Zugriff für {0} einschränken?\n\nDie Person kann sich nicht mehr anmelden, aber ihre Kunden werden NICHT gelöscht — du siehst und bearbeitest sie weiterhin über "Kartei ansehen" und kannst den Zugriff jederzeit mit "Genehmigen" wiederherstellen.',
