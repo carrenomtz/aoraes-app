@@ -3771,12 +3771,10 @@
       if(opt==='banco'||opt==='refiBanco'){
         basic+=inmuebleQuickButtons('interesPrestamo',[2,3,4,4.2,5],'%');
       }
-      advanced+=(opt==='banco'||opt==='refiBanco'
-        ? inmuebleOptField(opt,'tilgungInicial','Amortización inicial (Tilgung)',cfg.tilgungInicial,'0.1','%','min="0.1" max="10"')+
-          inmuebleQuickButtons('tilgungInicial',[1,1.5,2,3],'%')+
-          '<p class="inm-note">Cuánto capital devuelves cada año, además de los intereses — junto con el tipo, esto fija tu cuota mensual. Más Tilgung: cuota más alta, pero terminas de pagar antes.</p>'
-        : inmuebleOptField(opt,'tilgungsbeitragPerMille','Cuota de amortización (Tilgungsbeitrag)',cfg.tilgungsbeitragPerMille,'0.1','‰','min="1" max="20"'))+
-        inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
+      // La Tilgung/Tilgungsbeitrag salió de "Opciones avanzadas" a pedido explícito — el valor por
+      // defecto (el mismo que ya traía cada campo) sigue usándose en el cálculo tal cual, solo que
+      // ya no se ve ni se puede tocar desde aquí; confundía más de lo que ayudaba a explicar.
+      advanced+=inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
       if(opt==='banco'||opt==='refiBanco'){
         advanced+=inmuebleOptField(opt,'zinsbindung','Vigencia del tipo (Zinsbindung)',cfg.zinsbindung,'1','años','min="1" max="40"');
       }
