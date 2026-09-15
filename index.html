@@ -259,6 +259,11 @@
   .cont-field-input:hover{border-color:var(--line-strong)}
   .cont-field-input:focus{border-color:var(--gold); background:var(--surface); outline:none; box-shadow:0 0 0 2px var(--gold-tint)}
   .cont-date-input{font-family:inherit; font-size:10.5px; padding:3px 4px; border:1px solid var(--line-strong); border-radius:5px; background:var(--surface); max-width:118px; color:var(--ink)}
+  .cont-date-cell{display:flex; align-items:center; gap:4px; white-space:nowrap}
+  /* Un solo clic para marcar "lo intenté contactar hoy" — sin esto, había que abrir el selector de
+     fecha y buscar el día de hoy a mano cada vez, que es la acción más repetida de toda la tabla. */
+  .cont-today-btn{cursor:pointer; background:var(--gold-tint); color:var(--navy); border:1px solid var(--gold-soft); border-radius:5px; padding:3px 6px; font-weight:700; font-size:10px; white-space:nowrap; font-family:inherit; flex:0 0 auto}
+  .cont-today-btn:hover{background:var(--gold); color:#fff}
   .pool-notes-textarea{width:100%; min-width:140px; font-family:inherit; font-size:11.5px; padding:5px 6px; border:1px solid var(--gold); border-radius:5px; background:var(--surface); resize:vertical; min-height:54px; box-shadow:0 0 0 2px var(--gold-tint)}
   .pool-table tr.pool-dupe-row{background:#fdf3e7}
   .pool-table tr.pool-dupe-row:hover{background:#fbe9d3}
@@ -886,7 +891,7 @@
       </div>
       <div class="pool-table-wrap">
         <table class="pool-table" data-no-i18n>
-          <thead><tr id="cont-thead-row"><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="status">Status<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="email">Email<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th scope="col">Asesor</th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="notes">Notas<span class="sort-arrow"></span></th><th scope="col" class="cont-action-col"></th></tr></thead>
+          <thead><tr id="cont-thead-row"><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="status">Status<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="email">Email<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="notes">Notas<span class="sort-arrow"></span></th><th scope="col" class="cont-action-col"></th></tr></thead>
           <tbody id="cont-list"></tbody>
         </table>
       </div>
@@ -2169,7 +2174,7 @@
         var rowWho=l.name||l.email||l.phone||'este contacto';
         return '<tr'+(dupeKey?' class="pool-dupe-row"':'')+'>'+
           '<td><input type="checkbox" class="pool-check" aria-label="Seleccionar a '+esc(rowWho)+'" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
-          '<td><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-pool-field="lastContactAt" data-pool-lead="'+esc(l.id)+'" value="'+lastContactVal+'"></td>'+
+          '<td><div class="cont-date-cell"><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-pool-field="lastContactAt" data-pool-lead="'+esc(l.id)+'" value="'+lastContactVal+'"><button type="button" class="cont-today-btn" data-pool-today="'+esc(l.id)+'" title="Poner la fecha de hoy">Hoy</button></div></td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Número de lead" data-pool-field="leadNo" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
           '<td>'+statusSel+'</td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Nombre" data-pool-field="name" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.name||'')+'" placeholder="Sin nombre"></td>'+
@@ -2251,6 +2256,12 @@
     });
     document.getElementById('pool-list').addEventListener('click', function(e){
       if(e.target.closest('#pool-load-more')){ loadMorePool(); return; }
+      var todayBtn=e.target.closest('[data-pool-today]');
+      if(todayBtn){
+        var dateInput=todayBtn.previousElementSibling;
+        if(dateInput){ dateInput.value=localDateStr(new Date()); dateInput.dispatchEvent(new Event('change',{bubbles:true})); }
+        return;
+      }
       var notesEl=e.target.closest('[data-notes-toggle]');
       if(notesEl){
         var leadId5=notesEl.getAttribute('data-pool-lead');
@@ -2639,15 +2650,12 @@
         return hay.indexOf(q)>=0;
       });
       shown=sortContactRows(shown, _contSort.key, _contSort.dir);
-      if(!shown.length){ listEl.innerHTML='<tr><td colspan="9" class="ase-empty" style="border:0">'+(_contLeads.length?'Ningún contacto coincide.':'Todavía no tienes contactos asignados. Pídele al admin que te reparta algunos desde Asesores → Importar Excel.')+'</td></tr>'; return; }
+      if(!shown.length){ listEl.innerHTML='<tr><td colspan="8" class="ase-empty" style="border:0">'+(_contLeads.length?'Ningún contacto coincide.':'Todavía no tienes contactos asignados. Pídele al admin que te reparta algunos desde Asesores → Importar Excel.')+'</td></tr>'; return; }
       // Igual límite que en la bolsa del admin: sin filtro, solo los primeros 300.
       var CONT_CAP=300;
       var capped=shown.length>CONT_CAP && !q && !fs;
       var toRender=capped?shown.slice(0,CONT_CAP):shown;
-      var capNote=capped?('<tr><td colspan="9" class="ase-empty" style="border:0">Mostrando '+CONT_CAP+' de '+shown.length+' — usa la búsqueda o el filtro para encontrar el resto.</td></tr>'):'';
-      // Estos leads ya están en la colección del asesor que los está viendo — el nombre viene de su
-      // propio perfil (o de a quién está viendo el admin con "Ver cartera"), no del lead en sí.
-      var ownerName=window.AORAES_CLOUD.viewingEmail||(window.AORAES_CLOUD.profile&&(window.AORAES_CLOUD.profile.name||window.AORAES_CLOUD.profile.email))||'';
+      var capNote=capped?('<tr><td colspan="8" class="ase-empty" style="border:0">Mostrando '+CONT_CAP+' de '+shown.length+' — usa la búsqueda o el filtro para encontrar el resto.</td></tr>'):'';
       listEl.innerHTML=capNote+toRender.map(function(l){
         var st=l.status||'nuevo', conv=(st==='convertido');
         var lastContactVal=lastContactDateValue(l.lastContactAt);
@@ -2656,13 +2664,12 @@
           : '<select class="cont-status-select" data-lead="'+esc(l.id)+'" aria-label="Estado"'+pillStyleAttr(CONT_STATUS_COLOR[st])+'>'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
         // Todo se puede corregir a mano directo en la tabla — siempre hay erratas de teléfono/nombre.
         return '<tr>'+
-          '<td><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-field="lastContactAt" data-lead="'+esc(l.id)+'" value="'+lastContactVal+'"></td>'+
+          '<td><div class="cont-date-cell"><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-field="lastContactAt" data-lead="'+esc(l.id)+'" value="'+lastContactVal+'"><button type="button" class="cont-today-btn" data-today="'+esc(l.id)+'" title="Poner la fecha de hoy">Hoy</button></div></td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Número de lead" data-field="leadNo" data-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
           '<td>'+statusControl+'</td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Nombre" data-field="name" data-lead="'+esc(l.id)+'" value="'+esc(l.name||'')+'" placeholder="Sin nombre"></td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Correo electrónico" data-field="email" data-lead="'+esc(l.id)+'" value="'+esc(l.email||'')+'"></td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Teléfono" data-field="phone" data-lead="'+esc(l.id)+'" value="'+esc(l.phone||'')+'"></td>'+
-          '<td>'+(ownerName?esc(ownerName):'<span style="color:var(--faint)">—</span>')+'</td>'+
           '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle data-lead="'+esc(l.id)+'">'+esc(l.notes)+'</span>':'<span class="pool-notes-text" data-notes-toggle data-lead="'+esc(l.id)+'" style="color:var(--faint)">— (clic para añadir)</span>')+'</td>'+
           '<td class="cont-action-col">'+(!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir</button>':'')+'</td>'+
         '</tr>';
@@ -2694,6 +2701,12 @@
       }
     });
     document.getElementById('cont-list').addEventListener('click', function(e){
+      var todayBtn=e.target.closest('[data-today]');
+      if(todayBtn){
+        var dateInput=todayBtn.previousElementSibling;
+        if(dateInput){ dateInput.value=localDateStr(new Date()); dateInput.dispatchEvent(new Event('change',{bubbles:true})); }
+        return;
+      }
       var notesEl=e.target.closest('[data-notes-toggle]');
       if(notesEl){
         var leadId3=notesEl.getAttribute('data-lead');
