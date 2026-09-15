@@ -3900,7 +3900,7 @@
     // líneas bajando solas no cuentan nada: se añaden dos avisos con la cifra exacta en el momento
     // en que el Bausparvertrag termina de pagar (cuánto le falta al banco justo entonces) y una
     // franja sombreada de ahí en adelante — la ventaja ya conseguida, en positivo, no la deuda.
-    function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst){
+    function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst,mesesZinsbindung){
       var W=600,H=232,padL=44,padR=10,padT=20,padB=24;
       var maxMeses=Math.max(ptsEst[ptsEst.length-1].meses,ptsBanco[ptsBanco.length-1].meses,1);
       var maxY=Math.max(precio,1);
@@ -3931,6 +3931,14 @@
           '<text x="'+xx.toFixed(1)+'" y="'+(H-padB+13)+'" font-size="9" fill="var(--faint)" text-anchor="middle">'+a+'</text>';
       }
       var marca=mesesAhorroEst>0?'<line x1="'+px(mesesAhorroEst).toFixed(1)+'" y1="'+padT+'" x2="'+px(mesesAhorroEst).toFixed(1)+'" y2="'+(H-padB)+'" stroke="var(--gold)" stroke-width="1" stroke-dasharray="3,3"/>':'';
+      // Marca aparte (distinto color/trazo que la Zuteilung) para la Zinsbindung del banco directo —
+      // el momento real en que un banco tradicional obliga a refinanciar (Anschlussfinanzierung),
+      // no cuando termina de pagarse el Bausparvertrag. Sin esto, esa fecha solo aparecía como texto
+      // más abajo, y en el gráfico no había forma de "verla" comparada contra ambas curvas.
+      var marcaZins=(mesesZinsbindung>0 && mesesZinsbindung<maxMeses)
+        ?'<line x1="'+px(mesesZinsbindung).toFixed(1)+'" y1="'+padT+'" x2="'+px(mesesZinsbindung).toFixed(1)+'" y2="'+(H-padB)+'" stroke="var(--navy-2)" stroke-width="1" stroke-dasharray="2,4"/>'+
+          '<text x="'+px(mesesZinsbindung).toFixed(1)+'" y="'+(padT+9).toFixed(1)+'" font-size="9" font-weight="700" fill="var(--navy-2)" text-anchor="middle">Zinsbindung</text>'
+        :'';
       // Franja "ya lo tienes pagado": desde que el Bausparvertrag llega a cero hasta el final del
       // banco, el hueco entre las dos líneas es la ventaja ya conseguida — se sombrea en dorado
       // suave bajo la curva del banco, no se resalta la del banco como si fuera el problema.
@@ -3943,7 +3951,7 @@
         area='<polygon points="'+poly.join(' ')+'" fill="var(--gold)" fill-opacity="0.13"/>';
         var yBancoAhi=valorEn(ptsBanco,finEst);
         callout='<circle cx="'+px(finEst).toFixed(1)+'" cy="'+yBase.toFixed(1)+'" r="3.5" fill="var(--navy)"/>'+
-          '<text x="'+px(finEst).toFixed(1)+'" y="'+(yBase-8).toFixed(1)+'" font-size="10" font-weight="700" fill="var(--navy)" text-anchor="middle">Pagado</text>'+
+          '<text x="'+px(finEst).toFixed(1)+'" y="'+(yBase-8).toFixed(1)+'" font-size="10" font-weight="700" fill="var(--navy)" text-anchor="middle">Pagado ('+fmtAnos(finEst)+')</text>'+
           '<circle cx="'+px(finEst).toFixed(1)+'" cy="'+py(yBancoAhi).toFixed(1)+'" r="3.5" fill="'+colorBanco+'"/>'+
           // eur() usa Intl.NumberFormat, que en es-ES separa el número del símbolo con un espacio
           // de NO separación (U+00A0) — un .replace(' €','') con espacio normal no lo detecta y
@@ -3951,7 +3959,7 @@
           '<text x="'+px(finEst).toFixed(1)+'" y="'+(py(yBancoAhi)-8).toFixed(1)+'" font-size="10" font-weight="700" fill="'+colorBanco+'" text-anchor="middle">'+eur(yBancoAhi).replace(/\s*€/,'')+' € aún</text>';
       }
       return '<svg viewBox="0 0 '+W+' '+H+'" class="inm-curve-svg" role="img" aria-label="Cuánto queda por pagar, comparado en el tiempo">'+
-        area+gridY+gridX+marca+
+        area+gridY+gridX+marca+marcaZins+
         '<path d="'+path(ptsBanco)+'" fill="none" stroke="'+colorBanco+'" stroke-width="2.5"/>'+
         '<path d="'+path(ptsEst)+'" fill="none" stroke="var(--navy)" stroke-width="2.5"/>'+
         callout+
@@ -4075,7 +4083,7 @@
       var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg), ptsBanco=inmuebleCurvaSaldo(precio,rk,inm.banco);
       var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
         '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>Banco directo</span></div></div>'+
-        inmuebleCurvaSVG(precio,ptsEst,ptsBanco,rEst.mesesAhorro)+
+        inmuebleCurvaSVG(precio,ptsEst,ptsBanco,rEst.mesesAhorro,Math.round((inm.banco.zinsbindung||0)*12))+
         '<p class="inm-curve-note">'+(rEst.mesesAhorro>0?'La línea de puntos dorada marca la Zuteilung — el momento en que termina el ahorro y arranca el préstamo del Bausparvertrag. ':'')+'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
         '</div>';
       var frase=inmuebleFraseResumen('el Bausparvertrag',rk.costeTotal-rEst.costeTotal,rk.mesesTotal-rEst.mesesTotal,
