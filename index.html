@@ -3057,7 +3057,7 @@
       'Interés restante':'Remaining interest',
       'La Zinsbindung indicada cubre todo el plazo del préstamo — caso favorable, confírmalo con la oferta real del banco.':'The Zinsbindung entered covers the whole loan term — this is the favourable case; confirm it with the bank\'s actual offer.',
       'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.':'The shaded band is the lead you\'ve already built up once you finish paying.',
-      'La línea de puntos dorada marca la Zuteilung — el momento en que termina el ahorro y arranca el préstamo del Bausparvertrag. La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.':'The gold dotted line marks the Zuteilung — the moment the savings phase ends and the Bausparvertrag loan begins. The shaded band is the lead you\'ve already built up once you finish paying.',
+      'La línea de puntos dorada marca los 10 años — el plazo al que un banco tradicional suele exigir refinanciación (Anschlussfinanzierung). La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.':'The gold dotted line marks year 10 — the point at which a traditional bank typically requires refinancing (Anschlussfinanzierung). The shaded band is the lead you\'ve already built up once you finish paying.',
       'La línea de puntos dorada marca la fecha de refinanciación. Hasta entonces, las dos siguen pagando el crédito actual — en la opción Badenia, el ahorro corre en paralelo y ya descuenta de lo pendiente. La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.':'The gold dotted line marks the refinancing date. Until then, both options keep paying the current loan — in the Badenia option, the savings run in parallel and are already deducted from the balance. The shaded band is the lead you\'ve already built up once you finish paying.',
       'Modo del proyecto inmobiliario':'Real-estate project mode',
       'Más caro que el banco':'More expensive than the bank',
@@ -3189,7 +3189,7 @@
       'Con el Bausparvertrag ahorras':'Mit dem Bausparvertrag sparen Sie',', terminas de pagar':', sind Sie mit dem Zahlen fertig','antes, y tu cuota está garantizada':'früher, und Ihre Rate ist garantiert','todo el plazo':'die gesamte Laufzeit',
       '— con el banco, solo {0} años de {1} años.':'— bei der Bank nur {0} von {1} Jahren.',
       'Cuánto queda por pagar, año a año':'Wie viel noch zu zahlen ist, Jahr für Jahr','Pagado':'Bezahlt','{0} € aún':'noch {0} €',
-      'La línea de puntos dorada marca la Zuteilung — el momento en que termina el ahorro y arranca el préstamo del Bausparvertrag. La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.':'Die goldene gepunktete Linie markiert die Zuteilung — den Moment, in dem die Ansparphase endet und das Bauspardarlehen beginnt. Die schattierte Fläche zeigt den Vorteil, den Sie bereits erreicht haben, sobald Sie fertig bezahlt haben.',
+      'La línea de puntos dorada marca los 10 años — el plazo al que un banco tradicional suele exigir refinanciación (Anschlussfinanzierung). La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.':'Die goldene gepunktete Linie markiert das Jahr 10 — den Zeitpunkt, an dem eine klassische Bank in der Regel eine Anschlussfinanzierung verlangt. Die schattierte Fläche zeigt den Vorteil, den Sie bereits erreicht haben, sobald Sie fertig bezahlt haben.',
       'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.':'Die schattierte Fläche zeigt den Vorteil, den Sie bereits erreicht haben, sobald Sie fertig bezahlt haben.',
       'Cuota ahorro':'Sparrate','Cuota préstamo':'Darlehensrate','Interés pagado':'Gezahlte Zinsen','Interés efectivo del préstamo':'Effektiver Darlehenszins','Coste total':'Gesamtkosten',
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
@@ -3950,7 +3950,7 @@
         gridX+='<line x1="'+xx.toFixed(1)+'" y1="'+padT+'" x2="'+xx.toFixed(1)+'" y2="'+(H-padB)+'" stroke="var(--line-soft)" stroke-width="1"/>'+
           '<text x="'+xx.toFixed(1)+'" y="'+(H-padB+13)+'" font-size="9" fill="var(--faint)" text-anchor="middle">'+a+'</text>';
       }
-      var marca=mesesAhorroEst>0?'<line x1="'+px(mesesAhorroEst).toFixed(1)+'" y1="'+padT+'" x2="'+px(mesesAhorroEst).toFixed(1)+'" y2="'+(H-padB)+'" stroke="var(--gold)" stroke-width="1" stroke-dasharray="3,3"/>':'';
+      var marca=(mesesAhorroEst>0 && mesesAhorroEst<maxMeses)?'<line x1="'+px(mesesAhorroEst).toFixed(1)+'" y1="'+padT+'" x2="'+px(mesesAhorroEst).toFixed(1)+'" y2="'+(H-padB)+'" stroke="var(--gold)" stroke-width="1" stroke-dasharray="3,3"/>':'';
       // Marca aparte (distinto color/trazo que la Zuteilung) para la Zinsbindung del banco directo —
       // el momento real en que un banco tradicional obliga a refinanciar (Anschlussfinanzierung),
       // no cuando termina de pagarse el Bausparvertrag. Sin esto, esa fecha solo aparecía como texto
@@ -4103,8 +4103,8 @@
       var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg), ptsBanco=inmuebleCurvaSaldo(precio,rk,inm.banco);
       var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
         '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>Banco directo</span></div></div>'+
-        inmuebleCurvaSVG(precio,ptsEst,ptsBanco,rEst.mesesAhorro,Math.round((inm.banco.zinsbindung||0)*12))+
-        '<p class="inm-curve-note">'+(rEst.mesesAhorro>0?'La línea de puntos dorada marca la Zuteilung — el momento en que termina el ahorro y arranca el préstamo del Bausparvertrag. ':'')+'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
+        inmuebleCurvaSVG(precio,ptsEst,ptsBanco,120,Math.round((inm.banco.zinsbindung||0)*12))+
+        '<p class="inm-curve-note">La línea de puntos dorada marca los 10 años — el plazo al que un banco tradicional suele exigir refinanciación (Anschlussfinanzierung). La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
         '</div>';
       var frase=inmuebleFraseResumen('el Bausparvertrag',rk.costeTotal-rEst.costeTotal,rk.mesesTotal-rEst.mesesTotal,
         rEst.mesesPrestamo,rEst.mesesPrestamo,Math.min((inm.banco.zinsbindung||0)*12,rk.mesesPrestamo),rk.mesesPrestamo);
