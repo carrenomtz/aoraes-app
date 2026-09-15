@@ -5291,11 +5291,14 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
   });
 
   /* ---------- Guardado automático ----------
-     Cada 5 minutos: si se ha escrito algo desde el último guardado (manual o automático) Y la ficha
-     abierta ya existe (currentId/empId asignado por un guardado manual previo), se guarda sola en
-     silencio, con el mismo Guardar de siempre — así también se beneficia del arreglo de la subida a
-     la nube. No crea fichas nuevas por sí solo: un análisis todavía sin el primer Guardar manual no
-     se autoguarda, para no generar un registro fantasma solo por haber escrito en una prueba.
+     Cada 20 segundos: si se ha escrito algo desde el último guardado (manual o automático), se
+     guarda solo en silencio, con el mismo Guardar de siempre — así también se beneficia del arreglo
+     de la subida a la nube. Antes esto exigía además que la ficha ya existiera (currentId/empId
+     asignado por un Guardar manual previo) para no crear un registro fantasma solo por haber escrito
+     en una prueba — pero saveCurrent()/saveEmpresa() YA exigen un nombre antes de crear nada (si no
+     hay nombre, no hacen más que avisar en el chip), así que esa restricción extra solo servía para
+     perder análisis reales: alguien empezaba una ficha nueva, escribía datos reales y, si cerraba o
+     navegaba antes del primer Guardar manual, el autoguardado nunca había llegado a intentarlo.
      "Se ha escrito algo" se detecta con la misma delegación 'input'/'change' de arriba, en captura,
      así que cualquier campo del formulario lo marca sin tener que enumerarlos uno a uno. */
   var _dirtySinceSave=false;
@@ -5306,10 +5309,18 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     _dirtySinceSave=false;
     var esVisible=$('#empresa-screen')&&$('#empresa-screen').style.display==='block';
     var clientesVisible=$('#clients-screen')&&$('#clients-screen').style.display==='block';
-    if(empId && esVisible) saveEmpresa();
-    else if(currentId && !clientesVisible && !esVisible) saveCurrent();
+    // saveCurrent()/saveEmpresa() enfocan el campo de nombre y avisan si está vacío — bien para un
+    // clic manual en "Guardar", pero robaría el foco de en medio de lo que se esté escribiendo si
+    // pasara en silencio durante un autoguardado. Por eso aquí se comprueba el nombre ANTES de
+    // llamarlos, en vez de dejar que ellos mismos lo descubran.
+    if(esVisible){
+      var companyField=document.querySelector('[data-emp="company_name"]');
+      if(companyField && companyField.value.trim()) saveEmpresa();
+    } else if(!clientesVisible){
+      if(($('#m_cliente').value||'').trim()) saveCurrent();
+    }
   }
-  setInterval(autosaveTick, 5*60*1000);
+  setInterval(autosaveTick, 20*1000);
   document.addEventListener('change',function(e){
     if(e.target.matches('.tipo-reflow-select')) onContractTipoChange(e.target);
     if(e.target.closest('#contract-propuesta-body')) render();
