@@ -4131,6 +4131,13 @@
       // campo está vacío. Redondear aquí, en cada carga, limpia también esas fichas ya migradas.
       [inm.banco,inm.refi.banco].forEach(function(c){ if(c.tilgungInicial!=null) c.tilgungInicial=Math.round(c.tilgungInicial*100)/100; });
       [inm.a,inm.b,inm.refi.a,inm.refi.b].forEach(function(c){ if(c.tilgungsbeitragPerMille!=null) c.tilgungsbeitragPerMille=Math.round(c.tilgungsbeitragPerMille*100)/100; });
+      // Ahora que este campo ya no se ve ni se puede tocar, un valor guardado fuera del rango que
+      // el propio formulario sugería (min/max de cuando aún era editable) ya no tiene forma de
+      // corregirse a mano — así que se recorta aquí. Dentro del rango se deja tal cual (un asesor
+      // pudo haberlo ajustado antes a una oferta real concreta); solo lo claramente roto (p. ej.
+      // 0,2‰, que llevaba el préstamo a 100 años) se repone al valor por defecto.
+      [inm.banco,inm.refi.banco].forEach(function(c){ if(c.tilgungInicial!=null && (c.tilgungInicial<0.1||c.tilgungInicial>10)) c.tilgungInicial=1.5; });
+      [inm.a,inm.b,inm.refi.a,inm.refi.b].forEach(function(c){ if(c.tilgungsbeitragPerMille!=null && (c.tilgungsbeitragPerMille<1||c.tilgungsbeitragPerMille>20)) c.tilgungsbeitragPerMille=6; });
       return inm;
     }
     function inmuebleBlock(rec){
