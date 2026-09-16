@@ -93,9 +93,9 @@
   #auth-pass2-wrap[hidden], #auth-pass2-label[hidden]{display:none}
   .auth-err{font-size:12.5px; color:#b0473a; background:rgba(176,71,58,.08); border:1px solid rgba(176,71,58,.25); border-radius:8px; padding:8px 10px; margin-top:10px}
   .auth-err[hidden]{display:none}
-  #auth-submit{margin-top:16px; font:inherit; font-weight:700; font-size:14px; padding:11px; border:none; border-radius:11px; background:var(--navy); color:#fff; box-shadow:0 6px 16px rgba(20,33,61,.18); cursor:pointer; transition:background .15s, box-shadow .15s}
-  #auth-submit:hover{background:var(--navy-deep); box-shadow:0 8px 20px rgba(20,33,61,.24)}
-  #auth-submit:disabled{opacity:.6; cursor:default}
+  #auth-submit, #cp-submit{margin-top:16px; font:inherit; font-weight:700; font-size:14px; padding:11px; border:none; border-radius:11px; background:var(--navy); color:#fff; box-shadow:0 6px 16px rgba(20,33,61,.18); cursor:pointer; transition:background .15s, box-shadow .15s}
+  #auth-submit:hover, #cp-submit:hover{background:var(--navy-deep); box-shadow:0 8px 20px rgba(20,33,61,.24)}
+  #auth-submit:disabled, #cp-submit:disabled{opacity:.6; cursor:default}
   .auth-toggle{display:block; width:100%; margin-top:16px; background:none; border:none; font:inherit; font-size:12.5px; color:var(--navy-2); cursor:pointer; text-decoration:underline}
   .auth-forgot{display:block; width:100%; margin-top:12px; background:none; border:none; font:inherit;
     font-size:12.5px; color:var(--faint); cursor:pointer; text-decoration:underline}
@@ -709,6 +709,27 @@
     </div>
   </div>
 
+  <div class="auth-gate" id="complete-profile-gate" hidden>
+    <div class="auth-box">
+      <img class="auth-logo" src="./logo-icon-gold.png" alt="" aria-hidden="true">
+      <h1>AORAES</h1>
+      <p class="auth-sub">Panel del asesor</p>
+      <div class="pending-msg">
+        <p><b>Antes de continuar, completa tu perfil.</b></p>
+        <p>Tu cuenta se creó antes de que pidiéramos estos datos — solo hace falta esta vez.</p>
+      </div>
+      <form id="complete-profile-form">
+        <label for="cp-name">Nombre completo</label>
+        <input type="text" id="cp-name" autocomplete="name" minlength="2" maxlength="100" required>
+        <label for="cp-phone">Teléfono</label>
+        <input type="tel" id="cp-phone" autocomplete="tel" minlength="5" maxlength="40" required>
+        <div class="auth-err" id="cp-err" hidden></div>
+        <button type="submit" id="cp-submit">Guardar y continuar</button>
+      </form>
+      <button type="button" class="auth-toggle" id="cp-signout" style="margin-top:18px">Cerrar sesión</button>
+    </div>
+  </div>
+
   <div class="appbar">
     <div class="brand"><img class="brand-icon" src="./logo-icon-gold.png" alt="" aria-hidden="true"><div class="brand-text"><span class="brand-mark">AORAES</span><span class="brand-sub">Departamento Español</span></div></div>
     <div class="active-chip" id="active-chip" role="button" tabindex="0" aria-label="Abrir ficha del cliente activo"><span class="ac-dot"></span><span class="ac-name" id="ac-name"></span><button class="ac-x" id="ac-x" title="Quitar cliente activo" aria-label="Quitar cliente activo">&#10005;</button></div>
@@ -970,6 +991,16 @@
       approveAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'approved'}).catch(function(e){ console.error('AORAES cloud: fallo al aprobar',e); }); },
       rejectAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'rechazado'}).catch(function(e){ console.error('AORAES cloud: fallo al rechazar',e); }); },
       updateOwnName: function(name){ if(!currentUid) return Promise.resolve(); return updateDoc(profileDoc(currentUid), {fullName:name}).catch(function(e){ console.error('AORAES cloud: fallo al guardar el nombre',e); }); },
+      // Rellena los datos que las cuentas creadas antes de exigir este esquema nunca llegaron a
+      // tener (fullName/phone/profession/source) — se ofrece una sola vez, ver complete-profile-gate.
+      completeProfile: function(fullName, phone){
+        if(!currentUid) return Promise.resolve();
+        return updateDoc(profileDoc(currentUid), {
+          fullName: fullName, phone: phone,
+          profession: 'Vermögensberater',
+          source: 'Perfil completado desde el panel de asesores'
+        });
+      },
       // Mismo filtro que aplica el cockpit a su propia lista (sin genéricos, sin fichas de empresa,
       // que no recorren este pipeline de persona) — así el total cuadra exactamente con la suma del
       // desglose por estado, y con lo que el asesor ve si el admin entra con "Ver cartera".
@@ -1355,6 +1386,21 @@
     });
     document.getElementById('signout-btn').addEventListener('click', function(){ signOut(auth); });
     document.getElementById('pending-signout').addEventListener('click', function(){ signOut(auth); });
+    document.getElementById('cp-signout').addEventListener('click', function(){ signOut(auth); });
+    document.getElementById('complete-profile-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      var name = document.getElementById('cp-name').value.trim();
+      var phone = document.getElementById('cp-phone').value.trim();
+      var errEl = document.getElementById('cp-err');
+      var btn = document.getElementById('cp-submit');
+      errEl.hidden = true;
+      btn.disabled = true;
+      window.AORAES_CLOUD.completeProfile(name, phone).catch(function(err){
+        console.error('AORAES cloud: fallo al completar el perfil', err);
+        errEl.textContent = 'No se pudo guardar. Comprueba tu conexión e inténtalo de nuevo.';
+        errEl.hidden = false;
+      }).finally(function(){ btn.disabled = false; });
+    });
 
     // Pantalla de "pendiente de aprobación": se muestra sola mientras el perfil no esté aprobado,
     // y se oculta sola en cuanto el admin apruebe (gracias al listener en vivo del perfio arriba,
@@ -1366,7 +1412,18 @@
       var navAse = document.getElementById('nav-asesores');
       var notifWrap = document.getElementById('notif-wrap');
       var contImport = document.getElementById('cont-import');
-      if(!profile){ pendingEl.hidden = true; return; }
+      var cpEl = document.getElementById('complete-profile-gate');
+      if(!profile){ pendingEl.hidden = true; cpEl.hidden = true; return; }
+      // Cuentas creadas antes de exigir fullName/phone en el alta (todas las que ya existían cuando
+      // se corrigió el esquema del 26-09-16): nunca tuvieron ocasión de darlos, así que se piden una
+      // sola vez aquí, bloqueando el resto de la app igual que pending-gate — en cuanto se guardan,
+      // esta pantalla no vuelve a aparecer (deja de cumplirse la condición).
+      if(profile.status === 'approved' && (!profile.fullName || !profile.phone)){
+        cpEl.hidden = false; pendingEl.hidden = true;
+        navAse.hidden = true; notifWrap.hidden = true; contImport.hidden = true;
+        return;
+      }
+      cpEl.hidden = true;
       if(profile.status === 'approved'){
         pendingEl.hidden = true;
         navAse.hidden = (profile.role !== 'admin');
@@ -2942,6 +2999,10 @@
       'Editar ficha en Análisis →':'Edit file in Analysis →',
       'Notificaciones':'Notifications','Abrir ficha del cliente activo':"Open active client's file",
       'Quitar cliente activo':'Remove active client','Cerrar sesión':'Sign out',
+      'Antes de continuar, completa tu perfil.':'Before you continue, complete your profile.',
+      'Tu cuenta se creó antes de que pidiéramos estos datos — solo hace falta esta vez.':'Your account was created before we asked for this — you only need to do it once.',
+      'Guardar y continuar':'Save and continue',
+      'No se pudo guardar. Comprueba tu conexión e inténtalo de nuevo.':'Could not save. Check your connection and try again.',
       'Análisis financiero y CRM':'Financial Analysis & CRM',
       'Panel del asesor':'Advisor panel','Tu cartera de clientes':'Your client portfolio',
       '+ Nuevo cliente':'+ New client','Buscar clientes':'Search clients',
@@ -3240,6 +3301,10 @@
       'Sin notas. Edita la ficha en el módulo de Análisis.':'Keine Notizen. Bearbeiten Sie die Akte im Analyse-Modul.',
       'Editar ficha en Análisis →':'Akte in Analyse bearbeiten →',
       'Quitar cliente activo':'Aktiven Kunden entfernen','Cerrar sesión':'Abmelden',
+      'Antes de continuar, completa tu perfil.':'Bevor du fortfährst, vervollständige dein Profil.',
+      'Tu cuenta se creó antes de que pidiéramos estos datos — solo hace falta esta vez.':'Dein Konto wurde erstellt, bevor wir diese Angaben verlangt haben — das ist nur einmalig nötig.',
+      'Guardar y continuar':'Speichern und weiter',
+      'No se pudo guardar. Comprueba tu conexión e inténtalo de nuevo.':'Konnte nicht gespeichert werden. Verbindung prüfen und erneut versuchen.',
       'Análisis financiero y CRM':'Finanzanalyse & CRM',
       'Panel del asesor':'Berater-Panel','Tu cartera de clientes':'Deine Kundenkartei',
       '+ Nuevo cliente':'+ Neuer Kunde','Buscar clientes':'Kunden suchen',
