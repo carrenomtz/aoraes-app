@@ -671,7 +671,9 @@
       <p class="auth-sub">Panel del asesor</p>
       <form id="auth-form">
         <label for="auth-name" id="auth-name-label" hidden>Nombre completo</label>
-        <input type="text" id="auth-name" autocomplete="name" hidden>
+        <input type="text" id="auth-name" autocomplete="name" minlength="2" maxlength="100" hidden>
+        <label for="auth-phone" id="auth-phone-label" hidden>Teléfono</label>
+        <input type="tel" id="auth-phone" autocomplete="tel" minlength="5" maxlength="40" hidden>
         <label for="auth-email">Correo</label>
         <input type="email" id="auth-email" autocomplete="username" required>
         <label for="auth-pass">Contraseña</label>
@@ -932,7 +934,7 @@
     // correo, que puede cambiar) para que perder/cambiar el correo nunca le quite el acceso de admin.
     var ADMIN_UID = 'DMDXyvqfaeQiXfb3pYmoX95vNR82';
 
-    var currentUid = null, currentProfile = null, viewingUid = null, pendingSignupName = null;
+    var currentUid = null, currentProfile = null, viewingUid = null, pendingSignupName = null, pendingSignupPhone = null;
     var unsubClients = null, unsubProfile = null, unsubPendingAdvisors = null, unsubRecentClients = null;
 
     function clientsCol(uid){ return collection(db, 'users', uid || viewingUid || currentUid, 'clients'); }
@@ -967,7 +969,7 @@
       },
       approveAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'approved'}).catch(function(e){ console.error('AORAES cloud: fallo al aprobar',e); }); },
       rejectAdvisor: function(uid){ return updateDoc(profileDoc(uid), {status:'rechazado'}).catch(function(e){ console.error('AORAES cloud: fallo al rechazar',e); }); },
-      updateOwnName: function(name){ if(!currentUid) return Promise.resolve(); return updateDoc(profileDoc(currentUid), {name:name}).catch(function(e){ console.error('AORAES cloud: fallo al guardar el nombre',e); }); },
+      updateOwnName: function(name){ if(!currentUid) return Promise.resolve(); return updateDoc(profileDoc(currentUid), {fullName:name}).catch(function(e){ console.error('AORAES cloud: fallo al guardar el nombre',e); }); },
       // Mismo filtro que aplica el cockpit a su propia lista (sin genéricos, sin fichas de empresa,
       // que no recorren este pipeline de persona) — así el total cuadra exactamente con la suma del
       // desglose por estado, y con lo que el asesor ve si el admin entra con "Ver cartera".
@@ -1194,13 +1196,22 @@
       getDoc(pDoc).then(function(snap){
         if(!snap.exists()){
           var bootstrapAdmin = (user.uid === ADMIN_UID);
+          // Las reglas de Firestore para users/{uid} (create) exigen EXACTAMENTE este esquema —
+          // email, fullName, phone, profession, source, role, status, createdAt, ni un campo más
+          // ni uno menos (hasOnly) — así que el alta tiene que escribir todos estos campos o
+          // Firestore la rechaza entera con permission-denied, sin dejar ningún rastro visible
+          // para el asesor nuevo (solo un error en la consola, que nunca ve).
           var doc0 = {
             email: user.email,
+            fullName: pendingSignupName || user.email,
+            phone: pendingSignupPhone || 'Sin teléfono',
+            profession: 'Vermögensberater',
+            source: 'Alta desde el panel de asesores',
             role: bootstrapAdmin ? 'admin' : 'advisor',
             status: bootstrapAdmin ? 'approved' : 'pending',
-            requestedAt: serverTimestamp()
+            createdAt: serverTimestamp()
           };
-          if(pendingSignupName){ doc0.name = pendingSignupName; pendingSignupName = null; }
+          pendingSignupName = null; pendingSignupPhone = null;
           return setDoc(pDoc, doc0);
         }
       }).then(function(){
@@ -1271,9 +1282,12 @@
       document.getElementById('auth-name').hidden = !isSignup;
       document.getElementById('auth-name-label').hidden = !isSignup;
       document.getElementById('auth-name').required = isSignup;
+      document.getElementById('auth-phone').hidden = !isSignup;
+      document.getElementById('auth-phone-label').hidden = !isSignup;
+      document.getElementById('auth-phone').required = isSignup;
       document.getElementById('auth-forgot').hidden = isSignup;
       document.getElementById('auth-ok').hidden = true;
-      if(!isSignup){ document.getElementById('auth-pass2').value = ''; document.getElementById('auth-name').value = ''; }
+      if(!isSignup){ document.getElementById('auth-pass2').value = ''; document.getElementById('auth-name').value = ''; document.getElementById('auth-phone').value = ''; }
     });
     function wireEye(btnId, inputId){
       document.getElementById(btnId).addEventListener('click', function(){
@@ -1298,6 +1312,7 @@
         errEl.textContent = 'Las contraseñas no coinciden — revísalas.'; errEl.hidden = false; return;
       }
       pendingSignupName = isSignup ? document.getElementById('auth-name').value.trim() : null;
+      pendingSignupPhone = isSignup ? document.getElementById('auth-phone').value.trim() : null;
       btn.disabled = true;
       var action = isSignup ? createUserWithEmailAndPassword : signInWithEmailAndPassword;
       action(auth, email, pass).catch(function(err){
@@ -1899,7 +1914,7 @@
           var ta=(a.lastLoginAt&&a.lastLoginAt.toDate)?a.lastLoginAt.toDate().getTime():0;
           var tb=(b.lastLoginAt&&b.lastLoginAt.toDate)?b.lastLoginAt.toDate().getTime():0;
           if(ta!==tb) return tb-ta;
-          return (a.name||a.email||'').localeCompare(b.name||b.email||'');
+          return (a.fullName||a.email||'').localeCompare(b.fullName||b.email||'');
         });
         var viewing=window.AORAES_CLOUD.viewingUid;
         // Resumen al vuelo: cuántas solicitudes esperan, cuántos asesores activos y cuántos clientes
@@ -1948,8 +1963,8 @@
           }
           var menu=(!isSelf && items) ? ('<div class="ase-menu-wrap"><button type="button" class="ase-menu-btn" data-ase-menu-toggle="'+esc(p.uid)+'" aria-label="Opciones" aria-haspopup="true" aria-expanded="false" aria-controls="ase-menu-'+esc(p.uid)+'">⋮</button><div class="ase-menu" role="menu" id="ase-menu-'+esc(p.uid)+'" hidden>'+items+'</div></div>') : '';
 
-          var primaryLabel=esc(p.name||p.email||p.uid);
-          var subEmail=(p.name && p.email) ? '<div style="font-size:12px;color:var(--faint);font-weight:500">'+esc(p.email)+'</div>' : '';
+          var primaryLabel=esc(p.fullName||p.email||p.uid);
+          var subEmail=(p.fullName && p.email) ? '<div style="font-size:12px;color:var(--faint);font-weight:500">'+esc(p.email)+'</div>' : '';
           var editNameBtn=isSelf ? ' <button type="button" data-ase-edit-name="1" style="background:none;border:none;color:var(--faint);cursor:pointer;font-size:12.5px;text-decoration:underline;padding:0">✏️ editar nombre</button>' : '';
           // Desglose del pipeline: un chip por cada estado con al menos un cliente, en el mismo orden
           // y con los mismos colores que ya usa CRM_STATUS en las tarjetas del cockpit — así el admin
@@ -2055,7 +2070,7 @@
         var c=colorForAdvisor(a.uid);
         // El fondo de cada <option> es "mejor esfuerzo" (algunos navegadores lo ignoran) — el color
         // garantizado, en todos los navegadores, es el del <select> ya cerrado (recolorPillSelect()).
-        return '<option value="'+esc(a.uid)+'"'+(c?' style="background:'+c+'33;color:'+c+'"':'')+'>'+esc(a.name||a.email||a.uid)+'</option>';
+        return '<option value="'+esc(a.uid)+'"'+(c?' style="background:'+c+'33;color:'+c+'"':'')+'>'+esc(a.fullName||a.email||a.uid)+'</option>';
       }).join('');
     }
     // Compara solo los últimos 9 dígitos: así "+49 157 5060277" y "015750602771" (el mismo número
@@ -2543,7 +2558,7 @@
       var t=text.trim().toLowerCase(); if(!t) return null;
       var byEmail=_impAdvisors.filter(function(a){ return (a.email||'').toLowerCase().trim()===t; })[0];
       if(byEmail) return byEmail;
-      return _impAdvisors.filter(function(a){ return (a.name||'').toLowerCase().trim()===t; })[0]||null;
+      return _impAdvisors.filter(function(a){ return (a.fullName||'').toLowerCase().trim()===t; })[0]||null;
     }
     // Mapea + descarta filas sin nombre + agrupa duplicados por correo. Usado tanto por la vista
     // previa como por la importación real, para que el número que ve el admin antes de confirmar
@@ -2574,7 +2589,7 @@
       tbl.innerHTML='<thead><tr><th>Nº</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado previo</th><th>Asesor</th></tr></thead><tbody>'+
         previewRows.map(function(r){
           var adv=matchAdvisor(r.advisorText);
-          var advTxt=r.advisorText?(adv?('✓ '+esc(adv.name||adv.email)):('⚠ "'+esc(r.advisorText)+'" no reconocido → bolsa')):'— sin asesor → bolsa';
+          var advTxt=r.advisorText?(adv?('✓ '+esc(adv.fullName||adv.email)):('⚠ "'+esc(r.advisorText)+'" no reconocido → bolsa')):'— sin asesor → bolsa';
           var dupeTxt=r._dupeCount>1?(' <span style="color:var(--faint)">('+r._dupeCount+'×)</span>'):'';
           return '<tr><td>'+(esc(r.leadNo)||'—')+'</td><td>'+esc(r.name)+dupeTxt+'</td><td>'+esc(r.email)+'</td><td>'+esc(r.phone)+'</td><td>'+(esc(r.statusText)||'—')+'</td><td>'+advTxt+'</td></tr>';
         }).join('')+'</tbody>';
@@ -2983,6 +2998,7 @@
       'Guardar en la ficha de':"Save to the file for",
       'Ir a aoraes.de':'Go to aoraes.de','Correo':'Email','Contraseña':'Password',
       'Repetir contraseña':'Repeat password','Mostrar contraseña':'Show password','Ocultar contraseña':'Hide password',
+      'Nombre completo':'Full name',
       'Entrar':'Sign in','Crear cuenta':'Create account',
       '¿Olvidaste tu contraseña?':'Forgot your password?',
       'Escribe primero tu correo y vuelve a pulsar.':'Enter your email first, then tap again.',
@@ -3280,6 +3296,7 @@
       'Guardar en la ficha de':'In der Akte speichern von',
       'Ir a aoraes.de':'Zu aoraes.de','Correo':'E-Mail','Contraseña':'Passwort',
       'Repetir contraseña':'Passwort wiederholen','Mostrar contraseña':'Passwort anzeigen','Ocultar contraseña':'Passwort verbergen',
+      'Nombre completo':'Vollständiger Name',
       'Entrar':'Anmelden','Crear cuenta':'Konto erstellen',
       '¿Olvidaste tu contraseña?':'Passwort vergessen?',
       'Escribe primero tu correo y vuelve a pulsar.':'Geben Sie zuerst Ihre E-Mail-Adresse ein und tippen Sie erneut.',
