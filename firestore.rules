@@ -1,0 +1,467 @@
+// Copia de las reglas de Firestore del proyecto "aoraes-crm", tal como viven hoy en Firebase
+// Console (Firestore Database → Reglas). No hay despliegue automático todavía (requeriría
+// firebase-tools + `firebase deploy --only firestore:rules`): cualquier cambio se sigue pegando
+// a mano en la consola, pero ahora queda en git, revisable y con historial — antes solo existía
+// ahí, sin diff ni registro de qué cambió ni por qué. Si editas las reglas en la consola,
+// actualiza este archivo también para que no se desincronicen.
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isPrimaryAdmin() {
+      return isSignedIn()
+        && request.auth.token.email == 'carlos.carreno@dvag.de'
+        && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isPrimaryAdmin()
+        || (isSignedIn()
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && userDoc().data.role == 'admin'
+          && userDoc().data.status == 'approved');
+    }
+
+    function isAdvisor() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userDoc().data.role == 'advisor'
+        && userDoc().data.status == 'approved';
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isMoney(value) {
+      return value is number && value >= 0 && value <= 10000000;
+    }
+
+    function hasNewTimestamps() {
+      return request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function preservesCreatedAt() {
+      return request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    match /users/{uid} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if isOwner(uid)
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.keys().hasOnly(['email', 'fullName', 'phone', 'profession', 'source', 'role', 'status', 'createdAt'])
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() >= 2
+        && request.resource.data.fullName.size() <= 100
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 5
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.profession is string
+        && request.resource.data.profession.size() >= 2
+        && request.resource.data.profession.size() <= 100
+        && request.resource.data.source is string
+        && request.resource.data.source.size() <= 200
+        && request.resource.data.createdAt == request.time
+        && (
+          (request.resource.data.role == 'client' && request.resource.data.status == 'active')
+          || (request.resource.data.role == 'advisor' && request.resource.data.status == 'pending')
+        );
+
+      allow update: if (isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+        || (isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoginAt'])
+          && request.resource.data.lastLoginAt == request.time)
+        || (isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName'])
+          && request.resource.data.fullName is string
+          && request.resource.data.fullName.size() >= 2
+          && request.resource.data.fullName.size() <= 100)
+        || (isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'phone', 'profession', 'source'])
+          && request.resource.data.fullName is string
+          && request.resource.data.fullName.size() >= 2
+          && request.resource.data.fullName.size() <= 100
+          && request.resource.data.phone is string
+          && request.resource.data.phone.size() >= 5
+          && request.resource.data.phone.size() <= 40
+          && request.resource.data.profession is string
+          && request.resource.data.profession.size() >= 2
+          && request.resource.data.profession.size() <= 100
+          && request.resource.data.source is string
+          && request.resource.data.source.size() <= 200);
+      allow delete: if false;
+
+      match /savedArticles/{articleId} {
+        allow get, list: if isOwner(uid) || isAdmin();
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['articleId', 'slug', 'savedAt'])
+          && request.resource.data.articleId == articleId
+          && request.resource.data.slug is string
+          && request.resource.data.slug.size() >= 1
+          && request.resource.data.slug.size() <= 120
+          && request.resource.data.savedAt == request.time
+          && exists(/databases/$(database)/documents/articles/$(articleId))
+          && get(/databases/$(database)/documents/articles/$(articleId)).data.status == 'published';
+        allow update: if false;
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+
+      match /clients/{clientId} {
+        allow read, write: if isSignedIn() && (
+          (request.auth.uid == uid
+            && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && userDoc().data.status == 'approved')
+          || isAdmin()
+        );
+      }
+
+      // Bolsa fría por asesor (contactos importados de Excel, todavía sin análisis): mismo criterio
+      // que /clients — cada asesor solo ve/edita la suya, el admin ve/edita cualquiera (necesario
+      // para "Importar Excel" y la asignación en bloque, que escriben en la subcolección del asesor
+      // que el admin elija, no en la suya propia).
+      match /leads/{leadId} {
+        allow read, write: if isSignedIn() && (
+          (request.auth.uid == uid
+            && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && userDoc().data.status == 'approved')
+          || isAdmin()
+        );
+      }
+    }
+
+    // Contactos importados de Excel que aún no tienen asesor asignado. Exclusivo del admin: ningún
+    // asesor lee ni escribe aquí directamente — la interfaz solo la usa desde el panel de Asesores.
+    match /leadsPool/{leadId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /clientProfiles/{uid} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(uid)
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.keys().hasOnly(['email', 'displayName', 'phone', 'profession', 'locale', 'consentAt', 'createdAt', 'updatedAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 100
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 5
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.profession is string
+        && request.resource.data.profession.size() >= 2
+        && request.resource.data.profession.size() <= 100
+        && request.resource.data.locale in ['es-DE', 'en-DE', 'de-DE']
+        && request.resource.data.consentAt == request.time
+        && hasNewTimestamps();
+      allow update: if isAdmin() || (isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'phone', 'profession', 'locale', 'consentAt', 'updatedAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 100
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 5
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.profession is string
+        && request.resource.data.profession.size() >= 2
+        && request.resource.data.profession.size() <= 100
+        && request.resource.data.locale in ['es-DE', 'en-DE', 'de-DE']
+        && preservesCreatedAt());
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    match /financialAnalyses/{uid}/entries/{analysisId} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid)
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'income', 'expenses', 'reserve', 'debt', 'coverage',
+          'privatePension', 'investment', 'score', 'freeCash',
+          'emergencyMonths', 'createdAt', 'updatedAt'
+        ])
+        && isMoney(request.resource.data.income)
+        && isMoney(request.resource.data.expenses)
+        && isMoney(request.resource.data.reserve)
+        && isMoney(request.resource.data.debt)
+        && request.resource.data.coverage is bool
+        && request.resource.data.privatePension is bool
+        && request.resource.data.investment is bool
+        && request.resource.data.score is number
+        && request.resource.data.score >= 0
+        && request.resource.data.score <= 100
+        && request.resource.data.freeCash is number
+        && request.resource.data.freeCash >= -10000000
+        && request.resource.data.freeCash <= 10000000
+        && request.resource.data.emergencyMonths is number
+        && request.resource.data.emergencyMonths >= 0
+        && request.resource.data.emergencyMonths <= 1200
+        && hasNewTimestamps();
+      allow update: if isOwner(uid)
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'income', 'expenses', 'reserve', 'debt', 'coverage',
+          'privatePension', 'investment', 'score', 'freeCash',
+          'emergencyMonths', 'createdAt', 'updatedAt'
+        ])
+        && isMoney(request.resource.data.income)
+        && isMoney(request.resource.data.expenses)
+        && isMoney(request.resource.data.reserve)
+        && isMoney(request.resource.data.debt)
+        && request.resource.data.coverage is bool
+        && request.resource.data.privatePension is bool
+        && request.resource.data.investment is bool
+        && request.resource.data.score is number
+        && request.resource.data.score >= 0
+        && request.resource.data.score <= 100
+        && request.resource.data.freeCash is number
+        && request.resource.data.freeCash >= -10000000
+        && request.resource.data.freeCash <= 10000000
+        && request.resource.data.emergencyMonths is number
+        && request.resource.data.emergencyMonths >= 0
+        && request.resource.data.emergencyMonths <= 1200
+        && preservesCreatedAt();
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    match /budgets/{uid}/entries/{budgetId} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['ownerUid', 'income', 'entryMode', 'groups', 'directTotals', 'spent', 'freeCash', 'createdAt', 'updatedAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && isMoney(request.resource.data.income)
+        && request.resource.data.entryMode in ['categories', 'totals']
+        && request.resource.data.groups is list
+        && request.resource.data.groups.size() == 4
+        && request.resource.data.directTotals is map
+        && request.resource.data.directTotals.keys().hasAll(['protection', 'housing', 'savings', 'consumption'])
+        && request.resource.data.directTotals.keys().hasOnly(['protection', 'housing', 'savings', 'consumption'])
+        && isMoney(request.resource.data.directTotals.protection)
+        && isMoney(request.resource.data.directTotals.housing)
+        && isMoney(request.resource.data.directTotals.savings)
+        && isMoney(request.resource.data.directTotals.consumption)
+        && isMoney(request.resource.data.spent)
+        && request.resource.data.freeCash is number
+        && request.resource.data.freeCash >= -10000000
+        && request.resource.data.freeCash <= 10000000
+        && hasNewTimestamps();
+      allow update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['ownerUid', 'income', 'entryMode', 'groups', 'directTotals', 'spent', 'freeCash', 'createdAt', 'updatedAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && isMoney(request.resource.data.income)
+        && request.resource.data.entryMode in ['categories', 'totals']
+        && request.resource.data.groups is list
+        && request.resource.data.groups.size() == 4
+        && request.resource.data.directTotals is map
+        && request.resource.data.directTotals.keys().hasAll(['protection', 'housing', 'savings', 'consumption'])
+        && request.resource.data.directTotals.keys().hasOnly(['protection', 'housing', 'savings', 'consumption'])
+        && isMoney(request.resource.data.directTotals.protection)
+        && isMoney(request.resource.data.directTotals.housing)
+        && isMoney(request.resource.data.directTotals.savings)
+        && isMoney(request.resource.data.directTotals.consumption)
+        && isMoney(request.resource.data.spent)
+        && request.resource.data.freeCash is number
+        && request.resource.data.freeCash >= -10000000
+        && request.resource.data.freeCash <= 10000000
+        && preservesCreatedAt();
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    match /pensionScenarios/{uid}/entries/{scenarioId} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['ownerUid', 'age', 'retirementAge', 'capital', 'monthlySavings', 'statePension', 'desiredIncome', 'growth', 'gap', 'capitalFuture', 'monthly', 'totalIncome', 'createdAt', 'updatedAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.age is number
+        && request.resource.data.age >= 18
+        && request.resource.data.age <= 79
+        && request.resource.data.retirementAge is number
+        && request.resource.data.retirementAge > request.resource.data.age
+        && request.resource.data.retirementAge <= 85
+        && isMoney(request.resource.data.capital)
+        && isMoney(request.resource.data.monthlySavings)
+        && isMoney(request.resource.data.statePension)
+        && isMoney(request.resource.data.desiredIncome)
+        && request.resource.data.growth is number
+        && request.resource.data.growth >= 0
+        && request.resource.data.growth <= 12
+        && isMoney(request.resource.data.gap)
+        && isMoney(request.resource.data.capitalFuture)
+        && isMoney(request.resource.data.monthly)
+        && isMoney(request.resource.data.totalIncome)
+        && hasNewTimestamps();
+      allow update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['ownerUid', 'age', 'retirementAge', 'capital', 'monthlySavings', 'statePension', 'desiredIncome', 'growth', 'gap', 'capitalFuture', 'monthly', 'totalIncome', 'createdAt', 'updatedAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.age is number
+        && request.resource.data.age >= 18
+        && request.resource.data.age <= 79
+        && request.resource.data.retirementAge is number
+        && request.resource.data.retirementAge > request.resource.data.age
+        && request.resource.data.retirementAge <= 85
+        && isMoney(request.resource.data.capital)
+        && isMoney(request.resource.data.monthlySavings)
+        && isMoney(request.resource.data.statePension)
+        && isMoney(request.resource.data.desiredIncome)
+        && request.resource.data.growth is number
+        && request.resource.data.growth >= 0
+        && request.resource.data.growth <= 12
+        && isMoney(request.resource.data.gap)
+        && isMoney(request.resource.data.capitalFuture)
+        && isMoney(request.resource.data.monthly)
+        && isMoney(request.resource.data.totalIncome)
+        && preservesCreatedAt();
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    match /consultationRequests/{requestId} {
+      allow create: if request.resource.data.keys().hasOnly([
+          'fullName', 'email', 'phone', 'profession', 'profileUid', 'preferredContact', 'topic', 'message',
+          'locale', 'consent', 'status', 'source', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() >= 2
+        && request.resource.data.fullName.size() <= 100
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 5
+        && request.resource.data.email.size() <= 150
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 5
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.profession is string
+        && request.resource.data.profession.size() >= 2
+        && request.resource.data.profession.size() <= 100
+        && request.resource.data.profileUid is string
+        && request.resource.data.profileUid.size() <= 128
+        && ((!isSignedIn() && request.resource.data.profileUid == '')
+          || (isSignedIn() && request.resource.data.profileUid == request.auth.uid))
+        && request.resource.data.preferredContact in ['email', 'phone', 'whatsapp', 'unspecified']
+        && request.resource.data.topic in ['analisis-financiero', 'proteccion', 'ahorro-inversion', 'banca', 'pension', 'vivienda', 'inversion-inmobiliaria', 'patrimonio', 'otro']
+        && request.resource.data.message is string
+        && request.resource.data.message.size() <= 1000
+        && request.resource.data.locale in ['es-DE', 'en-DE', 'de-DE']
+        && request.resource.data.consent == true
+        && request.resource.data.status == 'new'
+        && request.resource.data.source is string
+        && request.resource.data.source.size() <= 200
+        && hasNewTimestamps();
+      allow get, list: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'adminNotes', 'assignedAdvisor', 'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'new', 'contacted', 'appointment', 'proposal', 'client', 'discarded'
+        ]
+        && request.resource.data.adminNotes is string
+        && request.resource.data.adminNotes.size() <= 5000
+        && request.resource.data.assignedAdvisor is string
+        && request.resource.data.assignedAdvisor.size() <= 100
+        && preservesCreatedAt();
+      allow delete: if false;
+    }
+
+    match /advisorNotes/{clientId}/entries/{noteId} {
+      // Advisor-to-client assignment has not been implemented yet. Until it is,
+      // only the administrator may access private internal notes.
+      allow read, write: if isAdmin();
+    }
+
+    match /articles/{articleId} {
+      allow get, list: if isAdmin() || resource.data.status == 'published';
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+          'titleES', 'titleEN', 'titleDE', 'slugES', 'slugEN', 'slugDE', 'excerptES', 'excerptEN', 'excerptDE',
+          'bodyES', 'bodyEN', 'bodyDE', 'primaryCategory', 'tags', 'type', 'status',
+          'featured', 'showAuthor', 'authorName', 'coverImageUrl',
+          'coverImageAltES', 'coverImageAltEN', 'coverImageAltDE', 'seoTitleES', 'seoTitleEN', 'seoTitleDE',
+          'seoDescriptionES', 'seoDescriptionEN', 'seoDescriptionDE', 'reviewedBy', 'sources',
+          'updateNoteES', 'updateNoteEN', 'updateNoteDE', 'editoriallyUpdatedAt', 'createdAt', 'updatedAt', 'publishedAt'
+        ])
+        && request.resource.data.titleES is string
+        && request.resource.data.slugES is string
+        && request.resource.data.excerptES is string
+        && request.resource.data.bodyES is string
+        && request.resource.data.status in ['draft', 'published', 'scheduled', 'archived']
+        && request.resource.data.type in ['article', 'guide', 'news', 'case-study']
+        && request.resource.data.featured is bool
+        && request.resource.data.showAuthor is bool
+        && request.resource.data.reviewedBy is string
+        && request.resource.data.reviewedBy.size() <= 120
+        && request.resource.data.sources is list
+        && request.resource.data.sources.size() <= 12
+        && request.resource.data.updateNoteES is string
+        && request.resource.data.updateNoteES.size() <= 280
+        && request.resource.data.updateNoteEN is string
+        && request.resource.data.updateNoteEN.size() <= 280
+        && request.resource.data.updateNoteDE is string
+        && request.resource.data.updateNoteDE.size() <= 280;
+      allow delete: if isAdmin() && resource.data.status != 'published';
+    }
+
+    match /newsletterIssues/{issueId} {
+      allow get, list: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+          'name', 'status', 'audience',
+          'subjectES', 'subjectEN', 'subjectDE',
+          'preheaderES', 'preheaderEN', 'preheaderDE',
+          'bodyES', 'bodyEN', 'bodyDE',
+          'ctaLabelES', 'ctaLabelEN', 'ctaLabelDE',
+          'ctaUrl', 'internalNotes', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.status in ['draft', 'ready']
+        && request.resource.data.audience == 'all'
+        && request.resource.data.subjectES is string
+        && request.resource.data.subjectES.size() <= 120
+        && request.resource.data.subjectEN is string
+        && request.resource.data.subjectEN.size() <= 120
+        && request.resource.data.subjectDE is string
+        && request.resource.data.subjectDE.size() <= 120
+        && request.resource.data.preheaderES is string
+        && request.resource.data.preheaderES.size() <= 180
+        && request.resource.data.preheaderEN is string
+        && request.resource.data.preheaderEN.size() <= 180
+        && request.resource.data.preheaderDE is string
+        && request.resource.data.preheaderDE.size() <= 180
+        && request.resource.data.bodyES is string
+        && request.resource.data.bodyES.size() <= 50000
+        && request.resource.data.bodyEN is string
+        && request.resource.data.bodyEN.size() <= 50000
+        && request.resource.data.bodyDE is string
+        && request.resource.data.bodyDE.size() <= 50000
+        && request.resource.data.ctaLabelES is string
+        && request.resource.data.ctaLabelES.size() <= 60
+        && request.resource.data.ctaLabelEN is string
+        && request.resource.data.ctaLabelEN.size() <= 60
+        && request.resource.data.ctaLabelDE is string
+        && request.resource.data.ctaLabelDE.size() <= 60
+        && request.resource.data.ctaUrl is string
+        && request.resource.data.ctaUrl.size() <= 500
+        && request.resource.data.internalNotes is string
+        && request.resource.data.internalNotes.size() <= 3000;
+      allow delete: if isAdmin() && resource.data.status == 'draft';
+    }
+
+    match /newsletterSubscribers/{subscriberId} {
+      // Public subscriptions will be written by the future double-opt-in backend,
+      // never directly by the browser.
+      allow get, list: if isAdmin();
+      allow create, update, delete: if false;
+    }
+  }
+}
