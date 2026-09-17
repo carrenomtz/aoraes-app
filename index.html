@@ -2047,6 +2047,9 @@
           // existe justo para avisar de esto) — se muestra siempre visible, no escondida detrás del
           // menú "⋮" como el resto de acciones (más raras o irreversibles).
           var approveBtn=(p.status!=='approved') ? '<button type="button" class="notif-row-act" data-ase-approve="'+esc(p.uid)+'">✓ Aprobar</button>' : '';
+          // "Rechazar" junto a "Aprobar", visible sin tener que abrir el menú "⋮" — para una
+          // solicitud pendiente es, junto con aprobar, la única decisión real que hay que tomar.
+          var rejectBtn=(p.status==='pending') ? '<button type="button" class="notif-row-act danger" data-ase-reject="'+esc(p.uid)+'" data-ase-reject-email="'+esc(p.email||'')+'" data-ase-reject-kind="reject">✕ Rechazar</button>' : '';
           var items='';
           if(p.status==='approved' && !isSelf){
             items+=(viewing===p.uid)
@@ -2060,8 +2063,8 @@
             if(items) items+='<hr>';
             if(p.status!=='rechazado'){
               items+=(p.status==='approved')
-                ? '<button type="button" data-ase-reject="'+esc(p.uid)+'" data-ase-reject-email="'+esc(p.email||'')+'">Restringir acceso al asesor</button>'
-                : '<button type="button" data-ase-reject="'+esc(p.uid)+'" data-ase-reject-email="'+esc(p.email||'')+'">Rechazar solicitud</button>';
+                ? '<button type="button" data-ase-reject="'+esc(p.uid)+'" data-ase-reject-email="'+esc(p.email||'')+'" data-ase-reject-kind="restrict">Restringir acceso al asesor</button>'
+                : '<button type="button" data-ase-reject="'+esc(p.uid)+'" data-ase-reject-email="'+esc(p.email||'')+'" data-ase-reject-kind="reject">Rechazar solicitud</button>';
             }
             items+='<button type="button" class="danger" data-ase-delete="'+esc(p.uid)+'" data-ase-delete-email="'+esc(p.email||'')+'">🗑 Borrar cuenta…</button>';
           }
@@ -2082,7 +2085,7 @@
             }).join('');
             if(chips) pipeHtml='<div class="ase-pipe">'+chips+'</div>';
           }
-          return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+primaryLabel+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+editNameBtn+'</div>'+subEmail+'<div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+pipeHtml+'</div><div class="ase-acts">'+approveBtn+menu+'</div></div>';
+          return '<div class="ase-row"><div class="ase-body"><div class="ase-email">'+primaryLabel+(isSelf?' <span style="color:var(--faint);font-weight:500">(tú)</span>':'')+editNameBtn+'</div>'+subEmail+'<div class="ase-meta">'+badges+'</div>'+(metaLine?'<div class="ase-count">'+esc(metaLine)+'</div>':'')+pipeHtml+'</div><div class="ase-acts">'+approveBtn+rejectBtn+menu+'</div></div>';
         }
         // Sección propia arriba de todo para las solicitudes pendientes — antes solo iban primero en
         // la misma lista que el resto de asesores, y con suficientes asesores activos era fácil
@@ -2125,7 +2128,7 @@
       closeAseMenus();
       if(b.hasAttribute('data-ase-approve')) window.AORAES_CLOUD.approveAdvisor(b.getAttribute('data-ase-approve')).then(renderAsesores);
       else if(b.hasAttribute('data-ase-reject')){
-        var wasApproved=(b.textContent.indexOf('Restringir')===0);
+        var wasApproved=(b.getAttribute('data-ase-reject-kind')==='restrict');
         var email=b.getAttribute('data-ase-reject-email')||'este asesor';
         var msg=wasApproved
           ? '¿Restringir el acceso de '+email+'?\n\nYa no podrá entrar a su cuenta, pero sus clientes NO se borran — tú los sigues viendo y editando en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar".'
@@ -3145,7 +3148,7 @@
       'Pendiente':'Pending','Aprobado':'Approved','Restringido':'Restricted',
       'Admin':'Admin','(tú)':'(you)','{0} cliente':'{0} client','{0} clientes':'{0} clients',
       'Solicitado {0}':'Requested {0}','Opciones':'Options',
-      '✓ Aprobar':'✓ Approve','↺ Dejar de ver esta cartera':'↺ Stop viewing this portfolio',
+      '✓ Aprobar':'✓ Approve','✕ Rechazar':'✕ Reject','↺ Dejar de ver esta cartera':'↺ Stop viewing this portfolio',
       '👁 Ver cartera':'👁 View portfolio','📇 Ver contactos en frío':'📇 View cold contacts','🔔 Solicitudes pendientes de aprobar':'🔔 Pending requests to approve','Restringir acceso al asesor':"Restrict advisor's access",
       'Rechazar solicitud':'Reject request','🗑 Borrar cuenta…':'🗑 Delete account…',
       'este asesor':'this advisor',
@@ -3503,7 +3506,7 @@
       'Pendiente':'Ausstehend','Aprobado':'Genehmigt','Restringido':'Eingeschränkt',
       'Admin':'Admin','(tú)':'(du)','{0} cliente':'{0} Kunde','{0} clientes':'{0} Kunden',
       'Solicitado {0}':'Angefragt {0}','Opciones':'Optionen',
-      '✓ Aprobar':'✓ Genehmigen','↺ Dejar de ver esta cartera':'↺ Diese Kartei nicht mehr ansehen',
+      '✓ Aprobar':'✓ Genehmigen','✕ Rechazar':'✕ Ablehnen','↺ Dejar de ver esta cartera':'↺ Diese Kartei nicht mehr ansehen',
       '👁 Ver cartera':'👁 Kartei ansehen','📇 Ver contactos en frío':'📇 Kaltkontakte ansehen','🔔 Solicitudes pendientes de aprobar':'🔔 Ausstehende Anfragen','Restringir acceso al asesor':'Zugriff des Beraters einschränken',
       'Rechazar solicitud':'Anfrage ablehnen','🗑 Borrar cuenta…':'🗑 Konto löschen…',
       'este asesor':'diesen Berater',
