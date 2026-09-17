@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
+<meta name="robots" content="noindex, nofollow" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<meta name="robots" content="noindex, nofollow">
 <title>AORAES · Herramientas del asesor</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -4006,7 +4006,10 @@
     function defaultAfa(){
       return {
         bundesland:'Berlin', itpPct:AFA_BUNDESLAND_ITP['Berlin'],
-        precioCompra:200000, notario:0, registro:0, otrosGastos:0,
+        // notarioPct/registroPct: gastos habituales de notaría y registro de la propiedad en
+        // Alemania, como % del precio de compra (igual que itpPct) — no importes fijos, porque
+        // ambos escalan con el precio del inmueble.
+        precioCompra:200000, notarioPct:1.5, registroPct:0.5, otrosGastos:0,
         valorSuelo:0, sueloPendiente:false, valorCocina:0,
         // Dos escenarios SEPARADOS, nunca uno "reemplazando por defecto" al otro:
         // - afaEstandarPct: la AfA legal normal del inmueble (depende de la fecha de construcción;
@@ -4019,16 +4022,18 @@
         docs:{kaufvertrag:false, gutachten:false, itpRecibo:false, notarioFactura:false, registroFactura:false, hipotecaInforme:false}
       };
     }
-    // Fórmulas: Nebenkosten = ITP + notario + registro + otros; Base amortizable (= valor del
-    // Gebäude a efectos de AfA) = precio + Nebenkosten - suelo - cocina — el suelo (Grund und Boden)
-    // NUNCA se amortiza y la cocina se deduce entera en el año 1, no dentro del %/año continuo.
-    // La AfA en sí se calcula SIEMPRE sobre esa base, en dos escenarios independientes:
+    // Fórmulas: Nebenkosten = precio × (ITP% + notaría% + registro%) + otros; Base amortizable
+    // (= valor del Gebäude a efectos de AfA) = precio + Nebenkosten - suelo - cocina — el suelo
+    // (Grund und Boden) NUNCA se amortiza y la cocina se deduce entera en el año 1, no dentro del
+    // %/año continuo. La AfA en sí se calcula SIEMPRE sobre esa base, en dos escenarios independientes:
     //  - Estándar: el % legal normal del inmueble (afaEstandarPct), sin tocar el Gutachten.
     //  - Gutachten: SOLO si tieneGutachten=true, % = 100/restnutzungsdauerGutachten — puede salir
     //    mayor O menor que el estándar (una vida útil restante más larga da un % menor), así que
     //    nunca se asume que el Gutachten siempre "suma" AfA.
     function calcAfa(afa){
-      var nebenkosten=(afa.precioCompra||0)*((afa.itpPct||0)/100)+(afa.notario||0)+(afa.registro||0)+(afa.otrosGastos||0);
+      var notarioRegistroPct=(afa.notarioPct||0)+(afa.registroPct||0);
+      var nebenkosten=(afa.precioCompra||0)*(((afa.itpPct||0)+notarioRegistroPct)/100)+(afa.otrosGastos||0);
+      var notarioRegistro=(afa.precioCompra||0)*(notarioRegistroPct/100);
       var sueloEfectivo=afa.sueloPendiente?0:(afa.valorSuelo||0);
       var baseAmortizable=Math.max(0,(afa.precioCompra||0)+nebenkosten-sueloEfectivo-(afa.valorCocina||0));
       var pctEstandar=afa.afaEstandarPct||0;
@@ -4043,7 +4048,7 @@
       // porque sustituye la vida útil (no se suma al estándar).
       var pctEfectivo=(afa.tieneGutachten&&pctGutachten!=null)?pctGutachten:pctEstandar;
       var perdidaEfectivaAnual=(afa.tieneGutachten&&perdidaGutachtenAnual!=null)?perdidaGutachtenAnual:perdidaEstandarAnual;
-      return {nebenkosten:nebenkosten, sueloEfectivo:sueloEfectivo, baseAmortizable:baseAmortizable,
+      return {nebenkosten:nebenkosten, notarioRegistro:notarioRegistro, sueloEfectivo:sueloEfectivo, baseAmortizable:baseAmortizable,
         pctEstandar:pctEstandar, perdidaEstandarAnual:perdidaEstandarAnual,
         pctGutachten:pctGutachten, perdidaGutachtenAnual:perdidaGutachtenAnual, diferenciaAnual:diferenciaAnual,
         pctEfectivo:pctEfectivo, perdidaEfectivaAnual:perdidaEfectivaAnual};
@@ -4053,6 +4058,8 @@
       var afa=rec.afa, def=defaultAfa();
       if(!afa.bundesland) afa.bundesland=def.bundesland;
       if(afa.itpPct==null) afa.itpPct=AFA_BUNDESLAND_ITP[afa.bundesland]||def.itpPct;
+      if(afa.notarioPct==null) afa.notarioPct=def.notarioPct;
+      if(afa.registroPct==null) afa.registroPct=def.registroPct;
       if(afa.afaEstandarPct==null) afa.afaEstandarPct=def.afaEstandarPct;
       if(afa.tieneGutachten==null) afa.tieneGutachten=def.tieneGutachten;
       if(afa.restnutzungsdauerGutachten==null) afa.restnutzungsdauerGutachten=def.restnutzungsdauerGutachten;
@@ -4628,8 +4635,8 @@
         '<label class="inm-f"><span>Bundesland</span><span class="inm-inp-wrap"><select class="inm-inp" data-afa-field="bundesland" style="padding:9px 11px">'+afaBundeslandOptions(afa.bundesland)+'</select></span></label>'+
         afaField('itpPct','Grunderwerbsteuer',afa.itpPct,'0.1','%','min="0" max="10"')+
         afaField('precioCompra','Precio de compra (Kaufvertrag)',afa.precioCompra,'1000','€','min="0"')+
-        afaField('notario','Notaría',afa.notario,'50','€','min="0"')+
-        afaField('registro','Registro de la propiedad',afa.registro,'50','€','min="0"')+
+        afaField('notarioPct','Notaría',afa.notarioPct,'0.1','%','min="0" max="5"')+
+        afaField('registroPct','Registro de la propiedad',afa.registroPct,'0.1','%','min="0" max="5"')+
         afaField('otrosGastos','Otros gastos de adquisición',afa.otrosGastos,'50','€','min="0"')+
         afaField('valorSuelo','Valor del suelo (Bodenwert, del Gutachten)',afa.valorSuelo,'1000','€','min="0"'+(afa.sueloPendiente?' disabled':''))+
         '<label class="afa-check"><input type="checkbox" data-afa-check="sueloPendiente"'+(afa.sueloPendiente?' checked':'')+'> Que lo calcule el Steuerberater — el Gutachten no especifica el valor del suelo.</label>'+
@@ -4681,7 +4688,7 @@
         '<div class="afa-inf-sec"><h4>Datos del inmueble</h4>'+
           '<div class="afa-inf-row"><span>Bundesland</span><b>'+esc(afa.bundesland)+' ('+afa.itpPct+'% Grunderwerbsteuer)</b></div>'+
           '<div class="afa-inf-row"><span>Precio de compra</span><b>'+eur(afa.precioCompra)+'</b></div>'+
-          '<div class="afa-inf-row"><span>Notaría + registro + otros</span><b>'+eur((afa.notario||0)+(afa.registro||0)+(afa.otrosGastos||0))+'</b></div>'+
+          '<div class="afa-inf-row"><span>Notaría + registro + otros</span><b>'+eur(c.notarioRegistro+(afa.otrosGastos||0))+'</b></div>'+
           '<div class="afa-inf-row"><span>Valor del suelo</span><b>'+(afa.sueloPendiente?'Pendiente (Steuerberater)':eur(c.sueloEfectivo))+'</b></div>'+
           (afa.valorCocina>0?('<div class="afa-inf-row"><span>Cocina (deducción año 1)</span><b>'+eur(afa.valorCocina)+'</b></div>'):'')+
         '</div>'+
