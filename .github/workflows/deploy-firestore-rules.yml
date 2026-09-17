@@ -1,0 +1,23 @@
+name: Deploy Firestore rules
+
+# Solo corre cuando firestore.rules cambia en main — así un commit normal de index.html
+# (la mayoría de los commits de este repo) no dispara un deploy a Firebase para nada.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+
+jobs:
+  deploy_rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # FIREBASE_TOKEN se genera una vez en local con `firebase login:ci` y se guarda como
+      # secreto del repo (Settings → Secrets and variables → Actions) — nunca en el código.
+      - run: npx firebase-tools deploy --only firestore:rules --project aoraes-crm --token "$FIREBASE_TOKEN"
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
