@@ -2558,7 +2558,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var brutoEl=document.querySelector('[data-gross="salarioBruto_'+persona+'"]');
     var pagasEl=document.querySelector('[data-gross="numPagas_'+persona+'"]');
     var brutoAnual=(brutoEl?parseFloat(brutoEl.value)||0:0)*((pagasEl&&parseFloat(pagasEl.value))||12);
-    var minimoExigido=Math.max(RIESTER_SOCKELBETRAG, 0.04*brutoAnual-zulageFull);
+    // El 4% del sueldo tiene tope en el Höchstbetrag (2.100€) ANTES de restar la Zulage — sin el
+    // Math.min, un sueldo alto inflaba el mínimo exigido muy por encima del máximo legal real, lo
+    // que subestimaba la Zulage/ahorro fiscal de quien ya había alcanzado el mínimo real. Mismo
+    // arreglo que ya tiene jubilacion.html para este cálculo.
+    var minimoExigido=Math.max(RIESTER_SOCKELBETRAG, Math.min(RIESTER_HOECHSTBETRAG, 0.04*brutoAnual)-zulageFull);
     var ratio=minimoExigido>0?Math.min(montoAnual/minimoExigido,1):1;
     var zulage=zulageFull*ratio;
     var totalContrib=Math.min(RIESTER_HOECHSTBETRAG, montoAnual+zulage);
