@@ -2,6 +2,7 @@
 // archivo, .github/workflows/deploy-firestore-rules.yml las despliega solo — ya no hace falta
 // pegarlas a mano en Firebase Console. Si alguna vez se edita directamente en la consola por
 // urgencia, hay que traer ese cambio aquí también (con un commit) para que no se desincronicen.
+// FIREBASE_TOKEN (secreto de Actions) se rotó por última vez el 18 sept. 2026.
 rules_version = '2';
 
 service cloud.firestore {
