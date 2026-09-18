@@ -2559,6 +2559,11 @@
     document.getElementById('import-cancel').addEventListener('click', closeImportOverlay);
     document.getElementById('import-overlay').addEventListener('click', function(e){ if(e.target.id==='import-overlay') closeImportOverlay(); });
     var _impWb=null, _impRows=null, _impHeaders=null, _impAdvisors=null, _impCurrentSheet=null;
+    // Los leads a importar (con sus ids ya generados) se calculan una sola vez y se reutilizan si
+    // hay que reintentar tras un fallo — si no, cada clic en "Importar" regeneraba ids nuevos para
+    // TODO, así que un reintento después de que un lote a mitad de la subida fallara reimportaba
+    // como duplicados los contactos del lote anterior que ya se habían guardado bien.
+    var _impBuiltCache=null;
     // Localiza la fila de cabecera real: algunas plantillas (p. ej. paneles con logo/título en A1)
     // traen filas sueltas con un solo valor antes de la fila con los nombres de columna de verdad —
     // tomar "la primera fila no vacía" a secas desalinea todo el mapeo. Se exige al menos 2 celdas
@@ -2699,6 +2704,7 @@
       return { lead:lead, adv:adv };
     }
     function renderImportPreview(){
+      _impBuiltCache=null;
       var res=computeMergedRows(), validRows=res.validRows, merged=res.merged;
       var matched=0;
       merged.forEach(function(r){ if(matchAdvisor(r.advisorText)) matched++; });
@@ -2722,21 +2728,31 @@
       document.getElementById('import-confirm').disabled=!merged.length;
     }
     document.getElementById('import-confirm').addEventListener('click', function(){
-      var res=computeMergedRows(), merged=res.merged;
-      var now=new Date().toISOString();
-      var byAdvisor={}, pool=[];
-      merged.forEach(function(r,i){
-        var built=buildLeadFromMerged(r,i,now);
-        if(built.adv){ built.lead.assignedAt=now; (byAdvisor[built.adv.uid]=byAdvisor[built.adv.uid]||[]).push(built.lead); }
-        else pool.push(built.lead);
-      });
+      // Reutiliza los ids ya generados si esto es un reintento (mismo mapeo, sin cambios desde el
+      // último clic) — importLeads() sube por lotes, y si el lote 2 falla habiendo subido bien el
+      // lote 1, reintentar con ids nuevos para todo volvía a insertar el lote 1 como duplicado. Con
+      // los mismos ids, reintentar solo repite el set() de lo ya subido (sin efecto) y esta vez sí
+      // sube lo que faltaba.
+      if(!_impBuiltCache){
+        var res=computeMergedRows(), merged=res.merged;
+        var now=new Date().toISOString();
+        var byAdvisor={}, pool=[];
+        merged.forEach(function(r,i){
+          var built=buildLeadFromMerged(r,i,now);
+          if(built.adv){ built.lead.assignedAt=now; (byAdvisor[built.adv.uid]=byAdvisor[built.adv.uid]||[]).push(built.lead); }
+          else pool.push(built.lead);
+        });
+        _impBuiltCache={byAdvisor:byAdvisor, pool:pool, mergedCount:merged.length};
+      }
+      var cache=_impBuiltCache;
       var btn=this; btn.disabled=true; btn.textContent='Importando…';
-      window.AORAES_CLOUD.importLeads(byAdvisor, pool).then(function(){
+      window.AORAES_CLOUD.importLeads(cache.byAdvisor, cache.pool).then(function(){
+        _impBuiltCache=null;
         document.getElementById('import-step-map').hidden=true;
         document.getElementById('import-step-result').hidden=false;
-        var assignedCount=merged.length-pool.length;
+        var assignedCount=cache.mergedCount-cache.pool.length;
         document.getElementById('import-result-msg').textContent=
-          'Listo: '+assignedCount+' contacto'+(assignedCount===1?'':'s')+' asignado'+(assignedCount===1?'':'s')+' directamente a su asesor, '+pool.length+' en la bolsa sin asignar.';
+          'Listo: '+assignedCount+' contacto'+(assignedCount===1?'':'s')+' asignado'+(assignedCount===1?'':'s')+' directamente a su asesor, '+cache.pool.length+' en la bolsa sin asignar.';
       }).catch(function(e){
         console.error('AORAES: fallo al importar',e);
         alert('Algo falló al guardar en la nube. Revisa la consola e inténtalo de nuevo.');
