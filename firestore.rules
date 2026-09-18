@@ -1,9 +1,7 @@
-// Copia de las reglas de Firestore del proyecto "aoraes-crm", tal como viven hoy en Firebase
-// Console (Firestore Database → Reglas). No hay despliegue automático todavía (requeriría
-// firebase-tools + `firebase deploy --only firestore:rules`): cualquier cambio se sigue pegando
-// a mano en la consola, pero ahora queda en git, revisable y con historial — antes solo existía
-// ahí, sin diff ni registro de qué cambió ni por qué. Si editas las reglas en la consola,
-// actualiza este archivo también para que no se desincronicen.
+// Reglas de Firestore del proyecto "aoraes-crm". Al hacer push a main con cambios en este
+// archivo, .github/workflows/deploy-firestore-rules.yml las despliega solo — ya no hace falta
+// pegarlas a mano en Firebase Console. Si alguna vez se edita directamente en la consola por
+// urgencia, hay que traer ese cambio aquí también (con un commit) para que no se desincronicen.
 rules_version = '2';
 
 service cloud.firestore {
