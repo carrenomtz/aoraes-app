@@ -1011,6 +1011,10 @@
     // todavía no tienen dueño — solo el admin la lee/escribe. Requiere su propia regla en
     // Firestore (no hereda nada de "users/*/clients"); ver nota en el commit.
     function leadsPoolCol(){ return collection(db, 'leadsPool'); }
+    // Los leads siempre se leen con el id derivado de doc.id (ver listPoolPage/listPool/myLeads
+    // más abajo), nunca de un campo dentro del documento — así que no hace falta guardarlo
+    // también ahí dentro. Se usa al escribir para no duplicar el dato.
+    function withoutId(obj){ var c={}; Object.keys(obj).forEach(function(k){ if(k!=='id') c[k]=obj[k]; }); return c; }
 
     window.AORAES_CLOUD = {
       ready: false,
@@ -1135,9 +1139,9 @@
       importLeads: function(payloadsByAdvisor, poolPayloads){
         var ops=[];
         Object.keys(payloadsByAdvisor||{}).forEach(function(uid){
-          (payloadsByAdvisor[uid]||[]).forEach(function(lead){ ops.push({ref:doc(collection(db,'users',uid,'leads'),lead.id), data:lead}); });
+          (payloadsByAdvisor[uid]||[]).forEach(function(lead){ ops.push({ref:doc(collection(db,'users',uid,'leads'),lead.id), data:withoutId(lead)}); });
         });
-        (poolPayloads||[]).forEach(function(lead){ ops.push({ref:doc(leadsPoolCol(),lead.id), data:lead}); });
+        (poolPayloads||[]).forEach(function(lead){ ops.push({ref:doc(leadsPoolCol(),lead.id), data:withoutId(lead)}); });
         var chunks=[]; for(var i=0;i<ops.length;i+=450) chunks.push(ops.slice(i,i+450));
         return chunks.reduce(function(p,chunk){
           return p.then(function(){
@@ -1154,7 +1158,7 @@
           return p.then(function(){
             var b=writeBatch(db);
             chunk.forEach(function(it){
-              b.set(doc(collection(db,'users',it.advisorUid,'leads'),it.lead.id), it.lead);
+              b.set(doc(collection(db,'users',it.advisorUid,'leads'),it.lead.id), withoutId(it.lead));
               b.delete(doc(leadsPoolCol(),it.lead.id));
             });
             return b.commit();
@@ -1191,7 +1195,7 @@
       // guarda el combinado y borra el resto en el mismo lote.
       mergePoolLeads: function(mergedLead, deleteIds){
         var b=writeBatch(db);
-        b.set(doc(leadsPoolCol(), mergedLead.id), mergedLead);
+        b.set(doc(leadsPoolCol(), mergedLead.id), withoutId(mergedLead));
         deleteIds.forEach(function(id){ if(id!==mergedLead.id) b.delete(doc(leadsPoolCol(), id)); });
         return b.commit();
       },
@@ -1655,7 +1659,10 @@
       _preLoginClientsRaw=null; _preLoginSolutionsRaw=null; _preLoginMedRaw=null;
       // Y sin esto, hasta que llegue el primer snapshot del nuevo asesor, el cockpit seguiría
       // mostrando la cartera del que acaba de cerrar sesión (readClients() cae a localStorage).
-      try{ localStorage.removeItem(CLIENTS_KEY); localStorage.removeItem(SOLUTIONS_KEY); localStorage.removeItem(MED_BY_CLIENT_KEY); }catch(e){}
+      // ACTIVE_KEY entra en la misma limpieza: es otra ranura global (no por asesor), y sin
+      // borrarla aquí un cliente "activo" del asesor anterior podía seguir seleccionado para el
+      // siguiente que iniciara sesión en la misma pestaña.
+      try{ localStorage.removeItem(CLIENTS_KEY); localStorage.removeItem(SOLUTIONS_KEY); localStorage.removeItem(MED_BY_CLIENT_KEY); localStorage.removeItem(ACTIVE_KEY); }catch(e){}
       if(typeof renderCockpit==='function') renderCockpit();
     });
     // El admin cambiando entre "ver cartera de X" y "ver la mía" (viewAsAdvisor/viewMyOwn):
@@ -1663,7 +1670,7 @@
     // muestre, o un guardado escriba sobre, la cartera del asesor que se dejó de ver.
     window.addEventListener('aoraes-viewing-switch', function(){
       _cloudClientsById=null;
-      try{ localStorage.removeItem(CLIENTS_KEY); localStorage.removeItem(SOLUTIONS_KEY); localStorage.removeItem(MED_BY_CLIENT_KEY); }catch(e){}
+      try{ localStorage.removeItem(CLIENTS_KEY); localStorage.removeItem(SOLUTIONS_KEY); localStorage.removeItem(MED_BY_CLIENT_KEY); localStorage.removeItem(ACTIVE_KEY); }catch(e){}
       if(typeof renderCockpit==='function') renderCockpit();
     });
     function findClient(id){ return readClients().filter(function(c){return c.id===id;})[0]||null; }
@@ -5321,23 +5328,31 @@
       var gs=e.target.closest('#ws-generic-save-client'); if(gs){
         var genericField=(wsStep==='afa')?'afa':'inmueble';
         var targetId=getActive();
-        if(targetId && targetId!=='aoraes_generic' && wsRec && wsRec[genericField]){
-          var arr=readLocalClientsRaw(), idx=-1;
-          for(var i=0;i<arr.length;i++){ if(arr[i].id===targetId){ idx=i; break; } }
-          if(idx>=0){
-            arr[idx][genericField]=wsRec[genericField]; arr[idx].savedAt=new Date().toISOString();
-            var savedOk=true;
-            try{ localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr)); }catch(err){ savedOk=false; }
-            if(savedOk){
-              if(_cloudClientsById && _cloudClientsById[targetId]) _cloudClientsById[targetId].record=arr[idx];
-              writeClientFile(targetId);
-              gs.textContent='✓ Guardado en la ficha'; gs.disabled=true;
-            } else {
-              // Antes esto se tragaba el error (p. ej. QuotaExceededError) y mostraba "✓ Guardado"
-              // igualmente — el proyecto inmobiliario/AfA del cliente se perdía sin que nadie lo notara.
-              gs.textContent='No se pudo guardar (almacenamiento lleno)';
-            }
-          }
+        if(!targetId || targetId==='aoraes_generic'){
+          gs.textContent='Elige primero un cliente arriba para guardarlo en su ficha';
+          return;
+        }
+        if(!wsRec || !wsRec[genericField]) return;
+        var arr=readLocalClientsRaw(), idx=-1;
+        for(var i=0;i<arr.length;i++){ if(arr[i].id===targetId){ idx=i; break; } }
+        if(idx<0){
+          // ACTIVE_KEY apuntando a un cliente que ya no existe en esta cartera (p. ej. tras
+          // cambiar de asesor visto como admin) — antes esto no hacía nada en absoluto, sin
+          // ningún aviso, y el proyecto inmobiliario/AfA se perdía en silencio.
+          gs.textContent='No se pudo guardar: el cliente activo ya no existe';
+          return;
+        }
+        arr[idx][genericField]=wsRec[genericField]; arr[idx].savedAt=new Date().toISOString();
+        var savedOk=true;
+        try{ localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr)); }catch(err){ savedOk=false; }
+        if(savedOk){
+          if(_cloudClientsById && _cloudClientsById[targetId]) _cloudClientsById[targetId].record=arr[idx];
+          writeClientFile(targetId);
+          gs.textContent='✓ Guardado en la ficha'; gs.disabled=true;
+        } else {
+          // Antes esto se tragaba el error (p. ej. QuotaExceededError) y mostraba "✓ Guardado"
+          // igualmente — el proyecto inmobiliario/AfA del cliente se perdía sin que nadie lo notara.
+          gs.textContent='No se pudo guardar (almacenamiento lleno)';
         }
         return;
       }
