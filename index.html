@@ -4183,6 +4183,18 @@
     // calculan las Bausparkassen reales: la cuota no depende del plazo elegido, es al revés — el
     // plazo es la consecuencia de la cuota fija). Esta función solo hace la lectura inversa, para
     // mostrar el plazo actual en el campo.
+    // Rango de ‰ que el propio control "Plazo del préstamo" (1-40 años, ver data-inm-plazo más
+    // abajo) puede llegar a producir para este cfg concreto — se usa para saber si un valor
+    // guardado es corrupto de verdad o simplemente un plazo válido que ese control ya permite.
+    function tilgungsbeitragRango(bausparsumme,cfg){
+      var capitalPrestamo=(bausparsumme||0)*(1-(cfg.pct||0)/100);
+      if(capitalPrestamo<=0||!bausparsumme) return null;
+      var factor=capitalPrestamo/bausparsumme*1000;
+      return {
+        min: annuityQuota(1,cfg.interesPrestamo,480)*factor, // 40 años -> cuota mínima -> ‰ mínimo
+        max: annuityQuota(1,cfg.interesPrestamo,12)*factor   // 1 año -> cuota máxima -> ‰ máximo
+      };
+    }
     function bausparPlazoActual(bausparsumme,cfg){
       var capitalPrestamo=(bausparsumme||0)*(1-(cfg.pct||0)/100);
       if(capitalPrestamo<=0) return 0;
@@ -4595,7 +4607,17 @@
       // pudo haberlo ajustado antes a una oferta real concreta); solo lo claramente roto (p. ej.
       // 0,2‰, que llevaba el préstamo a 100 años) se repone al valor por defecto.
       [inm.banco,inm.refi.banco].forEach(function(c){ if(c.tilgungInicial!=null && (c.tilgungInicial<0.1||c.tilgungInicial>10)) c.tilgungInicial=1.5; });
-      [inm.a,inm.b,inm.refi.a,inm.refi.b].forEach(function(c){ if(c.tilgungsbeitragPerMille!=null && (c.tilgungsbeitragPerMille<1||c.tilgungsbeitragPerMille>20)) c.tilgungsbeitragPerMille=6; });
+      // El rango fijo [1,20]‰ que este recorte usaba antes daba por corrupto cualquier plazo corto
+      // (2 años o menos es habitual en un Bausparkasse real) en cuanto se pudo elegir el plazo en
+      // años en vez de tocar el ‰ a mano — el control de plazo (1-40 años) genera ‰ fuera de [1,20]
+      // sin que el dato esté roto. Ahora el rango se deriva de ESE MISMO control (vía
+      // tilgungsbeitragRango), así solo se recorta lo que ningún plazo entre 1 y 40 años podría dar.
+      [[inm.a,inm.precio],[inm.b,inm.precio],[inm.refi.a,inm.refi.importeOriginal],[inm.refi.b,inm.refi.importeOriginal]].forEach(function(par){
+        var c=par[0], bausparsumme=par[1];
+        if(c.tilgungsbeitragPerMille==null) return;
+        var rango=tilgungsbeitragRango(bausparsumme,c);
+        if(rango && (c.tilgungsbeitragPerMille<rango.min-0.05 || c.tilgungsbeitragPerMille>rango.max+0.05)) c.tilgungsbeitragPerMille=6;
+      });
       return inm;
     }
     function inmuebleBlock(rec){
