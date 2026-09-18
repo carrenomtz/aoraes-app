@@ -2467,7 +2467,13 @@
       var email=group.map(function(l){return l.email;}).filter(Boolean)[0]||'';
       var phone=group.map(function(l){return l.phone;}).filter(Boolean)[0]||'';
       var notes=[]; group.forEach(function(l){ if(l.notes && notes.indexOf(l.notes)<0) notes.push(l.notes); });
+      // leadNo y lastContactAt se conservaban al fusionar duplicados del Excel (mergeDuplicates) pero
+      // se perdían aquí al unir duplicados ya en la bolsa — mismo tipo de fusión, mismo criterio.
+      var leadNos=[]; group.forEach(function(l){ if(l.leadNo && leadNos.indexOf(l.leadNo)<0) leadNos.push(l.leadNo); });
+      var lastContactAt=group.map(function(l){return l.lastContactAt;}).filter(Boolean)[0]||null;
       var merged={ id:base.id, name:base.name, email:email, phone:phone, notes:notes.join(' · '), status:base.status||'nuevo', importedAt:base.importedAt||new Date().toISOString() };
+      if(leadNos.length) merged.leadNo=leadNos.join(', ');
+      if(lastContactAt) merged.lastContactAt=lastContactAt;
       var deleteIds=group.map(function(l){ return l.id; });
       this.disabled=true;
       window.AORAES_CLOUD.mergePoolLeads(merged, deleteIds).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al unir contactos',e); alert('No se pudo unir. Revisa la consola.'); }).finally(function(){ document.getElementById('pool-bulk-merge').disabled=false; });
@@ -2682,7 +2688,12 @@
       var adv=matchAdvisor(r.advisorText);
       if(r.advisorText && !adv) noteParts.push('Asesor previo (Excel): '+r.advisorText);
       if(r._dupeCount>1) noteParts.push('('+r._dupeCount+' filas duplicadas del Excel combinadas aquí)');
-      var lead={ id:'lead'+Date.now()+i+Math.floor(Math.random()*1000), name:r.name, email:r.email, phone:r.phone, notes:noteParts.join(' · '), status:triageStatus(r.statusText), importedAt:now };
+      // Separadores entre Date.now()/i/random: sin ellos, dos filas con Date.now() igual (normal en
+      // un forEach síncrono de cientos de filas, que corre en menos de 1ms por vuelta) podían acabar
+      // con el MISMO id si la concatenación de "i" + random daba la misma cadena de dígitos para
+      // valores de i distintos (ej. i=1,random=23 e i=12,random=3 daban ambos "...123") — un lead
+      // pisaba a otro sin avisar.
+      var lead={ id:'lead'+Date.now()+'-'+i+'-'+Math.floor(Math.random()*1000), name:r.name, email:r.email, phone:r.phone, notes:noteParts.join(' · '), status:triageStatus(r.statusText), importedAt:now };
       if(r.lastContactText) lead.lastContactAt=r.lastContactText;
       if(r.leadNo) lead.leadNo=r.leadNo;
       return { lead:lead, adv:adv };
