@@ -1998,7 +1998,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     tipo:{label:'Tipo de producto',kind:'type'},
     persona:{label:'Titular',kind:'select',options:[['Ambos','Ambos / conjunta'],['A','Persona A'],['B','Persona B']]},
     producto:{label:'Producto (opcional)',kind:'text'},
-    // Prima del seguro propuesto (solo seguros patrimoniales, ver propEsPatrimonial): va en la fila
+    // Prima del seguro propuesto (solo seguros, ver propEsSeguro): va en la fila
     // de propuesta en lugar del nombre del producto. No es una aportación: no alimenta la
     // Rentenlücke ni "Aporte mensual total", solo se muestra en el informe.
     tarifa:{label:'Tarifa del seguro',kind:'euro'},
@@ -2099,10 +2099,11 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     'Bausparvertrag':[['entidad','Bausparkasse o compañía'],'bausparsumme',['saldo','Guthaben / saldo actual'],'aportacion','frecuencia'],
     'Otros ahorros o inversiones':[['entidad','Institución, plataforma o compañía'],'saldo','tieneAportacion',['aportacion',null,'apcond'],'frecuencia','esLiquido']
   };
-  // Seguros patrimoniales (los mismos del grupo S.6): en la propuesta piden tarifa, no nombre de producto.
-  var PROP_PATRIMONIAL={};
-  insS6.forEach(function(k){ PROP_PATRIMONIAL[insLabel[k]]=true; });
-  function propEsPatrimonial(tipo){ return !!PROP_PATRIMONIAL[tipo]; }
+  // Todo tipo de la propuesta que sea un SEGURO (patrimonial, de personas o de salud) pide tarifa, no
+  // nombre de producto. Quedan fuera los que ya llevan su coste como aportación periódica (Basisrente,
+  // Vermögensaufbau, Inversión, Bauspar) y "Otro", que no se sabe qué es y necesita un nombre.
+  var PROP_NO_SEGURO={'Basisrente':1,'Vermögensaufbau (renta vitalicia con fondos)':1,'Inversión':1,'Bauspar':1,'Otro':1};
+  function propEsSeguro(tipo){ return !!tipo && !PROP_NO_SEGURO[tipo]; }
   function resolveFields(section,rowData){
     if(section==='s7'){
       rowData=rowData||{};
@@ -2113,7 +2114,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       rowData=rowData||{};
       if(!rowData.tipo) return ['persona','tipo']; // sin tipo todavía no se sabe qué prestación pedir
       var pm=propuestaMeta(rowData.tipo);
-      var f=propEsPatrimonial(rowData.tipo)
+      var f=propEsSeguro(rowData.tipo)
         ? ['persona','tipo','tarifa','tarifaFrec',['garantia',pm.lbl]]
         : ['persona','tipo','producto',['garantia',pm.lbl]];
       if(pm.aporte) f=f.concat(['aportacion','aportFrecuencia']);
@@ -2475,6 +2476,10 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     var carriedT=(rowElT&&rowElT._carriedFields)||{};
     var willLose=Object.keys(oldData).filter(function(f){
       if(f==='tipo'||f==='persona'||newFields.indexOf(f)>=0||carriedT[f]!==undefined) return false;
+      // El selector mensual/anual siempre trae un valor por defecto: sin importe al lado no es un dato
+      // que el asesor haya escrito, y avisar de "perderlo" al cambiar de tipo solo confunde.
+      if(f==='tarifaFrec'&&!oldData.tarifa) return false;
+      if(f==='aportFrecuencia'&&!oldData.aportacion) return false;
       var v=oldData[f]; return v!==''&&v!==false&&v!=null;
     });
     if(willLose.length){
@@ -5473,16 +5478,16 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         }
         // la unidad va pegada a la cifra: sin ella el cliente no puede saber si 1.500 € es al mes o de una vez
         var garTxt=gar>0?('<b>'+M(gar)+'</b>'+(pm.benefit==='renta'?('<span style="color:#8a8470">'+pickL('/mes','/mo')+'</span>'):'')+(esGarantizado?'':'*')):'—';
-        // En los seguros patrimoniales la última columna es la tarifa (prima) del seguro, no una aportación.
-        var esPatr=propEsPatrimonial(row.tipo), tar=parseFloat(row.tarifa)||0;
+        // En los seguros la última columna es la tarifa (prima) del seguro, no una aportación.
+        var esSeg=propEsSeguro(row.tipo), tar=parseFloat(row.tarifa)||0;
         // Las primas suelen llevar céntimos (6,50 €/mes): M() redondea al euro y la falsearía.
         var tarFmt=function(x){ return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:(x%1?2:0),maximumFractionDigits:2}).format(x); };
         var costeTxt=(pm.aporte&&ap>0)
           ? ('<b>'+M(ap)+'</b> <span style="color:#8a8470">'+(row.aportFrecuencia==='anual'?pickL('/año','/yr'):pickL('/mes','/mo'))+'</span>')
-          : (esPatr&&tar>0)
+          : (esSeg&&tar>0)
             ? ('<b>'+tarFmt(tar)+'</b> <span style="color:#8a8470">'+(row.tarifaFrec==='anual'?pickL('/año','/yr'):pickL('/mes','/mo'))+'</span>')
             : '—';
-        return '<tr><td><b>'+esc(row.tipo||'—')+'</b>'+((row.producto&&!esPatr)?('<br><span style="color:#8a8470;font-size:9pt">'+esc(row.producto)+'</span>'):'')+'</td>'+
+        return '<tr><td><b>'+esc(row.tipo||'—')+'</b>'+((row.producto&&!esSeg)?('<br><span style="color:#8a8470;font-size:9pt">'+esc(row.producto)+'</span>'):'')+'</td>'+
           '<td>'+esc(personaLbl(row.persona))+'</td>'+
           '<td class="num">'+garTxt+'<br><span style="color:#8a8470;font-size:8pt">'+esc(pm.lbl)+'</span></td>'+
           '<td class="num">'+costeTxt+'</td></tr>';
