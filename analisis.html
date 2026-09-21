@@ -5461,6 +5461,9 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       if(!propRows.length) return [];
       var personaLbl=function(v){ var m=FIELD_META.persona.options.filter(function(o){return o[0]===v;})[0]; return m?m[1]:(v||'—'); };
       var totalMensual=0, totalRentaEst=0, totalCapitalEst=0, hayCobertura=false, hayEstimado=false;
+      var totalSeguros=0;
+      // Las primas suelen llevar céntimos (6,50 €/mes): M() redondea al euro y la falsearía.
+      var tarFmt=function(x){ return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:(x%1?2:0),maximumFractionDigits:2}).format(x); };
       var propBody=propRows.map(function(row){
         var pm=propuestaMeta(row.tipo);
         var esGarantizado=(pm.garantizado!==false);
@@ -5480,8 +5483,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
         var garTxt=gar>0?('<b>'+M(gar)+'</b>'+(pm.benefit==='renta'?('<span style="color:#8a8470">'+pickL('/mes','/mo')+'</span>'):'')+(esGarantizado?'':'*')):'—';
         // En los seguros la última columna es la tarifa (prima) del seguro, no una aportación.
         var esSeg=propEsSeguro(row.tipo), tar=parseFloat(row.tarifa)||0;
-        // Las primas suelen llevar céntimos (6,50 €/mes): M() redondea al euro y la falsearía.
-        var tarFmt=function(x){ return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:(x%1?2:0),maximumFractionDigits:2}).format(x); };
+        if(esSeg&&tar>0) totalSeguros+=(row.tarifaFrec==='anual'?tar/12:tar);
         var costeTxt=(pm.aporte&&ap>0)
           ? ('<b>'+M(ap)+'</b> <span style="color:#8a8470">'+(row.aportFrecuencia==='anual'?pickL('/año','/yr'):pickL('/mes','/mo'))+'</span>')
           : (esSeg&&tar>0)
@@ -5506,6 +5508,7 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
       if(totalRentaEst>0) cards+=card(pickL('Renta mensual estimada*','Monthly income (estimated)*'),M(totalRentaEst)+pickL('/mes','/mo'),pickL('No garantizada','Not guaranteed'));
       if(totalCapitalEst>0) cards+=card(pickL('Capital estimado*','Capital (estimated)*'),M(totalCapitalEst),pickL('No garantizado','Not guaranteed'));
       cards+=card(pickL('Aporte mensual total','Total monthly contribution'),M(totalMensual));
+      if(totalSeguros>0) cards+=card(pickL('Coste mensual de seguros','Monthly insurance cost'),tarFmt(totalSeguros)+pickL('/mes','/mo'),pickL('Suma de las tarifas propuestas (las anuales, entre 12)','Sum of the proposed premiums (annual ones divided by 12)'));
       var pages=[
         divider('<div class="dv-num">'+pickL('Recomendación','Recommendation')+'</div><h2>'+pickL('Propuesta','Proposal')+'</h2><p class="dv-sub">'+pickL('Lo que gana el cliente con cada producto','What the client gains with each product')+'</p>'),
         page('Propuesta','<div class="sh-eyebrow">'+pickL('Recomendación AORAES','AORAES recommendation')+'</div><h2>'+pickL('Resumen de la propuesta','Proposal summary')+'</h2>'+
