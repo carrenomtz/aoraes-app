@@ -2295,6 +2295,7 @@
     });
     function filterAndRenderPool(){
       var listEl=document.getElementById('pool-list'); if(!listEl) return;
+      _poolLastCheckedIdx=null; // la tabla se reconstruye entera: cualquier índice recordado quedaría apuntando a otra fila
       var q=(document.getElementById('pool-search').value||'').trim().toLowerCase();
       var checkAll=document.getElementById('pool-check-all');
       if(checkAll){
@@ -2408,6 +2409,27 @@
       _poolPage=1;
       if(q && !_poolFullyLoaded) loadFullPoolForSearch(); else filterAndRenderPool();
     }, 220));
+    // Shift+clic en las casillas de la bolsa: selecciona todo el rango entre la última casilla
+    // marcada y esta, como en Gmail/Excel — sin esto, marcar 40 contactos seguidos para repartirlos
+    // a un asesor exigía un clic por fila. Va en un listener de 'click' aparte (no 'change') porque
+    // solo el evento de clic trae shiftKey; el de 'change' que ya existía abajo sigue encargándose
+    // de guardar la selección de una casilla suelta.
+    var _poolLastCheckedIdx=null;
+    document.getElementById('pool-list').addEventListener('click', function(e){
+      var chk=e.target.closest('[data-pool-check]'); if(!chk) return;
+      var all=Array.prototype.slice.call(document.querySelectorAll('#pool-list [data-pool-check]'));
+      var idx=all.indexOf(chk);
+      if(e.shiftKey && _poolLastCheckedIdx!=null && idx!==-1){
+        var lo=Math.min(_poolLastCheckedIdx, idx), hi=Math.max(_poolLastCheckedIdx, idx);
+        var checked=chk.checked; // el estado al que el usuario acaba de poner esta casilla
+        for(var i=lo;i<=hi;i++){
+          all[i].checked=checked;
+          _poolSelected[all[i].getAttribute('data-pool-check')]=checked;
+        }
+        updatePoolBulkbar();
+      }
+      if(idx!==-1) _poolLastCheckedIdx=idx;
+    });
     document.getElementById('pool-list').addEventListener('change', function(e){
       if(e.target.id==='pool-page-input'){
         if(_poolLoadingMore) return;
