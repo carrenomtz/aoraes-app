@@ -970,6 +970,7 @@
         <span id="cont-selected-count"></span>
         <select id="cont-bulk-advisor" aria-label="Enviar seleccionados a"></select>
         <button type="button" id="cont-bulk-assign">Enviar seleccionados</button>
+        <button type="button" id="cont-bulk-unassign" class="danger">↩ Devolver a la bolsa</button>
       </div>
       <div class="pool-table-wrap">
         <table class="pool-table" data-no-i18n>
@@ -1183,6 +1184,23 @@
             var b=writeBatch(db);
             chunk.forEach(function(it){
               b.set(doc(collection(db,'users',it.advisorUid,'leads'),it.lead.id), withoutId(it.lead));
+              b.delete(doc(collection(db,'users',fromUid,'leads'),it.lead.id));
+            });
+            return b.commit();
+          });
+        }, Promise.resolve());
+      },
+      // items=[{lead}] — el inverso de assignLeadsBulk: devuelve contactos YA asignados a la bolsa
+      // sin asignar. Pensado para deshacer una asignación equivocada (p. ej. "seleccionar todo" y
+      // asignarlo sin querer a un asesor) sin tener que borrar y reimportar nada.
+      returnLeadsToPoolBulk: function(items, fromUid){
+        if(!fromUid || !items.length) return Promise.resolve();
+        var chunks=[]; for(var i=0;i<items.length;i+=200) chunks.push(items.slice(i,i+200)); // set+delete = 2 ops/item
+        return chunks.reduce(function(p,chunk){
+          return p.then(function(){
+            var b=writeBatch(db);
+            chunk.forEach(function(it){
+              b.set(doc(leadsPoolCol(),it.lead.id), withoutId(it.lead));
               b.delete(doc(collection(db,'users',fromUid,'leads'),it.lead.id));
             });
             return b.commit();
@@ -3029,6 +3047,23 @@
         movedIds.forEach(function(id){ delete _contSelected[id]; });
         filterAndRenderContactos();
       }).catch(function(e){ console.error('AORAES: fallo al enviar los contactos seleccionados',e); alert('No se pudo enviar. Revisa la consola.'); })
+        .finally(function(){ btn.disabled=false; });
+    });
+    // Deshace una asignación equivocada (p. ej. "seleccionar todo" y asignarlo sin querer a un
+    // asesor): manda los contactos marcados de vuelta a "Bolsa sin asignar", sin tocar nada más.
+    document.getElementById('cont-bulk-unassign').addEventListener('click', function(){
+      var ids=Object.keys(_contSelected).filter(function(id){ return _contSelected[id]; }); if(!ids.length) return;
+      var sourceUid=(window.AORAES_CLOUD.viewingUid)||window.AORAES_CLOUD.uid;
+      var items=ids.map(function(id){ return {lead:_contLeads.filter(function(l){return l.id===id;})[0]}; }).filter(function(it){ return it.lead; });
+      if(!confirm('¿Devolver '+items.length+' contacto'+(items.length===1?'':'s')+' a la bolsa sin asignar?')) return;
+      this.disabled=true;
+      var btn=this;
+      window.AORAES_CLOUD.returnLeadsToPoolBulk(items, sourceUid).then(function(){
+        var movedIds=items.map(function(it){ return it.lead.id; });
+        _contLeads=_contLeads.filter(function(l){ return movedIds.indexOf(l.id)<0; });
+        movedIds.forEach(function(id){ delete _contSelected[id]; });
+        filterAndRenderContactos();
+      }).catch(function(e){ console.error('AORAES: fallo al devolver los contactos a la bolsa',e); alert('No se pudo devolver a la bolsa. Revisa la consola.'); })
         .finally(function(){ btn.disabled=false; });
     });
     function renderContactos(){
