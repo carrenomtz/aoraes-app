@@ -2274,12 +2274,31 @@
       var badge=document.getElementById('admin-pool-badge');
       if(!badge||!window.AORAES_CLOUD||!window.AORAES_CLOUD.listPoolPage) return;
       refreshPoolBadge();
-      _poolCursor=null; _poolHasMore=false; _poolFullyLoaded=false; _poolLoadingMore=false; _poolLoadingFull=false; _poolPage=1; _poolRawTotal=0;
+      // renderAsesores() llama a esta función para refrescar la bolsa cada vez que algo la cambia
+      // (asignar un contacto desde su fila, el botón "Actualizar"...), no solo al abrir la pestaña.
+      // Si en ese momento había una búsqueda o un orden con la bolsa ENTERA ya cargada (loadFullPoolForSearch),
+      // resetear siempre a modo paginado la tiraba a la basura sin avisar: la búsqueda seguía escrita
+      // en el buscador, pero a partir de ahí solo filtraba contra los primeros 100 contactos recién
+      // traídos — daba resultados incompletos en silencio. Se recuerda si estaba así para volver a
+      // traer la bolsa completa en vez de solo la primera página.
+      var wasFullyLoaded=_poolFullyLoaded;
+      _poolCursor=null; _poolHasMore=false; _poolFullyLoaded=false; _poolLoadingMore=false; _poolLoadingFull=false; _poolRawTotal=0;
+      if(!wasFullyLoaded) _poolPage=1; // con búsqueda/orden activos se conserva la página en la que estaba
       // El total real de páginas (antes de cargar/ordenar/buscar nada) se apoya en el conteo barato
       // de countPool() — sin esto, "Página 1 de 1" salía siempre al abrir la pestaña, aunque hubiera
       // miles de contactos, porque _poolTotalPages solo podía mirar lo ya cargado (la primera tanda
       // de 100).
       if(window.AORAES_CLOUD.countPool) window.AORAES_CLOUD.countPool().then(function(n){ _poolRawTotal=n||0; filterAndRenderPool(); }).catch(function(){});
+      if(wasFullyLoaded && window.AORAES_CLOUD.listPool){
+        _poolLoadingFull=true; filterAndRenderPool();
+        window.AORAES_CLOUD.listPool().then(function(arr){
+          _pool=arr||[]; _poolSelected={}; _poolFullyLoaded=true; _poolHasMore=false;
+          refreshPoolDupes();
+          document.getElementById('pool-bulk-advisor').innerHTML=advisorOptionsHtml();
+        }).catch(function(e){ console.error('AORAES: fallo al recargar toda la bolsa',e); })
+          .finally(function(){ _poolLoadingFull=false; filterAndRenderPool(); });
+        return;
+      }
       window.AORAES_CLOUD.listPoolPage(null, 100).then(function(res){
         _pool=res.items||[]; _poolSelected={}; _poolCursor=res.lastDoc; _poolHasMore=res.hasMore;
         if(!_poolHasMore) _poolFullyLoaded=true; // ya no queda nada más por paginar: es lo mismo que haberla traído entera
