@@ -235,6 +235,7 @@
   .imp-bulkbar select{font-family:inherit; font-size:12.5px; padding:6px 9px; border-radius:7px; border:1px solid var(--line-strong)}
   .imp-bulkbar button{font-family:inherit; font-size:11.5px; font-weight:700; border-radius:7px; padding:6px 10px; cursor:pointer; border:1px solid}
   .imp-bulkbar button#pool-bulk-assign{color:#4f7358; background:#eaf2ec; border-color:#cfe3d4}
+  .imp-bulkbar button#cont-bulk-assign{color:#4f7358; background:#eaf2ec; border-color:#cfe3d4}
   .imp-bulkbar button#pool-bulk-merge{color:#6b4a00; background:#fdf3e7; border-color:#e0a92a}
   .imp-bulkbar button.danger{color:var(--red); background:#fbeae6; border-color:#e7c3bb}
   .pool-row-advisor{font-family:inherit; font-size:11.5px; padding:5px 6px; border-radius:6px; border:1px solid var(--line-strong); max-width:110px; text-overflow:ellipsis}
@@ -965,9 +966,14 @@
         <input type="search" id="cont-search" aria-label="Buscar contactos" placeholder="Buscar por nombre, correo o teléfono…" />
         <select id="cont-status" aria-label="Filtrar por estado"><option value="">Todos (sin convertidos)</option><option value="nuevo">Nuevo</option><option value="no_contesto">No contestó</option><option value="no_disponible">Número no disponible</option><option value="contactado">Contactado</option><option value="no_interesa">No interesa</option><option value="convertido">Convertido</option></select>
       </div>
+      <div class="imp-bulkbar" id="cont-bulkbar" hidden>
+        <span id="cont-selected-count"></span>
+        <select id="cont-bulk-advisor" aria-label="Enviar seleccionados a"></select>
+        <button type="button" id="cont-bulk-assign">Enviar seleccionados</button>
+      </div>
       <div class="pool-table-wrap">
         <table class="pool-table" data-no-i18n>
-          <thead><tr id="cont-thead-row"><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="status">Status<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="email">Email<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="notes">Notas<span class="sort-arrow"></span></th><th scope="col" class="cont-action-col"></th></tr></thead>
+          <thead><tr id="cont-thead-row"><th scope="col" id="cont-check-th" hidden><input type="checkbox" id="cont-check-all" aria-label="Seleccionar todo lo filtrado" title="Seleccionar todo lo filtrado"></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="status">Status<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="email">Email<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="notes">Notas<span class="sort-arrow"></span></th><th scope="col" class="cont-action-col"></th></tr></thead>
           <tbody id="cont-list"></tbody>
         </table>
       </div>
@@ -1161,6 +1167,23 @@
             chunk.forEach(function(it){
               b.set(doc(collection(db,'users',it.advisorUid,'leads'),it.lead.id), withoutId(it.lead));
               b.delete(doc(leadsPoolCol(),it.lead.id));
+            });
+            return b.commit();
+          });
+        }, Promise.resolve());
+      },
+      // items=[{lead, advisorUid}] — mueve contactos que YA están asignados, de un asesor a otro
+      // (a diferencia de assignLeadsBulk, que viene de la bolsa sin asignar). fromUid es el asesor de
+      // origen: el que se estaba viendo en Contactos cuando se marcaron los contactos a mover.
+      reassignLeadsBulk: function(items, fromUid){
+        if(!fromUid || !items.length) return Promise.resolve();
+        var chunks=[]; for(var i=0;i<items.length;i+=200) chunks.push(items.slice(i,i+200)); // set+delete = 2 ops/item
+        return chunks.reduce(function(p,chunk){
+          return p.then(function(){
+            var b=writeBatch(db);
+            chunk.forEach(function(it){
+              b.set(doc(collection(db,'users',it.advisorUid,'leads'),it.lead.id), withoutId(it.lead));
+              b.delete(doc(collection(db,'users',fromUid,'leads'),it.lead.id));
             });
             return b.commit();
           });
@@ -1465,6 +1488,8 @@
       var notifWrap = document.getElementById('notif-wrap');
       var contImport = document.getElementById('cont-import');
       var contAdvisorSwitch = document.getElementById('cont-advisor-switch');
+      var contCheckTh = document.getElementById('cont-check-th');
+      var contBulkbar = document.getElementById('cont-bulkbar');
       var cpEl = document.getElementById('complete-profile-gate');
       if(!profile){ pendingEl.hidden = true; cpEl.hidden = true; return; }
       // Cuentas creadas antes de exigir fullName/phone en el alta (todas las que ya existían cuando
@@ -1474,6 +1499,7 @@
       if(profile.status === 'approved' && (!profile.fullName || !profile.phone)){
         cpEl.hidden = false; pendingEl.hidden = true;
         navAse.hidden = true; notifWrap.hidden = true; contImport.hidden = true; contAdvisorSwitch.hidden = true;
+        contCheckTh.hidden = true; contBulkbar.hidden = true;
         return;
       }
       cpEl.hidden = true;
@@ -1483,6 +1509,11 @@
         notifWrap.hidden = (profile.role !== 'admin');
         contImport.hidden = (profile.role !== 'admin');
         contAdvisorSwitch.hidden = (profile.role !== 'admin');
+        contCheckTh.hidden = (profile.role !== 'admin');
+        // El toolbar de envío masivo se muestra/oculta también según haya algo seleccionado
+        // (updateContBulkbar, en el script clásico) — aquí solo se obliga a oculto para quien no
+        // es admin, nunca se fuerza a visible.
+        if(profile.role !== 'admin') contBulkbar.hidden = true;
         // Reponer la bolsa de asesores para el desplegable de Contactos cada vez que el perfil se
         // confirma como admin (login, o aprobación en vivo) — la función vive en el script clásico
         // (populateContAdvisorSwitch decide sola si ya la cargó esta sesión), este script es un
@@ -1494,6 +1525,8 @@
         notifWrap.hidden = true;
         contImport.hidden = true;
         contAdvisorSwitch.hidden = true;
+        contCheckTh.hidden = true;
+        contBulkbar.hidden = true;
         msgEl.innerHTML = (profile.status === 'rechazado')
           ? '<p><b>Tu solicitud de acceso fue rechazada.</b></p><p>Si crees que es un error, contacta con el responsable del equipo.</p>'
           : '<p><b>Tu cuenta está pendiente de autorización.</b></p><p>El responsable del equipo debe aprobar tu acceso antes de que puedas ver tu cartera. Esta pantalla se actualizará sola en cuanto te aprueben — no hace falta que recargues.</p>';
@@ -2899,8 +2932,10 @@
     // admin tenía que ir a Admin → Asesores → "Ver contactos en frío" cada vez. Este selector vive
     // en la propia pantalla de Contactos y hace lo mismo (viewAsAdvisor/viewMyOwn ya existentes) sin
     // salir de ella, para poder repasar la bolsa de varios asesores seguidos. Solo lo ve el admin
-    // (gating en aoraes-profile-update, igual que nav-asesores).
-    var _contAdvisorsLoaded=false;
+    // (gating en aoraes-profile-update, igual que nav-asesores). La misma lista se reutiliza para el
+    // desplegable "Enviar seleccionados a" del envío masivo (_contAdvisorsList), para no duplicar la
+    // llamada a listAdvisors().
+    var _contAdvisorsLoaded=false, _contAdvisorsList=[];
     window.populateContAdvisorSwitch=function(){
       var sel=document.getElementById('cont-advisor-switch'); if(!sel||_contAdvisorsLoaded) return;
       if(!window.AORAES_CLOUD||!window.AORAES_CLOUD.listAdvisors) return; // reintenta en la próxima llamada
@@ -2908,11 +2943,13 @@
       window.AORAES_CLOUD.listAdvisors().then(function(list){
         var advisors=list.filter(function(p){ return p.status==='approved' && p.uid!==window.AORAES_CLOUD.uid; });
         advisors.sort(function(a,b){ return (a.fullName||a.email||'').localeCompare(b.fullName||b.email||''); });
+        _contAdvisorsList=advisors;
         var opts='<option value="">Mi cartera</option>'+advisors.map(function(p){
           return '<option value="'+esc(p.uid)+'" data-email="'+esc(p.email||'')+'">'+esc(p.fullName||p.email||p.uid)+'</option>';
         }).join('');
         sel.innerHTML=opts;
         syncContAdvisorSwitch();
+        updateContBulkbar();
       }).catch(function(e){ console.error('AORAES: fallo al listar asesores para el desplegable de Contactos',e); _contAdvisorsLoaded=false; });
     };
     // Mantiene el valor mostrado en el desplegable alineado con quién se está viendo de verdad —
@@ -2930,6 +2967,70 @@
       renderContactos();
     });
     window.addEventListener('aoraes-viewing-changed', syncContAdvisorSwitch);
+    // Selección múltiple en Contactos (solo admin): casillas + Shift+clic para marcar un rango de un
+    // tirón (idéntico a la bolsa sin asignar) y "Enviar seleccionados" para reasignar varios contactos
+    // YA asignados de un asesor a otro sin repetir la operación uno por uno.
+    var _contSelected={}, _contShownIds=[], _contLastCheckedIdx=null;
+    function contBulkAdvisorOptionsHtml(){
+      var sourceUid=(window.AORAES_CLOUD&&window.AORAES_CLOUD.viewingUid)||(window.AORAES_CLOUD&&window.AORAES_CLOUD.uid)||'';
+      return _contAdvisorsList.filter(function(p){ return p.uid!==sourceUid; }).map(function(p){
+        return '<option value="'+esc(p.uid)+'">'+esc(p.fullName||p.email||p.uid)+'</option>';
+      }).join('');
+    }
+    function updateContCheckAll(){
+      var cb=document.getElementById('cont-check-all'); if(!cb) return;
+      if(!_contShownIds.length){ cb.checked=false; cb.indeterminate=false; return; }
+      var selectedCount=_contShownIds.filter(function(id){ return _contSelected[id]; }).length;
+      cb.checked=selectedCount===_contShownIds.length;
+      cb.indeterminate=selectedCount>0 && selectedCount<_contShownIds.length;
+    }
+    function updateContBulkbar(){
+      var bar=document.getElementById('cont-bulkbar'); if(!bar) return;
+      var isAdmin=!document.getElementById('cont-advisor-switch').hidden;
+      var ids=Object.keys(_contSelected).filter(function(id){ return _contSelected[id]; });
+      bar.hidden=!isAdmin||!ids.length;
+      document.getElementById('cont-selected-count').textContent=ids.length+' seleccionado'+(ids.length===1?'':'s');
+      document.getElementById('cont-bulk-advisor').innerHTML=contBulkAdvisorOptionsHtml();
+      updateContCheckAll();
+    }
+    document.getElementById('cont-check-all').addEventListener('change', function(){
+      var checked=this.checked;
+      _contShownIds.forEach(function(id){ _contSelected[id]=checked; });
+      filterAndRenderContactos();
+    });
+    // Shift+clic sobre las casillas: marca (o desmarca) todo el rango entre la última marcada y esta
+    // — mismo comportamiento que en la bolsa sin asignar (ver filterAndRenderPool/_poolLastCheckedIdx).
+    document.getElementById('cont-list').addEventListener('click', function(e){
+      var chk=e.target.closest('[data-cont-check]'); if(!chk) return;
+      var all=Array.prototype.slice.call(document.querySelectorAll('#cont-list [data-cont-check]'));
+      var idx=all.indexOf(chk);
+      if(e.shiftKey && _contLastCheckedIdx!=null && idx!==-1){
+        var lo=Math.min(_contLastCheckedIdx, idx), hi=Math.max(_contLastCheckedIdx, idx);
+        var checked=chk.checked;
+        for(var i=lo;i<=hi;i++){
+          all[i].checked=checked;
+          _contSelected[all[i].getAttribute('data-cont-check')]=checked;
+        }
+        updateContBulkbar();
+      }
+      if(idx!==-1) _contLastCheckedIdx=idx;
+    });
+    document.getElementById('cont-bulk-assign').addEventListener('click', function(){
+      var advisorUid=document.getElementById('cont-bulk-advisor').value;
+      if(!advisorUid){ alert('Elige a qué asesor enviar los seleccionados.'); return; }
+      var ids=Object.keys(_contSelected).filter(function(id){ return _contSelected[id]; }); if(!ids.length) return;
+      var sourceUid=(window.AORAES_CLOUD.viewingUid)||window.AORAES_CLOUD.uid;
+      var items=ids.map(function(id){ return {lead:_contLeads.filter(function(l){return l.id===id;})[0], advisorUid:advisorUid}; }).filter(function(it){ return it.lead; });
+      this.disabled=true;
+      var btn=this;
+      window.AORAES_CLOUD.reassignLeadsBulk(items, sourceUid).then(function(){
+        var movedIds=items.map(function(it){ return it.lead.id; });
+        _contLeads=_contLeads.filter(function(l){ return movedIds.indexOf(l.id)<0; });
+        movedIds.forEach(function(id){ delete _contSelected[id]; });
+        filterAndRenderContactos();
+      }).catch(function(e){ console.error('AORAES: fallo al enviar los contactos seleccionados',e); alert('No se pudo enviar. Revisa la consola.'); })
+        .finally(function(){ btn.disabled=false; });
+    });
     function renderContactos(){
       var listEl=document.getElementById('cont-list');
       listEl.innerHTML='<div class="cock-empty">Cargando contactos…</div>';
@@ -2940,6 +3041,9 @@
     }
     function filterAndRenderContactos(){
       var listEl=document.getElementById('cont-list'); if(!listEl) return;
+      _contLastCheckedIdx=null; // la tabla se reconstruye entera: cualquier índice recordado quedaría apuntando a otra fila
+      var isAdmin=!document.getElementById('cont-advisor-switch').hidden;
+      var cs=isAdmin?9:8; // una columna más (casilla) cuando el admin puede seleccionar
       var q=(document.getElementById('cont-search').value||'').trim().toLowerCase();
       var fs=document.getElementById('cont-status').value;
       var shown=_contLeads.filter(function(l){
@@ -2950,20 +3054,23 @@
         return hay.indexOf(q)>=0;
       });
       shown=sortContactRows(shown, _contSort.key, _contSort.dir);
-      if(!shown.length){ listEl.innerHTML='<tr><td colspan="8" class="ase-empty" style="border:0">'+(_contLeads.length?'Ningún contacto coincide.':'Todavía no tienes contactos asignados. Pídele al admin que te reparta algunos desde Asesores → Importar Excel.')+'</td></tr>'; return; }
+      _contShownIds=shown.map(function(l){ return l.id; });
+      if(!shown.length){ listEl.innerHTML='<tr><td colspan="'+cs+'" class="ase-empty" style="border:0">'+(_contLeads.length?'Ningún contacto coincide.':'Todavía no tienes contactos asignados. Pídele al admin que te reparta algunos desde Asesores → Importar Excel.')+'</td></tr>'; updateContBulkbar(); return; }
       // Igual límite que en la bolsa del admin: sin filtro, solo los primeros 300.
       var CONT_CAP=300;
       var capped=shown.length>CONT_CAP && !q && !fs;
       var toRender=capped?shown.slice(0,CONT_CAP):shown;
-      var capNote=capped?('<tr><td colspan="8" class="ase-empty" style="border:0">Mostrando '+CONT_CAP+' de '+shown.length+' — usa la búsqueda o el filtro para encontrar el resto.</td></tr>'):'';
+      var capNote=capped?('<tr><td colspan="'+cs+'" class="ase-empty" style="border:0">Mostrando '+CONT_CAP+' de '+shown.length+' — usa la búsqueda o el filtro para encontrar el resto.</td></tr>'):'';
       listEl.innerHTML=capNote+toRender.map(function(l){
         var st=l.status||'nuevo', conv=(st==='convertido');
         var lastContactVal=lastContactDateValue(l.lastContactAt);
         var statusControl=conv
           ? '<span class="ase-badge convertido">Convertido</span>'
           : '<select class="cont-status-select" data-lead="'+esc(l.id)+'" aria-label="Estado"'+pillStyleAttr(CONT_STATUS_COLOR[st])+'>'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
+        var rowWho=l.name||l.email||l.phone||'este contacto';
         // Todo se puede corregir a mano directo en la tabla — siempre hay erratas de teléfono/nombre.
         return '<tr>'+
+          (isAdmin?'<td><input type="checkbox" class="pool-check" aria-label="Seleccionar a '+esc(rowWho)+'" data-cont-check="'+esc(l.id)+'"'+(_contSelected[l.id]?' checked':'')+'></td>':'')+
           '<td><div class="cont-date-cell"><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-field="lastContactAt" data-lead="'+esc(l.id)+'" value="'+lastContactVal+'"><button type="button" class="cont-today-btn" data-today="'+esc(l.id)+'" title="Poner la fecha de hoy" aria-label="Poner la fecha de hoy">↓</button></div></td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Número de lead" data-field="leadNo" data-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
           '<td>'+statusControl+'</td>'+
@@ -2974,11 +3081,14 @@
           '<td class="cont-action-col">'+(!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir</button>':'')+'</td>'+
         '</tr>';
       }).join('');
+      updateContBulkbar();
     }
     wireSortableThead('cont-thead-row', _contSort, filterAndRenderContactos);
     document.getElementById('cont-search').addEventListener('input', debounce(filterAndRenderContactos, 220));
     document.getElementById('cont-status').addEventListener('change', filterAndRenderContactos);
     document.getElementById('cont-list').addEventListener('change', function(e){
+      var chk=e.target.closest('[data-cont-check]');
+      if(chk){ _contSelected[chk.getAttribute('data-cont-check')]=chk.checked; updateContBulkbar(); return; }
       var sel=e.target.closest('.cont-status-select');
       if(sel){
         var leadId=sel.getAttribute('data-lead'), newSt=sel.value;
