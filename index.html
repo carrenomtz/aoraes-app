@@ -961,6 +961,7 @@
       </div>
       <p class="cock-note" style="margin:0 0 18px">Contactos por trabajar todavía, separados de tu cartera de clientes con análisis. Márcalos según avances, y conviértelos en cliente cuando empieces el análisis real — eso los mueve a "Tu cartera de clientes".</p>
       <div class="cock-toolbar">
+        <select id="cont-advisor-switch" aria-label="Ver contactos de" hidden></select>
         <input type="search" id="cont-search" aria-label="Buscar contactos" placeholder="Buscar por nombre, correo o teléfono…" />
         <select id="cont-status" aria-label="Filtrar por estado"><option value="">Todos (sin convertidos)</option><option value="nuevo">Nuevo</option><option value="no_contesto">No contestó</option><option value="no_disponible">Número no disponible</option><option value="contactado">Contactado</option><option value="no_interesa">No interesa</option><option value="convertido">Convertido</option></select>
       </div>
@@ -1463,6 +1464,7 @@
       var navAse = document.getElementById('nav-asesores');
       var notifWrap = document.getElementById('notif-wrap');
       var contImport = document.getElementById('cont-import');
+      var contAdvisorSwitch = document.getElementById('cont-advisor-switch');
       var cpEl = document.getElementById('complete-profile-gate');
       if(!profile){ pendingEl.hidden = true; cpEl.hidden = true; return; }
       // Cuentas creadas antes de exigir fullName/phone en el alta (todas las que ya existían cuando
@@ -1471,7 +1473,7 @@
       // esta pantalla no vuelve a aparecer (deja de cumplirse la condición).
       if(profile.status === 'approved' && (!profile.fullName || !profile.phone)){
         cpEl.hidden = false; pendingEl.hidden = true;
-        navAse.hidden = true; notifWrap.hidden = true; contImport.hidden = true;
+        navAse.hidden = true; notifWrap.hidden = true; contImport.hidden = true; contAdvisorSwitch.hidden = true;
         return;
       }
       cpEl.hidden = true;
@@ -1480,11 +1482,18 @@
         navAse.hidden = (profile.role !== 'admin');
         notifWrap.hidden = (profile.role !== 'admin');
         contImport.hidden = (profile.role !== 'admin');
+        contAdvisorSwitch.hidden = (profile.role !== 'admin');
+        // Reponer la bolsa de asesores para el desplegable de Contactos cada vez que el perfil se
+        // confirma como admin (login, o aprobación en vivo) — la función vive en el script clásico
+        // (populateContAdvisorSwitch decide sola si ya la cargó esta sesión), este script es un
+        // módulo aparte y no puede llamarla directamente por nombre.
+        if(profile.role==='admin' && typeof window.populateContAdvisorSwitch==='function') window.populateContAdvisorSwitch();
       } else {
         pendingEl.hidden = false;
         navAse.hidden = true;
         notifWrap.hidden = true;
         contImport.hidden = true;
+        contAdvisorSwitch.hidden = true;
         msgEl.innerHTML = (profile.status === 'rechazado')
           ? '<p><b>Tu solicitud de acceso fue rechazada.</b></p><p>Si crees que es un error, contacta con el responsable del equipo.</p>'
           : '<p><b>Tu cuenta está pendiente de autorización.</b></p><p>El responsable del equipo debe aprobar tu acceso antes de que puedas ver tu cartera. Esta pantalla se actualizará sola en cuanto te aprueben — no hace falta que recargues.</p>';
@@ -2864,10 +2873,46 @@
     // "convertido" no aparece aquí: solo se llega marcándolo vía "Convertir a cliente", nunca a mano.
     var CONT_STATUS_OPTIONS=['nuevo','no_contesto','no_disponible','contactado','no_interesa'];
     var _contLeads=[];
+    // Desplegable "Ver contactos de" en Contactos: antes, para ver la bolsa fría de otro asesor el
+    // admin tenía que ir a Admin → Asesores → "Ver contactos en frío" cada vez. Este selector vive
+    // en la propia pantalla de Contactos y hace lo mismo (viewAsAdvisor/viewMyOwn ya existentes) sin
+    // salir de ella, para poder repasar la bolsa de varios asesores seguidos. Solo lo ve el admin
+    // (gating en aoraes-profile-update, igual que nav-asesores).
+    var _contAdvisorsLoaded=false;
+    window.populateContAdvisorSwitch=function(){
+      var sel=document.getElementById('cont-advisor-switch'); if(!sel||_contAdvisorsLoaded) return;
+      if(!window.AORAES_CLOUD||!window.AORAES_CLOUD.listAdvisors) return; // reintenta en la próxima llamada
+      _contAdvisorsLoaded=true;
+      window.AORAES_CLOUD.listAdvisors().then(function(list){
+        var advisors=list.filter(function(p){ return p.status==='approved' && p.uid!==window.AORAES_CLOUD.uid; });
+        advisors.sort(function(a,b){ return (a.fullName||a.email||'').localeCompare(b.fullName||b.email||''); });
+        var opts='<option value="">Mi cartera</option>'+advisors.map(function(p){
+          return '<option value="'+esc(p.uid)+'" data-email="'+esc(p.email||'')+'">'+esc(p.fullName||p.email||p.uid)+'</option>';
+        }).join('');
+        sel.innerHTML=opts;
+        syncContAdvisorSwitch();
+      }).catch(function(e){ console.error('AORAES: fallo al listar asesores para el desplegable de Contactos',e); _contAdvisorsLoaded=false; });
+    };
+    // Mantiene el valor mostrado en el desplegable alineado con quién se está viendo de verdad —
+    // necesario porque viewingUid también cambia desde fuera de este desplegable (los botones "Ver
+    // cartera"/"Ver contactos en frío" del panel Admin, o "Volver a mi cartera" del banner superior).
+    function syncContAdvisorSwitch(){
+      var sel=document.getElementById('cont-advisor-switch'); if(!sel) return;
+      var uid=(window.AORAES_CLOUD&&window.AORAES_CLOUD.viewingUid)||'';
+      if(sel.querySelector('option[value="'+uid.replace(/"/g,'')+'"]')||uid==='') sel.value=uid;
+    }
+    document.getElementById('cont-advisor-switch').addEventListener('change', function(){
+      var opt=this.options[this.selectedIndex], uid=this.value;
+      if(uid) window.AORAES_CLOUD.viewAsAdvisor(uid, opt.getAttribute('data-email'));
+      else window.AORAES_CLOUD.viewMyOwn();
+      renderContactos();
+    });
+    window.addEventListener('aoraes-viewing-changed', syncContAdvisorSwitch);
     function renderContactos(){
       var listEl=document.getElementById('cont-list');
       listEl.innerHTML='<div class="cock-empty">Cargando contactos…</div>';
       if(!window.AORAES_CLOUD||!window.AORAES_CLOUD.myLeads){ listEl.innerHTML='<div class="cock-empty">La nube no está lista todavía.</div>'; return; }
+      syncContAdvisorSwitch();
       window.AORAES_CLOUD.myLeads().then(function(list){ _contLeads=list||[]; filterAndRenderContactos(); })
         .catch(function(e){ console.error('AORAES: fallo al listar contactos',e); listEl.innerHTML='<div class="cock-empty">No se pudieron cargar. Revisa la consola.</div>'; });
     }
@@ -3245,7 +3290,7 @@
       'Admin':'Admin','(tú)':'(you)','{0} cliente':'{0} client','{0} clientes':'{0} clients',
       'Solicitado {0}':'Requested {0}','Opciones':'Options',
       '✓ Aprobar':'✓ Approve','✕ Rechazar':'✕ Reject','↺ Dejar de ver esta cartera':'↺ Stop viewing this portfolio',
-      '👁 Ver cartera':'👁 View portfolio','📇 Ver contactos en frío':'📇 View cold contacts','🔔 Solicitudes pendientes de aprobar':'🔔 Pending requests to approve','Restringir acceso al asesor':"Restrict advisor's access",
+      '👁 Ver cartera':'👁 View portfolio','📇 Ver contactos en frío':'📇 View cold contacts','Mi cartera':'My portfolio','Ver contactos de':'View contacts for','🔔 Solicitudes pendientes de aprobar':'🔔 Pending requests to approve','Restringir acceso al asesor':"Restrict advisor's access",
       'Rechazar solicitud':'Reject request','🗑 Borrar cuenta…':'🗑 Delete account…',
       'este asesor':'this advisor',
       '¿Restringir el acceso de {0}?\n\nYa no podrá entrar a su cuenta, pero sus clientes NO se borran — tú los sigues viendo y editando en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar".':'Restrict access for {0}?\n\nThey will no longer be able to sign in, but their clients are NOT deleted — you still see and edit them under "View portfolio", and can restore their access anytime with "Approve".',
@@ -3603,7 +3648,7 @@
       'Admin':'Admin','(tú)':'(du)','{0} cliente':'{0} Kunde','{0} clientes':'{0} Kunden',
       'Solicitado {0}':'Angefragt {0}','Opciones':'Optionen',
       '✓ Aprobar':'✓ Genehmigen','✕ Rechazar':'✕ Ablehnen','↺ Dejar de ver esta cartera':'↺ Diese Kartei nicht mehr ansehen',
-      '👁 Ver cartera':'👁 Kartei ansehen','📇 Ver contactos en frío':'📇 Kaltkontakte ansehen','🔔 Solicitudes pendientes de aprobar':'🔔 Ausstehende Anfragen','Restringir acceso al asesor':'Zugriff des Beraters einschränken',
+      '👁 Ver cartera':'👁 Kartei ansehen','📇 Ver contactos en frío':'📇 Kaltkontakte ansehen','Mi cartera':'Meine Kartei','Ver contactos de':'Kontakte ansehen von','🔔 Solicitudes pendientes de aprobar':'🔔 Ausstehende Anfragen','Restringir acceso al asesor':'Zugriff des Beraters einschränken',
       'Rechazar solicitud':'Anfrage ablehnen','🗑 Borrar cuenta…':'🗑 Konto löschen…',
       'este asesor':'diesen Berater',
       '¿Restringir el acceso de {0}?\n\nYa no podrá entrar a su cuenta, pero sus clientes NO se borran — tú los sigues viendo y editando en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar".':'Zugriff für {0} einschränken?\n\nDie Person kann sich nicht mehr anmelden, aber ihre Kunden werden NICHT gelöscht — du siehst und bearbeitest sie weiterhin über "Kartei ansehen" und kannst den Zugriff jederzeit mit "Genehmigen" wiederherstellen.',
