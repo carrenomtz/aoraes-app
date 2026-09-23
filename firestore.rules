@@ -15,10 +15,14 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
+    // Respaldo de emergencia: si por lo que sea el perfil de /users/{uid} no existiera o no dijera
+    // role:'admin' (p. ej. una cuenta nueva antes de que ensureProfileAndListen la repare sola), esta
+    // ruta igual reconoce al admin principal sin depender de ese documento. Identificado por UID, no
+    // por correo — el mismo criterio que ya usa el código cliente (ADMIN_UID en index.html), para que
+    // cambiar de correo algún día nunca deje sin este respaldo. Antes comparaba
+    // request.auth.token.email == 'carlos.carreno@dvag.de', que se habría roto justo en ese caso.
     function isPrimaryAdmin() {
-      return isSignedIn()
-        && request.auth.token.email == 'carlos.carreno@dvag.de'
-        && request.auth.token.email_verified == true;
+      return isSignedIn() && request.auth.uid == 'DMDXyvqfaeQiXfb3pYmoX95vNR82';
     }
 
     function isAdmin() {
