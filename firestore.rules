@@ -145,6 +145,23 @@ service cloud.firestore {
       }
     }
 
+    // Firestore deniega una consulta collectionGroup entera si la regla de la ruta coincidente
+    // compara contra el wildcard del path en CUALQUIER rama de su condición — aunque esa rama no sea
+    // la que concede el acceso. Las reglas de /users/{uid}/clients y /users/{uid}/leads, arriba,
+    // comparan request.auth.uid == uid (para que cada asesor vea la suya), así que
+    // collectionGroup(db,'clients')/'leads' le devolvía permission-denied incluso al admin
+    // (confirmado en vivo: listAllLeadsAcrossAdvisors y la campana de "clientes recientes" del admin
+    // fallaban con ese código pese a que isAdmin() era true). Estas reglas hermanas, sin comparar el
+    // wildcard, son el patrón estándar de Firestore para ese caso: no tocan el acceso de cada asesor
+    // a su propia subcolección (eso lo siguen resolviendo las reglas de arriba), solo desbloquean la
+    // lectura entre asesores que ya usa el admin.
+    match /{path=**}/clients/{clientId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/leads/{leadId} {
+      allow read: if isAdmin();
+    }
+
     // Contactos importados de Excel que aún no tienen asesor asignado. Exclusivo del admin: ningún
     // asesor lee ni escribe aquí directamente — la interfaz solo la usa desde el panel de Asesores.
     match /leadsPool/{leadId} {
