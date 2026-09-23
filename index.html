@@ -942,7 +942,6 @@
         <div class="imp-map-grid" id="import-map-grid" data-no-i18n></div>
         <div class="imp-preview-wrap"><table class="imp-preview" id="import-preview" data-no-i18n></table></div>
         <div class="cock-note" id="import-summary" style="margin:14px 0 0"></div>
-        <label id="import-include-existing-row" hidden style="display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:var(--muted);line-height:1.4;margin:8px 0 0;cursor:pointer"><input type="checkbox" id="import-include-existing"> Importar de todos modos los que ya existen (si no, se omiten solos)</label>
         <div class="imp-actions">
           <button type="button" id="import-cancel">Cancelar</button>
           <button type="button" class="cock-new" id="import-confirm">Importar</button>
@@ -1124,10 +1123,29 @@
           var arr=[];
           snap.forEach(function(d){
             var data=d.data();
-            arr.push({ id:d.id, email:data.email||'', phone:data.phone||'', ownerUid:(d.ref.parent&&d.ref.parent.parent)?d.ref.parent.parent.id:null });
+            arr.push({ id:d.id, email:data.email||'', phone:data.phone||'', leadNo:data.leadNo||'', ownerUid:(d.ref.parent&&d.ref.parent.parent)?d.ref.parent.parent.id:null });
           });
           return arr;
         });
+      },
+      // items=[{ownerUid: null|uid, targetId, patch}] — actualiza en el sitio (mismo id, misma
+      // ubicación) contactos que YA existían, sin crear nada nuevo ni moverlos de dónde están. Usa
+      // update() (fusiona solo las claves del patch), así que status/notes/asignación — todo lo que
+      // no viene en patch — se queda exactamente como estaba.
+      updateExistingLeadsBulk: function(items){
+        if(!items.length) return Promise.resolve();
+        var chunks=[]; for(var i=0;i<items.length;i+=450) chunks.push(items.slice(i,i+450));
+        return chunks.reduce(function(p,chunk){
+          return p.then(function(){
+            var b=writeBatch(db);
+            chunk.forEach(function(it){
+              if(!Object.keys(it.patch).length) return; // nada que cambiar en esta fila
+              var ref=(it.ownerUid===null) ? doc(leadsPoolCol(),it.targetId) : doc(collection(db,'users',it.ownerUid,'leads'),it.targetId);
+              b.update(ref, it.patch);
+            });
+            return b.commit();
+          });
+        }, Promise.resolve());
       },
       // Trae la bolsa de a poco (importLeads y mergePoolLeads siempre escriben importedAt, así que
       // ningún contacto se queda fuera del orderBy) — para no descargar miles de documentos solo para
@@ -2746,18 +2764,20 @@
     document.getElementById('import-overlay').addEventListener('click', function(e){ if(e.target.id==='import-overlay') closeImportOverlay(); });
     var _impWb=null, _impRows=null, _impHeaders=null, _impAdvisors=null, _impCurrentSheet=null;
     // Índice de contactos que YA existen en el sistema (bolsa + leads de todos los asesores),
-    // construido una vez al abrir el archivo — para poder avisar en la vista previa "esto ya está"
-    // en vez de crear un duplicado sin que nadie se entere. Nunca se fusiona solo: se ofrece
-    // omitir la fila por defecto y el admin decide si de verdad quiere importarla otra vez.
+    // construido una vez al abrir el archivo. El admin sube el mismo Excel maestro cada vez que lo
+    // actualiza (no solo altas nuevas) — así que una fila que ya existe no se omite ni se duplica:
+    // se ACTUALIZA el contacto que ya está, conservando su id y su número de lead tal cual, sin
+    // tocar estado ni notas (eso lo lleva el asesor a mano dentro de la app, el Excel no manda ahí).
     var _impExistingIndex=null;
     function normEmailKey(e){ return String(e||'').trim().toLowerCase(); }
     function buildExistingIndex(poolArr, leadsArr){
       var byEmail={}, byPhone={};
       function add(item, ownerUid){
+        var meta={ownerUid:ownerUid, id:item.id, leadNo:item.leadNo||''};
         var ek=normEmailKey(item.email);
-        if(ek && !byEmail[ek]) byEmail[ek]={ownerUid:ownerUid};
+        if(ek && !byEmail[ek]) byEmail[ek]=meta;
         var pk=normPhone(item.phone);
-        if(pk && !byPhone[pk]) byPhone[pk]={ownerUid:ownerUid};
+        if(pk && !byPhone[pk]) byPhone[pk]=meta;
       }
       (poolArr||[]).forEach(function(l){ add(l, null); }); // null = "en la bolsa sin asignar"
       (leadsArr||[]).forEach(function(l){ add(l, l.ownerUid); });
@@ -2777,6 +2797,19 @@
       if(ownerUid===null) return 'en la bolsa sin asignar';
       var a=(_impAdvisors||[]).filter(function(x){ return x.uid===ownerUid; })[0];
       return 'con '+(a?(a.fullName||a.email||ownerUid):'un asesor');
+    }
+    // Qué se refresca desde el Excel al actualizar un contacto que ya existía: nombre/correo/teléfono
+    // (el Excel manda ahí, es la fuente que el admin mantiene al día) y el número de lead SOLO si el
+    // contacto no tenía uno todavía — nunca se le cambia el número a uno que ya lo tenía, tal como se
+    // pidió. Todo lo demás (estado, notas, a qué asesor está asignado) se deja intacto: es trabajo del
+    // asesor dentro de la app, no algo que el Excel deba poder pisar.
+    function buildUpdatePatch(r, existingMeta){
+      var patch={};
+      if(r.name) patch.name=r.name;
+      if(r.email) patch.email=r.email;
+      if(r.phone) patch.phone=r.phone;
+      if(r.leadNo && !existingMeta.leadNo) patch.leadNo=r.leadNo;
+      return patch;
     }
     // Los leads a importar (con sus ids ya generados) se calculan una sola vez y se reutilizan si
     // hay que reintentar tras un fallo — si no, cada clic en "Importar" regeneraba ids nuevos para
@@ -2937,67 +2970,75 @@
     function renderImportPreview(){
       _impBuiltCache=null;
       var res=computeMergedRows(), validRows=res.validRows, merged=res.merged;
-      var matched=0;
-      merged.forEach(function(r){ if(matchAdvisor(r.advisorText)) matched++; });
       var existingRows=merged.filter(function(r){ return r._existingMatch; });
+      // Solo cuenta entre las filas NUEVAS: en una fila que ya existe, la columna "Asesor" del Excel
+      // es informativa (no se aplica), así que no debe sumar a "se asignan solos".
+      var matched=0;
+      merged.forEach(function(r){ if(!r._existingMatch && matchAdvisor(r.advisorText)) matched++; });
       var tbl=document.getElementById('import-preview');
       var previewRows=merged.slice(0,5);
-      tbl.innerHTML='<thead><tr><th>Nº</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado previo</th><th>Asesor</th><th>¿Ya existe?</th></tr></thead><tbody>'+
+      tbl.innerHTML='<thead><tr><th>Nº</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado previo</th><th>Asesor</th></tr></thead><tbody>'+
         previewRows.map(function(r){
-          var adv=matchAdvisor(r.advisorText);
-          var advTxt=r.advisorText?(adv?('✓ '+esc(adv.fullName||adv.email)):('⚠ "'+esc(r.advisorText)+'" no reconocido → bolsa')):'— sin asesor → bolsa';
           var dupeTxt=r._dupeCount>1?(' <span style="color:var(--faint)">('+r._dupeCount+'×)</span>'):'';
-          var existTxt=r._existingMatch?('<span style="color:var(--amber,#b8860b)">⚠ Ya existe '+esc(existingMatchLabel(r._existingMatch.ownerUid))+'</span>'):'✓ Nuevo';
-          return '<tr><td>'+(esc(r.leadNo)||'—')+'</td><td>'+esc(r.name)+dupeTxt+'</td><td>'+esc(r.email)+'</td><td>'+esc(r.phone)+'</td><td>'+(esc(r.statusText)||'—')+'</td><td>'+advTxt+'</td><td>'+existTxt+'</td></tr>';
+          var advTxt;
+          if(r._existingMatch){
+            // Ya existe: se actualiza donde está, nunca se mueve de asesor solo porque el Excel diga
+            // otra cosa — la columna "Asesor" del Excel es informativa aquí, no se aplica.
+            advTxt='↻ Actualiza '+esc(existingMatchLabel(r._existingMatch.ownerUid));
+          } else {
+            var adv=matchAdvisor(r.advisorText);
+            advTxt=r.advisorText?(adv?('✓ '+esc(adv.fullName||adv.email)):('⚠ "'+esc(r.advisorText)+'" no reconocido → bolsa')):'— sin asesor → bolsa';
+          }
+          return '<tr><td>'+(esc(r.leadNo)||'—')+'</td><td>'+esc(r.name)+dupeTxt+'</td><td>'+esc(r.email)+'</td><td>'+esc(r.phone)+'</td><td>'+(esc(r.statusText)||'—')+'</td><td>'+advTxt+'</td></tr>';
         }).join('')+'</tbody>';
       var withoutName=_impRows.length-validRows.length;
       var dupeRows=validRows.length-merged.length;
-      var includeExisting=document.getElementById('import-include-existing').checked;
-      var willImport=includeExisting?merged.length:(merged.length-existingRows.length);
+      var newCount=merged.length-existingRows.length;
       document.getElementById('import-summary').textContent=
-        willImport+' contacto'+(willImport===1?'':'s')+' único'+(willImport===1?'':'s')+' a importar'+
+        merged.length+' contacto'+(merged.length===1?'':'s')+' único'+(merged.length===1?'':'s')+' en el archivo'+
         (withoutName?' ('+withoutName+' fila'+(withoutName===1?'':'s')+' sin nombre, se ignora'+(withoutName===1?'':'n')+')':'')+
         (dupeRows?' ('+dupeRows+' fila'+(dupeRows===1?'':'s')+' duplicada'+(dupeRows===1?'':'s')+' por correo, combinada'+(dupeRows===1?'':'s')+' en un solo contacto)':'')+
-        (existingRows.length?(' · '+existingRows.length+' ya existen en el sistema'+(includeExisting?' (se importarán de todos modos)':', no se importarán')):'')+
-        ' · '+matched+' se asignan solos · '+(merged.length-matched)+' van a la bolsa sin asignar.'+
+        ' · '+newCount+' nuevo'+(newCount===1?'':'s')+' ('+matched+' se asignan solos, '+(newCount-matched)+' van a la bolsa)'+
+        (existingRows.length?(' · '+existingRows.length+' ya existían, se actualizan sin moverlos ni tocar su estado/notas'):'')+
         (previewRows.length<merged.length?' Vista previa de los primeros 5.':'');
-      document.getElementById('import-include-existing-row').hidden=!existingRows.length;
-      document.getElementById('import-confirm').disabled=!willImport;
+      document.getElementById('import-confirm').disabled=!merged.length;
     }
-    document.getElementById('import-include-existing').addEventListener('change', renderImportPreview);
     document.getElementById('import-confirm').addEventListener('click', function(){
-      // Reutiliza los ids ya generados si esto es un reintento (mismo mapeo, sin cambios desde el
-      // último clic) — importLeads() sube por lotes, y si el lote 2 falla habiendo subido bien el
-      // lote 1, reintentar con ids nuevos para todo volvía a insertar el lote 1 como duplicado. Con
-      // los mismos ids, reintentar solo repite el set() de lo ya subido (sin efecto) y esta vez sí
-      // sube lo que faltaba.
+      // Reutiliza lo ya calculado si esto es un reintento (mismo mapeo, sin cambios desde el último
+      // clic) — importLeads()/updateExistingLeadsBulk() suben por lotes, y si un lote falla a medias,
+      // reintentar con ids nuevos para TODO volvía a insertar como duplicado lo que ya se había
+      // subido bien. Con lo mismo, reintentar solo repite las escrituras ya hechas (sin efecto) y
+      // esta vez sí sube lo que faltaba.
       if(!_impBuiltCache){
         var res=computeMergedRows(), merged=res.merged;
-        var includeExisting=document.getElementById('import-include-existing').checked;
-        // Las filas que ya existen se omiten por defecto — importarlas otra vez crearía un contacto
-        // duplicado en silencio, justo lo que este chequeo existe para evitar. El admin puede marcar
-        // "Importar de todos modos" si de verdad quiere repetirlas (p. ej. re-contactar a propósito).
-        var toImport=includeExisting?merged:merged.filter(function(r){ return !r._existingMatch; });
-        var skippedCount=merged.length-toImport.length;
         var now=new Date().toISOString();
-        var byAdvisor={}, pool=[];
-        toImport.forEach(function(r,i){
+        var byAdvisor={}, pool=[], updates=[];
+        var newRows=merged.filter(function(r){ return !r._existingMatch; });
+        var existingRows=merged.filter(function(r){ return r._existingMatch; });
+        newRows.forEach(function(r,i){
           var built=buildLeadFromMerged(r,i,now);
           if(built.adv){ built.lead.assignedAt=now; (byAdvisor[built.adv.uid]=byAdvisor[built.adv.uid]||[]).push(built.lead); }
           else pool.push(built.lead);
         });
-        _impBuiltCache={byAdvisor:byAdvisor, pool:pool, skippedCount:skippedCount};
+        existingRows.forEach(function(r){
+          var meta=r._existingMatch, patch=buildUpdatePatch(r,meta);
+          updates.push({ownerUid:meta.ownerUid, targetId:meta.id, patch:patch});
+        });
+        _impBuiltCache={byAdvisor:byAdvisor, pool:pool, updates:updates, updatedCount:existingRows.length};
       }
       var cache=_impBuiltCache;
       var btn=this; btn.disabled=true; btn.textContent='Importando…';
-      window.AORAES_CLOUD.importLeads(cache.byAdvisor, cache.pool).then(function(){
+      Promise.all([
+        window.AORAES_CLOUD.importLeads(cache.byAdvisor, cache.pool),
+        window.AORAES_CLOUD.updateExistingLeadsBulk(cache.updates)
+      ]).then(function(){
         _impBuiltCache=null;
         document.getElementById('import-step-map').hidden=true;
         document.getElementById('import-step-result').hidden=false;
         var assignedCount=Object.keys(cache.byAdvisor).reduce(function(s,uid){ return s+cache.byAdvisor[uid].length; },0);
         document.getElementById('import-result-msg').textContent=
           'Listo: '+assignedCount+' contacto'+(assignedCount===1?'':'s')+' asignado'+(assignedCount===1?'':'s')+' directamente a su asesor, '+cache.pool.length+' en la bolsa sin asignar'+
-          (cache.skippedCount?('. '+(cache.skippedCount===1?'1 fila no se importó':cache.skippedCount+' filas no se importaron')+' por ya existir.'):'.');
+          (cache.updatedCount?('. '+(cache.updatedCount===1?'1 contacto que ya existía se actualizó':cache.updatedCount+' contactos que ya existían se actualizaron')+' (mismo número, sin tocar su estado ni notas).'):'.');
       }).catch(function(e){
         console.error('AORAES: fallo al importar',e);
         alert('Algo falló al guardar en la nube. Revisa la consola e inténtalo de nuevo.');
