@@ -3269,7 +3269,9 @@
       setActive(null);
       ensureFrame('analisis');
       var doConvert=function(){
-        callAnalisis('aoraesNewClientFromLead', {name:lead.name, email:lead.email, phone:lead.phone});
+        // leadId/leadNo viajan solo para que la ficha nueva guarde de dónde vino (ver
+        // aoraesNewClientFromLead en analisis.html) — no cambian nada de lo que ya hacía esto.
+        callAnalisis('aoraesNewClientFromLead', {name:lead.name, email:lead.email, phone:lead.phone, leadId:lead.id, leadNo:lead.leadNo||''});
         show('analisis');
         // No se borra: se marca "convertido" y desaparece del filtro por defecto. Si el asesor abre
         // el formulario y no llega a guardar nada, el contacto no se pierde — sigue ahí bajo el
