@@ -2033,7 +2033,16 @@
       stage.appendChild(f); MOD[view].el=f; return f;
     }
     function callAnalisis(fn,arg){ try{ var f=MOD.analisis.el; if(f&&f.contentWindow&&f.contentWindow[fn]) return f.contentWindow[fn](arg); }catch(e){} return null; }
-    function getClient(){ if(!MOD.analisis.el||!MOD.analisis.ready)return null; return callAnalisis('aoraesGetClient'); }
+    // Si el asesor pulsa "Seguros patrimoniales ↗"/"Plan Futuro ↗" desde dentro de la ficha de un
+    // cliente, ese cliente vive en wsFrames.analisis (abierto con ?client=), no en este MOD.analisis
+    // genérico — que puede no tener ningún cliente cargado todavía si el asesor no ha pasado antes
+    // por "Análisis & CRM" en esta sesión. Sin este respaldo, el puente (maybeBridge) se quedaba
+    // mudo la primera vez que se entraba a VSP/Jubilación así, aunque la ficha ya tuviera el cliente.
+    function getClient(){
+      if(MOD.analisis.el && MOD.analisis.ready) return callAnalisis('aoraesGetClient');
+      if(wsFrames.analisis.el && wsFrames.analisis.ready){ try{ return wsFrames.analisis.el.contentWindow.aoraesGetClient(); }catch(e){} }
+      return null;
+    }
     function sigOf(c){ return c?[c.name,c.age,c.retireAge,c.monthlyContribution,c.suggestedRetirement,c.iban].join('|'):null; }
     function hideBanner(){ banner.hidden=true; banner.innerHTML=''; }
     // view: 'jubilacion' (por defecto) o 'vsp' — cada herramienta puente comparte este mismo banner y
