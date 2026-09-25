@@ -5343,6 +5343,7 @@
           '<section class="ws-sec'+(wsStep==='seguimiento'?' active':'')+'" id="sec-seguimiento" role="tabpanel" aria-labelledby="tab-seguimiento" tabindex="0" data-sec="seguimiento">'+seg+'</section>'+
         '</div></div>';
       showWsFrameFor(wsStep);
+      wireStepperFade();
     }
 
     // Resumen y Propuesta no tienen iframe propio: reutilizan el de Análisis financiero (misma
@@ -5353,22 +5354,25 @@
       var frameKind=WS_FRAME_FOR_STEP[step];
       ['analisis','jubilacion','medico'].forEach(function(k){ var el=document.getElementById('ws-frame-'+k); if(el) el.hidden=(frameKind!==k); });
     }
+    // En móvil la barra de pestañas de la ficha no cabe entera y hace scroll horizontal, pero sin
+    // barra de scroll visible (scrollbar-width:none) no hay ninguna pista de que sigue habiendo más
+    // pestañas a la derecha (p.ej. "Preguntas médicas" pasaba desapercibida). Este degradado se
+    // conecta una sola vez por elemento (_scrollWired): se llama tanto desde el primer render
+    // (renderWorkspaceInner, donde vive la mayoría de las veces que se abre una ficha) como desde
+    // cada cambio de pestaña (setStep) por si el paso reconstruye el stepper.
+    function wireStepperFade(){
+      var stepperEl=wsScreen.querySelector('.ws-stepper');
+      if(!stepperEl || stepperEl._scrollWired) return;
+      stepperEl._scrollWired=true;
+      var updateStepperFade=function(){ stepperEl.classList.toggle('ws-stepper--more', stepperEl.scrollWidth-stepperEl.scrollLeft-stepperEl.clientWidth>2); };
+      stepperEl.addEventListener('scroll',updateStepperFade);
+      window.addEventListener('resize',updateStepperFade);
+      setTimeout(updateStepperFade,0);
+    }
     function setStep(step){
       wsStep=step;
       var btns=wsScreen.querySelectorAll('.ws-stepper button'); for(var i=0;i<btns.length;i++){ var on=btns[i].getAttribute('data-step')===step; btns[i].classList.toggle('active',on); btns[i].setAttribute('aria-selected',on?'true':'false'); }
-      // En móvil la barra de pestañas no cabe entera y hace scroll horizontal, pero sin barra de
-      // scroll visible (scrollbar-width:none) no hay ninguna pista de que sigue habiendo más
-      // pestañas a la derecha (p.ej. "Preguntas médicas" pasaba desapercibida). Este degradado se
-      // conecta una sola vez por elemento (_scrollWired) y se recalcula solo al hacer scroll o
-      // redimensionar, no en cada cambio de paso.
-      var stepperEl=wsScreen.querySelector('.ws-stepper');
-      if(stepperEl && !stepperEl._scrollWired){
-        stepperEl._scrollWired=true;
-        var updateStepperFade=function(){ stepperEl.classList.toggle('ws-stepper--more', stepperEl.scrollWidth-stepperEl.scrollLeft-stepperEl.clientWidth>2); };
-        stepperEl.addEventListener('scroll',updateStepperFade);
-        window.addEventListener('resize',updateStepperFade);
-        setTimeout(updateStepperFade,0);
-      }
+      wireStepperFade();
       var isTool=!!WS_TOOL_STEPS[step];
       var body=document.getElementById('ws-summary-body'); if(body) body.style.display=isTool?'none':'';
       var secs=wsScreen.querySelectorAll('#ws-summary-body .ws-sec'); for(var j=0;j<secs.length;j++)secs[j].classList.toggle('active',!isTool&&secs[j].getAttribute('data-sec')===step);
