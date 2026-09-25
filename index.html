@@ -530,8 +530,13 @@
   .ws-verdict b{display:block; font-family:'Fraunces',sans-serif; font-weight:600; font-size:15px; color:var(--gold-soft); margin-bottom:3px}
   @media(max-width:560px){.ws-head{flex-wrap:wrap}.ws-verdict{text-align:left; max-width:none; flex-basis:100%; margin-top:4px}}
 
-  .ws-stepper{display:flex; gap:2px; overflow-x:auto; margin:20px 0 20px; border-bottom:1px solid var(--line); scrollbar-width:none}
+  .ws-stepper{display:flex; gap:2px; overflow-x:auto; margin:20px 0 20px; border-bottom:1px solid var(--line); scrollbar-width:none; position:relative}
   .ws-stepper::-webkit-scrollbar{display:none}
+  .ws-stepper::after{
+    content:''; position:absolute; top:0; right:0; bottom:1px; width:26px; pointer-events:none;
+    background:linear-gradient(90deg,rgba(255,255,255,0),var(--surface)); opacity:0; transition:opacity .15s var(--ease);
+  }
+  .ws-stepper.ws-stepper--more::after{opacity:1}
   .ws-stepper button{
     flex:0 0 auto; background:transparent; border:0; border-bottom:2px solid transparent; color:var(--muted);
     font-family:inherit; font-size:13.5px; font-weight:600; padding:11px 15px; cursor:pointer; white-space:nowrap;
@@ -5317,7 +5322,10 @@
           '<div class="ws-metaline">'+[esc(rec.advisor||''),(rec.savedAt?('actualizado '+relTime(rec.savedAt)):'')].filter(Boolean).join(' · ')+'</div></div>'+
           '<div class="ws-verdict"><b>'+vd[0]+'</b>'+vd[1].slice(0,70)+(vd[1].length>70?'…':'')+'</div></div>'+
         '<div class="ws-stepper" id="ws-stepper" role="tablist" aria-label="Secciones del cliente">'+
-          ['analisis:Análisis financiero','resumen:Resumen','jubilacion:Comparación de pensión','inmueble:Proyecto inmobiliario','afa:Amortización (AfA)','medico:Preguntas médicas','perfil:Perfil','propuesta:Propuesta','seguimiento:Seguimiento'].map(function(p){var a=p.split(':');var on=(a[0]===wsStep);return '<button type="button" role="tab" id="tab-'+a[0]+'" aria-controls="sec-'+a[0]+'" aria-selected="'+(on?'true':'false')+'" data-step="'+a[0]+'"'+(on?' class="active"':'')+'>'+a[1]+'</button>';}).join('')+
+          // vsp/ninos (Plan Futuro) no forman parte de wsFrames (ver ensureWsFrame/maybeBridge más
+          // arriba) — en vez de duplicar ese sistema de iframes por cliente, sus pestañas abren la
+          // herramienta a nivel superior (data-open-tool), que ya trae al cliente activo consigo.
+          ['analisis:Análisis financiero','resumen:Resumen','jubilacion:Comparación de pensión','vsp:Seguros patrimoniales','ninos:Plan Futuro','inmueble:Proyecto inmobiliario','afa:Amortización (AfA)','medico:Preguntas médicas','perfil:Perfil','propuesta:Propuesta','seguimiento:Seguimiento'].map(function(p){var a=p.split(':');if(a[0]==='vsp'||a[0]==='ninos'){ return '<button type="button" data-open-tool="'+a[0]+'">'+a[1]+' ↗</button>'; } var on=(a[0]===wsStep);return '<button type="button" role="tab" id="tab-'+a[0]+'" aria-controls="sec-'+a[0]+'" aria-selected="'+(on?'true':'false')+'" data-step="'+a[0]+'"'+(on?' class="active"':'')+'>'+a[1]+'</button>';}).join('')+
         '</div>'+
         '<div class="ws-body" id="ws-summary-body"'+(isTool?' style="display:none"':'')+'>'+
           '<section class="ws-sec'+(wsStep==='inmueble'?' active':'')+'" id="sec-inmueble" role="tabpanel" aria-labelledby="tab-inmueble" tabindex="0" data-sec="inmueble">'+inmuebleBlock(rec)+'</section>'+
@@ -5339,6 +5347,19 @@
     function setStep(step){
       wsStep=step;
       var btns=wsScreen.querySelectorAll('.ws-stepper button'); for(var i=0;i<btns.length;i++){ var on=btns[i].getAttribute('data-step')===step; btns[i].classList.toggle('active',on); btns[i].setAttribute('aria-selected',on?'true':'false'); }
+      // En móvil la barra de pestañas no cabe entera y hace scroll horizontal, pero sin barra de
+      // scroll visible (scrollbar-width:none) no hay ninguna pista de que sigue habiendo más
+      // pestañas a la derecha (p.ej. "Preguntas médicas" pasaba desapercibida). Este degradado se
+      // conecta una sola vez por elemento (_scrollWired) y se recalcula solo al hacer scroll o
+      // redimensionar, no en cada cambio de paso.
+      var stepperEl=wsScreen.querySelector('.ws-stepper');
+      if(stepperEl && !stepperEl._scrollWired){
+        stepperEl._scrollWired=true;
+        var updateStepperFade=function(){ stepperEl.classList.toggle('ws-stepper--more', stepperEl.scrollWidth-stepperEl.scrollLeft-stepperEl.clientWidth>2); };
+        stepperEl.addEventListener('scroll',updateStepperFade);
+        window.addEventListener('resize',updateStepperFade);
+        setTimeout(updateStepperFade,0);
+      }
       var isTool=!!WS_TOOL_STEPS[step];
       var body=document.getElementById('ws-summary-body'); if(body) body.style.display=isTool?'none':'';
       var secs=wsScreen.querySelectorAll('#ws-summary-body .ws-sec'); for(var j=0;j<secs.length;j++)secs[j].classList.toggle('active',!isTool&&secs[j].getAttribute('data-sec')===step);
@@ -5651,7 +5672,7 @@
     searchEl.addEventListener('input',renderCockpit); statusEl.addEventListener('change',renderCockpit); sortEl.addEventListener('change',renderCockpit); advisorEl.addEventListener('change',renderCockpit);
     wsScreen.addEventListener('click',function(e){
       var bk=e.target.closest('#ws-back'); if(bk){ flushInmuebleSave(); teardownWsFrames(); wsId=null; wsRec=null; show('home'); return; }
-      var stp=e.target.closest('.ws-stepper button'); if(stp){ setStep(stp.getAttribute('data-step')); return; }
+      var stp=e.target.closest('.ws-stepper button[data-step]'); if(stp){ setStep(stp.getAttribute('data-step')); return; }
       var dp=e.target.closest('[data-deep]'); if(dp){ setStep(dp.getAttribute('data-deep')); return; }
       // A diferencia de data-deep (pasos dentro del propio "workspace"), VSP no forma parte de
       // wsFrames/WS_TOOL_STEPS (mismo criterio que Plan Futuro): se abre como herramienta de nivel
