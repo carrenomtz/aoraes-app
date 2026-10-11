@@ -1,0 +1,25 @@
+name: Pruebas del motor financiero
+
+# Corre las pruebas de tests/calc.test.js (cálculo del Proyecto inmobiliario) en cada cambio de
+# index.html o de las propias pruebas. No bloquea el despliegue de Pages (que sale de main sin pasar
+# por aquí): si falla, GitHub marca el commit en rojo y avisa por correo.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'tests/**'
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'tests/**'
+
+jobs:
+  calc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tests/calc.test.js
