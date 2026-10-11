@@ -6537,6 +6537,7 @@
         _presRawPago.pagoPost=tp.value;
         if(!isNaN(vIP)&&vIP>=0&&vIP<=1000000){
           var inmIP=normalizeInmueble(_infRec), cfgIP=(inmIP.modo==='refi')?inmIP.refi.banco:inmIP.banco; cfgIP.pagoPost=vIP;
+          var fIP=document.querySelector('[data-inm-opt="'+((inmIP.modo==='refi')?'refiBanco':'banco')+'"][data-inm-field="pagoPost"]'); if(fIP) fIP.value=vIP;
           document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(_infRec); scheduleInmuebleSave();
           var nIP=document.querySelector('#afa-inf-body [data-pres-pago="pagoPost"]'); if(nIP){ nIP.focus(); try{ nIP.setSelectionRange(nIP.value.length,nIP.value.length); }catch(_){} }
         }
@@ -6545,6 +6546,7 @@
       var t=e.target; if(!t.hasAttribute||!t.hasAttribute('data-pres-nombre')||!_infRec) return;
       var inmN=normalizeInmueble(_infRec), cfgN=(inmN.modo==='refi')?inmN.refi.banco:inmN.banco, kN='nombrePost'+t.getAttribute('data-pres-nombre');
       if(t.value.trim()) cfgN[kN]=t.value; else delete cfgN[kN];
+      var fN=document.querySelector('[data-inm-opt="'+((inmN.modo==='refi')?'refiBanco':'banco')+'"][data-inm-nombre="'+t.getAttribute('data-pres-nombre')+'"]'); if(fN) fN.value=t.value;
       scheduleInmuebleSave();
     });
     document.getElementById('afa-inf-body').addEventListener('focusout', function(e){
@@ -6556,6 +6558,7 @@
       var b=e.target.closest('[data-pres-n]'); if(!b||!_infRec) return;
       var inmI=normalizeInmueble(_infRec), cfgI=(inmI.modo==='refi')?inmI.refi.banco:inmI.banco;
       cfgI.numEscenarios=Math.max(1,Math.min(5,inmuebleNumEscenarios(cfgI)+(+b.getAttribute('data-pres-n'))));
+      var fNI=document.querySelector('[data-inm-opt="'+((inmI.modo==='refi')?'refiBanco':'banco')+'"][data-inm-field="numEscenarios"]'); if(fNI) fNI.value=cfgI.numEscenarios;
       document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(_infRec); scheduleInmuebleSave();
     });
     document.getElementById('inm-pres-inner').addEventListener('input', function(e){
