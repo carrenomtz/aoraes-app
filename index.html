@@ -592,6 +592,10 @@
   .inm-card{background:var(--surface-soft); border:1px solid var(--line); border-radius:var(--r-md); padding:15px}
   .inm-card h4{font-family:'Fraunces',sans-serif; font-weight:600; font-size:14px; color:var(--navy); margin-bottom:10px}
   .inm-note{font-size:11.5px; color:var(--muted); margin:-4px 0 11px; line-height:1.4}
+  .inm-warn{background:#fff6e0; border:1px solid var(--gold); color:var(--navy); border-radius:10px; padding:9px 12px; font-size:12.5px; line-height:1.45; margin:-3px 0 11px}
+  .inm-warn[hidden]{display:none}
+  .inm-warn .inm-quick{margin:7px 0 0; align-items:center}
+  .inm-warn .inm-quick span{font-weight:600}
   .inm-quick{display:flex; flex-wrap:wrap; gap:6px; margin:-3px 0 11px}
   .inm-quick button{font-family:inherit; font-size:12px; font-weight:700; color:var(--navy); background:var(--surface); border:1px solid var(--gold-soft); border-radius:999px; padding:5px 12px; cursor:pointer; transition:.14s}
   .inm-quick button:hover{background:var(--gold-tint); border-color:var(--gold)}
@@ -3809,6 +3813,7 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Un interés del ahorro superior al 0,5 % es poco habitual en un Bausparvertrag.':'A savings interest rate above 0.5% is unusual for a Bausparvertrag.','¿Lo has confundido con el interés del préstamo?':'Did you mix it up with the loan interest rate?','Valor habitual':'Usual value',
       'Saldo pendiente hoy (0 = calculado)':'Outstanding balance today (0 = calculated)',
       'Cuota mensual actual (0 = calculada)':'Current monthly payment (0 = calculated)',
       'Escenarios':'Scenarios',
@@ -4094,6 +4099,7 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Un interés del ahorro superior al 0,5 % es poco habitual en un Bausparvertrag.':'Ein Sparzins über 0,5 % ist bei einem Bausparvertrag unüblich.','¿Lo has confundido con el interés del préstamo?':'Hast du ihn mit dem Darlehenszins verwechselt?','Valor habitual':'Üblicher Wert',
       'Saldo pendiente hoy (0 = calculado)':'Restschuld heute (0 = berechnet)',
       'Cuota mensual actual (0 = calculada)':'Aktuelle monatliche Rate (0 = berechnet)',
       'Escenarios':'Szenarien',
@@ -4959,6 +4965,8 @@
         // ver bausparPlazoActual() y el manejador de data-inm-plazo más abajo.
         basic+='<label class="inm-f"><span>Plazo del préstamo</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" data-inm-opt="'+opt+'" data-inm-plazo="1" value="'+bausparPlazoActual(bausparsumme,cfg)+'" step="0.5" min="1" max="40"><span class="inm-suf">años</span></span></label>';
         advanced+=inmuebleOptField(opt,'interesAhorro','Interés del ahorro',cfg.interesAhorro,'0.01','%','min="0" max="20"');
+        // Aviso: el Guthabenzins de un Bausparvertrag ronda el 0,05 %; más de 0,5 % suele ser el interés del préstamo escrito en el campo equivocado.
+        advanced+='<div class="inm-warn inm-warn-ahorro"'+((cfg.interesAhorro>0.5)?'':' hidden')+'><span>Un interés del ahorro superior al 0,5 % es poco habitual en un Bausparvertrag.</span> <span>¿Lo has confundido con el interés del préstamo?</span><div class="inm-quick"><span>Valor habitual</span><button type="button" data-inm-quickfield="interesAhorro" data-inm-quickval="0.05">0,05 %</button></div></div>';
       }
       basic+=inmuebleOptField(opt,'interesPrestamo','Interés del préstamo',cfg.interesPrestamo,'0.01','%','min="0" max="20"');
       if(opt==='banco'||opt==='refiBanco'){
@@ -6670,6 +6678,7 @@
         else if(opt==='refiA') inm.refi.a[field]=val;
         else if(opt==='refiB') inm.refi.b[field]=val;
         else inm[opt][field]=val;
+        if(field==='interesAhorro'){ var wnA=t.closest('.inm-card'); wnA=wnA&&wnA.querySelector('.inm-warn-ahorro'); if(wnA) wnA.hidden=!(val>0.5); }
         if(opt==='banco'&&field==='zinsbindung') inmuebleSyncFechaRefi(inm);
         refreshInmuebleResults(); scheduleInmuebleSave();
         return;
