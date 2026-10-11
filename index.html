@@ -624,6 +624,15 @@
   .inm-headline{background:var(--navy); color:rgba(255,255,255,.92); border-radius:var(--r-md); padding:16px 20px; margin-bottom:14px; font-size:14.5px; line-height:1.55; box-shadow:var(--sh-1)}
   .inm-headline b{color:var(--gold-soft)}
   .inm-headline-sub{font-size:11.5px; line-height:1.5; color:rgba(255,255,255,.7); margin-top:9px; padding-top:9px; border-top:1px solid rgba(255,255,255,.14)}
+  .inm-stress-lead{font-size:12.5px; color:var(--muted); line-height:1.55; margin-bottom:12px}
+  .inm-stress-lead b{color:var(--navy)}
+  .inm-stress-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+  .inm-stress-tile{border:1px solid var(--line); border-radius:var(--r-sm); padding:12px 13px; background:var(--surface)}
+  .inm-stress-tile.now{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-soft)}
+  .inm-stress-head{font-size:11.5px; color:var(--muted); margin-bottom:6px}
+  .inm-stress-head b{font-family:'Fraunces',sans-serif; font-size:17px; color:var(--navy); margin-left:3px}
+  .inm-stress-warn{font-size:12px; font-weight:700; color:var(--red); line-height:1.4}
+  @media(max-width:620px){.inm-stress-grid{grid-template-columns:1fr}}
   .inm-cmp-wrap{margin:14px 0 6px}
   .inm-cmp-lab{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--faint)}
   .inm-cmp{margin-bottom:6px}
@@ -3722,6 +3731,18 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Banco directo: qué pasa al terminar la Zinsbindung':'Direct bank: what happens when the Zinsbindung ends',
+      'Con este pago el banco se liquida dentro de la Zinsbindung (':'With this payment the bank loan is paid off within the Zinsbindung (',
+      '): no hay que refinanciar.':'): no refinancing needed.',
+      'Al terminar la Zinsbindung (':'When the Zinsbindung ends (',
+      '), aún debes':'), you still owe',
+      'Ese saldo se refinancia al tipo que haya entonces. Tres posibilidades (no son pronósticos), con tu mismo pago de':'That balance is refinanced at whatever rate applies then. Three possibilities (not forecasts), with the same payment of',
+      'Si el tipo sigue en':'If the rate stays at',
+      'Si el tipo pasa a':'If the rate becomes',
+      'Plazo total':'Total term',
+      'Intereses totales':'Total interest',
+      'Tu pago no cubre los intereses':'Your payment does not cover the interest',
+      'El Bausparvertrag mantiene su tipo durante todo el préstamo: no cambia.':'The Bausparvertrag keeps its rate for the whole loan: it does not change.',
       'Con el Bausparvertrag pagas':'With the Bausparvertrag you pay',
       'menos en intereses y comisiones (nominal).':'less in interest and fees (nominal).',
       'más en intereses y comisiones (nominal).':'more in interest and fees (nominal).',
@@ -3757,7 +3778,7 @@
       'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.':'The saving years are an assumption: the Bausparkasse’s allocation (Zuteilung) is not guaranteed. Example values — replace with the official illustration.',
       'Cuánto pagas cada mes':'What you pay each month',
       'Cuánto pagas cada mes, comparado en el tiempo':'What you pay each month, compared over time',
-      'Cada tramo es tu pago mensual y cuánto dura. Un pago más alto termina antes; uno más bajo deja más aire cada mes.':'Each step is your monthly payment and how long it lasts. A higher payment finishes sooner; a lower one leaves more room each month.',
+      'Cada tramo es tu pago mensual y cuánto dura; las fechas suponen que empiezas este mes. Un pago más alto termina antes; uno más bajo deja más aire cada mes.':'Each step is your monthly payment and how long it lasts; dates assume you start this month. A higher payment finishes sooner; a lower one leaves more room each month.',
       'Con la opción Badenia pagas':'With the Badenia option you pay',
       'menos en intereses y comisiones que con el banco (nominal) y terminas de pagar':'less in interest and fees than with the bank (nominal) and you finish paying',
       'más en intereses y comisiones que con el banco (nominal) y terminas de pagar':'more in interest and fees than with the bank (nominal) and you finish paying',
@@ -3949,6 +3970,18 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Banco directo: qué pasa al terminar la Zinsbindung':'Direktbank: Was nach Ende der Zinsbindung passiert',
+      'Con este pago el banco se liquida dentro de la Zinsbindung (':'Mit dieser Zahlung ist die Bankfinanzierung innerhalb der Zinsbindung abbezahlt (',
+      '): no hay que refinanciar.':'): keine Anschlussfinanzierung nötig.',
+      'Al terminar la Zinsbindung (':'Nach Ende der Zinsbindung (',
+      '), aún debes':') schulden Sie noch',
+      'Ese saldo se refinancia al tipo que haya entonces. Tres posibilidades (no son pronósticos), con tu mismo pago de':'Dieser Restbetrag wird zum dann geltenden Zinssatz neu finanziert. Drei Möglichkeiten (keine Prognosen) bei gleicher Zahlung von',
+      'Si el tipo sigue en':'Bei gleichbleibendem Zinssatz von',
+      'Si el tipo pasa a':'Bei einem Zinssatz von',
+      'Plazo total':'Gesamtlaufzeit',
+      'Intereses totales':'Gesamtzinsen',
+      'Tu pago no cubre los intereses':'Ihre Zahlung deckt die Zinsen nicht',
+      'El Bausparvertrag mantiene su tipo durante todo el préstamo: no cambia.':'Der Bausparvertrag behält seinen Zinssatz für das gesamte Darlehen: er ändert sich nicht.',
       'Con el Bausparvertrag pagas':'Mit dem Bausparvertrag zahlen Sie',
       'menos en intereses y comisiones (nominal).':'weniger Zinsen und Gebühren (nominal).',
       'más en intereses y comisiones (nominal).':'mehr Zinsen und Gebühren (nominal).',
@@ -3984,7 +4017,7 @@
       'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.':'Die Sparjahre sind eine Annahme: die Zuteilung der Bausparkasse ist nicht garantiert. Beispielwerte — durch die offizielle Modellrechnung ersetzen.',
       'Cuánto pagas cada mes':'Was Sie jeden Monat zahlen',
       'Cuánto pagas cada mes, comparado en el tiempo':'Was Sie jeden Monat zahlen, im Zeitverlauf verglichen',
-      'Cada tramo es tu pago mensual y cuánto dura. Un pago más alto termina antes; uno más bajo deja más aire cada mes.':'Jede Stufe ist Ihre monatliche Zahlung und ihre Dauer. Eine höhere Zahlung ist früher fertig; eine niedrigere lässt jeden Monat mehr Spielraum.',
+      'Cada tramo es tu pago mensual y cuánto dura; las fechas suponen que empiezas este mes. Un pago más alto termina antes; uno más bajo deja más aire cada mes.':'Jede Stufe ist Ihre monatliche Zahlung und ihre Dauer; die Daten gehen von einem Start in diesem Monat aus. Eine höhere Zahlung ist früher fertig; eine niedrigere lässt jeden Monat mehr Spielraum.',
       'Con la opción Badenia pagas':'Mit der Badenia-Option zahlen Sie',
       'menos en intereses y comisiones que con el banco (nominal) y terminas de pagar':'weniger Zinsen und Gebühren als bei der Bank (nominal) und sind fertig',
       'más en intereses y comisiones que con el banco (nominal) y terminas de pagar':'mehr Zinsen und Gebühren als bei der Bank (nominal) und sind fertig',
@@ -5024,14 +5057,53 @@
       fines+='<circle cx="'+xEst.toFixed(1)+'" cy="'+py(0).toFixed(1)+'" r="3.5" fill="'+colEst+'"/>';
       fines+='<circle cx="'+xBk.toFixed(1)+'" cy="'+py(0).toFixed(1)+'" r="3.5" fill="'+colBk+'"/>';
       var yFinEst=py(0)-9, yFinBk=py(0)-9;
-      if(Math.abs(xEst-xBk)<56) yFinBk=py(0)-22;
-      fines+='<text x="'+xEst.toFixed(1)+'" y="'+yFinEst.toFixed(1)+'" font-size="10" font-weight="700" fill="'+colEst+'" text-anchor="end">'+fmtAnos(rEst.mesesTotal)+'</text>';
-      fines+='<text x="'+xBk.toFixed(1)+'" y="'+yFinBk.toFixed(1)+'" font-size="10" font-weight="700" fill="'+colBk+'" text-anchor="end">'+fmtAnos(rk.mesesTotal)+'</text>';
+      if(Math.abs(xEst-xBk)<90) yFinBk=py(0)-22;
+      fines+='<text x="'+xEst.toFixed(1)+'" y="'+yFinEst.toFixed(1)+'" font-size="10" font-weight="700" fill="'+colEst+'" text-anchor="end">'+fmtAnos(rEst.mesesTotal)+' · '+inmuebleMesAnio(rEst.mesesTotal)+'</text>';
+      fines+='<text x="'+xBk.toFixed(1)+'" y="'+yFinBk.toFixed(1)+'" font-size="10" font-weight="700" fill="'+colBk+'" text-anchor="end">'+fmtAnos(rk.mesesTotal)+' · '+inmuebleMesAnio(rk.mesesTotal)+'</text>';
       var svg='<svg viewBox="0 0 '+W+' '+H+'" class="inm-curve-svg" role="img" aria-label="Cuánto pagas cada mes, comparado en el tiempo">'+
         grid+gridX+areaOf(segsBk,colBk)+areaOf(segsEst,colEst)+lineOf(segsBk,colBk)+lineOf(segsEst,colEst)+labels+fines+'</svg>';
       return '<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto pagas cada mes</h5>'+
         '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>'+esc(bancoTitle)+'</span></div></div>'+
-        svg+'<p class="inm-curve-note">Cada tramo es tu pago mensual y cuánto dura. Un pago más alto termina antes; uno más bajo deja más aire cada mes.</p></div>';
+        svg+'<p class="inm-curve-note">Cada tramo es tu pago mensual y cuánto dura; las fechas suponen que empiezas este mes. Un pago más alto termina antes; uno más bajo deja más aire cada mes.</p></div>';
+    }
+    // mm/aaaa a N meses desde hoy — numérico a propósito (sin nombres de mes) para que no dependa del
+    // idioma con el que se dibujó el bloque.
+    function inmuebleMesAnio(meses){
+      var d=new Date(); d.setDate(1); d.setMonth(d.getMonth()+Math.round(meses));
+      return ('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
+    }
+    // Qué pasa con el banco cuando termina la Zinsbindung: tres tipos posteriores HIPOTÉTICOS (uno
+    // menos, el mismo y dos puntos más) manteniendo la cuota mensual. No son pronósticos ni se guardan:
+    // salen del tipo actual, así que no hay campo nuevo que migrar. El Bausparvertrag tiene el tipo
+    // fijado para todo el préstamo, por eso aquí solo se analiza el banco.
+    function inmuebleStressHTML(precio,rk,cfgBanco){
+      var zMeses=Math.round((cfgBanco.zinsbindung||0)*12);
+      if(!(zMeses>0)||!(precio>0)||!(rk.cuotaPrestamo>0)) return '';
+      var body;
+      if(rk.mesesPrestamo<=zMeses){
+        body='<p class="inm-stress-lead"><span>Con este pago el banco se liquida dentro de la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>): no hay que refinanciar.</span></p>';
+      } else {
+        var pmt=rk.cuotaPrestamo, R=rk.restschuldZinsbindung||0, r0=cfgBanco.interesPrestamo||0;
+        var intDurante=Math.max(0,pmt*zMeses-(precio-R));
+        function fmtTipo(x){ return String(Math.round(x*100)/100).replace('.',',')+'%'; }
+        var tiles=[{r:Math.max(0,r0-1),now:false},{r:r0,now:true},{r:r0+2,now:false}].filter(function(t,i){ return i===1||Math.abs(t.r-r0)>0.001; }).map(function(t){
+          var r2=t.r, rm=r2/100/12, cubre=(pmt>R*rm+0.005);
+          var inner;
+          if(!cubre){
+            inner='<div class="inm-stress-warn">Tu pago no cubre los intereses</div>';
+          } else {
+            var m2=monthsToPayoff(R,r2,pmt);
+            var intDesp=Math.max(0,pmt*m2-(R-balanceTrasMeses(R,r2,pmt,m2)));
+            inner='<div class="inm-res-line"><span>Plazo total</span><b>'+fmtAnos(zMeses+m2)+'</b></div>'+
+                  '<div class="inm-res-line"><span>Intereses totales</span><b>'+eur(intDurante+intDesp)+'</b></div>';
+          }
+          return '<div class="inm-stress-tile'+(t.now?' now':'')+'"><div class="inm-stress-head"><span>'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'</span> <b>'+fmtTipo(r2)+'</b></div>'+inner+'</div>';
+        }).join('');
+        body='<p class="inm-stress-lead"><span>Al terminar la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>), aún debes <b>'+eur(R)+'</b>.</span> <span>Ese saldo se refinancia al tipo que haya entonces. Tres posibilidades (no son pronósticos), con tu mismo pago de <b>'+eur(pmt)+'/mes</b>.</span></p>'+
+          '<div class="inm-stress-grid">'+tiles+'</div>'+
+          '<p class="inm-curve-note">El Bausparvertrag mantiene su tipo durante todo el préstamo: no cambia.</p>';
+      }
+      return '<div class="inm-curve-card"><div class="inm-curve-head"><h5>Banco directo: qué pasa al terminar la Zinsbindung</h5></div>'+body+'</div>';
     }
     function inmuebleCompareToggle(c,efectivo){
       var hint=(c==='igual')
@@ -5130,7 +5202,7 @@
         inmuebleCurvaSVG(precio,ptsEst,ptsBanco,120,Math.round((inm.banco.zinsbindung||0)*12))+
         '<p class="inm-curve-note">La línea de puntos dorada marca los 10 años — el plazo al que un banco tradicional suele exigir refinanciación (Anschlussfinanzierung). La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
         '</div>';
-      return inmuebleFraseComprar(rEst,rk,igual)+inmuebleCuotaSVG(rEst,rk,estTitle,bancoTitle)+curva+'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>';
+      return inmuebleFraseComprar(rEst,rk,igual)+inmuebleCuotaSVG(rEst,rk,estTitle,bancoTitle)+curva+inmuebleStressHTML(precio,rk,cfgBanco)+'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>';
     }
     // Fichas guardadas con el esquema anterior (plazoPrestamo en años + anualidad) migran a la
     // cuota fija real (Tilgung inicial % para banco, Tilgungsbeitrag ‰ para Bausparvertrag) SIN
