@@ -695,6 +695,7 @@
     body > *:not(#afa-informe){display:none !important}
     #afa-informe{position:static !important; display:block !important; background:#fff}
     .afa-inf-topbar{display:none}
+    .inm-inf-ctl{display:none !important}
     #afa-inf-body{overflow:visible; padding:0}
   }
 
@@ -5658,7 +5659,10 @@
                page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.cuota+P.curva),
                page(P.stress+P.cards)];
       }
-      return '<div class="inm-inf">'+pages.join('')+'</div>';
+      _infRec=rec;
+      // Control de pantalla (no se imprime): número de escenarios post-Zinsbindung del informe.
+      var ctl=P.stress?'<div class="inm-inf-ctl">'+presEscenariosCtl((inm.modo==='refi')?inm.refi.banco:inm.banco)+'</div>':'';
+      return '<div class="inm-inf">'+ctl+pages.join('')+'</div>';
     }
     // Diapositivas de la presentación: una idea por pantalla, cifras grandes, mismas funciones.
     function buildInmuebleSlides(rec){
@@ -5689,7 +5693,7 @@
       }
       return sl;
     }
-    var _presSlides=[], _presIdx=0, _presRec=null;
+    var _presSlides=[], _presIdx=0, _presRec=null, _infRec=null;
     // Control del número de escenarios dentro de la propia diapositiva (la presentación lo edita en vivo).
     function presEscenariosCtl(cfg){
       return '<div class="inm-pres-ctl"><span>Escenarios</span><button type="button" data-pres-n="-1" aria-label="Menos escenarios">−</button><b>'+inmuebleNumEscenarios(cfg)+'</b><button type="button" data-pres-n="1" aria-label="Más escenarios">+</button></div>';
@@ -6348,6 +6352,12 @@
       openGenericAfa();
     });
     document.getElementById('inm-pres-close').addEventListener('click', presClose);
+    document.getElementById('afa-inf-body').addEventListener('click', function(e){
+      var b=e.target.closest('[data-pres-n]'); if(!b||!_infRec) return;
+      var inmI=normalizeInmueble(_infRec), cfgI=(inmI.modo==='refi')?inmI.refi.banco:inmI.banco;
+      cfgI.numEscenarios=Math.max(1,Math.min(5,inmuebleNumEscenarios(cfgI)+(+b.getAttribute('data-pres-n'))));
+      document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(_infRec); scheduleInmuebleSave();
+    });
     document.getElementById('inm-pres-inner').addEventListener('input', function(e){
       var tt=e.target;
       if(tt.hasAttribute&&tt.hasAttribute('data-pres-pago')&&_presRec){
