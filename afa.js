@@ -291,6 +291,7 @@ function afaOnClick(e){
       if(afaPrint){
         if(!APP_HOST.wsRec) return true;
         document.getElementById('afa-inf-body').innerHTML=buildAfaInforme(APP_HOST.wsRec);
+        document.getElementById('afa-informe').classList.remove('inm');
         document.getElementById('afa-informe').classList.add('on');
         window.print();
         return true;

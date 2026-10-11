@@ -688,6 +688,8 @@
   #afa-informe.on{display:flex; flex-direction:column; position:fixed; inset:0; background:#fff; z-index:9999}
   .afa-inf-topbar{flex:0 0 auto; display:flex; justify-content:flex-end; padding:12px clamp(16px,4vw,48px); border-bottom:1px solid var(--line)}
   #afa-inf-body{flex:1 1 auto; overflow:auto; padding:20px clamp(16px,4vw,48px) 40px}
+  .afa-inf-print{display:none; background:var(--gold-deep); color:#fff; border:0; font-family:inherit; font-weight:700; font-size:13px; padding:9px 16px; border-radius:10px; cursor:pointer; margin-right:8px}
+  #afa-informe.inm .afa-inf-print{display:inline-block}
   .afa-inf-close{background:var(--navy); color:#fff; border:0; font-family:inherit; font-weight:700; font-size:13px; padding:9px 16px; border-radius:10px; cursor:pointer}
   .afa-inf-brand{display:flex; align-items:center; gap:12px; padding-bottom:16px; border-bottom:2px solid var(--gold-soft); margin-bottom:20px}
   .afa-inf-brand img{height:26px}

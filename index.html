@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./app.css?v=d8659d6c">
+<link rel="stylesheet" href="./app.css?v=27da257a">
 </head>
 <body>
   <div class="auth-gate" id="auth-gate">
@@ -107,7 +107,7 @@
   </div>
 
   <div id="afa-informe">
-    <div class="afa-inf-topbar"><button type="button" class="afa-inf-close" id="afa-inf-close">✕ Cerrar</button></div>
+    <div class="afa-inf-topbar"><button type="button" class="afa-inf-print" id="afa-inf-print">🖨 Imprimir / PDF</button><button type="button" class="afa-inf-close" id="afa-inf-close">✕ Cerrar</button></div>
     <div id="afa-inf-body"></div>
   </div>
 
@@ -321,11 +321,11 @@
        preguntas-medicas.html cuando corran embebidos) puedan guardar/leer sin conocer Firebase
        directamente. El apiKey de este bloque NO es secreto — Firebase lo diseña para vivir en
        el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
-  <script src="./i18n.js?v=530c28d2"></script>
+  <script src="./i18n.js?v=10408421"></script>
 <script src="./util.js?v=af271f3f"></script>
 <script src="./calc.js?v=eccb4f1a"></script>
-<script src="./inmueble.js?v=8cb8e1d5"></script>
-<script src="./afa.js?v=3c6ec572"></script>
+<script src="./inmueble.js?v=6f69e9b5"></script>
+<script src="./afa.js?v=8c8d2660"></script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail }
@@ -3461,7 +3461,7 @@
     // Tras imprimir/cancelar el diálogo de impresión, el overlay se cierra solo — si no, se queda
     // tapando toda la app (a pantalla completa) hasta que el asesor recuerde pulsar "Cerrar".
     window.addEventListener('afterprint', function(){
-      var el=document.getElementById('afa-informe'); if(el) el.classList.remove('on');
+      var el=document.getElementById('afa-informe'); if(el&&!el.classList.contains('inm')) el.classList.remove('on');
     });
     sw.addEventListener('click',function(e){ var b=e.target.closest('button[data-go]'); if(b){ show(b.getAttribute('data-go')); appbarMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false'); switchMoreMenu.hidden=true; switchMoreBtn.setAttribute('aria-expanded','false'); } });
     document.querySelector('.cock-tools').addEventListener('click',function(e){ var b=e.target.closest('[data-go]'); if(b)show(b.getAttribute('data-go')); });

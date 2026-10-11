@@ -771,10 +771,11 @@ function inmuebleOnClick(e){
       if(inmPrint){
         if(!APP_HOST.wsRec||!APP_HOST.wsRec.inmueble) return true;
         document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(APP_HOST.wsRec);
-        document.getElementById('afa-informe').classList.add('on');
-        window.print();
+        // Vista previa editable primero (p. ej. la Sonderzahlung); se imprime con el botón "Imprimir / PDF" de la barra superior.
+        document.getElementById('afa-informe').classList.add('inm','on');
         return true;
       }
+
   return false;
 }
 function inmuebleOnInput(e){
@@ -956,6 +957,7 @@ function inmuebleInstallListeners(){
       var fI=document.querySelector('[data-inm-opt="'+optI+'"][data-inm-field="sonderAhorro"]'); if(fI) fI.value=vi||0;
       refreshInmuebleResults(); scheduleInmuebleSave();
     });
+    document.getElementById('afa-inf-print').addEventListener('click', function(){ window.print(); });
     document.getElementById('inm-pres-prev').addEventListener('click', function(){ presShow(_presIdx-1); });
     document.getElementById('inm-pres-next').addEventListener('click', function(){ presShow(_presIdx+1); });
     document.getElementById('inm-pres-dots').addEventListener('click', function(e){ var d=e.target.closest('[data-pres-go]'); if(d) presShow(+d.getAttribute('data-pres-go')); });
