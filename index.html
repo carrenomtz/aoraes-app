@@ -3841,7 +3841,7 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
-      'Cuánto queda por pagar en cada hito':'How much is left to pay at each milestone','Ahorrado: {0} €':'Saved: {0} €',
+      'Cuánto queda por pagar en cada hito':'How much is left to pay at each milestone',
       'Cuota {0} €/mes':'Payment {0} €/month',
       'Banco a':'Bank at',
       'Hito':'Milestone','Cuándo':'When','Zuteilung del Bausparvertrag':'Bausparvertrag allocation (Zuteilung)','Fin de la Zinsbindung':'End of the Zinsbindung','Bausparvertrag pagado':'Bausparvertrag paid off','Banco pagado':'Bank paid off','Refinanciación (Zuteilung de Badenia)':'Refinancing (Badenia allocation)','Badenia pagada':'Badenia paid off','Zuteilung':'Zuteilung','Ahorrado':'Saved','* Tras la Zinsbindung el banco refinancia al tipo de ese momento: la cifra supone que el tipo no cambia.':'* After the Zinsbindung the bank refinances at that moment\'s rate: the figure assumes the rate does not change.',
@@ -4138,7 +4138,7 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
-      'Cuánto queda por pagar en cada hito':'Wie viel in jedem Meilenstein noch zu zahlen ist','Ahorrado: {0} €':'Angespart: {0} €',
+      'Cuánto queda por pagar en cada hito':'Wie viel in jedem Meilenstein noch zu zahlen ist',
       'Cuota {0} €/mes':'Rate {0} €/Monat',
       'Banco a':'Bank mit',
       'Hito':'Meilenstein','Cuándo':'Wann','Zuteilung del Bausparvertrag':'Zuteilung des Bausparvertrags','Fin de la Zinsbindung':'Ende der Zinsbindung','Bausparvertrag pagado':'Bausparvertrag getilgt','Banco pagado':'Bank getilgt','Refinanciación (Zuteilung de Badenia)':'Umschuldung (Zuteilung der Badenia)','Badenia pagada':'Badenia getilgt','Zuteilung':'Zuteilung','Ahorrado':'Angespart','* Tras la Zinsbindung el banco refinancia al tipo de ese momento: la cifra supone que el tipo no cambia.':'* Nach der Zinsbindung finanziert die Bank zum dann geltenden Zins um: Der Wert setzt voraus, dass sich der Zins nicht ändert.',
@@ -5263,8 +5263,7 @@
           poly2.push(px(hA).toFixed(1)+','+py(precio).toFixed(1));
         }
         ahorroArea='<polygon points="'+poly2.join(' ')+'" fill="var(--navy)" fill-opacity="0.10"/>'+
-          '<text x="'+(px(hA)-9).toFixed(1)+'" y="'+(py(valorEn(ptsEst,hA))+16).toFixed(1)+'" font-size="10" font-weight="700" fill="var(--navy)" text-anchor="end">Ahorrado</text>'+
-          '<text x="'+(px(hA)-9).toFixed(1)+'" y="'+(py(valorEn(ptsEst,hA))+28).toFixed(1)+'" font-size="10" font-weight="700" fill="var(--navy)" text-anchor="end">'+eur(extra.ahorro.total)+'</text>';
+          '<text x="'+(px(hA)-9).toFixed(1)+'" y="'+(py(valorEn(ptsEst,hA))+16).toFixed(1)+'" font-size="10" font-weight="700" fill="var(--navy)" text-anchor="end">Ahorrado</text>';
       }
       if(extra && extra.zuteilung>0 && extra.zuteilung<maxMeses){
         var zx=px(extra.zuteilung).toFixed(1);
@@ -5313,8 +5312,8 @@
     function inmuebleHitosComprar(precio,rEst,rk,ptsEst,ptsBanco,zMeses){
       var rows=[];
       function ahorroEn(m){ return (rEst.mesesAhorro>0 && m<=rEst.mesesAhorro)?Math.max(0,precio-inmuebleValorEn(ptsEst,m)):(rEst.objetivoAhorro||0); }
-      function add(n,m,zut){ rows.push({n:n,m:m,zut:!!zut,banco:(m>=rk.mesesTotal)?0:inmuebleValorEn(ptsBanco,m),baus:(m>=rEst.mesesTotal)?0:inmuebleValorEn(ptsEst,m),ahorro:(rEst.mesesAhorro>0)?ahorroEn(m):0}); }
-      if(rEst.mesesAhorro>0) add('Zuteilung del Bausparvertrag',rEst.mesesAhorro,true);
+      function add(n,m){ rows.push({n:n,m:m,banco:(m>=rk.mesesTotal)?0:inmuebleValorEn(ptsBanco,m),baus:(m>=rEst.mesesTotal)?0:inmuebleValorEn(ptsEst,m),ahorro:(rEst.mesesAhorro>0)?ahorroEn(m):0}); }
+      if(rEst.mesesAhorro>0) add('Zuteilung del Bausparvertrag',rEst.mesesAhorro);
       if(zMeses>0 && zMeses<rk.mesesTotal) add('Fin de la Zinsbindung',zMeses);
       add('Bausparvertrag pagado',rEst.mesesTotal);
       add('Banco pagado',rk.mesesTotal);
@@ -5322,21 +5321,21 @@
     }
     function inmuebleHitosRefi(refi,mesesHastaRefi,rEst,rBanco,ptsEst,ptsBanco){
       var rows=[], zMeses=Math.round((refi.banco.zinsbindung||0)*12), finEst=mesesHastaRefi+rEst.mesesPrestamo, finBanco=mesesHastaRefi+rBanco.mesesPrestamo;
-      function add(n,m,zut){ rows.push({n:n,m:m,zut:!!zut&&rEst.cuotaAhorro>0,banco:(m>=finBanco)?0:inmuebleValorEn(ptsBanco,m),baus:(m>=finEst)?0:inmuebleValorEn(ptsEst,m),ahorro:(rEst.cuotaAhorro>0&&m>=mesesHastaRefi)?rEst.objetivoAhorro:0}); }
-      add('Refinanciación (Zuteilung de Badenia)',mesesHastaRefi,true);
+      function add(n,m){ rows.push({n:n,m:m,banco:(m>=finBanco)?0:inmuebleValorEn(ptsBanco,m),baus:(m>=finEst)?0:inmuebleValorEn(ptsEst,m),ahorro:(rEst.cuotaAhorro>0&&m>=mesesHastaRefi)?rEst.objetivoAhorro:0}); }
+      add('Refinanciación (Zuteilung de Badenia)',mesesHastaRefi);
       if(zMeses>0 && mesesHastaRefi+zMeses<finBanco) add('Fin de la Zinsbindung',mesesHastaRefi+zMeses);
       add('Badenia pagada',finEst);
       add('Banco pagado',finBanco);
       return rows.sort(function(a,b){ return a.m-b.m; });
     }
     // Cuadro de hitos: en cada fecha, lo que QUEDA POR PAGAR con el banco y con el Bausparvertrag (las mismas cifras que las líneas de la gráfica).
-    // Lo ahorrado solo se muestra en el hito de la Zuteilung: después ese ahorro ya está dentro del Bausparvertrag y repetirlo confunde.
+    // No se muestra la cifra ahorrada (en la gráfica solo la zona sombreada "Ahorrado"): una cantidad grande a la vista asusta al cliente.
     function inmuebleHitosHTML(rows,nombreBaus,zFin){
       if(!rows.length) return '';
       var hayPost=false;
       var body=rows.map(function(r){
         var post=(zFin>0&&r.m>zFin&&r.banco>0.5); if(post) hayPost=true;
-        return '<tr><td>'+r.n+(r.zut&&r.ahorro>0?'<small>Ahorrado: '+eur(r.ahorro)+'</small>':'')+'</td><td>'+fmtAnos(r.m)+'<small>'+inmuebleMesAnio(r.m)+'</small></td><td>'+eur(r.banco)+(post?'*':'')+'</td><td>'+eur(r.baus)+'</td></tr>';
+        return '<tr><td>'+r.n+'</td><td>'+fmtAnos(r.m)+'<small>'+inmuebleMesAnio(r.m)+'</small></td><td>'+eur(r.banco)+(post?'*':'')+'</td><td>'+eur(r.baus)+'</td></tr>';
       }).join('');
       return '<h6 class="inm-hitos-tit">Cuánto queda por pagar en cada hito</h6><table class="inm-tabla inm-hitos"><thead><tr><th>Hito</th><th>Cuándo</th><th>Banco</th><th>'+nombreBaus+'</th></tr></thead><tbody>'+body+'</tbody></table>'+
         (hayPost?'<p class="inm-curve-note"><span>* Tras la Zinsbindung el banco refinancia al tipo de ese momento: la cifra supone que el tipo no cambia.</span></p>':'');
