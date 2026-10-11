@@ -1,25 +1,9 @@
 // Pruebas del motor financiero del Proyecto inmobiliario. Sin dependencias: `node tests/calc.test.js`.
-// El motor vive dentro de index.html (una sola clausura), así que aquí se extrae por marcadores de texto
-// y se ejecuta tal cual — no hay copia del cálculo que pueda desincronizarse. Las expectativas salen de
-// bucles mensuales independientes, no de los resultados de la app.
-// Si cambian los marcadores (nombres de función), esta prueba falla a propósito: hay que actualizarla.
-const fs = require('fs');
+// Las expectativas salen de bucles mensuales independientes, no de los resultados de la app.
 const path = require('path');
 const assert = require('assert');
-
-const html = fs.readFileSync(process.env.IDX || path.join(__dirname, '..', 'index.html'), 'utf8');
-const a = html.indexOf('function annuityQuota(');
-const b = html.indexOf('// ---------- Amortización (AfA)');
-assert(a > 0 && b > a, 'No se encontró el motor en index.html (marcadores cambiados)');
-const f1 = html.indexOf('function inmuebleFin('), f2 = html.indexOf('function inmuebleFinLine(');
-assert(f1 > 0 && f2 > f1, 'No se encontró inmuebleFin en index.html');
-const c1 = html.indexOf('function inmuebleCapacidadHTML('), c2 = html.indexOf('function inmuebleFinLine(');
-const k1 = html.indexOf('function inmuebleCurvaSaldo('), k2 = html.indexOf('function inmuebleCurvaSaldoRefi(');
-assert(k1 > 0 && k2 > k1, 'No se encontró inmuebleCurvaSaldo en index.html');
-assert(c1 > 0 && c2 > c1, 'No se encontró inmuebleCapacidadHTML en index.html');
-const engine = new Function(html.slice(a, b) + html.slice(f1, f2) + 'function eur(n){ return Math.round(n) + " €"; }' + html.slice(c1, c2) + html.slice(k1, k2) +
-  '\nreturn {annuityQuota,effectiveAnnualRate,savingsQuota,monthsToPayoff,simLoan,calcInmuebleOption,' +
-  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin,inmuebleCapacidadHTML,saldoEnFecha,inmuebleCurvaSaldo,inmuebleHitosComprar,inmuebleValorEn};')();
+// El motor es calc.js (funciones puras, sin DOM): se carga tal cual, sin copias ni extracciones de texto.
+const engine = require(process.env.CALC || path.join(__dirname, '..', 'calc.js'));
 
 let passed = 0, failed = 0;
 const gaps = [];
@@ -167,18 +151,18 @@ test('tilgungParaPlazo: un plazo de 30 años a 4 % da la Tilgung inicial que amo
 });
 
 console.log('Capacidad de pago')
-test('sin ingreso indicado no hay panel; con ingreso muestra cuota máxima (ingreso × límite) y préstamo orientativo (ingreso × 12 × 8)', () => {
+test('sin ingreso indicado no hay datos; con ingreso: cuota máxima (ingreso × límite) y préstamo orientativo (ingreso × 12 × 8)', () => {
   const filas = [['Banco directo', 917], ['Bausparvertrag · ahorro', 1979], ['Bausparvertrag · préstamo', 1091]];
-  assert.strictEqual(engine.inmuebleCapacidadHTML({ ingresoNeto: 0, ratioMax: 35 }, 200000, filas), '');
-  const h = engine.inmuebleCapacidadHTML({ ingresoNeto: 4200, ratioMax: 35 }, 200000, filas);
-  assert(h.includes('1470 €/mes'), 'cuota máxima 35 % de 4.200 €'); assert(h.includes('403200 €'), 'préstamo orientativo 4.200 × 12 × 8');
+  assert.strictEqual(engine.inmuebleCapacidadDatos({ ingresoNeto: 0, ratioMax: 35 }, 200000, filas), null);
+  const d = engine.inmuebleCapacidadDatos({ ingresoNeto: 4200, ratioMax: 35 }, 200000, filas);
+  near(d.cuotaMax, 1470, 0.001); near(d.orientativo, 403200, 0.001); assert.strictEqual(d.finSuperaOrientativo, false);
+  assert.strictEqual(engine.inmuebleCapacidadDatos({ ingresoNeto: 1000, ratioMax: 35 }, 200000, filas).finSuperaOrientativo, true);
 });
 test('semáforo: ≤30 % del ingreso dentro, hasta el límite ajustado, por encima del límite marcado', () => {
-  const h = engine.inmuebleCapacidadHTML({ ingresoNeto: 4200, ratioMax: 35 }, 200000, [['Banco directo', 917], ['Bausparvertrag · ahorro', 1979], ['Bausparvertrag · préstamo', 1091]]);
-  assert(/917[^<]*<\/td><td>22 %<\/td><td class="cap-ok">Dentro/.test(h), 'banco 22 % dentro');
-  assert(/1979[^<]*<\/td><td>47 %<\/td><td class="cap-hi">Por encima/.test(h), 'ahorro 47 % por encima');
-  const j = engine.inmuebleCapacidadHTML({ ingresoNeto: 3000, ratioMax: 35 }, 0, [['Banco directo', 0], ['Bausparvertrag · préstamo', 990]]);
-  assert(/990[^<]*<\/td><td>33 %<\/td><td class="cap-mid">Ajustado/.test(j), '33 % ajustado');
+  const d = engine.inmuebleCapacidadDatos({ ingresoNeto: 4200, ratioMax: 35 }, 200000, [['Banco directo', 917], ['Bausparvertrag · ahorro', 1979], ['Bausparvertrag · préstamo', 1091]]);
+  assert.deepStrictEqual(d.filas.map(f => [Math.round(f.pct), f.cls, f.estado]), [[22, 'ok', 'Dentro'], [47, 'hi', 'Por encima'], [26, 'ok', 'Dentro']]);
+  const j = engine.inmuebleCapacidadDatos({ ingresoNeto: 3000, ratioMax: 35 }, 0, [['Banco directo', 0], ['Bausparvertrag · préstamo', 990]]);
+  assert.deepStrictEqual(j.filas.map(f => [Math.round(f.pct), f.cls, f.estado]), [[33, 'mid', 'Ajustado']]);
 });
 
 console.log('Tiempo mínimo de ahorro del Bausparvertrag (3,6 años)')
