@@ -623,6 +623,10 @@
   .inm-curve-note{font-size:10.5px; color:var(--faint); line-height:1.45; margin-top:6px}
   .inm-headline{background:var(--navy); color:rgba(255,255,255,.92); border-radius:var(--r-md); padding:16px 20px; margin-bottom:14px; font-size:14.5px; line-height:1.55; box-shadow:var(--sh-1)}
   .inm-headline b{color:var(--gold-soft)}
+  .inm-headline-sub{font-size:11.5px; line-height:1.5; color:rgba(255,255,255,.7); margin-top:9px; padding-top:9px; border-top:1px solid rgba(255,255,255,.14)}
+  .inm-cmp-wrap{margin:14px 0 6px}
+  .inm-cmp-lab{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--faint)}
+  .inm-cmp{margin-bottom:6px}
   @media(max-width:900px){.inm-results{grid-template-columns:1fr}}
   .inm-res-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:15px; box-shadow:var(--sh-1)}
   .inm-res-card h5{font-family:'Fraunces',sans-serif; font-weight:600; font-size:13.5px; color:var(--navy); margin-bottom:9px}
@@ -631,8 +635,6 @@
   .inm-res-line.total{border-bottom:0; padding-top:9px; margin-top:2px; border-top:1px solid var(--line)}
   .inm-res-line.total b{color:var(--navy); font-size:14px}
   .inm-res-line.save{border-bottom:0}
-  .inm-res-line.save.pos b{color:var(--green)}
-  .inm-res-line.save.neg b{color:var(--red)}
   .inm-res-line.inm-eff b{color:var(--amber)}
   .inm-eff-hint{color:var(--faint); font-weight:400}
   .inm-eff-note{font-size:11px; color:var(--faint); line-height:1.5; margin:-6px 0 16px}
@@ -3719,6 +3721,52 @@
       'Saldo pendiente hoy':'Outstanding balance today',
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
+      // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Con el Bausparvertrag pagas':'With the Bausparvertrag you pay',
+      'menos en intereses y comisiones (nominal).':'less in interest and fees (nominal).',
+      'más en intereses y comisiones (nominal).':'more in interest and fees (nominal).',
+      'Antes de ser propietario ahorras':'Before you own the property you save',
+      'durante':'for',
+      '; después pagas':'; afterwards you pay',
+      'con el tipo fijado hoy.':'at the rate fixed today.',
+      'Pagas':'You pay',
+      'El banco:':'The bank:',
+      'No incluye alquiler, revalorización, impuestos ni lo que rendiría tu ahorro en otra parte. Con «Mismo pago mensual» comparas en igualdad.':'Not included: rent, appreciation, taxes or what your savings would earn elsewhere. With “Same monthly payment” you compare on equal terms.',
+      'No incluye alquiler, revalorización, impuestos ni lo que rendiría tu ahorro en otra parte.':'Not included: rent, appreciation, taxes or what your savings would earn elsewhere.',
+      'Con el mismo pago mensual de':'With the same monthly payment of',
+      ', el banco termina en':', the bank takes',
+      'y paga':'and costs',
+      'de intereses y comisiones; el Bausparvertrag termina en':'in interest and fees; the Bausparvertrag takes',
+      'en intereses y comisiones, pero durante los primeros':'in interest and fees, but for the first',
+      'en intereses y comisiones.':'in interest and fees.',
+      ', todavía no eres propietario.':', you don\'t own the property yet.',
+      'Si hoy pagas más de':'If you currently pay more than',
+      'de alquiler, el banco sale más barato en efectivo; si pagas menos, el Bausparvertrag. Sin contar revalorización, impuestos ni el rendimiento del ahorro.':'in rent, the bank is cheaper in cash; if you pay less, the Bausparvertrag is. Not counting appreciation, taxes or what the savings would earn.',
+      'El banco sale más barato en efectivo aun sin alquiler. Sin contar revalorización, impuestos ni el rendimiento del ahorro.':'The bank is cheaper in cash even without rent. Not counting appreciation, taxes or what the savings would earn.',
+      'Cada camino como es':'Each path as it is',
+      'Mismo pago mensual':'Same monthly payment',
+      'Cómo comparar':'How to compare',
+      'El banco paga cada mes lo mismo que la cuota de ahorro del Bausparvertrag, desde el primer día — así se comparan en igualdad.':'The bank pays each month the same as the Bausparvertrag saving instalment, from day one — so they compare on equal terms.',
+      'El pago mensual del Bausparvertrag no supera al del banco: no hace falta igualarlos.':'The Bausparvertrag monthly payment does not exceed the bank’s: there is no need to equalize them.',
+      'Cada opción con sus propios pagos. El Bausparvertrag pide más al mes durante el ahorro; pulsa «Mismo pago mensual» para ver el banco con el mismo esfuerzo mensual.':'Each option with its own payments. The Bausparvertrag asks for more per month while saving; press “Same monthly payment” to see the bank with the same monthly effort.',
+      'Banco directo · mismo pago mensual':'Direct bank · same monthly payment',
+      'Menos intereses y comisiones que el banco':'Less interest and fees than the bank',
+      'Más intereses y comisiones que el banco':'More interest and fees than the bank',
+      'Menos intereses y comisiones que seguir igual':'Less interest and fees than staying as is',
+      'Más intereses y comisiones que seguir igual':'More interest and fees than staying as is',
+      'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.':'The saving years are an assumption: the Bausparkasse’s allocation (Zuteilung) is not guaranteed. Example values — replace with the official illustration.',
+      'Cuánto pagas cada mes':'What you pay each month',
+      'Cuánto pagas cada mes, comparado en el tiempo':'What you pay each month, compared over time',
+      'Cada tramo es tu pago mensual y cuánto dura. Un pago más alto termina antes; uno más bajo deja más aire cada mes.':'Each step is your monthly payment and how long it lasts. A higher payment finishes sooner; a lower one leaves more room each month.',
+      'Con la opción Badenia pagas':'With the Badenia option you pay',
+      'menos en intereses y comisiones que con el banco (nominal) y terminas de pagar':'less in interest and fees than with the bank (nominal) and you finish paying',
+      'más en intereses y comisiones que con el banco (nominal) y terminas de pagar':'more in interest and fees than with the bank (nominal) and you finish paying',
+      'antes.':'earlier.',
+      'después.':'later.',
+      'Mientras esperas, pagas además':'While you wait, you also pay',
+      'de ahorro.':'in savings.',
+      'Tu cuota está garantizada':'Your instalment is guaranteed',
+      '— con el banco, solo':'— with the bank, only',
       'Tipo garantizado':'Guaranteed rate',
       'Tipo pactado hoy con la Bausparkasse para toda la fase de préstamo, no depende del mercado en ese momento.':'Rate agreed today with the Bausparkasse for the whole loan phase, independent of the market at that time.',
       'Tras la Zinsbindung, el saldo pendiente se refinancia (Anschlussfinanzierung) al tipo que haya en ese momento — la cuota puede subir.':'After the Zinsbindung, the outstanding balance is refinanced (Anschlussfinanzierung) at whatever rate applies then — the instalment may go up.',
@@ -3900,6 +3948,52 @@
       'Cuota ahorro':'Sparrate','Cuota préstamo':'Darlehensrate','Interés pagado':'Gezahlte Zinsen','Interés efectivo del préstamo':'Effektiver Darlehenszins','Coste total':'Gesamtkosten',
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
+      // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Con el Bausparvertrag pagas':'Mit dem Bausparvertrag zahlen Sie',
+      'menos en intereses y comisiones (nominal).':'weniger Zinsen und Gebühren (nominal).',
+      'más en intereses y comisiones (nominal).':'mehr Zinsen und Gebühren (nominal).',
+      'Antes de ser propietario ahorras':'Bevor Sie Eigentümer werden, sparen Sie',
+      'durante':'über',
+      '; después pagas':'; danach zahlen Sie',
+      'con el tipo fijado hoy.':'zum heute festgeschriebenen Zinssatz.',
+      'Pagas':'Sie zahlen',
+      'El banco:':'Die Bank:',
+      'No incluye alquiler, revalorización, impuestos ni lo que rendiría tu ahorro en otra parte. Con «Mismo pago mensual» comparas en igualdad.':'Nicht enthalten: Miete, Wertsteigerung, Steuern und die Rendite Ihrer Ersparnisse anderswo. Mit „Gleiche monatliche Zahlung“ vergleichen Sie unter gleichen Bedingungen.',
+      'No incluye alquiler, revalorización, impuestos ni lo que rendiría tu ahorro en otra parte.':'Nicht enthalten: Miete, Wertsteigerung, Steuern und die Rendite Ihrer Ersparnisse anderswo.',
+      'Con el mismo pago mensual de':'Bei gleicher monatlicher Zahlung von',
+      ', el banco termina en':' dauert die Bankfinanzierung',
+      'y paga':'und kostet',
+      'de intereses y comisiones; el Bausparvertrag termina en':'an Zinsen und Gebühren; der Bausparvertrag dauert',
+      'en intereses y comisiones, pero durante los primeros':'an Zinsen und Gebühren, aber die ersten',
+      'en intereses y comisiones.':'an Zinsen und Gebühren.',
+      ', todavía no eres propietario.':' sind Sie noch nicht Eigentümer.',
+      'Si hoy pagas más de':'Wenn Sie heute mehr als',
+      'de alquiler, el banco sale más barato en efectivo; si pagas menos, el Bausparvertrag. Sin contar revalorización, impuestos ni el rendimiento del ahorro.':'Miete zahlen, ist die Bank in bar günstiger; bei weniger der Bausparvertrag. Ohne Wertsteigerung, Steuern und die Rendite der Ersparnisse.',
+      'El banco sale más barato en efectivo aun sin alquiler. Sin contar revalorización, impuestos ni el rendimiento del ahorro.':'Die Bank ist auch ohne Miete in bar günstiger. Ohne Wertsteigerung, Steuern und die Rendite der Ersparnisse.',
+      'Cada camino como es':'Jeder Weg, wie er ist',
+      'Mismo pago mensual':'Gleiche monatliche Zahlung',
+      'Cómo comparar':'Wie vergleichen',
+      'El banco paga cada mes lo mismo que la cuota de ahorro del Bausparvertrag, desde el primer día — así se comparan en igualdad.':'Die Bank zahlt jeden Monat dasselbe wie die Sparrate des Bausparvertrags, ab dem ersten Tag — so sind beide vergleichbar.',
+      'El pago mensual del Bausparvertrag no supera al del banco: no hace falta igualarlos.':'Die monatliche Zahlung des Bausparvertrags übersteigt die der Bank nicht: ein Angleichen ist nicht nötig.',
+      'Cada opción con sus propios pagos. El Bausparvertrag pide más al mes durante el ahorro; pulsa «Mismo pago mensual» para ver el banco con el mismo esfuerzo mensual.':'Jede Option mit ihren eigenen Zahlungen. Der Bausparvertrag verlangt in der Sparphase mehr pro Monat; wählen Sie „Gleiche monatliche Zahlung“, um die Bank mit demselben Monatsaufwand zu sehen.',
+      'Banco directo · mismo pago mensual':'Direktbank · gleiche monatliche Zahlung',
+      'Menos intereses y comisiones que el banco':'Weniger Zinsen und Gebühren als die Bank',
+      'Más intereses y comisiones que el banco':'Mehr Zinsen und Gebühren als die Bank',
+      'Menos intereses y comisiones que seguir igual':'Weniger Zinsen und Gebühren als unverändert weiterzahlen',
+      'Más intereses y comisiones que seguir igual':'Mehr Zinsen und Gebühren als unverändert weiterzahlen',
+      'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.':'Die Sparjahre sind eine Annahme: die Zuteilung der Bausparkasse ist nicht garantiert. Beispielwerte — durch die offizielle Modellrechnung ersetzen.',
+      'Cuánto pagas cada mes':'Was Sie jeden Monat zahlen',
+      'Cuánto pagas cada mes, comparado en el tiempo':'Was Sie jeden Monat zahlen, im Zeitverlauf verglichen',
+      'Cada tramo es tu pago mensual y cuánto dura. Un pago más alto termina antes; uno más bajo deja más aire cada mes.':'Jede Stufe ist Ihre monatliche Zahlung und ihre Dauer. Eine höhere Zahlung ist früher fertig; eine niedrigere lässt jeden Monat mehr Spielraum.',
+      'Con la opción Badenia pagas':'Mit der Badenia-Option zahlen Sie',
+      'menos en intereses y comisiones que con el banco (nominal) y terminas de pagar':'weniger Zinsen und Gebühren als bei der Bank (nominal) und sind fertig',
+      'más en intereses y comisiones que con el banco (nominal) y terminas de pagar':'mehr Zinsen und Gebühren als bei der Bank (nominal) und sind fertig',
+      'antes.':'früher.',
+      'después.':'später.',
+      'Mientras esperas, pagas además':'Während des Wartens zahlen Sie zusätzlich',
+      'de ahorro.':'Sparrate.',
+      'Tu cuota está garantizada':'Ihre Rate ist garantiert',
+      '— con el banco, solo':'— bei der Bank nur',
       '{0} años de ahorro + {1} años de préstamo':'{0} Jahre Ansparen + {1} Jahre Darlehen','{0} años de préstamo':'{0} Jahre Darlehen',
       'Tipo garantizado':'Garantierter Zins','{0} años de {1} años':'{0} von {1} Jahren',
       'La Zinsbindung indicada cubre todo el plazo del préstamo — caso favorable, confírmalo con la oferta real del banco.':'Die angegebene Zinsbindung deckt die gesamte Darlehenslaufzeit ab — das ist der günstige Fall, bestätigen Sie ihn mit dem tatsächlichen Bankangebot.',
@@ -4360,7 +4454,9 @@
       // peor caso alemán habitual, Tilgung inicial muy baja con tipo alto, tarda 50-60 años), para
       // no truncar plazos genuinos. Si la cuota no cubre ni el interés, jamás se amortiza.
       if(payment<=principal*r) return 1200;
-      return Math.min(1200,Math.ceil(-Math.log(1-(principal*r)/payment)/Math.log(1+r)));
+      // - 1e-7: con una anualidad exacta (p. ej. 120 meses) el logaritmo puede salir 120,0000000001 por
+      // ruido de coma flotante y el ceil lo subía a 121 — un préstamo "a 10 años" salía a 10,1.
+      return Math.min(1200,Math.ceil(-Math.log(1-(principal*r)/payment)/Math.log(1+r)-1e-7));
     }
     function calcInmuebleOption(precio,cfg){
       precio=precio||0;
@@ -4674,7 +4770,7 @@
     // (ver aviso de Zinsbindung/Anschlussfinanzierung en la cabecera del bloque).
     // esperaMeses: en Refinanciar, los meses que aún quedan pagando el crédito ACTUAL antes de que
     // arranque siquiera la nueva opción — sin sumarlos aquí, la barra y el total "hasta terminar de
-    // pagar" contradecían a la frase de cabecera (inmuebleFraseResumen), que sí los cuenta.
+    // pagar" contradecían a la frase de cabecera (inmuebleFraseRefi), que sí los cuenta.
     function inmuebleTimeRow(r,maxMeses,isBanco,esperaMeses){
       esperaMeses=esperaMeses||0;
       var totalConEspera=esperaMeses+r.mesesTotal;
@@ -4827,16 +4923,125 @@
       if(puntos.length===0||puntos[puntos.length-1].meses<totalMeses) puntos.push({meses:totalMeses,pendiente:0});
       return puntos;
     }
-    // La frase que junta precio + tiempo + certeza en una sola línea, arriba de todo — para que el
-    // cliente se lleve la comparación completa sin tener que leer las tres tarjetas. No asume que
-    // la opción destacada siempre gana: si en la configuración concreta sale más cara o más lenta,
-    // lo dice igual, solo cambia la palabra (ahorras/cuesta, antes/más).
-    function inmuebleFraseResumen(etiqueta,euros,mesesDif,certMesesEst,totalMesesEst,certMesesBanco,totalMesesBanco){
-      var fPrecio=euros>=0?('ahorras <b>'+eur(Math.abs(euros))+'</b>'):('cuesta <b>'+eur(Math.abs(euros))+'</b> más');
-      var fTiempo=mesesDif>=0?('terminas de pagar <b>'+fmtAnos(Math.abs(mesesDif))+'</b> antes'):('tardas <b>'+fmtAnos(Math.abs(mesesDif))+'</b> más');
-      var certEstTxt=certMesesEst>=totalMesesEst?'<b>todo el plazo</b>':('<b>'+fmtAnos(certMesesEst)+' de '+fmtAnos(totalMesesEst)+'</b>');
+    // Titulares de la comparación. Antes decían "ahorras X € y terminas N años antes", pero esa cifra
+    // compara pagos mensuales distintos (p. ej. 1.979 €/mes durante el ahorro frente a 917 €/mes
+    // del banco) y años en los que el cliente aún no es propietario — presentarla como un ahorro
+    // induce a error. Ahora cada titular dice la diferencia de intereses y comisiones como lo que
+    // es (nominal), el pago mensual de cada camino y qué NO incluye. Cada variable va en su propio
+    // <b> para que el texto estático de alrededor siga siendo un nodo traducible por separado.
+    function inmuebleFraseRefi(etiqueta,euros,mesesDif,cuotaAhorro,certMesesEst,totalMesesEst,certMesesBanco,totalMesesBanco){
+      // Cada frase en su <span>: si dos frases compartieran nodo de texto, el traductor no encontraría
+      // ninguna de las dos en el diccionario.
+      var h='<span>Con '+etiqueta+' pagas <b>'+eur(Math.abs(euros))+'</b> '+(euros>=0?'menos':'más')+' en intereses y comisiones que con el banco (nominal) y terminas de pagar <b>'+fmtAnos(Math.abs(mesesDif))+'</b> '+(mesesDif>=0?'antes.':'después.')+'</span>';
+      if(cuotaAhorro>0) h+=' <span>Mientras esperas, pagas además <b>'+eur(cuotaAhorro)+'/mes</b> de ahorro.</span>';
+      var certEstTxt=certMesesEst>=totalMesesEst?'todo el plazo':(fmtAnos(certMesesEst)+' de '+fmtAnos(totalMesesEst));
       var certBancoTxt=certMesesBanco>=totalMesesBanco?'todo el plazo':(fmtAnos(certMesesBanco)+' de '+fmtAnos(totalMesesBanco));
-      return '<div class="inm-headline">Con '+etiqueta+' '+fPrecio+', '+fTiempo+', y tu cuota está garantizada '+certEstTxt+' — con el banco, solo '+certBancoTxt+'.</div>';
+      h+=' <span>Tu cuota está garantizada <b>'+certEstTxt+'</b> — con el banco, solo <b>'+certBancoTxt+'</b>.</span>';
+      return '<div class="inm-headline">'+h+'<div class="inm-headline-sub">No incluye alquiler, revalorización, impuestos ni lo que rendiría tu ahorro en otra parte.</div></div>';
+    }
+    function inmuebleFraseComprar(rEst,rk,igual){
+      var h, sub;
+      var costeEst=rEst.interesTotalPrestamo+rEst.comision-rEst.interesGanadoAhorro;
+      if(igual){
+        h='<span>Con el mismo pago mensual de <b>'+eur(rk.cuotaPrestamo)+'/mes</b>, el banco termina en <b>'+fmtAnos(rk.mesesTotal)+'</b> y paga <b>'+eur(rk.interesTotalPrestamo+rk.comision)+'</b> de intereses y comisiones; el Bausparvertrag termina en <b>'+fmtAnos(rEst.mesesTotal)+'</b> y paga <b>'+eur(costeEst)+'</b>';
+        h+=(rEst.mesesAhorro>0)?(' en intereses y comisiones, pero durante los primeros <b>'+fmtAnos(rEst.mesesAhorro)+'</b>, todavía no eres propietario.</span>'):' en intereses y comisiones.</span>';
+        // Alquiler de equilibrio: ambos caminos terminan pagando el mismo precio, así que la diferencia
+        // de desembolso en efectivo (costeTotal) es solo intereses y comisiones. Durante los meses de
+        // ahorro el cliente del Bausparvertrag además sigue pagando su alquiler actual.
+        var rentaEq=(rEst.mesesAhorro>0)?(rk.costeTotal-rEst.costeTotal)/rEst.mesesAhorro:null;
+        if(rentaEq!=null && isFinite(rentaEq) && rentaEq>0){
+          sub='Si hoy pagas más de <b>'+eur(rentaEq)+'/mes</b> de alquiler, el banco sale más barato en efectivo; si pagas menos, el Bausparvertrag. Sin contar revalorización, impuestos ni el rendimiento del ahorro.';
+        } else if(rentaEq!=null && isFinite(rentaEq)){
+          sub='El banco sale más barato en efectivo aun sin alquiler. Sin contar revalorización, impuestos ni el rendimiento del ahorro.';
+        } else {
+          sub='No incluye alquiler, revalorización, impuestos ni lo que rendiría tu ahorro en otra parte.';
+        }
+      } else {
+        var dif=rk.costeTotal-rEst.costeTotal;
+        h='<span>Con el Bausparvertrag pagas <b>'+eur(Math.abs(dif))+'</b> '+(dif>=0?'menos':'más')+' en intereses y comisiones (nominal).</span>';
+        h+=(rEst.mesesAhorro>0)
+          ?(' <span>Antes de ser propietario ahorras <b>'+eur(rEst.cuotaAhorro)+'/mes</b> durante <b>'+fmtAnos(rEst.mesesAhorro)+'</b>; después pagas <b>'+eur(rEst.cuotaPrestamo)+'/mes</b> con el tipo fijado hoy.</span>')
+          :(' <span>Pagas <b>'+eur(rEst.cuotaPrestamo)+'/mes</b> con el tipo fijado hoy.</span>');
+        h+=' <span>El banco: <b>'+eur(rk.cuotaPrestamo)+'/mes</b> durante <b>'+fmtAnos(rk.mesesTotal)+'</b>.</span>';
+        sub='No incluye alquiler, revalorización, impuestos ni lo que rendiría tu ahorro en otra parte. Con «Mismo pago mensual» comparas en igualdad.';
+      }
+      return '<div class="inm-headline">'+h+'<div class="inm-headline-sub">'+sub+'</div></div>';
+    }
+    // "Cuánto pagas cada mes": cada camino como una escalera — altura = pago mensual, longitud = cuántos
+    // años dura. Es lo que más cuesta ver en una tabla: el Bausparvertrag pide un pago alto durante el
+    // ahorro y uno menor después; el banco, uno constante y más largo. Sin etiquetas de "mejor/peor".
+    function inmuebleCuotaSVG(rEst,rk,estTitle,bancoTitle){
+      var W=600,H=200,padL=48,padR=10,padT=24,padB=24;
+      var maxMeses=Math.max(rEst.mesesTotal,rk.mesesTotal,1);
+      var maxV=Math.max(rEst.cuotaAhorro||0,rEst.cuotaPrestamo||0,rk.cuotaPrestamo||0,1);
+      var top=Math.ceil(maxV*1.18/100)*100;
+      function px(m){ return padL+(m/maxMeses)*(W-padL-padR); }
+      function py(v){ return padT+(1-(v/top))*(H-padT-padB); }
+      var segsEst=[], segsBk=[];
+      if(rEst.mesesAhorro>0 && rEst.cuotaAhorro>0) segsEst.push({a:0,b:rEst.mesesAhorro,v:rEst.cuotaAhorro});
+      if(rEst.mesesPrestamo>0) segsEst.push({a:rEst.mesesAhorro,b:rEst.mesesTotal,v:rEst.cuotaPrestamo});
+      if(rk.mesesPrestamo>0) segsBk.push({a:0,b:rk.mesesTotal,v:rk.cuotaPrestamo});
+      function areaOf(segs,color){
+        if(!segs.length) return '';
+        var pts=[px(segs[0].a).toFixed(1)+','+py(0).toFixed(1)];
+        segs.forEach(function(s){ pts.push(px(s.a).toFixed(1)+','+py(s.v).toFixed(1)); pts.push(px(s.b).toFixed(1)+','+py(s.v).toFixed(1)); });
+        pts.push(px(segs[segs.length-1].b).toFixed(1)+','+py(0).toFixed(1));
+        return '<polygon points="'+pts.join(' ')+'" fill="'+color+'" fill-opacity="0.13"/>';
+      }
+      function lineOf(segs,color){
+        if(!segs.length) return '';
+        var d='M'+px(segs[0].a).toFixed(1)+','+py(segs[0].v).toFixed(1);
+        segs.forEach(function(s,i){ if(i>0) d+=' L'+px(s.a).toFixed(1)+','+py(s.v).toFixed(1); d+=' L'+px(s.b).toFixed(1)+','+py(s.v).toFixed(1); });
+        return '<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linejoin="round"/>';
+      }
+      var colBk='var(--gold-deep)', colEst='var(--navy)';
+      var grid=[0,0.5,1].map(function(f){
+        var v=top*f, yy=py(v);
+        return '<line x1="'+padL+'" y1="'+yy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+yy.toFixed(1)+'" stroke="var(--line-soft)" stroke-width="1"/>'+
+          '<text x="'+(padL-6)+'" y="'+(yy+3).toFixed(1)+'" font-size="9" fill="var(--faint)" text-anchor="end">'+eur(v).replace(/\s*€/,'')+' €</text>';
+      }).join('');
+      var maxAnios=Math.ceil(maxMeses/12), stepAnios=maxAnios<=10?2:(maxAnios<=20?5:10), gridX='';
+      for(var a=0;a<=maxAnios;a+=stepAnios){
+        var xx=px(a*12);
+        gridX+='<line x1="'+xx.toFixed(1)+'" y1="'+padT+'" x2="'+xx.toFixed(1)+'" y2="'+(H-padB)+'" stroke="var(--line-soft)" stroke-width="1"/>'+
+          '<text x="'+xx.toFixed(1)+'" y="'+(H-padB+13)+'" font-size="9" fill="var(--faint)" text-anchor="middle">'+a+'</text>';
+      }
+      gridX+='<text x="'+(W-padR)+'" y="'+(H-2)+'" font-size="9" fill="var(--faint)" text-anchor="end">años</text>';
+      // Etiqueta del pago al inicio de cada tramo; si la del banco cae pegada a una del Bausparvertrag
+      // en el mismo tramo horizontal, se baja dentro del área para que no se pisen.
+      var labels='', ysEst=[];
+      segsEst.forEach(function(s){
+        var yy=py(s.v)-6; ysEst.push({x:px(s.a),y:yy});
+        labels+='<text x="'+(px(s.a)+5).toFixed(1)+'" y="'+yy.toFixed(1)+'" font-size="10.5" font-weight="700" fill="'+colEst+'">'+eur(s.v)+'/mes</text>';
+      });
+      segsBk.forEach(function(s){
+        var yy=py(s.v)-6;
+        ysEst.forEach(function(e){ if(Math.abs(e.x-px(s.a))<80 && Math.abs(e.y-yy)<14) yy=py(s.v)+14; });
+        labels+='<text x="'+(px(s.a)+5).toFixed(1)+'" y="'+yy.toFixed(1)+'" font-size="10.5" font-weight="700" fill="'+colBk+'">'+eur(s.v)+'/mes</text>';
+      });
+      // Dónde termina cada camino (pago final).
+      var fines='', xEst=px(rEst.mesesTotal), xBk=px(rk.mesesTotal);
+      fines+='<circle cx="'+xEst.toFixed(1)+'" cy="'+py(0).toFixed(1)+'" r="3.5" fill="'+colEst+'"/>';
+      fines+='<circle cx="'+xBk.toFixed(1)+'" cy="'+py(0).toFixed(1)+'" r="3.5" fill="'+colBk+'"/>';
+      var yFinEst=py(0)-9, yFinBk=py(0)-9;
+      if(Math.abs(xEst-xBk)<56) yFinBk=py(0)-22;
+      fines+='<text x="'+xEst.toFixed(1)+'" y="'+yFinEst.toFixed(1)+'" font-size="10" font-weight="700" fill="'+colEst+'" text-anchor="end">'+fmtAnos(rEst.mesesTotal)+'</text>';
+      fines+='<text x="'+xBk.toFixed(1)+'" y="'+yFinBk.toFixed(1)+'" font-size="10" font-weight="700" fill="'+colBk+'" text-anchor="end">'+fmtAnos(rk.mesesTotal)+'</text>';
+      var svg='<svg viewBox="0 0 '+W+' '+H+'" class="inm-curve-svg" role="img" aria-label="Cuánto pagas cada mes, comparado en el tiempo">'+
+        grid+gridX+areaOf(segsBk,colBk)+areaOf(segsEst,colEst)+lineOf(segsBk,colBk)+lineOf(segsEst,colEst)+labels+fines+'</svg>';
+      return '<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto pagas cada mes</h5>'+
+        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>'+esc(bancoTitle)+'</span></div></div>'+
+        svg+'<p class="inm-curve-note">Cada tramo es tu pago mensual y cuánto dura. Un pago más alto termina antes; uno más bajo deja más aire cada mes.</p></div>';
+    }
+    function inmuebleCompareToggle(c,efectivo){
+      var hint=(c==='igual')
+        ?(efectivo
+          ?'El banco paga cada mes lo mismo que la cuota de ahorro del Bausparvertrag, desde el primer día — así se comparan en igualdad.'
+          :'El pago mensual del Bausparvertrag no supera al del banco: no hace falta igualarlos.')
+        :'Cada opción con sus propios pagos. El Bausparvertrag pide más al mes durante el ahorro; pulsa «Mismo pago mensual» para ver el banco con el mismo esfuerzo mensual.';
+      return '<div class="inm-cmp-wrap"><span class="inm-cmp-lab">Cómo comparar</span></div><div class="inm-mode inm-cmp" role="tablist" aria-label="Cómo comparar">'+
+        [['real','Cada camino como es'],['igual','Mismo pago mensual']].map(function(p){var on=(p[0]===c);return '<button type="button" data-inm-cmp="'+p[0]+'"'+(on?' class="active"':'')+' aria-pressed="'+(on?'true':'false')+'">'+p[1]+'</button>';}).join('')+
+        '</div><p class="inm-eff-note inm-cmp-note">'+hint+'</p>';
     }
     function inmuebleRefiResultsHTML(refi){
       var rem=calcRefiRemaining(refi);
@@ -4855,7 +5060,6 @@
       var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision});
       var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
       var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
-      var mejorEsEst=costeEstAbs<=costeBancoAbs;
       var maxMeses=Math.max(mesesHastaRefi+rBanco.mesesTotal,mesesHastaRefi+rEst.mesesTotal,1);
       function baseRow(){
         return '<div class="inm-res-card"><h5>Tu crédito actual</h5>'+
@@ -4866,14 +5070,14 @@
       }
       function row(title,r,costeAbs,destacar,isBanco){
         var ahorroVs=rem.costeTotalSeguirIgual-costeAbs;
-        return '<div class="inm-res-card"><h5>'+(destacar?'★ ':'')+esc(title)+'</h5>'+
+        return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
           '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
           (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
           (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(costeAbs)+'</b></div>'+
-          '<div class="inm-res-line save '+(ahorroVs>=0?'pos':'neg')+'"><span>'+(ahorroVs>=0?'Ahorras vs. seguir igual':'Más caro que seguir igual')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>'+
+          '<div class="inm-res-line save"><span>'+(ahorroVs>=0?'Menos intereses y comisiones que seguir igual':'Más intereses y comisiones que seguir igual')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>'+
           inmuebleTimeRow(r,maxMeses,isBanco,mesesHastaRefi)+
           inmuebleCertRow(r,refi.banco.zinsbindung,isBanco)+
         '</div>';
@@ -4888,19 +5092,26 @@
       // Tiempo total desde HOY, no solo desde la refinanciación — rNew.mesesTotal no vale tal cual
       // para el banco porque no incluye la espera hasta refinanciar (su fase de ahorro es 0).
       var totalDesdeHoyEst=mesesHastaRefi+rEst.mesesPrestamo, totalDesdeHoyBanco=mesesHastaRefi+rBanco.mesesPrestamo;
-      var frase=inmuebleFraseResumen('la opción Badenia',costeBancoAbs-costeEstAbs,totalDesdeHoyBanco-totalDesdeHoyEst,
+      var frase=inmuebleFraseRefi('la opción Badenia',costeBancoAbs-costeEstAbs,totalDesdeHoyBanco-totalDesdeHoyEst,rEst.cuotaAhorro,
         rEst.mesesPrestamo,rEst.mesesPrestamo,Math.min((refi.banco.zinsbindung||0)*12,rBanco.mesesPrestamo),rBanco.mesesPrestamo);
       return frase+curva+'<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+
-        row(estTitle,rEst,costeEstAbs,mejorEsEst,false)+'</div>';
+        row(estTitle,rEst,costeEstAbs,false,false)+'</div>';
     }
     function inmuebleResultsHTML(precio,inm){
       var estKey=(inm.estrategia==='b')?'b':'a';
       var estCfg=(estKey==='b')?inm.b:inm.a;
       var estTitle='Bausparvertrag · '+inmuebleEstNombre(estCfg);
-      var rEst=calcInmuebleOption(precio,estCfg), rk=calcInmuebleOption(precio,inm.banco);
+      var rEst=calcInmuebleOption(precio,estCfg), rk0=calcInmuebleOption(precio,inm.banco);
+      // Mismo pago mensual: el banco paga desde el mes 0 lo mismo que la cuota de ahorro. Solo tiene
+      // sentido si esa cuota supera la del banco; si no, se deja como estaba.
+      var igual=(inm.comparar==='igual' && precio>0 && rEst.cuotaAhorro>rk0.cuotaPrestamo+0.5);
+      var cfgBanco=inm.banco;
+      if(igual) cfgBanco=Object.assign({},inm.banco,{tilgungInicial:Math.max(0,rEst.cuotaAhorro*1200/precio-(inm.banco.interesPrestamo||0))});
+      var rk=igual?calcInmuebleOption(precio,cfgBanco):rk0;
+      var bancoTitle=igual?'Banco directo · mismo pago mensual':'Banco directo';
       var maxMeses=Math.max(rEst.mesesTotal,rk.mesesTotal,1);
+      var dif=rk.costeTotal-rEst.costeTotal;
       function row(title,r,isBanco){
-        var ahorroVs=isBanco?null:(rk.costeTotal-r.costeTotal);
         return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
           '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
@@ -4908,20 +5119,18 @@
           (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
           (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(r.costeTotal)+'</b></div>'+
-          (ahorroVs!=null?'<div class="inm-res-line save '+(ahorroVs>=0?'pos':'neg')+'"><span>'+(ahorroVs>=0?'Ahorras vs. banco':'Más caro que el banco')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>':'')+
+          (!isBanco?'<div class="inm-res-line save"><span>'+(dif>=0?'Menos intereses y comisiones que el banco':'Más intereses y comisiones que el banco')+'</span><b>'+eur(Math.abs(dif))+'</b></div>':'')+
           inmuebleTimeRow(r,maxMeses,isBanco)+
           inmuebleCertRow(r,inm.banco.zinsbindung,isBanco)+
           '</div>';
       }
-      var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg), ptsBanco=inmuebleCurvaSaldo(precio,rk,inm.banco);
+      var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg), ptsBanco=inmuebleCurvaSaldo(precio,rk,cfgBanco);
       var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
-        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>Banco directo</span></div></div>'+
+        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>'+esc(bancoTitle)+'</span></div></div>'+
         inmuebleCurvaSVG(precio,ptsEst,ptsBanco,120,Math.round((inm.banco.zinsbindung||0)*12))+
         '<p class="inm-curve-note">La línea de puntos dorada marca los 10 años — el plazo al que un banco tradicional suele exigir refinanciación (Anschlussfinanzierung). La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
         '</div>';
-      var frase=inmuebleFraseResumen('el Bausparvertrag',rk.costeTotal-rEst.costeTotal,rk.mesesTotal-rEst.mesesTotal,
-        rEst.mesesPrestamo,rEst.mesesPrestamo,Math.min((inm.banco.zinsbindung||0)*12,rk.mesesPrestamo),rk.mesesPrestamo);
-      return frase+curva+'<div class="inm-results">'+row(estTitle,rEst,false)+row('Banco directo',rk,true)+'</div>';
+      return inmuebleFraseComprar(rEst,rk,igual)+inmuebleCuotaSVG(rEst,rk,estTitle,bancoTitle)+curva+'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>';
     }
     // Fichas guardadas con el esquema anterior (plazoPrestamo en años + anualidad) migran a la
     // cuota fija real (Tilgung inicial % para banco, Tilgungsbeitrag ‰ para Bausparvertrag) SIN
@@ -4941,7 +5150,7 @@
       if(cfg.plazoPrestamo==null||!(bausparsumme>0)){ cfg.tilgungsbeitragPerMille=6; return; }
       var capitalPrestamo=bausparsumme*(1-(cfg.pct||0)/100);
       var quotaPerUnit=annuityQuota(1,cfg.interesPrestamo,Math.max(1,Math.round((cfg.plazoPrestamo||0)*12)));
-      cfg.tilgungsbeitragPerMille=Math.round(Math.max(0,quotaPerUnit*capitalPrestamo/bausparsumme*1000)*100)/100;
+      cfg.tilgungsbeitragPerMille=Math.ceil(Math.max(0,quotaPerUnit*capitalPrestamo/bausparsumme*1000)*10000-1e-6)/10000;
     }
     function normalizeInmueble(rec){
       if(!rec.inmueble) rec.inmueble=defaultInmueble();
@@ -4971,7 +5180,9 @@
       // con el número de coma flotante feo para siempre, porque la migración solo corre si el
       // campo está vacío. Redondear aquí, en cada carga, limpia también esas fichas ya migradas.
       [inm.banco,inm.refi.banco].forEach(function(c){ if(c.tilgungInicial!=null) c.tilgungInicial=Math.round(c.tilgungInicial*100)/100; });
-      [inm.a,inm.b,inm.refi.a,inm.refi.b].forEach(function(c){ if(c.tilgungsbeitragPerMille!=null) c.tilgungsbeitragPerMille=Math.round(c.tilgungsbeitragPerMille*100)/100; });
+      // 4 decimales (no 2) para el ‰ del Bausparvertrag: a 2 decimales un plazo de 10 años daba una cuota
+      // un poco menor que la exacta y el resultado mostraba 10,1 años aunque el asesor hubiera puesto 10.
+      [inm.a,inm.b,inm.refi.a,inm.refi.b].forEach(function(c){ if(c.tilgungsbeitragPerMille!=null) c.tilgungsbeitragPerMille=Math.round(c.tilgungsbeitragPerMille*10000)/10000; });
       // Ahora que este campo ya no se ve ni se puede tocar, un valor guardado fuera del rango que
       // el propio formulario sugería (min/max de cuando aún era editable) ya no tiene forma de
       // corregirse a mano — así que se recorta aquí. Dentro del rango se deja tal cual (un asesor
@@ -4989,6 +5200,9 @@
         var rango=tilgungsbeitragRango(bausparsumme,c);
         if(rango && (c.tilgungsbeitragPerMille<rango.min-0.05 || c.tilgungsbeitragPerMille>rango.max+0.05)) c.tilgungsbeitragPerMille=6;
       });
+      // 'real' = cada camino con sus propios pagos; 'igual' = el banco paga cada mes lo mismo que la
+      // cuota de ahorro del Bausparvertrag (comparación en igualdad de esfuerzo mensual). Solo Comprar.
+      if(inm.comparar!=='igual') inm.comparar='real';
       return inm;
     }
     function inmuebleBlock(rec){
@@ -5011,10 +5225,11 @@
             {key:'a',label:inmuebleEstNombre(inm.a)},
             {key:'b',label:inmuebleEstNombre(inm.b)}
           ])+
+          inmuebleCompareToggle(inm.comparar,(function(){ var e=(inm.estrategia==='b')?inm.b:inm.a; return inm.precio>0 && calcInmuebleOption(inm.precio,e).cuotaAhorro>calcInmuebleOption(inm.precio,inm.banco).cuotaPrestamo+0.5; })())+
           '<div class="inm-grid">'+
             (inm.estrategia==='a'
-              ?inmuebleOptionCard('a','Bausparvertrag · '+inmuebleEstNombre(inm.a),inm.a,null,inm.precio)
-              :inmuebleOptionCard('b','Bausparvertrag · '+inmuebleEstNombre(inm.b),inm.b,null,inm.precio))+
+              ?inmuebleOptionCard('a','Bausparvertrag · '+inmuebleEstNombre(inm.a),inm.a,'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.',inm.precio)
+              :inmuebleOptionCard('b','Bausparvertrag · '+inmuebleEstNombre(inm.b),inm.b,'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.',inm.precio))+
             inmuebleOptionCard('banco','Banco directo',inm.banco,'Sin fase de ahorro: se financia el 100% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.')+
           '</div>'+
           '<div id="inm-results-wrap">'+inmuebleResultsHTML(inm.precio,inm)+'</div>';
@@ -5701,6 +5916,13 @@
         scheduleInmuebleSave();
         return;
       }
+      var cm=e.target.closest('[data-inm-cmp]'); if(cm){
+        if(!wsRec) return;
+        normalizeInmueble(wsRec).comparar=(cm.getAttribute('data-inm-cmp')==='igual')?'igual':'real';
+        var sec3=document.getElementById('sec-inmueble'); if(sec3) sec3.innerHTML=inmuebleBlock(wsRec);
+        scheduleInmuebleSave();
+        return;
+      }
       var st=e.target.closest('[data-inm-strategy]'); if(st){
         if(!wsRec) return;
         var inmSt=normalizeInmueble(wsRec), key=st.getAttribute('data-inm-strategy');
@@ -5810,7 +6032,7 @@
         var capitalPrestamoP=(bausparsummeP||0)*(1-(cfgP.pct||0)/100);
         if(capitalPrestamoP>0 && bausparsummeP>0){
           var quotaPerUnitP=annuityQuota(1,cfgP.interesPrestamo,Math.max(1,Math.round(plazoAnios*12)));
-          cfgP.tilgungsbeitragPerMille=Math.round(Math.max(0,quotaPerUnitP*capitalPrestamoP/bausparsummeP*1000)*100)/100;
+          cfgP.tilgungsbeitragPerMille=Math.ceil(Math.max(0,quotaPerUnitP*capitalPrestamoP/bausparsummeP*1000)*10000-1e-6)/10000;
         }
         refreshInmuebleResults(); scheduleInmuebleSave();
         return;
