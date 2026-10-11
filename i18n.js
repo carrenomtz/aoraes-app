@@ -222,6 +222,7 @@ var SHELL_I18N_EN={
   'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
   'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
   // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+  'Banco a':'Bank at','Cuota {0} €/mes':'Payment {0} €/month','Líneas de banco en la gráfica (tipos en %, separados por espacios; vacío = ninguna)':'Bank lines in the chart (rates in %, separated by spaces; empty = none)',
   'Cuánto queda por pagar en cada hito':'How much is left to pay at each milestone',
   'Cuota {0} €/mes':'Payment {0} €/month',
   'Hito':'Milestone','Cuándo':'When','Zuteilung del Bausparvertrag':'Bausparvertrag allocation (Zuteilung)','Fin de la Zinsbindung':'End of the Zinsbindung','Bausparvertrag pagado':'Bausparvertrag paid off','Banco pagado':'Bank paid off','Refinanciación (Zuteilung de Badenia)':'Refinancing (Badenia allocation)','Badenia pagada':'Badenia paid off','Zuteilung':'Zuteilung','Ahorrado':'Saved','* Tras la Zinsbindung el banco refinancia al tipo de ese momento: la cifra supone que el tipo no cambia.':'* After the Zinsbindung the bank refinances at that moment\'s rate: the figure assumes the rate does not change.',
@@ -489,6 +490,7 @@ var SHELL_I18N_DE={
   'Cuota ahorro':'Sparrate','Cuota préstamo':'Darlehensrate','Interés pagado':'Gezahlte Zinsen','Interés efectivo del préstamo':'Effektiver Darlehenszins','Coste total':'Gesamtkosten',
   'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
   // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+  'Banco a':'Bank mit','Cuota {0} €/mes':'Rate {0} €/Monat','Líneas de banco en la gráfica (tipos en %, separados por espacios; vacío = ninguna)':'Bank-Linien im Diagramm (Zinssätze in %, durch Leerzeichen getrennt; leer = keine)',
   'Cuánto queda por pagar en cada hito':'Wie viel in jedem Meilenstein noch zu zahlen ist',
   'Cuota {0} €/mes':'Rate {0} €/Monat',
   'Hito':'Meilenstein','Cuándo':'Wann','Zuteilung del Bausparvertrag':'Zuteilung des Bausparvertrags','Fin de la Zinsbindung':'Ende der Zinsbindung','Bausparvertrag pagado':'Bausparvertrag getilgt','Banco pagado':'Bank getilgt','Refinanciación (Zuteilung de Badenia)':'Umschuldung (Zuteilung der Badenia)','Badenia pagada':'Badenia getilgt','Zuteilung':'Zuteilung','Ahorrado':'Angespart','* Tras la Zinsbindung el banco refinancia al tipo de ese momento: la cifra supone que el tipo no cambia.':'* Nach der Zinsbindung finanziert die Bank zum dann geltenden Zins um: Der Wert setzt voraus, dass sich der Zins nicht ändert.',

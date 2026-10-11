@@ -461,6 +461,7 @@ function normalizeInmueble(rec){
   if(inm.gastosPct==null||isNaN(inm.gastosPct)) inm.gastosPct=0;
   if(inm.capitalPropio==null||isNaN(inm.capitalPropio)) inm.capitalPropio=0;
   if(inm.ingresoNeto==null||isNaN(inm.ingresoNeto)) inm.ingresoNeto=0;
+  if(!Array.isArray(inm.curvaOff)) inm.curvaOff=[];
   if(inm.ratioMax==null||isNaN(inm.ratioMax)||inm.ratioMax<=0) inm.ratioMax=35;
   if(!inm.refi) inm.refi=def.refi;
   if(!inm.refi.a) inm.refi.a=def.refi.a;
@@ -526,4 +527,21 @@ function inmuebleCapacidadDatos(inm,fin,filas){
   };
 }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble }; }
+// Escenarios de interés del banco en la gráfica "Cuánto queda por pagar": líneas finas de otros tipos (por defecto 3, 4 y 5 %), hasta 4.
+// inm.curvaTipos (lista de %, editable en Opciones avanzadas; [] = ninguna) e inm.curvaOff (los tipos apagados con los botones).
+var INM_CURVA_COLORES=['#4a8c85','#5b7fa6','#b0473a','#7a6aa8'], INM_CURVA_MAX=4;
+function inmuebleCurvaTipos(inm){
+  var t=(inm&&Array.isArray(inm.curvaTipos))?inm.curvaTipos:[3,4,5];
+  return t.map(Number).filter(function(x){ return !isNaN(x)&&x>=0&&x<=20; }).slice(0,INM_CURVA_MAX);
+}
+// "3; 4; 5" o "3 4 5" -> [3,4,5]; la coma sin espacio es decimal ("3,5 4" -> [3.5,4]); texto vacío -> []; sin números válidos -> null.
+function inmuebleParseCurvaTipos(texto){
+  var s=String(texto==null?'':texto).trim(); if(s==='') return [];
+  var out=[]; s.split(/[;\s]+|,\s+/).forEach(function(p){ var v=parseFloat(p.replace(',','.')); if(!isNaN(v)&&v>=0&&v<=20&&out.indexOf(v)<0) out.push(v); });
+  return out.length?out.slice(0,INM_CURVA_MAX):null;
+}
+function inmuebleToggleCurvaTipo(inm,r){
+  var off=(inm.curvaOff||[]).slice(), i=off.indexOf(r); if(i>=0) off.splice(i,1); else off.push(r); inm.curvaOff=off;
+}
+
+if(typeof module!=='undefined'&&module.exports){ module.exports={ INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble }; }

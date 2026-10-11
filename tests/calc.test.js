@@ -227,6 +227,31 @@ test('normalizeAfa rellena una ficha vacía con los valores por defecto y toma e
   const r2 = { afa: { bundesland: 'Bayern' } }; near(afaMod.normalizeAfa(r2).itpPct, afaMod.AFA_BUNDESLAND_ITP['Bayern'], 0);
 });
 
+console.log('Líneas de banco de la gráfica (escenarios de interés)')
+test('por defecto 3, 4 y 5 %; la lista es editable (hasta 4), vacía = ninguna', () => {
+  assert.deepStrictEqual(engine.inmuebleCurvaTipos({}), [3, 4, 5]);
+  assert.deepStrictEqual(engine.inmuebleCurvaTipos({ curvaTipos: [2, 3, 4, 5, 6] }), [2, 3, 4, 5]);
+  assert.deepStrictEqual(engine.inmuebleCurvaTipos({ curvaTipos: [] }), []);
+  assert.deepStrictEqual(engine.inmuebleCurvaTipos({ curvaTipos: [3, 'x', -1, 25, 4.5] }), [3, 4.5]);
+});
+test('el texto "3; 4; 5" o "3 4 5" se interpreta; la coma sin espacio es decimal; vacío = ninguna; basura = no interpretable', () => {
+  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('3; 4; 5'), [3, 4, 5]);
+  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('3 4 5'), [3, 4, 5]);
+  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('3, 4, 5'), [3, 4, 5]);
+  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('3,5 4'), [3.5, 4]);
+  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('2.5 3.5'), [2.5, 3.5]);
+  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos(''), []);
+  assert.strictEqual(engine.inmuebleParseCurvaTipos('abc'), null);
+  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('1 2 3 4 5 6'), [1, 2, 3, 4]);
+  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('4 4 4'), [4]);
+});
+test('apagar/encender un tipo', () => {
+  const inm = { curvaOff: [] };
+  engine.inmuebleToggleCurvaTipo(inm, 4); assert.deepStrictEqual(inm.curvaOff, [4]);
+  engine.inmuebleToggleCurvaTipo(inm, 5); assert.deepStrictEqual(inm.curvaOff, [4, 5]);
+  engine.inmuebleToggleCurvaTipo(inm, 4); assert.deepStrictEqual(inm.curvaOff, [5]);
+});
+
 console.log('Refinanciar');
 test('saldo e interés restante de un crédito existente igual que el calendario', () => {
   const refi = { importeOriginal: 200000, interesOriginal: 3, plazoOriginal: 25, fechaInicio: engine.isoDateYearsAgo(5) };

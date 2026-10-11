@@ -633,6 +633,11 @@
   .inm-inf .inm-inf-limits ul{line-height:1.45; font-size:11.5px}
   .inm-inf .inm-cap .cap-extra{display:none}
   .inm-cap-tabla td.cap-ok{color:var(--navy); font-weight:700} .inm-cap-tabla td.cap-mid{color:var(--amber); font-weight:700} .inm-cap-tabla td.cap-hi{color:var(--red); font-weight:700}
+  .inm-curve-chips{display:flex; align-items:center; gap:6px; margin:0 0 4px; font-size:10.5px; color:var(--faint)}
+  .inm-chip{display:inline-flex; align-items:center; gap:5px; border:1px solid var(--line); background:transparent; border-radius:999px; padding:2px 9px; font:inherit; font-size:10.5px; color:var(--muted); cursor:pointer; opacity:.85}
+  .inm-chip i{display:inline-block; width:14px; height:0; border-top:2px dashed var(--c)}
+  .inm-chip:hover{opacity:1}
+  .inm-chip.off{opacity:.42; text-decoration:line-through}
   .inm-hitos{margin-top:8px}
   .inm-hitos th:nth-child(2),.inm-hitos td:nth-child(2){text-align:left; font-weight:400; color:var(--muted)}
   .inm-hitos td:first-child{white-space:normal; max-width:230px}
@@ -698,6 +703,8 @@
      ocupando sitio) y el informe pasa a flujo normal: así un informe largo se reparte en varias
      páginas A4 en vez de cortarse en la primera. */
   @media print{
+    .inm-chip{border:0; padding:0 4px; cursor:default}
+    .inm-chip.off{display:none}
     html,body{height:auto !important; overflow:visible !important; display:block !important; background:#fff !important}
     body > *:not(#afa-informe){display:none !important}
     #afa-informe{position:static !important; display:block !important; background:#fff}
