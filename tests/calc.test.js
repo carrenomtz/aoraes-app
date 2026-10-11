@@ -4,6 +4,7 @@ const path = require('path');
 const assert = require('assert');
 // El motor es calc.js (funciones puras, sin DOM): se carga tal cual, sin copias ni extracciones de texto.
 const engine = require(process.env.CALC || path.join(__dirname, '..', 'calc.js'));
+const afaMod = require(process.env.AFA || path.join(__dirname, '..', 'afa.js'));
 
 let passed = 0, failed = 0;
 const gaps = [];
@@ -199,6 +200,33 @@ test('hitos de Comprar: Zuteilung con lo ahorrado, Zinsbindung con la deuda del 
   assert.strictEqual(rows[2].baus, 0); assert.strictEqual(rows[3].banco, 0); assert.strictEqual(rows[3].baus, 0);
   assert(rows.every((r, i) => i === 0 || r.m >= rows[i - 1].m), 'hitos ordenados en el tiempo');
 });
+console.log('Amortización (AfA)')
+test('AfA estándar: Nebenkosten = precio × (ITP + notaría + registro) y base = precio + Nebenkosten − suelo − cocina', () => {
+  // 300.000 € en Berlín (ITP 6 %) + 1,5 % notaría + 0,5 % registro = 8 % = 24.000 €; suelo 60.000 €, cocina 5.000 € -> base 259.000 €
+  const a = Object.assign(afaMod.defaultAfa(), { precioCompra: 300000, valorSuelo: 60000, valorCocina: 5000, afaEstandarPct: 2 });
+  const c = afaMod.calcAfa(a);
+  near(c.nebenkosten, 24000, 0.001); near(c.baseAmortizable, 259000, 0.001);
+  near(c.perdidaEstandarAnual, 5180, 0.001); assert.strictEqual(c.pctGutachten, null);
+  near(c.perdidaEfectivaAnual, c.perdidaEstandarAnual, 0.001);
+});
+test('AfA con Gutachten: % = 100 / años restantes (puede ser menor o mayor que el estándar) y manda sobre el estándar', () => {
+  const base = Object.assign(afaMod.defaultAfa(), { precioCompra: 300000, valorSuelo: 60000, valorCocina: 5000, afaEstandarPct: 2, tieneGutachten: true });
+  const corto = afaMod.calcAfa(Object.assign({}, base, { restnutzungsdauerGutachten: 30 }));
+  near(corto.pctGutachten, 100 / 30, 1e-9); near(corto.perdidaGutachtenAnual, 259000 / 30, 0.001);
+  near(corto.diferenciaAnual, 259000 / 30 - 5180, 0.001); near(corto.perdidaEfectivaAnual, corto.perdidaGutachtenAnual, 0.001);
+  const largo = afaMod.calcAfa(Object.assign({}, base, { restnutzungsdauerGutachten: 60 }));
+  assert(largo.diferenciaAnual < 0, 'una vida útil más larga da MENOS AfA que el estándar');
+});
+test('el suelo pendiente no se descuenta (se muestra como pendiente) y el suelo nunca entra en la base si está informado', () => {
+  const a = Object.assign(afaMod.defaultAfa(), { precioCompra: 300000, valorSuelo: 60000, sueloPendiente: true });
+  const c = afaMod.calcAfa(a); near(c.sueloEfectivo, 0, 0.001); near(c.baseAmortizable, 324000, 0.001);
+});
+test('normalizeAfa rellena una ficha vacía con los valores por defecto y toma el ITP del estado federal', () => {
+  const rec = {}; const a = afaMod.normalizeAfa(rec);
+  assert.strictEqual(a.bundesland, 'Berlin'); near(a.itpPct, afaMod.AFA_BUNDESLAND_ITP['Berlin'], 0);
+  const r2 = { afa: { bundesland: 'Bayern' } }; near(afaMod.normalizeAfa(r2).itpPct, afaMod.AFA_BUNDESLAND_ITP['Bayern'], 0);
+});
+
 console.log('Refinanciar');
 test('saldo e interés restante de un crédito existente igual que el calendario', () => {
   const refi = { importeOriginal: 200000, interesOriginal: 3, plazoOriginal: 25, fechaInicio: engine.isoDateYearsAgo(5) };

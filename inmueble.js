@@ -1,8 +1,8 @@
 /* Proyecto inmobiliario — pantalla (Comprar y Refinanciar), presentación, informe A4, guardado y eventos.
    Los cálculos viven en calc.js; esto solo pinta y reacciona. Se carga como script clásico ANTES del script principal de index.html:
    las funciones quedan como globales y el script principal las llama (inmuebleBlock, refreshInmuebleResults, presOpen, ...).
-   Lo que necesita del resto de la app (cliente abierto, almacenamiento) lo recibe por INM_HOST, que define index.html:
-   INM_HOST.wsRec / wsId (el cliente abierto), CLIENTS_KEY, readLocalClientsRaw(), writeClientFile(id). */
+   Lo que necesita del resto de la app (cliente abierto, almacenamiento) lo recibe por APP_HOST, que define index.html:
+   APP_HOST.wsRec / wsId (el cliente abierto), CLIENTS_KEY, readLocalClientsRaw(), writeClientFile(id). */
 var inmSaveTimer=null;
 
 function inmuebleOptField(opt,key,label,val,step,suffix,extra){
@@ -633,13 +633,13 @@ function presOpen(rec){
 
 function presClose(){
   var ov=document.getElementById('inm-pres'); if(ov.hidden) return; ov.hidden=true;
-  var secP=document.getElementById('sec-inmueble'); if(secP&&INM_HOST.wsRec) secP.innerHTML=inmuebleBlock(INM_HOST.wsRec);
+  var secP=document.getElementById('sec-inmueble'); if(secP&&APP_HOST.wsRec) secP.innerHTML=inmuebleBlock(APP_HOST.wsRec);
   try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
 }
 
 function refreshInmuebleResults(){
-  if(!INM_HOST.wsRec||!INM_HOST.wsRec.inmueble) return;
-  var inm=INM_HOST.wsRec.inmueble;
+  if(!APP_HOST.wsRec||!APP_HOST.wsRec.inmueble) return;
+  var inm=APP_HOST.wsRec.inmueble;
   var el=document.getElementById('inm-results-wrap'); if(!el) return;
   if(inm.modo==='refi'){
     el.innerHTML=inmuebleRefiResultsHTML(inm.refi,false,inm);
@@ -650,13 +650,13 @@ function refreshInmuebleResults(){
 }
 
 function persistInmueble(){
-  if(!INM_HOST.wsId||!INM_HOST.wsRec||!INM_HOST.wsRec.inmueble) return;
-  var arr=INM_HOST.readLocalClientsRaw();
+  if(!APP_HOST.wsId||!APP_HOST.wsRec||!APP_HOST.wsRec.inmueble) return;
+  var arr=APP_HOST.readLocalClientsRaw();
   for(var i=0;i<arr.length;i++){
-    if(arr[i].id===INM_HOST.wsId){ arr[i].inmueble=INM_HOST.wsRec.inmueble; arr[i].savedAt=new Date().toISOString(); break; }
+    if(arr[i].id===APP_HOST.wsId){ arr[i].inmueble=APP_HOST.wsRec.inmueble; arr[i].savedAt=new Date().toISOString(); break; }
   }
-  try{ localStorage.setItem(INM_HOST.CLIENTS_KEY,JSON.stringify(arr)); }catch(e){ console.error('AORAES: fallo al guardar el proyecto inmobiliario',e); }
-  INM_HOST.writeClientFile(INM_HOST.wsId);
+  try{ localStorage.setItem(APP_HOST.CLIENTS_KEY,JSON.stringify(arr)); }catch(e){ console.error('AORAES: fallo al guardar el proyecto inmobiliario',e); }
+  APP_HOST.writeClientFile(APP_HOST.wsId);
 }
 
 function scheduleInmuebleSave(){
@@ -681,26 +681,26 @@ function inmuebleOnClick(e){
       if(rt){ var card=rt.closest('.inm-card'); var inp=card&&card.querySelector('[data-inm-field="'+rt.getAttribute('data-inm-quickfield')+'"]'); if(inp){ inp.value=rt.getAttribute('data-inm-quickval'); inp.dispatchEvent(new Event('input',{bubbles:true})); } return true; }
       var md=e.target.closest('[data-inm-mode]');
       if(md){
-        if(!INM_HOST.wsRec) return true;
-        normalizeInmueble(INM_HOST.wsRec).modo=md.getAttribute('data-inm-mode');
-        var sec=document.getElementById('sec-inmueble'); if(sec) sec.innerHTML=inmuebleBlock(INM_HOST.wsRec);
+        if(!APP_HOST.wsRec) return true;
+        normalizeInmueble(APP_HOST.wsRec).modo=md.getAttribute('data-inm-mode');
+        var sec=document.getElementById('sec-inmueble'); if(sec) sec.innerHTML=inmuebleBlock(APP_HOST.wsRec);
         scheduleInmuebleSave();
         return true;
       }
       var cm=e.target.closest('[data-inm-cmp]');
       if(cm){
-        if(!INM_HOST.wsRec) return true;
-        normalizeInmueble(INM_HOST.wsRec).comparar=(cm.getAttribute('data-inm-cmp')==='igual')?'igual':'real';
-        var sec3=document.getElementById('sec-inmueble'); if(sec3) sec3.innerHTML=inmuebleBlock(INM_HOST.wsRec);
+        if(!APP_HOST.wsRec) return true;
+        normalizeInmueble(APP_HOST.wsRec).comparar=(cm.getAttribute('data-inm-cmp')==='igual')?'igual':'real';
+        var sec3=document.getElementById('sec-inmueble'); if(sec3) sec3.innerHTML=inmuebleBlock(APP_HOST.wsRec);
         scheduleInmuebleSave();
         return true;
       }
       var st=e.target.closest('[data-inm-strategy]');
       if(st){
-        if(!INM_HOST.wsRec) return true;
-        var inmSt=normalizeInmueble(INM_HOST.wsRec), key=st.getAttribute('data-inm-strategy');
+        if(!APP_HOST.wsRec) return true;
+        var inmSt=normalizeInmueble(APP_HOST.wsRec), key=st.getAttribute('data-inm-strategy');
         if(key==='refiA'||key==='refiB') inmSt.refi.estrategia=key; else inmSt.estrategia=key;
-        var sec2=document.getElementById('sec-inmueble'); if(sec2) sec2.innerHTML=inmuebleBlock(INM_HOST.wsRec);
+        var sec2=document.getElementById('sec-inmueble'); if(sec2) sec2.innerHTML=inmuebleBlock(APP_HOST.wsRec);
         scheduleInmuebleSave();
         return true;
       }
@@ -715,14 +715,14 @@ function inmuebleOnClick(e){
       }
       var inmPres=e.target.closest('#inm-pres-btn');
       if(inmPres){
-        if(!INM_HOST.wsRec||!INM_HOST.wsRec.inmueble) return true;
-        presOpen(INM_HOST.wsRec);
+        if(!APP_HOST.wsRec||!APP_HOST.wsRec.inmueble) return true;
+        presOpen(APP_HOST.wsRec);
         return true;
       }
       var inmPrint=e.target.closest('#inm-print-btn');
       if(inmPrint){
-        if(!INM_HOST.wsRec||!INM_HOST.wsRec.inmueble) return true;
-        document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(INM_HOST.wsRec);
+        if(!APP_HOST.wsRec||!APP_HOST.wsRec.inmueble) return true;
+        document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(APP_HOST.wsRec);
         document.getElementById('afa-informe').classList.add('on');
         window.print();
         return true;
@@ -732,29 +732,29 @@ function inmuebleOnClick(e){
 function inmuebleOnInput(e){
   var t=e.target;
   if(t.id==='inm-precio'){
-        if(!INM_HOST.wsRec) return true;
-        if(!INM_HOST.wsRec.inmueble) INM_HOST.wsRec.inmueble=defaultInmueble();
-        var v=parseFloat(t.value); INM_HOST.wsRec.inmueble.precio=isNaN(v)?0:v;
+        if(!APP_HOST.wsRec) return true;
+        if(!APP_HOST.wsRec.inmueble) APP_HOST.wsRec.inmueble=defaultInmueble();
+        var v=parseFloat(t.value); APP_HOST.wsRec.inmueble.precio=isNaN(v)?0:v;
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
       if(t.id==='inm-ingreso'||t.id==='inm-ratio'){
-        if(!INM_HOST.wsRec) return true;
-        var inmC=normalizeInmueble(INM_HOST.wsRec), vC=parseFloat(t.value);
+        if(!APP_HOST.wsRec) return true;
+        var inmC=normalizeInmueble(APP_HOST.wsRec), vC=parseFloat(t.value);
         if(t.id==='inm-ingreso') inmC.ingresoNeto=(isNaN(vC)||vC<0)?0:vC; else if(vC>=10&&vC<=60) inmC.ratioMax=vC;
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
       if(t.id==='inm-gastos'||t.id==='inm-capital'){
-        if(!INM_HOST.wsRec) return true;
-        var inmG=normalizeInmueble(INM_HOST.wsRec), vG=parseFloat(t.value); vG=(isNaN(vG)||vG<0)?0:vG;
+        if(!APP_HOST.wsRec) return true;
+        var inmG=normalizeInmueble(APP_HOST.wsRec), vG=parseFloat(t.value); vG=(isNaN(vG)||vG<0)?0:vG;
         if(t.id==='inm-gastos') inmG.gastosPct=Math.min(30,vG); else inmG.capitalPropio=vG;
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
       if(t.id==='inm-fecha-refi'){
-        if(!INM_HOST.wsRec) return true;
-        var inmY=normalizeInmueble(INM_HOST.wsRec), mY=/^(\d{4})-(\d{2})$/.exec(t.value), d0=inmuebleInicioDate(inmY.inicio);
+        if(!APP_HOST.wsRec) return true;
+        var inmY=normalizeInmueble(APP_HOST.wsRec), mY=/^(\d{4})-(\d{2})$/.exec(t.value), d0=inmuebleInicioDate(inmY.inicio);
         if(mY){
           var meses=(+mY[1]-d0.getFullYear())*12+(+mY[2]-1-d0.getMonth());
           if(meses>=1 && meses<=480){
@@ -766,34 +766,34 @@ function inmuebleOnInput(e){
         return true;
       }
       if(t.id==='inm-pago-igual'){
-        if(!INM_HOST.wsRec) return true;
-        var vI=parseFloat(t.value); normalizeInmueble(INM_HOST.wsRec).pagoIgual=(isNaN(vI)||vI<0)?0:vI;
+        if(!APP_HOST.wsRec) return true;
+        var vI=parseFloat(t.value); normalizeInmueble(APP_HOST.wsRec).pagoIgual=(isNaN(vI)||vI<0)?0:vI;
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
       if(t.id==='inm-inicio'){
-        if(!INM_HOST.wsRec) return true;
-        var inmI=normalizeInmueble(INM_HOST.wsRec);
+        if(!APP_HOST.wsRec) return true;
+        var inmI=normalizeInmueble(APP_HOST.wsRec);
         if(/^\d{4}-\d{2}$/.test(t.value)) inmI.inicio=t.value; else delete inmI.inicio;
         inmuebleSyncFechaRefi(inmI);
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
       if(t.id==='inm-refi-fecha-inicio'){
-        if(!INM_HOST.wsRec) return true;
-        normalizeInmueble(INM_HOST.wsRec).refi.fechaInicio=t.value;
+        if(!APP_HOST.wsRec) return true;
+        normalizeInmueble(APP_HOST.wsRec).refi.fechaInicio=t.value;
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
       if(t.id==='inm-refi-fecha-objetivo'){
-        if(!INM_HOST.wsRec) return true;
-        normalizeInmueble(INM_HOST.wsRec).refi.fechaRefi=t.value;
+        if(!APP_HOST.wsRec) return true;
+        normalizeInmueble(APP_HOST.wsRec).refi.fechaRefi=t.value;
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
       var optPlazo=t.getAttribute('data-inm-opt');
-      if(optPlazo&&t.hasAttribute('data-inm-plazo')&&INM_HOST.wsRec){
-        var inmP=normalizeInmueble(INM_HOST.wsRec);
+      if(optPlazo&&t.hasAttribute('data-inm-plazo')&&APP_HOST.wsRec){
+        var inmP=normalizeInmueble(APP_HOST.wsRec);
         var cfgP=(optPlazo==='refiA')?inmP.refi.a:(optPlazo==='refiB')?inmP.refi.b:inmP[optPlazo];
         var bausparsummeP=(optPlazo==='refiA'||optPlazo==='refiB')?inmP.refi.importeOriginal:inmuebleFin(inmP);
         var plazoAnios=parseFloat(t.value); plazoAnios=isNaN(plazoAnios)||plazoAnios<=0?1:plazoAnios;
@@ -805,9 +805,9 @@ function inmuebleOnInput(e){
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
-      if(t.hasAttribute('data-inm-bankplazo')&&INM_HOST.wsRec){
+      if(t.hasAttribute('data-inm-bankplazo')&&APP_HOST.wsRec){
         // Plazo del banco en años: fija la Tilgung inicial equivalente y anula el pago mensual fijo (si no, el plazo escrito no mandaría).
-        var optBP=t.getAttribute('data-inm-opt'), inmBP=normalizeInmueble(INM_HOST.wsRec), cfgBP=(optBP==='refiBanco')?inmBP.refi.banco:inmBP.banco;
+        var optBP=t.getAttribute('data-inm-opt'), inmBP=normalizeInmueble(APP_HOST.wsRec), cfgBP=(optBP==='refiBanco')?inmBP.refi.banco:inmBP.banco;
         if(String(t.value).trim()===''){ delete cfgBP.plazoObjetivo; cfgBP.tilgungInicial=2; refreshInmuebleResults(); scheduleInmuebleSave(); return true; }
         var anBP=parseFloat(t.value); if(!(anBP>=5&&anBP<=40)) return true;
         cfgBP.plazoObjetivo=anBP; cfgBP.tilgungInicial=tilgungParaPlazo(cfgBP.interesPrestamo,anBP); cfgBP.pagoPre=0;
@@ -815,8 +815,8 @@ function inmuebleOnInput(e){
         return true;
       }
       var opt=t.getAttribute('data-inm-opt'), field=t.getAttribute('data-inm-field');
-      if(opt&&field&&INM_HOST.wsRec){
-        var inm=normalizeInmueble(INM_HOST.wsRec);
+      if(opt&&field&&APP_HOST.wsRec){
+        var inm=normalizeInmueble(APP_HOST.wsRec);
         var val=parseFloat(t.value); val=isNaN(val)?0:val;
         if(opt==='refiActual') inm.refi[field]=val;
         else if(opt==='refiBanco') inm.refi.banco[field]=val;
