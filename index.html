@@ -4619,10 +4619,10 @@
         ?balanceTrasMeses(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,Math.min(mesesPrestamo,Math.round((cfg.zinsbindung||0)*12)))
         :null;
       var res={objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal,restschuldZinsbindung:restschuldZinsbindung};
-      // Sondertilgung anual (solo Banco directo): un pago extra a capital cada 12 meses, con la cuota
+      // Sondertilgung anual (banco y fase de préstamo del Bausparvertrag): un pago extra a capital cada 12 meses, con la cuota
       // mensual constante. Sin fórmula cerrada, así que se simula mes a mes y se sobrescribe plazo,
       // intereses, coste y Restschuld; se guarda también cuánto se ahorra frente a no hacerla.
-      var st=(!esBausparvertrag&&capitalPrestamo>0)?Math.max(0,cfg.sondertilgung||0):0;
+      var st=(capitalPrestamo>0)?Math.max(0,cfg.sondertilgung||0):0;
       if(st>0 && cuotaPrestamo>0){
         var zM=Math.round((cfg.zinsbindung||0)*12);
         var sm=simLoan(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,st,0,1200);
@@ -4630,7 +4630,7 @@
         res.ahorroInteresST=Math.max(0,res.interesTotalPrestamo-sm.interes); res.mesesAntesST=Math.max(0,res.mesesPrestamo-sm.meses);
         res.interesTotalPrestamo=sm.interes; res.mesesPrestamo=sm.meses; res.mesesTotal=mesesAhorroEfectivo+sm.meses;
         res.costeTotal=precio+sm.interes+comision-interesGanadoAhorro; res.tasaEfectiva=null;
-        if(cfg.zinsbindung!=null) res.restschuldZinsbindung=(zM>=sm.meses)?0:sm.saldos[zM-1];
+        if(!esBausparvertrag&&cfg.zinsbindung!=null) res.restschuldZinsbindung=(zM>=sm.meses)?0:sm.saldos[zM-1];
       }
       return res;
     }
@@ -4818,7 +4818,7 @@
       if(opt==='banco'||opt==='refiBanco'){
         basic+=inmuebleQuickButtons('interesPrestamo',[2,3,4,4.2,5],'%');
       }
-      if(opt==='banco') basic+=inmuebleOptField(opt,'sondertilgung','Sondertilgung anual',cfg.sondertilgung||0,'500','€/año','min="0"');
+      basic+=inmuebleOptField(opt,'sondertilgung','Sondertilgung anual',cfg.sondertilgung||0,'500','€/año','min="0"');
       // La Tilgung/Tilgungsbeitrag salió de "Opciones avanzadas" a pedido explícito — el valor por
       // defecto (el mismo que ya traía cada campo) sigue usándose en el cálculo tal cual, solo que
       // ya no se ve ni se puede tocar desde aquí; confundía más de lo que ayudaba a explicar.
@@ -5036,7 +5036,8 @@
           }
           pendiente=saldoCredito-ahorroAcum;
         }else{
-          pendiente=balanceTrasMeses(rNew.capitalPrestamo,cfgNew.interesPrestamo,rNew.cuotaPrestamo,t-mesesHastaRefi);
+          var tq=t-mesesHastaRefi;
+          pendiente=(rNew.saldos&&tq>0)?(tq>rNew.saldos.length?0:rNew.saldos[tq-1]):balanceTrasMeses(rNew.capitalPrestamo,cfgNew.interesPrestamo,rNew.cuotaPrestamo,tq);
         }
         puntos.push({meses:t,pendiente:Math.max(0,pendiente)});
       }
@@ -5223,8 +5224,8 @@
       // terminado de pagar solo, no se sigue pagando cuota en ese tramo — se limita al tiempo
       // que el crédito original realmente sigue vivo.
       var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
-      var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung});
-      var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision});
+      var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung});
+      var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung});
       var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
       var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
       var maxMeses=Math.max(mesesHastaRefi+rBanco.mesesTotal,mesesHastaRefi+rEst.mesesTotal,1);
@@ -5242,6 +5243,7 @@
           '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
           (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
+          (r.sondertilgung>0?'<div class="inm-res-line"><span>Con Sondertilgung de '+eur(r.sondertilgung)+'/año, intereses menos</span><b>'+eur(r.ahorroInteresST)+'</b></div><div class="inm-res-line"><span>Y terminas antes</span><b>'+fmtAnos(r.mesesAntesST)+'</b></div>':'')+
           (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(costeAbs)+'</b></div>'+
           '<div class="inm-res-line save"><span>'+(ahorroVs>=0?'Menos intereses y comisiones que seguir igual':'Más intereses y comisiones que seguir igual')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>'+
