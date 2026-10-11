@@ -5450,7 +5450,7 @@
             inner='<div class="inm-res-line"><span>Plazo total</span><b>'+fmtAnos(zMeses+m2)+'</b></div>'+
                   '<div class="inm-res-line"><span>Intereses totales</span><b>'+eur(intDurante+intDesp)+'</b></div>';
           }
-          return '<div class="inm-stress-tile'+(t.now?' now':'')+'"><div class="inm-stress-head">'+(editable?'<input type="text" class="inm-pres-name" maxlength="40" data-pres-nombre="'+(t.i+1)+'" value="'+esc(t.n)+'" placeholder="'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'">':(t.n?'<span data-no-i18n>'+esc(t.n)+'</span>':'<span>'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'</span>'))+(editable===true?' <input type="text" inputmode="decimal" class="inm-pres-tipo" data-pres-tipo="'+(t.i+1)+'" value="'+esc(_presRawTipo[t.i+1]!=null?_presRawTipo[t.i+1]:String(Math.round(r2*100)/100).replace('.',','))+'"> %':' <b>'+fmtTipo(r2)+'</b>')+'</div>'+inner+'</div>';
+          return '<div class="inm-stress-tile'+(t.now?' now':'')+'"><div class="inm-stress-head">'+(editable?'<input type="text" class="inm-pres-name" maxlength="40" data-pres-nombre="'+(t.i+1)+'" value="'+esc(t.n)+'" placeholder="'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'">':(t.n?'<span data-no-i18n>'+esc(t.n)+'</span>':'<span>'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'</span>'))+((editable===true||editable==='tipos')?' <input type="text" inputmode="decimal" class="inm-pres-tipo" data-pres-tipo="'+(t.i+1)+'" value="'+esc(_presRawTipo[t.i+1]!=null?_presRawTipo[t.i+1]:String(Math.round(r2*100)/100).replace('.',','))+'"> %':' <b>'+fmtTipo(r2)+'</b>')+'</div>'+inner+'</div>';
         }).join('');
         body='<p class="inm-stress-lead"><span>Al terminar la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>), aún debes <b>'+eur(R)+'</b>.</span> <span>Ese saldo se refinancia al tipo que haya entonces.</span> <span>'+(tilesN===3?'Tres posibilidades':(tilesN===1?'Una posibilidad':(tilesN===2?'Dos posibilidades':(tilesN===4?'Cuatro posibilidades':'Cinco posibilidades'))))+'</span> <span>(no son pronósticos), '+(pagoPost>0?'con un pago mensual de':'con tu mismo pago de')+' '+(editable===true?'<input type="text" inputmode="decimal" class="inm-pres-pago" data-pres-pago="pagoPost" value="'+esc(_presRawPago.pagoPost!=null?_presRawPago.pagoPost:String(Math.round(pmt2)))+'"> €/mes.':'<b>'+eur(pmt2)+'/mes</b>.')+'</span></p>'+
           '<div class="inm-stress-grid">'+tiles+'</div>'+
@@ -5527,7 +5527,7 @@
       var stressR=inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,false,estCfg);
       var capR=inm?inmuebleCapacidadHTML(inm,saldoAtRefi,[['Tu crédito actual',rem.cuotaOriginal],['Refinanciar con banco',rBanco.cuotaPrestamo],['Badenia · ahorro',rEst.cuotaAhorro],['Badenia · préstamo',rEst.cuotaPrestamo]]):'';
       var tabla=inmuebleTablaAnualRefi(rem,refi,mesesHastaRefi,rBanco,rEst,estCfg,30), tablaPres=inmuebleTablaAnualRefi(rem,refi,mesesHastaRefi,rBanco,rEst,estCfg,16), tablaInf=inmuebleTablaAnualRefi(rem,refi,mesesHastaRefi,rBanco,rEst,estCfg,12);
-      return asParts?{frase:frase,capacidad:capR,tabla:tabla,tablaPres:tablaPres,tablaInf:tablaInf,curva:curva,stress:stressR,stressEdit:function(m,sh){ return inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,m||true,estCfg,sh); },hedge:inmuebleHedgeHTML(rBanco.restschuldZinsbindung||0,Math.round((refi.banco.zinsbindung||0)*12),estCfg),cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+capR+curva+tabla+(stressR?'<div class="inm-stress-ctl">'+presEscenariosCtl(refi.banco)+'</div>'+inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,'names',estCfg):'')+cardsR);
+      return asParts?{frase:frase,capacidad:capR,tabla:tabla,tablaPres:tablaPres,tablaInf:tablaInf,curva:curva,stress:stressR,stressEdit:function(m,sh){ return inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,m||true,estCfg,sh); },hedge:inmuebleHedgeHTML(rBanco.restschuldZinsbindung||0,Math.round((refi.banco.zinsbindung||0)*12),estCfg),cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+capR+curva+tabla+(stressR?'<div class="inm-stress-ctl">'+presEscenariosCtl(refi.banco)+'</div>'+inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,'tipos',estCfg):'')+cardsR);
     }
     function inmuebleResultsHTML(precio,inm,asParts){
       _inmInicio=inm.inicio||'';
@@ -5570,7 +5570,7 @@
         '</div>';
       var parts={frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0),capacidad:inmuebleCapacidadHTML(inm,precio,[['Banco directo',rk.cuotaPrestamo],['Bausparvertrag · ahorro',rEst.cuotaAhorro],['Bausparvertrag · préstamo',rEst.cuotaPrestamo]]),curva:curva,tabla:inmuebleTablaAnual(precio,rEst,estCfg,rk,cfgBanco,Math.round((inm.banco.zinsbindung||0)*12),30),tablaPres:inmuebleTablaAnual(precio,rEst,estCfg,rk,cfgBanco,Math.round((inm.banco.zinsbindung||0)*12),16),tablaInf:inmuebleTablaAnual(precio,rEst,estCfg,rk,cfgBanco,Math.round((inm.banco.zinsbindung||0)*12),12),stress:inmuebleStressHTML(precio,rk,cfgBanco,false,estCfg),stressEdit:function(m){ return inmuebleStressHTML(precio,rk,cfgBanco,m||true,estCfg); },
         cards:'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>',rEst:rEst,rk:rk,estCfg:estCfg};
-      return asParts?parts:(parts.frase+parts.capacidad+parts.curva+parts.tabla+(parts.stress?'<div class="inm-stress-ctl">'+presEscenariosCtl(inm.banco)+'</div>'+parts.stressEdit('names'):'')+parts.cards);
+      return asParts?parts:(parts.frase+parts.capacidad+parts.curva+parts.tabla+(parts.stress?'<div class="inm-stress-ctl">'+presEscenariosCtl(inm.banco)+'</div>'+parts.stressEdit('tipos'):'')+parts.cards);
     }
     // Fichas guardadas con el esquema anterior (plazoPrestamo en años + anualidad) migran a la
     // cuota fija real (Tilgung inicial % para banco, Tilgungsbeitrag ‰ para Bausparvertrag) SIN
@@ -6765,6 +6765,9 @@
         return;
       }
     });
+    wsScreen.addEventListener('focusout',function(e){
+      var tf=e.target; if(tf.hasAttribute&&tf.hasAttribute('data-pres-tipo')&&tf.closest&&tf.closest('#inm-results-wrap')) delete _presRawTipo[tf.getAttribute('data-pres-tipo')];
+    });
     wsScreen.addEventListener('input',function(e){
       var t=e.target;
       if(t.id==='inm-precio'){
@@ -6786,6 +6789,20 @@
         var inmG=normalizeInmueble(wsRec), vG=parseFloat(t.value); vG=(isNaN(vG)||vG<0)?0:vG;
         if(t.id==='inm-gastos') inmG.gastosPct=Math.min(30,vG); else inmG.capitalPropio=vG;
         refreshInmuebleResults(); scheduleInmuebleSave();
+        return;
+      }
+      if(t.hasAttribute('data-pres-tipo')&&t.closest('#inm-results-wrap')){
+        // Tipo del escenario escrito en la pantalla de resultados: mismo campo que Opciones avanzadas, presentación e informe. Se recalcula
+        // conservando lo que se está tecleando (p. ej. "3," no se reformatea) y devolviendo el foco al campo.
+        if(!wsRec) return;
+        var kTS=t.getAttribute('data-pres-tipo'), vTS=parseFloat(String(t.value).replace(',','.'));
+        _presRawTipo[kTS]=t.value;
+        if(!isNaN(vTS)&&vTS>=0&&vTS<=30){
+          var inmTS=normalizeInmueble(wsRec), cfgTS=(inmTS.modo==='refi')?inmTS.refi.banco:inmTS.banco; cfgTS['tipoPost'+kTS]=vTS;
+          var fTS=document.querySelector('[data-inm-opt="'+((inmTS.modo==='refi')?'refiBanco':'banco')+'"][data-inm-field="tipoPost'+kTS+'"]'); if(fTS) fTS.value=vTS;
+          refreshInmuebleResults(); scheduleInmuebleSave();
+          var nTS=document.querySelector('#inm-results-wrap [data-pres-tipo="'+kTS+'"]'); if(nTS){ nTS.focus(); try{ nTS.setSelectionRange(nTS.value.length,nTS.value.length); }catch(_){} }
+        }
         return;
       }
       if(t.hasAttribute('data-pres-nombre')&&t.closest('#inm-results-wrap')){
