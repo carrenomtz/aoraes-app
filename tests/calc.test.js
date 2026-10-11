@@ -14,10 +14,12 @@ assert(a > 0 && b > a, 'No se encontró el motor en index.html (marcadores cambi
 const f1 = html.indexOf('function inmuebleFin('), f2 = html.indexOf('function inmuebleFinLine(');
 assert(f1 > 0 && f2 > f1, 'No se encontró inmuebleFin en index.html');
 const g1 = html.indexOf('function inmuebleSerieMensual('), g2 = html.indexOf('function inmuebleTablaAnual(');
+const c1 = html.indexOf('function inmuebleCapacidadHTML('), c2 = html.indexOf('function inmuebleFinLine(');
+assert(c1 > 0 && c2 > c1, 'No se encontró inmuebleCapacidadHTML en index.html');
 assert(g1 > 0 && g2 > g1, 'No se encontró inmuebleSerieMensual en index.html');
-const engine = new Function(html.slice(a, b) + html.slice(f1, f2) + html.slice(g1, g2) +
+const engine = new Function(html.slice(a, b) + html.slice(f1, f2) + html.slice(g1, g2) + 'function eur(n){ return Math.round(n) + " €"; }' + html.slice(c1, c2) +
   '\nreturn {annuityQuota,effectiveAnnualRate,savingsQuota,monthsToPayoff,simLoan,calcInmuebleOption,' +
-  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin,inmuebleSerieMensual};')();
+  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin,inmuebleSerieMensual,inmuebleCapacidadHTML};')();
 
 let passed = 0, failed = 0;
 const gaps = [];
@@ -170,6 +172,21 @@ test('tilgungParaPlazo: un plazo de 30 años a 4 % da la Tilgung inicial que amo
   const tg = (function(){ const q = engine.annuityQuota(1, 4, 360); return Math.round(Math.max(0, q * 12 * 100 - 4) * 100) / 100; })();
   const c = engine.calcInmuebleOption(300000, { pct: 0, interesPrestamo: 4, tilgungInicial: tg, comision: 0, zinsbindung: 10 });
   assert(Math.abs(c.mesesPrestamo - 360) <= 1, 'meses ' + c.mesesPrestamo);
+});
+
+console.log('Capacidad de pago')
+test('sin ingreso indicado no hay panel; con ingreso muestra cuota máxima (ingreso × límite) y préstamo orientativo (ingreso × 12 × 8)', () => {
+  const rEst = { cuotaAhorro: 1979, cuotaPrestamo: 1091 }, rk = { cuotaPrestamo: 917 };
+  assert.strictEqual(engine.inmuebleCapacidadHTML({ ingresoNeto: 0, ratioMax: 35 }, 200000, rEst, rk), '');
+  const h = engine.inmuebleCapacidadHTML({ ingresoNeto: 4200, ratioMax: 35 }, 200000, rEst, rk);
+  assert(h.includes('1470 €/mes'), 'cuota máxima 35 % de 4.200 €'); assert(h.includes('403200 €'), 'préstamo orientativo 4.200 × 12 × 8');
+});
+test('semáforo: ≤30 % del ingreso dentro, hasta el límite ajustado, por encima del límite marcado', () => {
+  const h = engine.inmuebleCapacidadHTML({ ingresoNeto: 4200, ratioMax: 35 }, 200000, { cuotaAhorro: 1979, cuotaPrestamo: 1091 }, { cuotaPrestamo: 917 });
+  assert(/917[^<]*<\/td><td>22 %<\/td><td class="cap-ok">Dentro/.test(h), 'banco 22 % dentro');
+  assert(/1979[^<]*<\/td><td>47 %<\/td><td class="cap-hi">Por encima/.test(h), 'ahorro 47 % por encima');
+  const j = engine.inmuebleCapacidadHTML({ ingresoNeto: 3000, ratioMax: 35 }, 0, { cuotaAhorro: 0, cuotaPrestamo: 990 }, { cuotaPrestamo: 0 });
+  assert(/990[^<]*<\/td><td>33 %<\/td><td class="cap-mid">Ajustado/.test(j), '33 % ajustado');
 });
 
 console.log('Cubrir la deuda pendiente de la Zinsbindung con un Bausparvertrag')
