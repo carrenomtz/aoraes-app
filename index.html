@@ -3792,6 +3792,9 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Tope anual de Sondertilgung (0 = sin tope)':'Annual Sondertilgung cap (0 = no cap)',
+      '% del préstamo':'% of the loan',
+      'Tope aplicado: como máximo {0} €/año':'Cap applied: at most €{0}/year',
       '🎬 Presentación':'🎬 Presentation',
       '← Anterior':'← Previous',
       'Siguiente →':'Next →',
@@ -4059,6 +4062,9 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Tope anual de Sondertilgung (0 = sin tope)':'Jährliche Sondertilgungsgrenze (0 = keine Grenze)',
+      '% del préstamo':'% des Darlehens',
+      'Tope aplicado: como máximo {0} €/año':'Grenze angewendet: höchstens {0} €/Jahr',
       '🎬 Presentación':'🎬 Präsentation',
       '← Anterior':'← Zurück',
       'Siguiente →':'Weiter →',
@@ -4682,11 +4688,13 @@
       // Sondertilgung anual (banco y fase de préstamo del Bausparvertrag): un pago extra a capital cada 12 meses, con la cuota
       // mensual constante. Sin fórmula cerrada, así que se simula mes a mes y se sobrescribe plazo,
       // intereses, coste y Restschuld; se guarda también cuánto se ahorra frente a no hacerla.
-      var st=(capitalPrestamo>0)?Math.max(0,cfg.sondertilgung||0):0;
+      var stPedida=(capitalPrestamo>0)?Math.max(0,cfg.sondertilgung||0):0;
+      // Tope anual (% del préstamo, típico 5 %): el contrato limita cuánto se puede amortizar de más al año.
+      var tope=Math.max(0,cfg.topeST||0), st=(tope>0)?Math.min(stPedida,capitalPrestamo*tope/100):stPedida;
       if(st>0 && cuotaPrestamo>0){
         var zM=Math.round((cfg.zinsbindung||0)*12);
         var sm=simLoan(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,st,0,1200);
-        res.sondertilgung=st; res.saldos=sm.saldos;
+        res.sondertilgung=st; res.topeAplicado=(st<stPedida-0.5); res.saldos=sm.saldos;
         res.ahorroInteresST=Math.max(0,res.interesTotalPrestamo-sm.interes); res.mesesAntesST=Math.max(0,res.mesesPrestamo-sm.meses);
         res.interesTotalPrestamo=sm.interes; res.mesesPrestamo=sm.meses; res.mesesTotal=mesesAhorroEfectivo+sm.meses;
         res.costeTotal=precio+sm.interes+comision-interesGanadoAhorro; res.tasaEfectiva=null;
@@ -4882,6 +4890,7 @@
       // La Tilgung/Tilgungsbeitrag salió de "Opciones avanzadas" a pedido explícito — el valor por
       // defecto (el mismo que ya traía cada campo) sigue usándose en el cálculo tal cual, solo que
       // ya no se ve ni se puede tocar desde aquí; confundía más de lo que ayudaba a explicar.
+      advanced+=inmuebleOptField(opt,'topeST','Tope anual de Sondertilgung (0 = sin tope)',cfg.topeST||0,'0.5','% del préstamo','min="0" max="100"');
       advanced+=inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
       if(opt==='banco'||opt==='refiBanco'){
         advanced+=inmuebleOptField(opt,'zinsbindung','Vigencia del tipo (Zinsbindung)',cfg.zinsbindung,'1','años','min="1" max="40"');
@@ -5238,7 +5247,7 @@
         body='<p class="inm-stress-lead"><span>Con este pago el banco se liquida dentro de la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>): no hay que refinanciar.</span></p>';
       } else {
         var pmt=rk.cuotaPrestamo, R=rk.restschuldZinsbindung||0, r0=cfgBanco.interesPrestamo||0;
-        var stS=Math.max(0,cfgBanco.sondertilgung||0);
+        var stS=Math.max(0,rk.sondertilgung||0);
         var intDurante=stS>0?simLoan(precio,r0,pmt,stS,0,zMeses).interes:Math.max(0,pmt*zMeses-(precio-R));
         function fmtTipo(x){ return String(Math.round(x*100)/100).replace('.',',')+'%'; }
         var tiles=[{r:Math.max(0,r0-1),now:false},{r:r0,now:true},{r:r0+2,now:false}].filter(function(t,i){ return i===1||Math.abs(t.r-r0)>0.001; }).map(function(t){
@@ -5284,8 +5293,8 @@
       // terminado de pagar solo, no se sigue pagando cuota en ese tramo — se limita al tiempo
       // que el crédito original realmente sigue vivo.
       var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
-      var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung});
-      var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung});
+      var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,topeST:refi.banco.topeST});
+      var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST});
       var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
       var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
       var maxMeses=Math.max(mesesHastaRefi+rBanco.mesesTotal,mesesHastaRefi+rEst.mesesTotal,1);
@@ -5304,6 +5313,7 @@
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
           (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
           (r.sondertilgung>0?'<div class="inm-res-line"><span>Con Sondertilgung de '+eur(r.sondertilgung)+'/año, intereses menos</span><b>'+eur(r.ahorroInteresST)+'</b></div><div class="inm-res-line"><span>Y terminas antes</span><b>'+fmtAnos(r.mesesAntesST)+'</b></div>':'')+
+          (r.topeAplicado?'<div class="inm-res-line inm-eff-hint"><span>Tope aplicado: como máximo '+eur(r.sondertilgung)+'/año</span></div>':'')+
           (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(costeAbs)+'</b></div>'+
           '<div class="inm-res-line save"><span>'+(ahorroVs>=0?'Menos intereses y comisiones que seguir igual':'Más intereses y comisiones que seguir igual')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>'+
@@ -5348,6 +5358,7 @@
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
           (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
           (r.sondertilgung>0?'<div class="inm-res-line"><span>Con Sondertilgung de '+eur(r.sondertilgung)+'/año, intereses menos</span><b>'+eur(r.ahorroInteresST)+'</b></div><div class="inm-res-line"><span>Y terminas antes</span><b>'+fmtAnos(r.mesesAntesST)+'</b></div>':'')+
+          (r.topeAplicado?'<div class="inm-res-line inm-eff-hint"><span>Tope aplicado: como máximo '+eur(r.sondertilgung)+'/año</span></div>':'')+
           (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
           '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(r.costeTotal)+'</b></div>'+
           (!isBanco?'<div class="inm-res-line save"><span>'+(dif>=0?'Menos intereses y comisiones que el banco':'Más intereses y comisiones que el banco')+'</span><b>'+eur(Math.abs(dif))+'</b></div>':'')+
