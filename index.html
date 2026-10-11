@@ -719,6 +719,8 @@
   .inm-pres-inner{position:absolute; transform-origin:top left; width:1000px}
   .inm-pres-inner .inm-headline{font-size:19px}
   .inm-pres-inner .inm-big b{font-size:38px}
+  .inm-pres-tipo{width:64px; font-family:'Fraunces',sans-serif; font-size:17px; font-weight:600; color:var(--navy); border:0; border-bottom:1px dashed var(--line-strong); background:transparent; padding:0 2px; text-align:right}
+  .inm-pres-tipo:focus{outline:0; border-bottom-color:var(--gold-deep)}
   .inm-pres-name{width:100%; font:inherit; font-size:11.5px; color:var(--navy); border:0; border-bottom:1px dashed var(--line-strong); background:transparent; padding:2px 0; margin-bottom:2px}
   .inm-pres-name:focus{outline:0; border-bottom-color:var(--gold-deep)}
   .inm-pres-ctl{display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-bottom:10px; font-size:13px; color:var(--muted)}
@@ -5292,7 +5294,7 @@
     }
     // mm/aaaa a N meses desde hoy — numérico a propósito (sin nombres de mes) para que no dependa del
     // idioma con el que se dibujó el bloque.
-    var _inmInicio='';
+    var _inmInicio='', _presRawTipo={};
     // Fecha de refinanciación (Comprar, mes y año) = mes de inicio + Zinsbindung del banco: es otra forma
     // de verla (misma fuente de verdad, banco.zinsbindung), no un dato aparte.
     function inmuebleFechaRefiYM(inm){
@@ -5348,7 +5350,7 @@
             inner='<div class="inm-res-line"><span>Plazo total</span><b>'+fmtAnos(zMeses+m2)+'</b></div>'+
                   '<div class="inm-res-line"><span>Intereses totales</span><b>'+eur(intDurante+intDesp)+'</b></div>';
           }
-          return '<div class="inm-stress-tile'+(t.now?' now':'')+'"><div class="inm-stress-head">'+(editable?'<input type="text" class="inm-pres-name" maxlength="40" data-pres-nombre="'+(t.i+1)+'" value="'+esc(t.n)+'" placeholder="'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'">':(t.n?'<span data-no-i18n>'+esc(t.n)+'</span>':'<span>'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'</span>'))+' <b>'+fmtTipo(r2)+'</b></div>'+inner+'</div>';
+          return '<div class="inm-stress-tile'+(t.now?' now':'')+'"><div class="inm-stress-head">'+(editable?'<input type="text" class="inm-pres-name" maxlength="40" data-pres-nombre="'+(t.i+1)+'" value="'+esc(t.n)+'" placeholder="'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'">':(t.n?'<span data-no-i18n>'+esc(t.n)+'</span>':'<span>'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'</span>'))+(editable?' <input type="text" inputmode="decimal" class="inm-pres-tipo" data-pres-tipo="'+(t.i+1)+'" value="'+esc(_presRawTipo[t.i+1]!=null?_presRawTipo[t.i+1]:String(Math.round(r2*100)/100).replace('.',','))+'"> %':' <b>'+fmtTipo(r2)+'</b>')+'</div>'+inner+'</div>';
         }).join('');
         body='<p class="inm-stress-lead"><span>Al terminar la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>), aún debes <b>'+eur(R)+'</b>.</span> <span>Ese saldo se refinancia al tipo que haya entonces.</span> <span>'+(tilesN===3?'Tres posibilidades':(tilesN===1?'Una posibilidad':(tilesN===2?'Dos posibilidades':(tilesN===4?'Cuatro posibilidades':'Cinco posibilidades'))))+'</span> <span>(no son pronósticos), '+(pagoPost>0?'con un pago mensual de':'con tu mismo pago de')+' <b>'+eur(pmt2)+'/mes</b>.</span></p>'+
           '<div class="inm-stress-grid">'+tiles+'</div>'+
@@ -6323,11 +6325,25 @@
     });
     document.getElementById('inm-pres-close').addEventListener('click', presClose);
     document.getElementById('inm-pres-inner').addEventListener('input', function(e){
+      var tt=e.target;
+      if(tt.hasAttribute&&tt.hasAttribute('data-pres-tipo')&&_presRec){
+        // Tipo del escenario editado en vivo: se guarda y la diapositiva se recalcula conservando lo que se
+        // está tecleando (p. ej. "3," no se reformatea) y el foco/cursor.
+        var kT=tt.getAttribute('data-pres-tipo'), vT=parseFloat(String(tt.value).replace(',','.'));
+        _presRawTipo[kT]=tt.value;
+        if(!isNaN(vT)&&vT>=0&&vT<=30){
+          var inmT=normalizeInmueble(_presRec), cfgT=(inmT.modo==='refi')?inmT.refi.banco:inmT.banco; cfgT['tipoPost'+kT]=vT;
+          var idxT=_presIdx; _presSlides=buildInmuebleSlides(_presRec); presShow(idxT); scheduleInmuebleSave();
+          var nT=document.querySelector('#inm-pres-inner [data-pres-tipo="'+kT+'"]'); if(nT){ nT.focus(); try{ nT.setSelectionRange(nT.value.length,nT.value.length); }catch(_){} }
+        }
+        return;
+      }
       var t=e.target; if(!t.hasAttribute||!t.hasAttribute('data-pres-nombre')||!_presRec) return;
       var inmN=normalizeInmueble(_presRec), cfgN=(inmN.modo==='refi')?inmN.refi.banco:inmN.banco, kN='nombrePost'+t.getAttribute('data-pres-nombre');
       if(t.value.trim()) cfgN[kN]=t.value; else delete cfgN[kN];
       scheduleInmuebleSave();
     });
+    document.getElementById('inm-pres-inner').addEventListener('focusout', function(e){ if(e.target.hasAttribute&&e.target.hasAttribute('data-pres-tipo')) delete _presRawTipo[e.target.getAttribute('data-pres-tipo')]; });
     document.getElementById('inm-pres-inner').addEventListener('click', function(e){
       var b=e.target.closest('[data-pres-n]'); if(!b||!_presRec) return;
       var inmP=normalizeInmueble(_presRec), cfgP=(inmP.modo==='refi')?inmP.refi.banco:inmP.banco;
