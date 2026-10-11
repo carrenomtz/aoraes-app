@@ -719,6 +719,8 @@
   .inm-pres-inner{position:absolute; transform-origin:top left; width:1000px}
   .inm-pres-inner .inm-headline{font-size:19px}
   .inm-pres-inner .inm-big b{font-size:38px}
+  .inm-pres-name{width:100%; font:inherit; font-size:11.5px; color:var(--navy); border:0; border-bottom:1px dashed var(--line-strong); background:transparent; padding:2px 0; margin-bottom:2px}
+  .inm-pres-name:focus{outline:0; border-bottom-color:var(--gold-deep)}
   .inm-pres-ctl{display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-bottom:10px; font-size:13px; color:var(--muted)}
   .inm-pres-ctl button{width:34px; height:34px; border-radius:50%; border:1px solid var(--line-strong); background:var(--surface); color:var(--navy); font-size:18px; font-weight:700; cursor:pointer}
   .inm-pres-ctl b{min-width:20px; text-align:center; font-size:18px; color:var(--navy)}
@@ -5320,7 +5322,7 @@
       var D={1:[r0+2],2:[r0,r0+2],3:[r0-1,r0,r0+2],4:[r0-1,r0,r0+2,r0+3],5:[r0-2,r0-1,r0,r0+2,r0+3]}[n].map(function(x){ return Math.max(0,x); });
       return D.map(function(d,i){ var v=cfg['tipoPost'+(i+1)]; return (v==null||isNaN(v))?d:Math.max(0,v); });
     }
-    function inmuebleStressHTML(precio,rk,cfgBanco){
+    function inmuebleStressHTML(precio,rk,cfgBanco,editable){
       var zMeses=Math.round((cfgBanco.zinsbindung||0)*12);
       if(!(zMeses>0)||!(precio>0)||!(rk.cuotaPrestamo>0)) return '';
       var body;
@@ -5334,7 +5336,7 @@
         var intDurante=stS>0?simLoan(precio,r0,pmt,stS,0,zMeses).interes:Math.max(0,pmt*zMeses-(precio-R));
         function fmtTipo(x){ return String(Math.round(x*100)/100).replace('.',',')+'%'; }
         var tilesN=inmuebleTiposPost(cfgBanco).length;
-        var tiles=inmuebleTiposPost(cfgBanco).map(function(r,i){ return {r:r,now:Math.abs(r-r0)<0.001,n:String(cfgBanco['nombrePost'+(i+1)]||'').trim()}; }).map(function(t){
+        var tiles=inmuebleTiposPost(cfgBanco).map(function(r,i){ return {i:i,r:r,now:Math.abs(r-r0)<0.001,n:String(cfgBanco['nombrePost'+(i+1)]||'').trim()}; }).map(function(t){
           var r2=t.r, rm=r2/100/12, cubre=(pmt2>R*rm+0.005);
           var inner;
           if(!cubre){
@@ -5346,7 +5348,7 @@
             inner='<div class="inm-res-line"><span>Plazo total</span><b>'+fmtAnos(zMeses+m2)+'</b></div>'+
                   '<div class="inm-res-line"><span>Intereses totales</span><b>'+eur(intDurante+intDesp)+'</b></div>';
           }
-          return '<div class="inm-stress-tile'+(t.now?' now':'')+'"><div class="inm-stress-head">'+(t.n?'<span data-no-i18n>'+esc(t.n)+'</span>':'<span>'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'</span>')+' <b>'+fmtTipo(r2)+'</b></div>'+inner+'</div>';
+          return '<div class="inm-stress-tile'+(t.now?' now':'')+'"><div class="inm-stress-head">'+(editable?'<input type="text" class="inm-pres-name" maxlength="40" data-pres-nombre="'+(t.i+1)+'" value="'+esc(t.n)+'" placeholder="'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'">':(t.n?'<span data-no-i18n>'+esc(t.n)+'</span>':'<span>'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'</span>'))+' <b>'+fmtTipo(r2)+'</b></div>'+inner+'</div>';
         }).join('');
         body='<p class="inm-stress-lead"><span>Al terminar la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>), aún debes <b>'+eur(R)+'</b>.</span> <span>Ese saldo se refinancia al tipo que haya entonces.</span> <span>'+(tilesN===3?'Tres posibilidades':(tilesN===1?'Una posibilidad':(tilesN===2?'Dos posibilidades':(tilesN===4?'Cuatro posibilidades':'Cinco posibilidades'))))+'</span> <span>(no son pronósticos), '+(pagoPost>0?'con un pago mensual de':'con tu mismo pago de')+' <b>'+eur(pmt2)+'/mes</b>.</span></p>'+
           '<div class="inm-stress-grid">'+tiles+'</div>'+
@@ -5420,7 +5422,7 @@
         rEst.mesesPrestamo,rEst.mesesPrestamo,Math.min((refi.banco.zinsbindung||0)*12,rBanco.mesesPrestamo),rBanco.mesesPrestamo);
       var cardsR='<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+row(estTitle,rEst,costeEstAbs,false,false)+'</div>';
       var stressR=inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco);
-      return asParts?{frase:frase,curva:curva,stress:stressR,cards:cardsR,rem:rem,fr:fr}:(frase+curva+stressR+cardsR);
+      return asParts?{frase:frase,curva:curva,stress:stressR,stressEdit:function(){ return inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,true); },cards:cardsR,rem:rem,fr:fr}:(frase+curva+stressR+cardsR);
     }
     function inmuebleResultsHTML(precio,inm,asParts){
       _inmInicio=inm.inicio||'';
@@ -5460,7 +5462,7 @@
         inmuebleCurvaSVG(precio,ptsEst,ptsBanco,marcaMeses,Math.round((inm.banco.zinsbindung||0)*12))+
         '<p class="inm-curve-note">'+(marcaMeses>0?'La línea de puntos dorada marca los '+(marcaMeses/12)+' años — el plazo al que un banco tradicional suele exigir refinanciación (Anschlussfinanzierung). ':'')+'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
         '</div>';
-      var parts={frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0),cuota:inmuebleCuotaSVG(rEst,rk,estTitle,bancoTitle),curva:curva,stress:inmuebleStressHTML(precio,rk,cfgBanco),
+      var parts={frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0),cuota:inmuebleCuotaSVG(rEst,rk,estTitle,bancoTitle),curva:curva,stress:inmuebleStressHTML(precio,rk,cfgBanco),stressEdit:function(){ return inmuebleStressHTML(precio,rk,cfgBanco,true); },
         cards:'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>',rEst:rEst,rk:rk,estCfg:estCfg};
       return asParts?parts:(parts.frase+parts.cuota+parts.curva+parts.stress+parts.cards);
     }
@@ -5646,7 +5648,7 @@
         var P=inmuebleRefiResultsHTML(inm.refi,true), rf=inm.refi;
         sl.push({t:'Tu crédito actual',h:inmuebleBigs([['Saldo pendiente hoy',eur(P.rem.saldoPendiente)],['Fecha de refinanciación',inmuebleFmtFecha(fechaRefiEfectiva(rf))],['Crédito original',eur(rf.importeOriginal)],['Interés original',inmuebleFmtPct(rf.interesOriginal)]])});
         sl.push({t:'Cuánto debes con el tiempo',h:P.curva});
-        if(P.stress) sl.push({t:'El banco y la Zinsbindung',h:presEscenariosCtl(rf.banco)+P.stress,stress:true});
+        if(P.stress) sl.push({t:'El banco y la Zinsbindung',h:presEscenariosCtl(rf.banco)+P.stressEdit(),stress:true});
         sl.push({t:'Comparación',h:P.frase+P.cards});
         sl.push({t:'Qué tener en cuenta',h:limits});
       } else {
@@ -5655,7 +5657,7 @@
         var cuotas=[]; if(rE.cuotaAhorro>0) cuotas.push(['Cuota ahorro',eur(rE.cuotaAhorro)+'/mes']); cuotas.push(['Cuota préstamo',eur(rE.cuotaPrestamo)+'/mes']); cuotas.push(['Banco directo',eur(rk.cuotaPrestamo)+'/mes']);
         sl.push({t:'Tu pago cada mes',h:inmuebleBigs(cuotas)+Q.cuota});
         sl.push({t:'Cuánto debes con el tiempo',h:Q.curva});
-        if(Q.stress) sl.push({t:'El banco y la Zinsbindung',h:presEscenariosCtl(inm.banco)+Q.stress,stress:true});
+        if(Q.stress) sl.push({t:'El banco y la Zinsbindung',h:presEscenariosCtl(inm.banco)+Q.stressEdit(),stress:true});
         sl.push({t:'Comparación',h:Q.frase+Q.cards});
         sl.push({t:'Qué tener en cuenta',h:limits});
       }
@@ -6320,6 +6322,12 @@
       openGenericAfa();
     });
     document.getElementById('inm-pres-close').addEventListener('click', presClose);
+    document.getElementById('inm-pres-inner').addEventListener('input', function(e){
+      var t=e.target; if(!t.hasAttribute||!t.hasAttribute('data-pres-nombre')||!_presRec) return;
+      var inmN=normalizeInmueble(_presRec), cfgN=(inmN.modo==='refi')?inmN.refi.banco:inmN.banco, kN='nombrePost'+t.getAttribute('data-pres-nombre');
+      if(t.value.trim()) cfgN[kN]=t.value; else delete cfgN[kN];
+      scheduleInmuebleSave();
+    });
     document.getElementById('inm-pres-inner').addEventListener('click', function(e){
       var b=e.target.closest('[data-pres-n]'); if(!b||!_presRec) return;
       var inmP=normalizeInmueble(_presRec), cfgP=(inmP.modo==='refi')?inmP.refi.banco:inmP.banco;
