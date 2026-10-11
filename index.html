@@ -3792,6 +3792,7 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Línea dorada del gráfico (años; 0 = ninguna)':'Gold chart line (years; 0 = none)',
       'Pago mensual de ahorro (0 = calculado; fija cuánto se ahorra hasta la refinanciación)':'Monthly saving payment (0 = calculated; sets how much is saved by the refinancing)',
       'Pago mensual de ahorro (0 = calculado; fija los años de ahorro)':'Monthly saving payment (0 = calculated; sets the saving years)','Pago mensual del préstamo (0 = calculado; fija el plazo)':'Monthly loan payment (0 = calculated; sets the term)',
       'Pago mensual antes de la Zinsbindung (0 = calculado)':'Monthly payment before the Zinsbindung (0 = calculated)',
@@ -4068,6 +4069,7 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Línea dorada del gráfico (años; 0 = ninguna)':'Goldene Linie im Diagramm (Jahre; 0 = keine)',
       'Pago mensual de ahorro (0 = calculado; fija cuánto se ahorra hasta la refinanciación)':'Monatliche Sparrate (0 = berechnet; legt fest, wie viel bis zur Anschlussfinanzierung gespart wird)',
       'Pago mensual de ahorro (0 = calculado; fija los años de ahorro)':'Monatliche Sparrate (0 = berechnet; legt die Sparjahre fest)','Pago mensual del préstamo (0 = calculado; fija el plazo)':'Monatliche Darlehensrate (0 = berechnet; legt die Laufzeit fest)',
       'Pago mensual antes de la Zinsbindung (0 = calculado)':'Monatliche Zahlung vor der Zinsbindung (0 = berechnet)',
@@ -4929,6 +4931,7 @@
       advanced+=inmuebleOptField(opt,'topeST','Tope anual de Sondertilgung (0 = sin tope)',cfg.topeST||0,'0.5','% del préstamo','min="0" max="100"');
       advanced+=inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
       if(opt==='banco'){
+        advanced+=inmuebleOptField(opt,'marcaAnios','Línea dorada del gráfico (años; 0 = ninguna)',cfg.marcaAnios==null?10:cfg.marcaAnios,'1','años','min="0" max="40"');
         advanced+=inmuebleOptField(opt,'pagoPost','Pago mensual tras la Zinsbindung (0 = el mismo)',cfg.pagoPost||0,'50','€/mes','min="0"');
         inmuebleTiposPost(cfg).forEach(function(v,i){ advanced+=inmuebleOptField(opt,'tipoPost'+(i+1),'Tipo posterior a la Zinsbindung · escenario '+(i+1),Math.round(v*100)/100,'0.1','%','min="0" max="20"');
           advanced+='<label class="inm-f"><span>Nombre del escenario '+(i+1)+'</span><span class="inm-inp-wrap"><input type="text" class="inm-inp" maxlength="40" data-inm-nombre="'+(i+1)+'" value="'+esc(cfg['nombrePost'+(i+1)]||'')+'" placeholder="Opcional"></span></label>'; });
@@ -5410,6 +5413,7 @@
       var bancoTitle=igual?'Banco directo · mismo pago mensual':'Banco directo';
       var maxMeses=Math.max(rEst.mesesTotal,rk.mesesTotal,1);
       var dif=rk.costeTotal-rEst.costeTotal;
+      var marcaMeses=Math.round((inm.banco.marcaAnios==null?10:Math.max(0,inm.banco.marcaAnios))*12);
       function row(title,r,isBanco){
         return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
@@ -5428,8 +5432,8 @@
       var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg), ptsBanco=inmuebleCurvaSaldo(precio,rk,cfgBanco);
       var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
         '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>'+esc(bancoTitle)+'</span></div></div>'+
-        inmuebleCurvaSVG(precio,ptsEst,ptsBanco,120,Math.round((inm.banco.zinsbindung||0)*12))+
-        '<p class="inm-curve-note">La línea de puntos dorada marca los 10 años — el plazo al que un banco tradicional suele exigir refinanciación (Anschlussfinanzierung). La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
+        inmuebleCurvaSVG(precio,ptsEst,ptsBanco,marcaMeses,Math.round((inm.banco.zinsbindung||0)*12))+
+        '<p class="inm-curve-note">'+(marcaMeses>0?'La línea de puntos dorada marca los '+(marcaMeses/12)+' años — el plazo al que un banco tradicional suele exigir refinanciación (Anschlussfinanzierung). ':'')+'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
         '</div>';
       var parts={frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0),cuota:inmuebleCuotaSVG(rEst,rk,estTitle,bancoTitle),curva:curva,stress:inmuebleStressHTML(precio,rk,cfgBanco),
         cards:'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>',rEst:rEst,rk:rk,estCfg:estCfg};
