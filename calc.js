@@ -60,6 +60,29 @@ function savingsQuota(target,annualRatePct,months){
   return target*r/(Math.pow(1+r,months)-1);
 }
 
+// Sonderzahlung anual en la fase de ahorro del Bausparvertrag: un pago extra al final de cada año
+// de ahorro (mes 12, 24, ...), además de la cuota mensual. Mismo convenio que la cuota: el pago se
+// hace a fin de mes y genera interés desde el mes siguiente.
+function sonderAhorroFV(sonder,annualRatePct,months){
+  var r=(annualRatePct||0)/100/12, fv=0;
+  if(!(sonder>0)) return 0;
+  for(var k=12;k<=months;k+=12) fv+=sonder*Math.pow(1+r,months-k);
+  return fv;
+}
+// Saldo ahorrado tras t meses con cuota mensual y Sonderzahlung anual (sin tope ni comisión).
+function ahorroSaldoEn(cuota,sonder,annualRatePct,t){
+  var r=(annualRatePct||0)/100/12, base=(Math.abs(r)<1e-9)?cuota*t:cuota*((Math.pow(1+r,t)-1)/r);
+  return base+sonderAhorroFV(sonder,annualRatePct,t);
+}
+// Cuota mensual para juntar `target` en `months` meses con una Sonderzahlung anual. Si la Sonderzahlung
+// por sí sola ya cubriría el 90 % del objetivo, se recorta proporcionalmente (la cuota nunca llega a 0)
+// y se devuelve la Sonderzahlung realmente aplicada.
+function ahorroCuotaConSonder(target,sonder,annualRatePct,months){
+  var S=Math.max(0,sonder||0), fv=sonderAhorroFV(S,annualRatePct,months), tope=target*0.9;
+  if(fv>tope && fv>0){ S=S*tope/fv; fv=tope; }
+  return {cuota:savingsQuota(Math.max(0,target-fv),annualRatePct,months),sonder:S,aportado:S*Math.floor(months/12)};
+}
+
 // Meses hasta amortizar del todo un préstamo con cuota FIJA conocida (en vez de fijar el
 // plazo y derivar la cuota, como hace annuityQuota): la fórmula inversa de una anualidad,
 // N = -ln(1 - P·r/M) / ln(1+r). Necesaria porque, tanto en un préstamo bancario alemán
@@ -110,26 +133,34 @@ function calcInmuebleOption(precio,cfg){
   // en consecuencia: tiene que cubrir el objetivo de ahorro Y la comisión, ya que esta se resta
   // del Guthaben nada más pagarla, antes de que pueda generar interés.
   var comisionAhorro=esBausparvertrag?precio*(cfg.comision||0)/100:0;
-  var cuotaAhorro=(pct>0&&mesesAhorro>0)?savingsQuota(objetivoAhorro+comisionAhorro,cfg.interesAhorro,mesesAhorro):0;
-  var interesGanadoAhorro=(pct>0&&mesesAhorro>0)?Math.max(0,objetivoAhorro+comisionAhorro-cuotaAhorro*mesesAhorro):0;
+  var sonderAhorro=(esBausparvertrag&&pct>0)?Math.max(0,cfg.sonderAhorro||0):0, sonderPedida=sonderAhorro;
+  var sc1=(pct>0&&mesesAhorro>0)?ahorroCuotaConSonder(objetivoAhorro+comisionAhorro,sonderAhorro,cfg.interesAhorro,mesesAhorro):{cuota:0,sonder:0,aportado:0};
+  var cuotaAhorro=sc1.cuota; sonderAhorro=sc1.sonder;
+  var interesGanadoAhorro=(pct>0&&mesesAhorro>0)?Math.max(0,objetivoAhorro+comisionAhorro-cuotaAhorro*mesesAhorro-sc1.aportado):0;
   // Refinanciar: el tiempo de ahorro es fijo (hasta la fecha de refinanciación), así que con un pago
   // fijado lo que cambia es CUÁNTO se ahorra (neto de la comisión, tope = el saldo) y, por tanto, el
   // préstamo que queda.
   if(esBausparvertrag && cfg.pagoAhorro>0 && cfg.ahorroPorTiempo && pct>0 && mesesAhorro>0){
-    var rR=(cfg.interesAhorro||0)/100/12, fvR=Math.abs(rR)<1e-9?cfg.pagoAhorro*mesesAhorro:cfg.pagoAhorro*((Math.pow(1+rR,mesesAhorro)-1)/rR);
+    sonderAhorro=sonderPedida;
+    var fvR=ahorroSaldoEn(cfg.pagoAhorro,sonderAhorro,cfg.interesAhorro,mesesAhorro), aportR=cfg.pagoAhorro*mesesAhorro+sonderAhorro*Math.floor(mesesAhorro/12);
     objetivoAhorro=Math.min(precio,Math.max(0,fvR-comisionAhorro)); capitalPrestamo=precio-objetivoAhorro;
-    cuotaAhorro=cfg.pagoAhorro; interesGanadoAhorro=Math.max(0,fvR-cfg.pagoAhorro*mesesAhorro);
+    cuotaAhorro=cfg.pagoAhorro; interesGanadoAhorro=Math.max(0,fvR-aportR);
   }
   // Pago mensual de ahorro fijado por el asesor (solo Bausparvertrag): en vez de derivarlo del plazo,
   // se simula cuánto tarda en juntarse objetivo+comisión con ese pago (último pago recortado) —
   // el plazo de ahorro pasa a ser el resultado.
   if(esBausparvertrag && cfg.pagoAhorro>0 && pct>0 && objetivoAhorro>0 && !cfg.ahorroPorTiempo){
     var Ta=objetivoAhorro+comisionAhorro, rA=(cfg.interesAhorro||0)/100/12, balA=0, nA=0, contribA=0;
-    while(balA<Ta-0.005 && nA<1200){ nA++; balA=balA*(1+rA); var pA=Math.min(cfg.pagoAhorro,Ta-balA); balA+=pA; contribA+=pA; }
+    sonderAhorro=sonderPedida;
+    while(balA<Ta-0.005 && nA<1200){
+      nA++; balA=balA*(1+rA); var pA=Math.min(cfg.pagoAhorro,Ta-balA); balA+=pA; contribA+=pA;
+      if(sonderAhorro>0 && nA%12===0 && balA<Ta-0.005){ var sA=Math.min(sonderAhorro,Ta-balA); balA+=sA; contribA+=sA; }
+    }
     mesesAhorro=nA; cuotaAhorro=cfg.pagoAhorro; interesGanadoAhorro=Math.max(0,Ta-contribA);
     if(!cfg.sinMinimoAhorro && nA<BAUSPAR_MIN_MESES){
       // Con ese pago se llegaría al objetivo antes del mínimo: el ahorro dura el mínimo y la cuota necesaria es la de ese plazo.
-      mesesAhorro=BAUSPAR_MIN_MESES; cuotaAhorro=savingsQuota(Ta,cfg.interesAhorro,BAUSPAR_MIN_MESES); interesGanadoAhorro=Math.max(0,Ta-cuotaAhorro*BAUSPAR_MIN_MESES); minAhorroAplicado=true;
+      var scM=ahorroCuotaConSonder(Ta,sonderPedida,cfg.interesAhorro,BAUSPAR_MIN_MESES);
+      mesesAhorro=BAUSPAR_MIN_MESES; cuotaAhorro=scM.cuota; sonderAhorro=scM.sonder; interesGanadoAhorro=Math.max(0,Ta-cuotaAhorro*BAUSPAR_MIN_MESES-scM.aportado); minAhorroAplicado=true;
     }
   }
   // Bausparvertrag (a/b/refiA/refiB): el Tilgungsbeitrag es un ‰ fijo de la Bausparsumme
@@ -172,7 +203,7 @@ function calcInmuebleOption(precio,cfg){
   var restschuldZinsbindung=(!esBausparvertrag&&cfg.zinsbindung!=null)
     ?balanceTrasMeses(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,Math.min(mesesPrestamo,Math.round((cfg.zinsbindung||0)*12)))
     :null;
-  var res={minAhorroAplicado:minAhorroAplicado,noAmortiza:(capitalPrestamo>0&&mesesPrestamo>=1200),objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal,restschuldZinsbindung:restschuldZinsbindung};
+  var res={sonderAhorro:sonderAhorro,sonderAhorroTope:(sonderAhorro<sonderPedida-0.5),minAhorroAplicado:minAhorroAplicado,noAmortiza:(capitalPrestamo>0&&mesesPrestamo>=1200),objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal,restschuldZinsbindung:restschuldZinsbindung};
   // Sondertilgung anual (banco y fase de préstamo del Bausparvertrag): un pago extra a capital cada 12 meses, con la cuota
   // mensual constante. Sin fórmula cerrada, así que se simula mes a mes y se sobrescribe plazo,
   // intereses, coste y Restschuld; se guarda también cuánto se ahorra frente a no hacerla.
@@ -308,11 +339,10 @@ function fechaRefiEfectiva(refi){
 // aplicado mes a mes en vez de a una única fecha.
 function inmuebleCurvaSaldo(precio,r,cfg){
   var paso=3, puntos=[];
-  var rateAhorroM=(cfg.interesAhorro||0)/100/12;
   for(var t=0;t<=r.mesesTotal;t+=paso){
     var pendiente;
     if(r.mesesAhorro>0 && t<=r.mesesAhorro){
-      var ahorroAcum=Math.abs(rateAhorroM)<1e-9?r.cuotaAhorro*t:r.cuotaAhorro*((Math.pow(1+rateAhorroM,t)-1)/rateAhorroM);
+      var ahorroAcum=ahorroSaldoEn(r.cuotaAhorro,r.sonderAhorro,cfg.interesAhorro,t);
       pendiente=precio-Math.min(ahorroAcum,r.objetivoAhorro);
     }else{
       var tp=t-r.mesesAhorro;
@@ -373,7 +403,6 @@ function inmuebleHitosRefi(refi,mesesHastaRefi,rEst,rBanco,ptsEst,ptsBanco){
 
 function inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rNew,cfgNew,tieneAhorroParalelo){
   var paso=3,puntos=[];
-  var rateAhorroM=(cfgNew.interesAhorro||0)/100/12;
   var totalMeses=mesesHastaRefi+rNew.mesesPrestamo;
   for(var t=0;t<=totalMeses;t+=paso){
     var pendiente;
@@ -382,7 +411,7 @@ function inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rNew,cfgNew,tieneAhorroP
       var saldoCredito=balanceTrasMeses(rem.saldoPendiente,refi.interesOriginal,rem.cuotaOriginal,tCredito);
       var ahorroAcum=0;
       if(tieneAhorroParalelo){
-        ahorroAcum=Math.abs(rateAhorroM)<1e-9?rNew.cuotaAhorro*t:rNew.cuotaAhorro*((Math.pow(1+rateAhorroM,t)-1)/rateAhorroM);
+        ahorroAcum=ahorroSaldoEn(rNew.cuotaAhorro,rNew.sonderAhorro,cfgNew.interesAhorro,t);
         ahorroAcum=Math.min(ahorroAcum,rNew.objetivoAhorro);
       }
       pendiente=saldoCredito-ahorroAcum;
@@ -544,4 +573,4 @@ function inmuebleToggleCurvaTipo(inm,r){
   var off=(inm.curvaOff||[]).slice(), i=off.indexOf(r); if(i>=0) off.splice(i,1); else off.push(r); inm.curvaOff=off;
 }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble }; }

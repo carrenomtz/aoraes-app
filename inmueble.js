@@ -43,6 +43,7 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
     // que va aquí, no escondido. Por debajo se sigue guardando como Tilgungsbeitrag fijo en ‰;
     // ver bausparPlazoActual() y el manejador de data-inm-plazo más abajo.
     basic+='<label class="inm-f"><span>Plazo del préstamo</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" data-inm-opt="'+opt+'" data-inm-plazo="1" value="'+bausparPlazoActual(bausparsumme,cfg)+'" step="0.5" min="1" max="40"><span class="inm-suf">años</span></span></label></div>';
+    advanced+=inmuebleOptField(opt,'sonderAhorro','Sonderzahlung anual durante el ahorro (0 = ninguna)',cfg.sonderAhorro||0,'500','€/año','min="0"');
     advanced+=inmuebleOptField(opt,'interesAhorro','Interés del ahorro',cfg.interesAhorro,'0.01','%','min="0" max="20"');
     // Aviso: el Guthabenzins de un Bausparvertrag ronda el 0,05 %; más de 0,5 % suele ser el interés del préstamo escrito en el campo equivocado.
     advanced+='<div class="inm-warn inm-warn-ahorro"'+((cfg.interesAhorro>0.5)?'':' hidden')+'><span>Un interés del ahorro superior al 0,5 % es poco habitual en un Bausparvertrag.</span> <span>¿Lo has confundido con el interés del préstamo?</span><div class="inm-quick"><span>Valor habitual</span><button type="button" data-inm-quickfield="interesAhorro" data-inm-quickval="0.05">0,05 %</button></div></div>';
@@ -363,7 +364,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
   // que el crédito original realmente sigue vivo.
   var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
   var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
-  var rEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
+  var rEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,sonderAhorro:estCfg.sonderAhorro,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
   var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
   var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
   var maxMeses=Math.max(mesesHastaRefi+rBanco.mesesTotal,mesesHastaRefi+rEst.mesesTotal,1);
@@ -378,6 +379,8 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
     var ahorroVs=rem.costeTotalSeguirIgual-costeAbs;
     return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
       (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
+      (r.cuotaAhorro>0&&r.sonderAhorro>0?'<div class="inm-res-line"><span>Sonderzahlung anual del ahorro</span><b>'+eur(r.sonderAhorro)+'/año</b></div>':'')+
+      (r.sonderAhorroTope?'<div class="inm-res-line inm-eff-hint"><span>La Sonderzahlung se ha recortado: por sí sola cubriría casi todo el ahorro.</span></div>':'')+
       '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
       ((!isBanco&&r.cuotaAhorro>0&&mesesHastaRefi<BAUSPAR_MIN_MESES)?'<div class="inm-res-warn"><span>Faltan menos de '+String(BAUSPAR_MIN_ANIOS).replace('.',',')+' años hasta la refinanciación: el Bausparvertrag no puede activarse antes.</span> <span>Esta comparación solo es realizable con una fecha de refinanciación posterior.</span></div>':'')+
       (r.noAmortiza?'<div class="inm-res-warn"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span> <span>Los años y los intereses son solo el tope del cálculo.</span></div>':'')+
@@ -436,6 +439,8 @@ function inmuebleResultsHTML(precio,inm,asParts){
   function row(title,r,isBanco){
     return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
       (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
+      (r.cuotaAhorro>0&&r.sonderAhorro>0?'<div class="inm-res-line"><span>Sonderzahlung anual del ahorro</span><b>'+eur(r.sonderAhorro)+'/año</b></div>':'')+
+      (r.sonderAhorroTope?'<div class="inm-res-line inm-eff-hint"><span>La Sonderzahlung se ha recortado: por sí sola cubriría casi todo el ahorro.</span></div>':'')+
       '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
       (r.minAhorroAplicado?'<div class="inm-res-line inm-eff-hint"><span>El Bausparvertrag no se puede activar antes de '+String(BAUSPAR_MIN_ANIOS).replace('.',',')+' años: se usa ese mínimo.</span></div>':'')+
       (r.noAmortiza?'<div class="inm-res-warn"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span> <span>Los años y los intereses son solo el tope del cálculo.</span></div>':'')+

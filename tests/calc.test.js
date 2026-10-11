@@ -252,6 +252,49 @@ test('apagar/encender un tipo', () => {
   engine.inmuebleToggleCurvaTipo(inm, 4); assert.deepStrictEqual(inm.curvaOff, [5]);
 });
 
+console.log('Sonderzahlung en la fase de ahorro');
+const sonderBase = { pct: 40, anios: 5, interesAhorro: 1, comision: 1.6, tilgungsbeitragPerMille: 6, interesPrestamo: 2 };
+function simAhorro(cuota, sonder, rate, meses) { // simulación independiente mes a mes
+  let b = 0; for (let m = 1; m <= meses; m++) { b *= 1 + rate / 1200; b += cuota; if (sonder > 0 && m % 12 === 0) b += sonder; } return b;
+}
+test('cuota derivada: con Sonderzahlung anual se llega al objetivo y la cuota baja', () => {
+  const r0 = engine.calcInmuebleOption(300000, sonderBase);
+  const r1 = engine.calcInmuebleOption(300000, Object.assign({}, sonderBase, { sonderAhorro: 2000 }));
+  assert(r1.cuotaAhorro < r0.cuotaAhorro, 'la cuota no baja');
+  near(simAhorro(r1.cuotaAhorro, 2000, 1, 60), r1.objetivoAhorro + 300000 * 0.016, 0.5, 'ahorro final');
+  near(r0.sonderAhorro, 0, 1e-9); near(r1.sonderAhorro, 2000, 1e-9);
+  near(r1.interesGanadoAhorro, simAhorro(r1.cuotaAhorro, 2000, 1, 60) - (r1.cuotaAhorro * 60 + 2000 * 5), 0.5, 'interés ganado');
+});
+test('sin Sonderzahlung el resultado no cambia', () => {
+  const a = engine.calcInmuebleOption(300000, sonderBase), b = engine.calcInmuebleOption(300000, Object.assign({}, sonderBase, { sonderAhorro: 0 }));
+  near(a.cuotaAhorro, b.cuotaAhorro, 1e-9); near(a.costeTotal, b.costeTotal, 1e-6);
+});
+test('pago mensual fijado: la Sonderzahlung acorta el ahorro', () => {
+  const cfg = Object.assign({}, sonderBase, { pagoAhorro: 1500 });
+  const r0 = engine.calcInmuebleOption(300000, cfg), r1 = engine.calcInmuebleOption(300000, Object.assign({}, cfg, { sonderAhorro: 4000 }));
+  assert(r1.mesesAhorro < r0.mesesAhorro, 'no se acorta: ' + r1.mesesAhorro + ' vs ' + r0.mesesAhorro);
+  const obj = 120000 + 300000 * 0.016; // objetivo + comisión
+  assert(simAhorro(1500, 4000, 1, r1.mesesAhorro - 1) < obj - 0.5, 'ya se llegaba un mes antes');
+  assert(simAhorro(1500, 4000, 1, r1.mesesAhorro) >= obj - 0.5, 'no se llega en el mes indicado');
+});
+test('Sonderzahlung desmedida: se recorta y la cuota no llega a 0', () => {
+  const r = engine.calcInmuebleOption(300000, Object.assign({}, sonderBase, { sonderAhorro: 100000 }));
+  assert(r.cuotaAhorro > 0, 'cuota 0'); assert(r.sonderAhorroTope === true, 'sin aviso'); assert(r.sonderAhorro < 100000, 'no recortada');
+  near(simAhorro(r.cuotaAhorro, r.sonderAhorro, 1, 60), r.objetivoAhorro + 300000 * 0.016, 0.5, 'ahorro final');
+});
+test('Refinanciar (pago fijo, tiempo fijo): el ahorro acumulado incluye la Sonderzahlung', () => {
+  const cfg = Object.assign({}, sonderBase, { sinMinimoAhorro: true, anios: 4, pagoAhorro: 800, ahorroPorTiempo: true, sonderAhorro: 3000 });
+  const r = engine.calcInmuebleOption(250000, cfg);
+  near(r.objetivoAhorro, Math.min(250000, simAhorro(800, 3000, 1, 48) - 250000 * 0.016), 0.5, 'ahorro acumulado');
+});
+test('la curva de saldo usa el ahorro con Sonderzahlung', () => {
+  const cfg = Object.assign({}, sonderBase, { sonderAhorro: 2000 });
+  const r = engine.calcInmuebleOption(300000, cfg), pts = engine.inmuebleCurvaSaldo(300000, r, cfg);
+  const p24 = pts.find(p => p.meses === 24);
+  assert(p24, 'sin punto en el mes 24');
+  near(p24.pendiente, 300000 - simAhorro(r.cuotaAhorro, 2000, 1, 24), 1, 'saldo mes 24');
+});
+
 console.log('Refinanciar');
 test('saldo e interés restante de un crédito existente igual que el calendario', () => {
   const refi = { importeOriginal: 200000, interesOriginal: 3, plazoOriginal: 25, fechaInicio: engine.isoDateYearsAgo(5) };
