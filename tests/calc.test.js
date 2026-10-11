@@ -11,9 +11,11 @@ const html = fs.readFileSync(process.env.IDX || path.join(__dirname, '..', 'inde
 const a = html.indexOf('function annuityQuota(');
 const b = html.indexOf('// ---------- Amortización (AfA)');
 assert(a > 0 && b > a, 'No se encontró el motor en index.html (marcadores cambiados)');
-const engine = new Function(html.slice(a, b) +
+const f1 = html.indexOf('function inmuebleFin('), f2 = html.indexOf('function inmuebleFinLine(');
+assert(f1 > 0 && f2 > f1, 'No se encontró inmuebleFin en index.html');
+const engine = new Function(html.slice(a, b) + html.slice(f1, f2) +
   '\nreturn {annuityQuota,effectiveAnnualRate,savingsQuota,monthsToPayoff,simLoan,calcInmuebleOption,' +
-  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo};')();
+  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin};')();
 
 let passed = 0, failed = 0;
 const gaps = [];
@@ -137,6 +139,20 @@ test('intereses de la fase de préstamo dentro del 1,5 % de los del contrato (13
 test('interés efectivo del banco sin comisión = nominal anualizado (4 % → 4,074 %)', () => {
   const c = engine.calcInmuebleOption(330000, { pct: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 });
   near(c.tasaEfectiva * 100, (Math.pow(1 + 0.04 / 12, 12) - 1) * 100, 0.001);
+});
+
+console.log('Importe a financiar (precio + gastos de compra - capital propio)')
+test('sin gastos ni capital propio el importe a financiar es el precio (comportamiento de siempre)', () => {
+  assert.strictEqual(engine.inmuebleFin({ precio: 300000 }), 300000);
+});
+test('300.000 € + 10 % de gastos - 30.000 € de capital propio = 300.000 €; 330.000 € financiando los gastos', () => {
+  assert.strictEqual(engine.inmuebleFin({ precio: 300000, gastosPct: 10, capitalPropio: 30000 }), 300000);
+  assert.strictEqual(engine.inmuebleFin({ precio: 300000, gastosPct: 10, capitalPropio: 0 }), 330000);
+});
+test('si el capital propio cubre todo, no hay nada que financiar y no salen valores negativos', () => {
+  assert.strictEqual(engine.inmuebleFin({ precio: 300000, gastosPct: 10, capitalPropio: 400000 }), 0);
+  const c = engine.calcInmuebleOption(0, { pct: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 });
+  assert.strictEqual(c.cuotaPrestamo, 0); assert.strictEqual(c.noAmortiza, false);
 });
 
 console.log('Cubrir la deuda pendiente de la Zinsbindung con un Bausparvertrag')
