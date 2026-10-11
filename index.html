@@ -777,6 +777,7 @@
   .inm-pres-pago:focus{outline:0; border-bottom-color:var(--gold-deep)}
   .inm-pres-name{width:100%; font:inherit; font-size:11.5px; color:var(--navy); border:0; border-bottom:1px dashed var(--line-strong); background:transparent; padding:2px 0; margin-bottom:2px}
   .inm-pres-name:focus{outline:0; border-bottom-color:var(--gold-deep)}
+  .inm-stress-ctl{margin:0 0 -4px}
   .inm-pres-ctl{display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-bottom:10px; font-size:13px; color:var(--muted)}
   .inm-pres-ctl button{width:34px; height:34px; border-radius:50%; border:1px solid var(--line-strong); background:var(--surface); color:var(--navy); font-size:18px; font-weight:700; cursor:pointer}
   .inm-pres-ctl b{min-width:20px; text-align:center; font-size:18px; color:var(--navy)}
@@ -5526,7 +5527,7 @@
       var stressR=inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,false,estCfg);
       var capR=inm?inmuebleCapacidadHTML(inm,saldoAtRefi,[['Tu crédito actual',rem.cuotaOriginal],['Refinanciar con banco',rBanco.cuotaPrestamo],['Badenia · ahorro',rEst.cuotaAhorro],['Badenia · préstamo',rEst.cuotaPrestamo]]):'';
       var tabla=inmuebleTablaAnualRefi(rem,refi,mesesHastaRefi,rBanco,rEst,estCfg,30), tablaPres=inmuebleTablaAnualRefi(rem,refi,mesesHastaRefi,rBanco,rEst,estCfg,16), tablaInf=inmuebleTablaAnualRefi(rem,refi,mesesHastaRefi,rBanco,rEst,estCfg,12);
-      return asParts?{frase:frase,capacidad:capR,tabla:tabla,tablaPres:tablaPres,tablaInf:tablaInf,curva:curva,stress:stressR,stressEdit:function(m,sh){ return inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,m||true,estCfg,sh); },hedge:inmuebleHedgeHTML(rBanco.restschuldZinsbindung||0,Math.round((refi.banco.zinsbindung||0)*12),estCfg),cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+capR+curva+tabla+stressR+cardsR);
+      return asParts?{frase:frase,capacidad:capR,tabla:tabla,tablaPres:tablaPres,tablaInf:tablaInf,curva:curva,stress:stressR,stressEdit:function(m,sh){ return inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,m||true,estCfg,sh); },hedge:inmuebleHedgeHTML(rBanco.restschuldZinsbindung||0,Math.round((refi.banco.zinsbindung||0)*12),estCfg),cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+capR+curva+tabla+(stressR?'<div class="inm-stress-ctl">'+presEscenariosCtl(refi.banco)+'</div>'+stressR:'')+cardsR);
     }
     function inmuebleResultsHTML(precio,inm,asParts){
       _inmInicio=inm.inicio||'';
@@ -5569,7 +5570,7 @@
         '</div>';
       var parts={frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0),capacidad:inmuebleCapacidadHTML(inm,precio,[['Banco directo',rk.cuotaPrestamo],['Bausparvertrag · ahorro',rEst.cuotaAhorro],['Bausparvertrag · préstamo',rEst.cuotaPrestamo]]),curva:curva,tabla:inmuebleTablaAnual(precio,rEst,estCfg,rk,cfgBanco,Math.round((inm.banco.zinsbindung||0)*12),30),tablaPres:inmuebleTablaAnual(precio,rEst,estCfg,rk,cfgBanco,Math.round((inm.banco.zinsbindung||0)*12),16),tablaInf:inmuebleTablaAnual(precio,rEst,estCfg,rk,cfgBanco,Math.round((inm.banco.zinsbindung||0)*12),12),stress:inmuebleStressHTML(precio,rk,cfgBanco,false,estCfg),stressEdit:function(m){ return inmuebleStressHTML(precio,rk,cfgBanco,m||true,estCfg); },
         cards:'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>',rEst:rEst,rk:rk,estCfg:estCfg};
-      return asParts?parts:(parts.frase+parts.capacidad+parts.curva+parts.tabla+parts.stress+parts.cards);
+      return asParts?parts:(parts.frase+parts.capacidad+parts.curva+parts.tabla+(parts.stress?'<div class="inm-stress-ctl">'+presEscenariosCtl(inm.banco)+'</div>'+parts.stress:'')+parts.cards);
     }
     // Fichas guardadas con el esquema anterior (plazoPrestamo en años + anualidad) migran a la
     // cuota fija real (Tilgung inicial % para banco, Tilgungsbeitrag ‰ para Bausparvertrag) SIN
@@ -6709,6 +6710,15 @@
         var afaC=normalizeAfa(wsRec); afaC[afaChk.getAttribute('data-afa-check')]=afaChk.checked;
         var secAfaC=document.getElementById('sec-afa'); if(secAfaC) secAfaC.innerHTML=afaBlock(wsRec);
         scheduleAfaSave();
+        return;
+      }
+      var nEsc=e.target.closest('#inm-results-wrap [data-pres-n]'); if(nEsc){
+        // Número de escenarios (1-5) desde la propia pantalla de resultados: mismo campo que "Opciones avanzadas", la presentación y el informe.
+        if(!wsRec||!wsRec.inmueble) return;
+        var inmNE=normalizeInmueble(wsRec), cfgNE=(inmNE.modo==='refi')?inmNE.refi.banco:inmNE.banco;
+        cfgNE.numEscenarios=Math.max(1,Math.min(5,inmuebleNumEscenarios(cfgNE)+(+nEsc.getAttribute('data-pres-n'))));
+        var fNE=document.querySelector('[data-inm-opt="'+((inmNE.modo==='refi')?'refiBanco':'banco')+'"][data-inm-field="numEscenarios"]'); if(fNE) fNE.value=cfgNE.numEscenarios;
+        refreshInmuebleResults(); scheduleInmuebleSave();
         return;
       }
       var inmAdvBtn=e.target.closest('#inm-adv-btn'); if(inmAdvBtn){
