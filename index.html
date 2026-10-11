@@ -3855,6 +3855,7 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'El Bausparvertrag no se puede activar antes de {0} años: se usa ese mínimo.':'The Bausparvertrag cannot be activated before {0} years: that minimum is used.','Faltan menos de {0} años hasta la refinanciación: el Bausparvertrag no puede activarse antes.':'There are less than {0} years until the refinancing: the Bausparvertrag cannot be activated earlier.','Esta comparación solo es realizable con una fecha de refinanciación posterior.':'This comparison is only feasible with a later refinancing date.','Años de ahorro (mínimo {0})':'Years of saving (minimum {0})',
       'Capacidad de pago':'Affordability','Ingreso neto mensual del hogar (opcional)':'Household net monthly income (optional)','Ingreso neto mensual del hogar':'Household net monthly income','Límite de la cuota (% del ingreso)':'Payment limit (% of income)','Cuota máxima recomendada':'Maximum recommended payment','Préstamo orientativo (sueldo neto anual × 8)':'Indicative loan (annual net salary × 8)','Cuota mensual':'Monthly payment','Del ingreso':'Of income','Estado':'Status','Dentro':'Within','Ajustado':'Tight','Por encima':'Above','Bausparvertrag · ahorro':'Bausparvertrag · saving','Bausparvertrag · préstamo':'Bausparvertrag · loan','Regla orientativa: la vivienda no debería pasar del 30–35 % del ingreso neto del hogar, y además de la cuota hay seguros, Grundsteuer y otros gastos.':'Rule of thumb: housing should not exceed 30–35 % of the household net income, and besides the payment there is insurance, Grundsteuer and other costs.','No sustituye el análisis de solvencia del banco.':'It does not replace the bank\'s creditworthiness check.',
       'Gastos de compra (% del precio · típico 7–12 %)':'Purchase costs (% of the price · typically 7–12 %)','Capital propio':'Own capital','Gastos de compra':'Purchase costs','Importe a financiar':'Amount to finance','Con ese capital propio no hay nada que financiar.':'With that own capital there is nothing to finance.','No incluye alquiler, revalorización, impuestos ni lo que rendiría el ahorro en otra parte; los gastos de compra y el capital propio indicados solo cambian el importe a financiar.':'Does not include rent, appreciation, taxes or what the savings would earn elsewhere; the purchase costs and own capital entered only change the amount to finance.',
       'Opción de Bausparvertrag':'Bausparvertrag option',
@@ -4147,6 +4148,7 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'El Bausparvertrag no se puede activar antes de {0} años: se usa ese mínimo.':'Der Bausparvertrag kann nicht vor {0} Jahren zugeteilt werden: Es wird diese Mindestdauer verwendet.','Faltan menos de {0} años hasta la refinanciación: el Bausparvertrag no puede activarse antes.':'Bis zur Umschuldung sind es weniger als {0} Jahre: Der Bausparvertrag kann nicht früher zugeteilt werden.','Esta comparación solo es realizable con una fecha de refinanciación posterior.':'Dieser Vergleich ist nur mit einem späteren Umschuldungsdatum umsetzbar.','Años de ahorro (mínimo {0})':'Sparjahre (Mindestdauer {0})',
       'Capacidad de pago':'Finanzierbarkeit','Ingreso neto mensual del hogar (opcional)':'Monatliches Haushaltsnettoeinkommen (optional)','Ingreso neto mensual del hogar':'Monatliches Haushaltsnettoeinkommen','Límite de la cuota (% del ingreso)':'Ratenobergrenze (% des Einkommens)','Cuota máxima recomendada':'Maximal empfohlene Rate','Préstamo orientativo (sueldo neto anual × 8)':'Orientierungsdarlehen (Jahresnettogehalt × 8)','Cuota mensual':'Monatliche Rate','Del ingreso':'Vom Einkommen','Estado':'Status','Dentro':'Im Rahmen','Ajustado':'Knapp','Por encima':'Darüber','Bausparvertrag · ahorro':'Bausparvertrag · Sparrate','Bausparvertrag · préstamo':'Bausparvertrag · Darlehensrate','Regla orientativa: la vivienda no debería pasar del 30–35 % del ingreso neto del hogar, y además de la cuota hay seguros, Grundsteuer y otros gastos.':'Faustregel: Die Wohnkosten sollten 30–35 % des Haushaltsnettoeinkommens nicht übersteigen; zusätzlich fallen Versicherungen, Grundsteuer und weitere Kosten an.','No sustituye el análisis de solvencia del banco.':'Ersetzt nicht die Bonitätsprüfung der Bank.',
       'Gastos de compra (% del precio · típico 7–12 %)':'Kaufnebenkosten (% des Preises · üblich 7–12 %)','Capital propio':'Eigenkapital','Gastos de compra':'Kaufnebenkosten','Importe a financiar':'Finanzierungsbetrag','Con ese capital propio no hay nada que financiar.':'Mit diesem Eigenkapital muss nichts finanziert werden.','No incluye alquiler, revalorización, impuestos ni lo que rendiría el ahorro en otra parte; los gastos de compra y el capital propio indicados solo cambian el importe a financiar.':'Nicht enthalten: Miete, Wertsteigerung, Steuern und die Erträge der Ersparnisse anderswo; die angegebenen Kaufnebenkosten und das Eigenkapital ändern nur den Finanzierungsbetrag.',
       'Opción de Bausparvertrag':'Bausparvertrag-Option',
@@ -4669,6 +4671,9 @@
       if(Math.abs(r)<1e-9) return principal/months;
       return principal*r/(1-Math.pow(1+r,-months));
     }
+    // Un Bausparvertrag no se puede activar (Zuteilung) antes de un tiempo mínimo de ahorro: 3,6 años. Ningún cálculo de Comprar baja de ahí
+    // (ni por los años escritos ni por un pago de ahorro alto); en Refinanciar no se recalcula, se avisa (cfg.sinMinimoAhorro).
+    var BAUSPAR_MIN_ANIOS=3.6, BAUSPAR_MIN_MESES=Math.round(BAUSPAR_MIN_ANIOS*12);
     // Interés efectivo anual del préstamo (Effektiver Jahreszins, el que exige declarar la
     // PAngV alemana junto al nominal): la tasa que iguala lo que el cliente REALMENTE recibe
     // (el capital menos la comisión de apertura, que se descuenta como un Disagio/
@@ -4744,6 +4749,8 @@
       var capitalPrestamo=precio-objetivoAhorro;
       var mesesAhorro=Math.max(0,Math.round((cfg.anios||0)*12));
       var esBausparvertrag=(cfg.tilgungsbeitragPerMille!=null);
+      var minAhorroAplicado=false;
+      if(esBausparvertrag && pct>0 && !cfg.sinMinimoAhorro && mesesAhorro<BAUSPAR_MIN_MESES){ mesesAhorro=BAUSPAR_MIN_MESES; minAhorroAplicado=true; }
       // La Abschlussgebühr de un Bausparvertrag se cobra sobre la Bausparsumme (aquí, precio) y se
       // descuenta de golpe contra los primeros ahorros, no al final contra el préstamo — así lo
       // hacen las Bausparkassen reales (confirmado contra un extracto de amortización real: el
@@ -4768,6 +4775,10 @@
         var Ta=objetivoAhorro+comisionAhorro, rA=(cfg.interesAhorro||0)/100/12, balA=0, nA=0, contribA=0;
         while(balA<Ta-0.005 && nA<1200){ nA++; balA=balA*(1+rA); var pA=Math.min(cfg.pagoAhorro,Ta-balA); balA+=pA; contribA+=pA; }
         mesesAhorro=nA; cuotaAhorro=cfg.pagoAhorro; interesGanadoAhorro=Math.max(0,Ta-contribA);
+        if(!cfg.sinMinimoAhorro && nA<BAUSPAR_MIN_MESES){
+          // Con ese pago se llegaría al objetivo antes del mínimo: el ahorro dura el mínimo y la cuota necesaria es la de ese plazo.
+          mesesAhorro=BAUSPAR_MIN_MESES; cuotaAhorro=savingsQuota(Ta,cfg.interesAhorro,BAUSPAR_MIN_MESES); interesGanadoAhorro=Math.max(0,Ta-cuotaAhorro*BAUSPAR_MIN_MESES); minAhorroAplicado=true;
+        }
       }
       // Bausparvertrag (a/b/refiA/refiB): el Tilgungsbeitrag es un ‰ fijo de la Bausparsumme
       // (aquí, precio), independiente del tipo pactado — así lo hacen las Bausparkassen reales
@@ -4809,7 +4820,7 @@
       var restschuldZinsbindung=(!esBausparvertrag&&cfg.zinsbindung!=null)
         ?balanceTrasMeses(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,Math.min(mesesPrestamo,Math.round((cfg.zinsbindung||0)*12)))
         :null;
-      var res={noAmortiza:(capitalPrestamo>0&&mesesPrestamo>=1200),objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal,restschuldZinsbindung:restschuldZinsbindung};
+      var res={minAhorroAplicado:minAhorroAplicado,noAmortiza:(capitalPrestamo>0&&mesesPrestamo>=1200),objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal,restschuldZinsbindung:restschuldZinsbindung};
       // Sondertilgung anual (banco y fase de préstamo del Bausparvertrag): un pago extra a capital cada 12 meses, con la cuota
       // mensual constante. Sin fórmula cerrada, así que se simula mes a mes y se sobrescribe plazo,
       // intereses, coste y Restschuld; se guarda también cuánto se ahorra frente a no hacerla.
@@ -4960,7 +4971,7 @@
         // (migrateBausparTilgungsbeitrag) deriva el ‰ correspondiente a este plazo la primera vez
         // que se carga — así el plazo por defecto es siempre 10 años, sin importar precio/interés,
         // en vez de un ‰ fijo que da un plazo distinto según el escenario.
-        a:{pct:40,anios:3.5,interesAhorro:0.05,interesPrestamo:1.75,plazoPrestamo:10,comision:1.6},
+        a:{pct:40,anios:3.6,interesAhorro:0.05,interesPrestamo:1.75,plazoPrestamo:10,comision:1.6},
         b:{pct:50,anios:5,interesAhorro:0.05,interesPrestamo:0.95,plazoPrestamo:10,comision:1.6},
         banco:{pct:0,anios:0,interesAhorro:0,interesPrestamo:3.5,tilgungInicial:2,comision:0,zinsbindung:10},
         refi:{
@@ -5024,7 +5035,7 @@
       }
       if(withAhorro){
         basic+='<div class="inm-adv">'+inmuebleOptField(opt,'pct','% ahorrado',cfg.pct,'1','%','min="0" max="100"');
-        if(withAnios) basic+=inmuebleOptField(opt,'anios','Años de ahorro',cfg.anios,'1','años','min="0" max="40"');
+        if(withAnios) basic+=inmuebleOptField(opt,'anios','Años de ahorro (mínimo '+String(BAUSPAR_MIN_ANIOS).replace('.',',')+')',cfg.anios,'0.1','años','min="3.6" max="40"');
         // Lo básico que se ve sin abrir "Opciones avanzadas": cuánto dura el ahorro (mínimo real,
         // normalmente 3,5 años) y cuánto dura el préstamo — este último SÍ lo elige el cliente, así
         // que va aquí, no escondido. Por debajo se sigue guardando como Tilgungsbeitrag fijo en ‰;
@@ -5433,7 +5444,7 @@
       // que el crédito original realmente sigue vivo.
       var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
       var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
-      var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
+      var rEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
       var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
       var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
       var maxMeses=Math.max(mesesHastaRefi+rBanco.mesesTotal,mesesHastaRefi+rEst.mesesTotal,1);
@@ -5449,6 +5460,7 @@
         return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
           '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
+          ((!isBanco&&r.cuotaAhorro>0&&mesesHastaRefi<BAUSPAR_MIN_MESES)?'<div class="inm-res-warn"><span>Faltan menos de '+String(BAUSPAR_MIN_ANIOS).replace('.',',')+' años hasta la refinanciación: el Bausparvertrag no puede activarse antes.</span> <span>Esta comparación solo es realizable con una fecha de refinanciación posterior.</span></div>':'')+
           (r.noAmortiza?'<div class="inm-res-warn"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span> <span>Los años y los intereses son solo el tope del cálculo.</span></div>':'')+
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
           (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
@@ -5499,6 +5511,7 @@
         return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
           '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
+          (r.minAhorroAplicado?'<div class="inm-res-line inm-eff-hint"><span>El Bausparvertrag no se puede activar antes de '+String(BAUSPAR_MIN_ANIOS).replace('.',',')+' años: se usa ese mínimo.</span></div>':'')+
           (r.noAmortiza?'<div class="inm-res-warn"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span> <span>Los años y los intereses son solo el tope del cálculo.</span></div>':'')+
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
           (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
@@ -5584,6 +5597,7 @@
       if(!rec.inmueble) rec.inmueble=defaultInmueble();
       var inm=rec.inmueble, def=defaultInmueble();
       if(!inm.modo) inm.modo='compra';
+      [inm.a,inm.b].forEach(function(c){ if(c&&c.anios!=null&&c.anios<BAUSPAR_MIN_ANIOS) c.anios=BAUSPAR_MIN_ANIOS; });
       if(inm.gastosPct==null||isNaN(inm.gastosPct)) inm.gastosPct=0;
       if(inm.capitalPropio==null||isNaN(inm.capitalPropio)) inm.capitalPropio=0;
       if(inm.ingresoNeto==null||isNaN(inm.ingresoNeto)) inm.ingresoNeto=0;
