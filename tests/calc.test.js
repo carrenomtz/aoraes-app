@@ -139,6 +139,16 @@ test('interés efectivo del banco sin comisión = nominal anualizado (4 % → 4,
   near(c.tasaEfectiva * 100, (Math.pow(1 + 0.04 / 12, 12) - 1) * 100, 0.001);
 });
 
+console.log('Cubrir la deuda pendiente de la Zinsbindung con un Bausparvertrag')
+test('Bausparsumme = deuda pendiente: el ahorro mensual alcanza el % elegido + comisión en los años de la Zinsbindung', () => {
+  const R = engine.calcInmuebleOption(330000, { pct: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 }).restschuldZinsbindung;
+  const cfg = { pct: 40, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 3.79, comision: 1.6 };
+  const h = engine.calcInmuebleOption(R, Object.assign({}, cfg, { anios: 10, pagoAhorro: 0, pagoPrestamo: 0, sondertilgung: 0, topeST: 0 }));
+  let bal = 0; const r = 0.0005 / 12; for (let k = 0; k < 120; k++) bal = bal * (1 + r) + h.cuotaAhorro;
+  near(bal, R * 0.4 + R * 0.016, 0.01, 'ahorro acumulado');
+  near(h.capitalPrestamo, R * 0.6, 0.01, 'préstamo'); near(h.cuotaPrestamo, R * 3.79 / 1000, 0.01, 'cuota del préstamo');
+});
+
 console.log('Refinanciar');
 test('saldo e interés restante de un crédito existente igual que el calendario', () => {
   const refi = { importeOriginal: 200000, interesOriginal: 3, plazoOriginal: 25, fechaInicio: engine.isoDateYearsAgo(5) };
