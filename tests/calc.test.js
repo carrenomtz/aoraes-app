@@ -19,7 +19,7 @@ assert(k1 > 0 && k2 > k1, 'No se encontró inmuebleCurvaSaldo en index.html');
 assert(c1 > 0 && c2 > c1, 'No se encontró inmuebleCapacidadHTML en index.html');
 const engine = new Function(html.slice(a, b) + html.slice(f1, f2) + 'function eur(n){ return Math.round(n) + " €"; }' + html.slice(c1, c2) + html.slice(k1, k2) +
   '\nreturn {annuityQuota,effectiveAnnualRate,savingsQuota,monthsToPayoff,simLoan,calcInmuebleOption,' +
-  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin,inmuebleCapacidadHTML,saldoEnFecha,inmuebleCurvaSaldo,inmuebleHitosComprar,inmuebleCurvaTipos,inmuebleToggleCurvaTipo,inmuebleValorEn};')();
+  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin,inmuebleCapacidadHTML,saldoEnFecha,inmuebleCurvaSaldo,inmuebleHitosComprar,inmuebleValorEn};')();
 
 let passed = 0, failed = 0;
 const gaps = [];
@@ -215,25 +215,6 @@ test('hitos de Comprar: Zuteilung con lo ahorrado, Zinsbindung con la deuda del 
   assert.strictEqual(rows[2].baus, 0); assert.strictEqual(rows[3].banco, 0); assert.strictEqual(rows[3].baus, 0);
   assert(rows.every((r, i) => i === 0 || r.m >= rows[i - 1].m), 'hitos ordenados en el tiempo');
 });
-test('escenarios de interés: por defecto 3, 4 y 5 %, y apagar/encender uno', () => {
-  assert.deepStrictEqual(engine.inmuebleCurvaTipos({}), [3, 4, 5]);
-  assert.deepStrictEqual(engine.inmuebleCurvaTipos({ curvaTipos: [2, 3, 4, 5] }), [2, 3, 4]);
-  const inm = { curvaOff: [] };
-  engine.inmuebleToggleCurvaTipo(inm, 4); assert.deepStrictEqual(inm.curvaOff, [4]);
-  engine.inmuebleToggleCurvaTipo(inm, 5); assert.deepStrictEqual(inm.curvaOff, [4, 5]);
-  engine.inmuebleToggleCurvaTipo(inm, 4); assert.deepStrictEqual(inm.curvaOff, [5]);
-});
-
-console.log('Cubrir la deuda pendiente de la Zinsbindung con un Bausparvertrag')
-test('Bausparsumme = deuda pendiente: el ahorro mensual alcanza el % elegido + comisión en los años de la Zinsbindung', () => {
-  const R = engine.calcInmuebleOption(330000, { pct: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 }).restschuldZinsbindung;
-  const cfg = { pct: 40, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 3.79, comision: 1.6 };
-  const h = engine.calcInmuebleOption(R, Object.assign({}, cfg, { anios: 10, pagoAhorro: 0, pagoPrestamo: 0, sondertilgung: 0, topeST: 0 }));
-  let bal = 0; const r = 0.0005 / 12; for (let k = 0; k < 120; k++) bal = bal * (1 + r) + h.cuotaAhorro;
-  near(bal, R * 0.4 + R * 0.016, 0.01, 'ahorro acumulado');
-  near(h.capitalPrestamo, R * 0.6, 0.01, 'préstamo'); near(h.cuotaPrestamo, R * 3.79 / 1000, 0.01, 'cuota del préstamo');
-});
-
 console.log('Refinanciar');
 test('saldo e interés restante de un crédito existente igual que el calendario', () => {
   const refi = { importeOriginal: 200000, interesOriginal: 3, plazoOriginal: 25, fechaInicio: engine.isoDateYearsAgo(5) };
