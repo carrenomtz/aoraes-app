@@ -3930,7 +3930,7 @@
       'de {0}-{1} años, tras la cual el saldo pendiente (':'of {0}-{1} years, after which the outstanding balance (',
       'interés efectivo del préstamo':'effective loan interest rate',
       'todo el plazo':'the whole term',
-      'solo mide la fase de préstamo. En el banco directo ya descuenta la comisión de apertura sobre lo que el cliente recibe; en el Bausparvertrag no incluye la comisión, que se cobra en la fase de ahorro, así que sale más bajo que la cifra oficial de la Bausparkasse. Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.':'only measures the loan phase. With the direct bank it already accounts for the arrangement fee against what the client receives; with the Bausparvertrag it does not include the fee, which is charged during the savings phase, so it comes out lower than the Bausparkasse\'s official figure. It uses the same method (actuarial rate/IRR) as the German PAngV, distinct from the nominal rate entered as an input. It does not replace the binding offer with the actual Effektiver Jahreszins the bank or Bausparkasse will give.',
+      'mide la fase de préstamo y ya descuenta la comisión de apertura sobre lo que el cliente recibe (en el Bausparvertrag, la parte de la Abschlussgebühr proporcional al préstamo, como en la Modellrechnung de Badenia). Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.':'measures the loan phase and already accounts for the arrangement fee against what the client receives (for the Bausparvertrag, the share of the Abschlussgebühr proportional to the loan, as in Badenia\'s Modellrechnung). It uses the same method (actuarial rate/IRR) as the German PAngV, distinct from the nominal rate entered as an input. It does not replace the binding offer with the actual Effektiver Jahreszins the bank or Bausparkasse will give.',
       '{0} años de ahorro + {1} años de préstamo':'{0} years of saving + {1} years of loan',
       '{0} años de préstamo':'{0} years of loan',
       '{0} años de {1} años':'{0} of {1} years',
@@ -4078,7 +4078,7 @@
       'Compara financiar la compra con un Bausparvertrag (fase de ahorro a interés casi nulo + préstamo a tipo fijo pactado hoy) frente a una hipoteca bancaria directa a tipo de mercado. Cálculo orientativo con amortización estándar; la Bausparkasse asigna el préstamo real según su propio algoritmo colectivo, que puede variar el plazo de ahorro.':'Vergleicht die Finanzierung des Kaufs über einen Bausparvertrag (Ansparphase zu fast null Zinsen + heute festgelegtes Festzins-Darlehen) mit einer direkten Bankhypothek zum Marktzins. Orientierende Berechnung mit Standardtilgung; die Bausparkasse teilt das tatsächliche Darlehen nach ihrem eigenen kollektiven Algorithmus zu, der die Ansparzeit verändern kann.',
       'Compara seguir con el crédito actual, refinanciar con banco a tipo de mercado, o refinanciar con Badenia a un tipo fijo sobre el saldo pendiente. Cálculo orientativo con amortización estándar.':'Vergleicht die Fortführung des aktuellen Kredits, eine Umschuldung bei der Bank zum Marktzins oder eine Umschuldung mit Badenia zu einem Festzins auf die Restschuld. Orientierende Berechnung mit Standardtilgung.',
       'El':'Der','interés efectivo del préstamo':'effektive Zins des Darlehens',
-      'solo mide la fase de préstamo. En el banco directo ya descuenta la comisión de apertura sobre lo que el cliente recibe; en el Bausparvertrag no incluye la comisión, que se cobra en la fase de ahorro, así que sale más bajo que la cifra oficial de la Bausparkasse. Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.':'misst nur die Darlehensphase. Bei der Direktbank berücksichtigt er die Abschlussgebühr bereits bei dem, was der Kunde erhält; beim Bausparvertrag ist die Gebühr nicht enthalten, da sie in der Sparphase anfällt, weshalb er niedriger ausfällt als der offizielle Wert der Bausparkasse. Es ist dieselbe Methode (versicherungsmathematischer Zins/IRR) wie in der deutschen PAngV, und er unterscheidet sich vom Nominalzins, der als Eingabewert dient. Ersetzt nicht das verbindliche Angebot mit dem tatsächlichen effektiven Jahreszins der Bank oder Bausparkasse.',
+      'mide la fase de préstamo y ya descuenta la comisión de apertura sobre lo que el cliente recibe (en el Bausparvertrag, la parte de la Abschlussgebühr proporcional al préstamo, como en la Modellrechnung de Badenia). Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.':'misst die Darlehensphase und berücksichtigt bereits die Abschlussgebühr bei dem, was der Kunde erhält (beim Bausparvertrag den auf das Darlehen entfallenden Anteil der Abschlussgebühr, wie in der Modellrechnung der Badenia). Es ist dieselbe Methode (versicherungsmathematischer Zins/IRR) wie in der deutschen PAngV, und er unterscheidet sich vom Nominalzins, der als Eingabewert dient. Ersetzt nicht das verbindliche Angebot mit dem tatsächlichen effektiven Jahreszins der Bank oder Bausparkasse.',
       'Una hipoteca bancaria alemana casi nunca fija el tipo para todo el plazo: lo normal es una':'Eine deutsche Bankhypothek legt den Zins fast nie für die gesamte Laufzeit fest: üblich ist eine',
       'de {0}-{1} años, tras la cual el saldo pendiente (':'von {0}-{1} Jahren, nach der die Restschuld (',
       ') se refinancia al tipo que haya entonces (':') zum dann geltenden Zinssatz umgeschuldet wird (',
@@ -4628,11 +4628,13 @@
     // SIN comisión el efectivo sale un pelín por encima del nominal (p. ej. 3,50% → 3,56%) — no es
     // un error de este cálculo, es la misma diferencia estructural nominal/efectivo que aparece en
     // cualquier oferta bancaria real. Con comisión, la diferencia crece más.
-    function effectiveAnnualRate(netDisbursed,payment,months){
+    // lastPayment (opcional): la última cuota real, menor que la fija; sin ella, con cuota constante, el efectivo
+    // salía hasta ~0,02 pt por encima (4,09 % en vez de 4,07 % a 4 % nominal).
+    function effectiveAnnualRate(netDisbursed,payment,months,lastPayment){
       if(!(netDisbursed>0) || !(payment>0) || months<=0) return null;
       function npv(monthlyRate){
         var pv=netDisbursed;
-        for(var t=1;t<=months;t++) pv-=payment/Math.pow(1+monthlyRate,t);
+        for(var t=1;t<=months;t++) pv-=((t===months&&lastPayment>0)?lastPayment:payment)/Math.pow(1+monthlyRate,t);
         return pv;
       }
       var lo=-0.9/12, hi=2/12, flo=npv(lo), fhi=npv(hi);
@@ -4738,7 +4740,11 @@
       var comisionPrestamo=esBausparvertrag?0:capitalPrestamo*(cfg.comision||0)/100;
       var comision=esBausparvertrag?comisionAhorro:comisionPrestamo;
       var costeTotal=precio+interesTotalPrestamo+comision-interesGanadoAhorro;
-      var tasaEfectiva=effectiveAnnualRate(capitalPrestamo-comisionPrestamo,cuotaPrestamo,mesesPrestamo);
+      // Bausparvertrag: se descuenta la parte de la Abschlussgebühr proporcional al préstamo (comisión × préstamo / Bausparsumme), como
+      // hace la Modellrechnung de Badenia ("(anteilige) Abschlussgebühr": reproduce su 2,14 % / 1,41 % del ejemplo de 300.000 €).
+      var comisionEfectiva=esBausparvertrag?(precio>0?comisionAhorro*capitalPrestamo/precio:0):comisionPrestamo;
+      var ultimaCuota=(mesesPrestamo>=1&&mesesPrestamo<1200)?balanceTrasMeses(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,mesesPrestamo-1)*(1+(cfg.interesPrestamo||0)/1200):0;
+      var tasaEfectiva=effectiveAnnualRate(capitalPrestamo-comisionEfectiva,cuotaPrestamo,mesesPrestamo,ultimaCuota);
       // Duración real de cada camino hasta terminar de pagar del todo: ahorro (si lo hay) + el
       // plazo del préstamo que sigue después — la comparación de tiempo que pide verse tan clara
       // como la de precio (p. ej. "3,5 + 10 años" frente a "30 años").
@@ -5611,7 +5617,7 @@
         '<p class="ws-lead">'+(inm.modo==='refi'
           ?'Compara seguir con el crédito actual, refinanciar con banco a tipo de mercado, o refinanciar con Badenia a un tipo fijo sobre el saldo pendiente. Cálculo orientativo con amortización estándar.'
           :'Compara financiar la compra con un Bausparvertrag (fase de ahorro a interés casi nulo + préstamo a tipo fijo pactado hoy) frente a una hipoteca bancaria directa a tipo de mercado. Cálculo orientativo con amortización estándar; la Bausparkasse asigna el préstamo real según su propio algoritmo colectivo, que puede variar el plazo de ahorro.')+'</p>'+
-        '<p class="inm-eff-note">El <b>interés efectivo del préstamo</b> solo mide la fase de préstamo. En el banco directo ya descuenta la comisión de apertura sobre lo que el cliente recibe; en el Bausparvertrag no incluye la comisión, que se cobra en la fase de ahorro, así que sale más bajo que la cifra oficial de la Bausparkasse. Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.</p>'+
+        '<p class="inm-eff-note">El <b>interés efectivo del préstamo</b> mide la fase de préstamo y ya descuenta la comisión de apertura sobre lo que el cliente recibe (en el Bausparvertrag, la parte de la Abschlussgebühr proporcional al préstamo, como en la Modellrechnung de Badenia). Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.</p>'+
         (inm.modo!=='refi'?'<p class="inm-eff-note">Una hipoteca bancaria alemana casi nunca fija el tipo para todo el plazo: lo normal es una <b>Zinsbindung</b> de 10-15 años, tras la cual el saldo pendiente (<b>Restschuld</b>) se refinancia al tipo que haya entonces (<b>Anschlussfinanzierung</b>). La certeza de tipo durante todo el plazo que muestra "Banco directo" aquí es el caso favorable — coméntalo con el cliente si su horizonte real es más largo que la Zinsbindung que le ofrecerán.</p>':'')+
         body+
       '</div>';
