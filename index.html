@@ -637,6 +637,7 @@
   .inm-stress-tile.now{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-soft)}
   .inm-stress-head{font-size:11.5px; color:var(--muted); margin-bottom:6px}
   .inm-stress-head b{font-family:'Fraunces',sans-serif; font-size:17px; color:var(--navy); margin-left:3px}
+  .inm-res-warn{font-size:12px; font-weight:700; color:var(--red); line-height:1.4; margin:6px 0}
   .inm-stress-warn{font-size:12px; font-weight:700; color:var(--red); line-height:1.4}
   @media(max-width:620px){.inm-stress-grid{grid-template-columns:1fr}}
   .inm-cmp-wrap{margin:14px 0 6px}
@@ -3813,6 +3814,7 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Con este pago el préstamo no se amortiza en menos de 100 años.':'With this payment the loan is not repaid in under 100 years.','Los años y los intereses son solo el tope del cálculo.':'The years and interest shown are only the calculation cap.',
       'Un interés del ahorro superior al 0,5 % es poco habitual en un Bausparvertrag.':'A savings interest rate above 0.5% is unusual for a Bausparvertrag.','¿Lo has confundido con el interés del préstamo?':'Did you mix it up with the loan interest rate?','Valor habitual':'Usual value',
       'Saldo pendiente hoy (0 = calculado)':'Outstanding balance today (0 = calculated)',
       'Cuota mensual actual (0 = calculada)':'Current monthly payment (0 = calculated)',
@@ -3928,7 +3930,7 @@
       'de {0}-{1} años, tras la cual el saldo pendiente (':'of {0}-{1} years, after which the outstanding balance (',
       'interés efectivo del préstamo':'effective loan interest rate',
       'todo el plazo':'the whole term',
-      'ya descuenta la comisión de apertura sobre lo que el cliente recibe de verdad — es el mismo cálculo (interés actuarial/IRR) que exige la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.':'already accounts for the arrangement fee against what the client actually receives — it\'s the same calculation (actuarial rate/IRR) required by the German PAngV, distinct from the nominal rate entered as an input. It does not replace the binding offer with the actual Effektiver Jahreszins the bank or Bausparkasse will give.',
+      'solo mide la fase de préstamo. En el banco directo ya descuenta la comisión de apertura sobre lo que el cliente recibe; en el Bausparvertrag no incluye la comisión, que se cobra en la fase de ahorro, así que sale más bajo que la cifra oficial de la Bausparkasse. Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.':'only measures the loan phase. With the direct bank it already accounts for the arrangement fee against what the client receives; with the Bausparvertrag it does not include the fee, which is charged during the savings phase, so it comes out lower than the Bausparkasse\'s official figure. It uses the same method (actuarial rate/IRR) as the German PAngV, distinct from the nominal rate entered as an input. It does not replace the binding offer with the actual Effektiver Jahreszins the bank or Bausparkasse will give.',
       '{0} años de ahorro + {1} años de préstamo':'{0} years of saving + {1} years of loan',
       '{0} años de préstamo':'{0} years of loan',
       '{0} años de {1} años':'{0} of {1} years',
@@ -4076,7 +4078,7 @@
       'Compara financiar la compra con un Bausparvertrag (fase de ahorro a interés casi nulo + préstamo a tipo fijo pactado hoy) frente a una hipoteca bancaria directa a tipo de mercado. Cálculo orientativo con amortización estándar; la Bausparkasse asigna el préstamo real según su propio algoritmo colectivo, que puede variar el plazo de ahorro.':'Vergleicht die Finanzierung des Kaufs über einen Bausparvertrag (Ansparphase zu fast null Zinsen + heute festgelegtes Festzins-Darlehen) mit einer direkten Bankhypothek zum Marktzins. Orientierende Berechnung mit Standardtilgung; die Bausparkasse teilt das tatsächliche Darlehen nach ihrem eigenen kollektiven Algorithmus zu, der die Ansparzeit verändern kann.',
       'Compara seguir con el crédito actual, refinanciar con banco a tipo de mercado, o refinanciar con Badenia a un tipo fijo sobre el saldo pendiente. Cálculo orientativo con amortización estándar.':'Vergleicht die Fortführung des aktuellen Kredits, eine Umschuldung bei der Bank zum Marktzins oder eine Umschuldung mit Badenia zu einem Festzins auf die Restschuld. Orientierende Berechnung mit Standardtilgung.',
       'El':'Der','interés efectivo del préstamo':'effektive Zins des Darlehens',
-      'ya descuenta la comisión de apertura sobre lo que el cliente recibe de verdad — es el mismo cálculo (interés actuarial/IRR) que exige la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.':'berücksichtigt bereits die Abschlussgebühr bei dem, was der Kunde tatsächlich erhält — es ist dieselbe Berechnung (versicherungsmathematischer Zins/IRR), die die deutsche PAngV vorschreibt, und unterscheidet sich vom Nominalzins, der als Eingabewert dient. Ersetzt nicht das verbindliche Angebot mit dem tatsächlichen effektiven Jahreszins der Bank oder Bausparkasse.',
+      'solo mide la fase de préstamo. En el banco directo ya descuenta la comisión de apertura sobre lo que el cliente recibe; en el Bausparvertrag no incluye la comisión, que se cobra en la fase de ahorro, así que sale más bajo que la cifra oficial de la Bausparkasse. Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.':'misst nur die Darlehensphase. Bei der Direktbank berücksichtigt er die Abschlussgebühr bereits bei dem, was der Kunde erhält; beim Bausparvertrag ist die Gebühr nicht enthalten, da sie in der Sparphase anfällt, weshalb er niedriger ausfällt als der offizielle Wert der Bausparkasse. Es ist dieselbe Methode (versicherungsmathematischer Zins/IRR) wie in der deutschen PAngV, und er unterscheidet sich vom Nominalzins, der als Eingabewert dient. Ersetzt nicht das verbindliche Angebot mit dem tatsächlichen effektiven Jahreszins der Bank oder Bausparkasse.',
       'Una hipoteca bancaria alemana casi nunca fija el tipo para todo el plazo: lo normal es una':'Eine deutsche Bankhypothek legt den Zins fast nie für die gesamte Laufzeit fest: üblich ist eine',
       'de {0}-{1} años, tras la cual el saldo pendiente (':'von {0}-{1} Jahren, nach der die Restschuld (',
       ') se refinancia al tipo que haya entonces (':') zum dann geltenden Zinssatz umgeschuldet wird (',
@@ -4099,6 +4101,7 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Con este pago el préstamo no se amortiza en menos de 100 años.':'Mit dieser Zahlung ist das Darlehen nicht in unter 100 Jahren getilgt.','Los años y los intereses son solo el tope del cálculo.':'Die angezeigten Jahre und Zinsen sind nur die Berechnungsgrenze.',
       'Un interés del ahorro superior al 0,5 % es poco habitual en un Bausparvertrag.':'Ein Sparzins über 0,5 % ist bei einem Bausparvertrag unüblich.','¿Lo has confundido con el interés del préstamo?':'Hast du ihn mit dem Darlehenszins verwechselt?','Valor habitual':'Üblicher Wert',
       'Saldo pendiente hoy (0 = calculado)':'Restschuld heute (0 = berechnet)',
       'Cuota mensual actual (0 = calculada)':'Aktuelle monatliche Rate (0 = berechnet)',
@@ -4725,13 +4728,9 @@
         ? ((cfg.pagoPrestamo>0)?cfg.pagoPrestamo:precio*(cfg.tilgungsbeitragPerMille||0)/1000)
         : ((cfg.pagoPre>0)?cfg.pagoPre:capitalPrestamo*(((cfg.interesPrestamo||0)+(cfg.tilgungInicial||0))/100)/12));
       var mesesPrestamo=(capitalPrestamo<=0)?0:Math.max(1,monthsToPayoff(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo));
-      // Si monthsToPayoff tuvo que aplicar su tope de seguridad (préstamo que en teoría tardaría
-      // más de 100 años en amortizarse), el capital pendiente en ese mes NO es cero — se calcula
-      // con la misma fórmula de saldo que usa el resto de la app (balanceTrasMeses) en vez de dar
-      // por hecho que ya está pagado del todo, para que el interés total salga coherente con lo
-      // que de verdad se ha amortizado hasta ese mes.
-      var capitalRealmenteAmortizado=(mesesPrestamo<=0)?0:Math.max(0,capitalPrestamo-balanceTrasMeses(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,mesesPrestamo));
-      var interesTotalPrestamo=Math.max(0,cuotaPrestamo*mesesPrestamo-capitalRealmenteAmortizado);
+      // Si monthsToPayoff aplica su tope de seguridad (1200 meses = más de 100 años o nunca), el préstamo no se
+      // amortiza con esta cuota: res.noAmortiza lo marca y los resultados lo avisan.
+      var interesTotalPrestamo=interesAnualidad(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,mesesPrestamo);
       // Banco directo: la comisión (Bearbeitungsgebühr) sigue siendo un % del PRÉSTAMO realmente
       // desembolsado (capitalPrestamo) — reduce lo que el cliente recibe en mano aunque devuelva el
       // capital completo. En Bausparvertrag ya se ha cobrado en la fase de ahorro (comisionAhorro,
@@ -4753,7 +4752,7 @@
       var restschuldZinsbindung=(!esBausparvertrag&&cfg.zinsbindung!=null)
         ?balanceTrasMeses(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,Math.min(mesesPrestamo,Math.round((cfg.zinsbindung||0)*12)))
         :null;
-      var res={objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal,restschuldZinsbindung:restschuldZinsbindung};
+      var res={noAmortiza:(capitalPrestamo>0&&mesesPrestamo>=1200),objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal,restschuldZinsbindung:restschuldZinsbindung};
       // Sondertilgung anual (banco y fase de préstamo del Bausparvertrag): un pago extra a capital cada 12 meses, con la cuota
       // mensual constante. Sin fórmula cerrada, así que se simula mes a mes y se sobrescribe plazo,
       // intereses, coste y Restschuld; se guarda también cuánto se ahorra frente a no hacerla.
@@ -4782,6 +4781,14 @@
       if(!a||isNaN(a.getTime())||!b||isNaN(b.getTime())) return 0;
       return Math.max(0,(b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth()));
     }
+    // Intereses totales de un préstamo con cuota fija: la última cuota es menor (solo salda lo que queda), así que
+    // cuota*meses - capital los sobrestimaba hasta casi una cuota. Con 1200 meses (tope) no amortiza: fórmula simple.
+    function interesAnualidad(P,annualRatePct,cuota,n){
+      if(!(P>0)||!(n>0)) return 0;
+      if(n>=1200) return Math.max(0,cuota*n-(P-balanceTrasMeses(P,annualRatePct,cuota,n)));
+      var r=(annualRatePct||0)/100/12, ult=balanceTrasMeses(P,annualRatePct,cuota,n-1)*(1+r);
+      return Math.max(0,cuota*(n-1)+ult-P);
+    }
     function balanceTrasMeses(P,annualRatePct,cuota,mesesTranscurridos){
       var r=(annualRatePct||0)/100/12;
       return Math.abs(r)<1e-9
@@ -4801,7 +4808,7 @@
       // saldoHoy (opcional): el saldo real que consta hoy en el banco; manda sobre el calculado y de ahí
       // en adelante todo se proyecta con la cuota (plazo restante = el que resulta de ese saldo).
       if(refi.saldoHoy>0){ saldoPendiente=refi.saldoHoy; mesesRestantes=monthsToPayoff(saldoPendiente,refi.interesOriginal,cuotaOriginal); }
-      var interesRestante=Math.max(0,cuotaOriginal*mesesRestantes-saldoPendiente);
+      var interesRestante=interesAnualidad(saldoPendiente,refi.interesOriginal,cuotaOriginal,mesesRestantes);
       var costeTotalSeguirIgual=saldoPendiente+interesRestante;
       return {cuotaOriginal:cuotaOriginal,totalMeses:totalMeses,elapsedMeses:elapsedMeses,mesesRestantes:mesesRestantes,saldoPendiente:saldoPendiente,interesRestante:interesRestante,costeTotalSeguirIgual:costeTotalSeguirIgual};
     }
@@ -5373,7 +5380,7 @@
           } else {
             var m2, intDesp;
             if(stS>0){ var sm2=simLoan(R,r2,pmt2,stS,zMeses,1200); m2=sm2.meses; intDesp=sm2.interes; }
-            else { m2=monthsToPayoff(R,r2,pmt2); intDesp=Math.max(0,pmt2*m2-(R-balanceTrasMeses(R,r2,pmt2,m2))); }
+            else { m2=monthsToPayoff(R,r2,pmt2); intDesp=interesAnualidad(R,r2,pmt2,m2); }
             inner='<div class="inm-res-line"><span>Plazo total</span><b>'+fmtAnos(zMeses+m2)+'</b></div>'+
                   '<div class="inm-res-line"><span>Intereses totales</span><b>'+eur(intDurante+intDesp)+'</b></div>';
           }
@@ -5426,6 +5433,7 @@
         return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
           '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
+          (r.noAmortiza?'<div class="inm-res-warn"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span> <span>Los años y los intereses son solo el tope del cálculo.</span></div>':'')+
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
           (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
           (r.sondertilgung>0?'<div class="inm-res-line"><span>Con Sondertilgung de '+eur(r.sondertilgung)+'/año, intereses menos</span><b>'+eur(r.ahorroInteresST)+'</b></div><div class="inm-res-line"><span>Y terminas antes</span><b>'+fmtAnos(r.mesesAntesST)+'</b></div>':'')+
@@ -5474,6 +5482,7 @@
         return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
           (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
           '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
+          (r.noAmortiza?'<div class="inm-res-warn"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span> <span>Los años y los intereses son solo el tope del cálculo.</span></div>':'')+
           '<div class="inm-res-line"><span>Interés pagado</span><b>'+eur(r.interesTotalPrestamo)+'</b></div>'+
           (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
           (r.sondertilgung>0?'<div class="inm-res-line"><span>Con Sondertilgung de '+eur(r.sondertilgung)+'/año, intereses menos</span><b>'+eur(r.ahorroInteresST)+'</b></div><div class="inm-res-line"><span>Y terminas antes</span><b>'+fmtAnos(r.mesesAntesST)+'</b></div>':'')+
@@ -5602,7 +5611,7 @@
         '<p class="ws-lead">'+(inm.modo==='refi'
           ?'Compara seguir con el crédito actual, refinanciar con banco a tipo de mercado, o refinanciar con Badenia a un tipo fijo sobre el saldo pendiente. Cálculo orientativo con amortización estándar.'
           :'Compara financiar la compra con un Bausparvertrag (fase de ahorro a interés casi nulo + préstamo a tipo fijo pactado hoy) frente a una hipoteca bancaria directa a tipo de mercado. Cálculo orientativo con amortización estándar; la Bausparkasse asigna el préstamo real según su propio algoritmo colectivo, que puede variar el plazo de ahorro.')+'</p>'+
-        '<p class="inm-eff-note">El <b>interés efectivo del préstamo</b> ya descuenta la comisión de apertura sobre lo que el cliente recibe de verdad — es el mismo cálculo (interés actuarial/IRR) que exige la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.</p>'+
+        '<p class="inm-eff-note">El <b>interés efectivo del préstamo</b> solo mide la fase de préstamo. En el banco directo ya descuenta la comisión de apertura sobre lo que el cliente recibe; en el Bausparvertrag no incluye la comisión, que se cobra en la fase de ahorro, así que sale más bajo que la cifra oficial de la Bausparkasse. Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.</p>'+
         (inm.modo!=='refi'?'<p class="inm-eff-note">Una hipoteca bancaria alemana casi nunca fija el tipo para todo el plazo: lo normal es una <b>Zinsbindung</b> de 10-15 años, tras la cual el saldo pendiente (<b>Restschuld</b>) se refinancia al tipo que haya entonces (<b>Anschlussfinanzierung</b>). La certeza de tipo durante todo el plazo que muestra "Banco directo" aquí es el caso favorable — coméntalo con el cliente si su horizonte real es más largo que la Zinsbindung que le ofrecerán.</p>':'')+
         body+
       '</div>';
