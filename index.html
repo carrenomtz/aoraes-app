@@ -580,6 +580,8 @@
   .inm-inp[type=number]{-moz-appearance:textfield}
   .inm-suf{position:absolute; right:11px; top:50%; transform:translateY(-50%); font-size:11.5px; color:var(--muted); font-weight:600; pointer-events:none}
   .inm-precio{max-width:280px; margin-bottom:18px}
+  .inm-inicio{max-width:200px; margin-bottom:18px}
+  .inm-precio-row{justify-content:flex-start; gap:10px 22px}
   .inm-precio .inm-inp{font-size:16px}
   .inm-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin-bottom:18px}
   @media(max-width:900px){.inm-grid{grid-template-columns:1fr}}
@@ -3750,6 +3752,7 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Mes de inicio':'Start month',
       'Informe del proyecto inmobiliario':'Real-estate project report',
       'Simulación sin cliente':'Simulation without a client',
       'Datos de la simulación':'Simulation data',
@@ -3813,7 +3816,7 @@
       'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.':'The saving years are an assumption: the Bausparkasse’s allocation (Zuteilung) is not guaranteed. Example values — replace with the official illustration.',
       'Cuánto pagas cada mes':'What you pay each month',
       'Cuánto pagas cada mes, comparado en el tiempo':'What you pay each month, compared over time',
-      'Cada tramo es tu pago mensual y cuánto dura; las fechas suponen que empiezas este mes. Un pago más alto termina antes; uno más bajo deja más aire cada mes.':'Each step is your monthly payment and how long it lasts; dates assume you start this month. A higher payment finishes sooner; a lower one leaves more room each month.',
+      'Cada tramo es tu pago mensual y cuánto dura; las fechas parten del mes de inicio indicado. Un pago más alto termina antes; uno más bajo deja más aire cada mes.':'Each step is your monthly payment and how long it lasts; dates start from the start month you set. A higher payment finishes sooner; a lower one leaves more room each month.',
       'Con la opción Badenia pagas':'With the Badenia option you pay',
       'menos en intereses y comisiones que con el banco (nominal) y terminas de pagar':'less in interest and fees than with the bank (nominal) and you finish paying',
       'más en intereses y comisiones que con el banco (nominal) y terminas de pagar':'more in interest and fees than with the bank (nominal) and you finish paying',
@@ -4005,6 +4008,7 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Mes de inicio':'Startmonat',
       'Informe del proyecto inmobiliario':'Bericht zum Immobilienprojekt',
       'Simulación sin cliente':'Simulation ohne Kunde',
       'Datos de la simulación':'Simulationsdaten',
@@ -4068,7 +4072,7 @@
       'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.':'Die Sparjahre sind eine Annahme: die Zuteilung der Bausparkasse ist nicht garantiert. Beispielwerte — durch die offizielle Modellrechnung ersetzen.',
       'Cuánto pagas cada mes':'Was Sie jeden Monat zahlen',
       'Cuánto pagas cada mes, comparado en el tiempo':'Was Sie jeden Monat zahlen, im Zeitverlauf verglichen',
-      'Cada tramo es tu pago mensual y cuánto dura; las fechas suponen que empiezas este mes. Un pago más alto termina antes; uno más bajo deja más aire cada mes.':'Jede Stufe ist Ihre monatliche Zahlung und ihre Dauer; die Daten gehen von einem Start in diesem Monat aus. Eine höhere Zahlung ist früher fertig; eine niedrigere lässt jeden Monat mehr Spielraum.',
+      'Cada tramo es tu pago mensual y cuánto dura; las fechas parten del mes de inicio indicado. Un pago más alto termina antes; uno más bajo deja más aire cada mes.':'Jede Stufe ist Ihre monatliche Zahlung und ihre Dauer; die Daten gehen vom angegebenen Startmonat aus. Eine höhere Zahlung ist früher fertig; eine niedrigere lässt jeden Monat mehr Spielraum.',
       'Con la opción Badenia pagas':'Mit der Badenia-Option zahlen Sie',
       'menos en intereses y comisiones que con el banco (nominal) y terminas de pagar':'weniger Zinsen und Gebühren als bei der Bank (nominal) und sind fertig',
       'más en intereses y comisiones que con el banco (nominal) y terminas de pagar':'mehr Zinsen und Gebühren als bei der Bank (nominal) und sind fertig',
@@ -5115,12 +5119,18 @@
         grid+gridX+areaOf(segsBk,colBk)+areaOf(segsEst,colEst)+lineOf(segsBk,colBk)+lineOf(segsEst,colEst)+labels+fines+'</svg>';
       return '<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto pagas cada mes</h5>'+
         '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>'+esc(bancoTitle)+'</span></div></div>'+
-        svg+'<p class="inm-curve-note">Cada tramo es tu pago mensual y cuánto dura; las fechas suponen que empiezas este mes. Un pago más alto termina antes; uno más bajo deja más aire cada mes.</p></div>';
+        svg+'<p class="inm-curve-note">Cada tramo es tu pago mensual y cuánto dura; las fechas parten del mes de inicio indicado. Un pago más alto termina antes; uno más bajo deja más aire cada mes.</p></div>';
     }
     // mm/aaaa a N meses desde hoy — numérico a propósito (sin nombres de mes) para que no dependa del
     // idioma con el que se dibujó el bloque.
+    var _inmInicio='';
+    function inmuebleInicioDate(ini){
+      var m=/^(\d{4})-(\d{2})$/.exec(ini||''), d=new Date(); d.setDate(1);
+      if(m){ d.setFullYear(+m[1],+m[2]-1,1); }
+      return d;
+    }
     function inmuebleMesAnio(meses){
-      var d=new Date(); d.setDate(1); d.setMonth(d.getMonth()+Math.round(meses));
+      var d=inmuebleInicioDate(_inmInicio); d.setMonth(d.getMonth()+Math.round(meses));
       return ('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
     }
     // Qué pasa con el banco cuando termina la Zinsbindung: tres tipos posteriores HIPOTÉTICOS (uno
@@ -5221,6 +5231,7 @@
         row(estTitle,rEst,costeEstAbs,false,false)+'</div>';
     }
     function inmuebleResultsHTML(precio,inm){
+      _inmInicio=inm.inicio||'';
       var estKey=(inm.estrategia==='b')?'b':'a';
       var estCfg=(estKey==='b')?inm.b:inm.a;
       var estTitle='Bausparvertrag · '+inmuebleEstNombre(estCfg);
@@ -5343,7 +5354,8 @@
               :inmuebleOptionCard('refiB','Badenia · '+inmuebleEstNombre(inm.refi.b),inm.refi.b,'Ahorro en paralelo hasta la fecha de refinanciación.',inm.refi.importeOriginal))+
           '</div>'+
           '<div id="inm-results-wrap">'+inmuebleRefiResultsHTML(inm.refi)+'</div>'
-        : '<label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
+        : '<div class="inm-toprow inm-precio-row"><label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
+          '<label class="inm-f inm-inicio"><span>Mes de inicio</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-inicio" value="'+(inm.inicio||(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);})())+'"></span></label></div>'+
           inmuebleStrategyToggle(inm.estrategia,[
             {key:'a',label:inmuebleEstNombre(inm.a)},
             {key:'b',label:inmuebleEstNombre(inm.b)}
@@ -5373,6 +5385,7 @@
     // supuestos y límites. El nombre del cliente solo sale si hay cliente (no en modo genérico).
     function buildInmuebleInforme(rec){
       var inm=normalizeInmueble(rec), generic=(rec.id==='aoraes_generic');
+      _inmInicio=inm.inicio||'';
       var fecha=new Date().toLocaleDateString('es-DE');
       function row(k,v){ return '<div class="afa-inf-row"><span>'+k+'</span><b>'+v+'</b></div>'; }
       function pct(x){ return String(Math.round((x||0)*100)/100).replace('.',',')+'%'; }
@@ -5388,7 +5401,7 @@
         resultados=inmuebleRefiResultsHTML(rf);
       } else {
         var e=(inm.estrategia==='b')?inm.b:inm.a, rE=calcInmuebleOption(inm.precio,e);
-        datos='<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+row('Precio del inmueble',eur(inm.precio))+row('Cómo comparar',inm.comparar==='igual'?'Mismo pago mensual':'Cada camino como es')+
+        datos='<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+row('Precio del inmueble',eur(inm.precio))+row('Mes de inicio',inmuebleMesAnio(0))+row('Cómo comparar',inm.comparar==='igual'?'Mismo pago mensual':'Cada camino como es')+
           '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(e.pct))+row('Años de ahorro',fmtAnos(rE.mesesAhorro))+row('Interés del ahorro',pct(e.interesAhorro))+row('Interés del préstamo',pct(e.interesPrestamo))+row('Plazo del préstamo',fmtAnos(rE.mesesPrestamo))+row('Comisión de apertura',pct(e.comision))+
           '</div><div class="afa-inf-sec"><h4>Banco directo</h4>'+row('Interés del préstamo',pct(inm.banco.interesPrestamo))+row('Vigencia del tipo (Zinsbindung)',fmtAnos((inm.banco.zinsbindung||0)*12))+'</div>';
         resultados=inmuebleResultsHTML(inm.precio,inm);
@@ -6178,6 +6191,13 @@
         if(!wsRec) return;
         if(!wsRec.inmueble) wsRec.inmueble=defaultInmueble();
         var v=parseFloat(t.value); wsRec.inmueble.precio=isNaN(v)?0:v;
+        refreshInmuebleResults(); scheduleInmuebleSave();
+        return;
+      }
+      if(t.id==='inm-inicio'){
+        if(!wsRec) return;
+        var inmI=normalizeInmueble(wsRec);
+        if(/^\d{4}-\d{2}$/.test(t.value)) inmI.inicio=t.value; else delete inmI.inicio;
         refreshInmuebleResults(); scheduleInmuebleSave();
         return;
       }
