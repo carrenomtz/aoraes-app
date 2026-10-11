@@ -685,14 +685,33 @@
   .afa-inf-row{display:flex; justify-content:space-between; gap:12px; font-size:13px; color:var(--ink); padding:5px 0}
   .afa-inf-row b{font-variant-numeric:var(--tab)}
   .afa-inf-row.total b{color:var(--navy); font-size:15px}
+  /* Al imprimir se oculta TODO lo demás con display:none (no con visibility:hidden, que sigue
+     ocupando sitio) y el informe pasa a flujo normal: así un informe largo se reparte en varias
+     páginas A4 en vez de cortarse en la primera. */
   @media print{
-    body *{visibility:hidden}
-    #afa-informe, #afa-informe *{visibility:visible}
-    #afa-informe{position:absolute; inset:0; background:#fff}
+    html,body{height:auto !important; overflow:visible !important; display:block !important; background:#fff !important}
+    body > *:not(#afa-informe){display:none !important}
+    #afa-informe{position:static !important; display:block !important; background:#fff}
     .afa-inf-topbar{display:none}
     #afa-inf-body{overflow:visible; padding:0}
   }
 
+  .inm-toprow{display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px 14px}
+  .inm-print{margin-bottom:14px; min-height:0; padding:7px 14px; font-size:12.5px}
+  .inm-inf{max-width:820px; margin:0 auto}
+  .inm-inf, .inm-inf *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+  .inm-inf .inm-curve-card, .inm-inf .inm-res-card, .inm-inf .inm-headline, .inm-inf .inm-stress-tile{break-inside:avoid}
+  .inm-inf-res{margin-top:6px}
+  .inm-inf-data{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:0 26px}
+  .inm-inf-data .afa-inf-sec{margin-bottom:12px}
+  .inm-inf-data .afa-inf-row{font-size:12px; padding:3px 0}
+  .inm-inf .inm-results{grid-template-columns:1fr 1fr !important}
+  .inm-inf .inm-res-card{padding:12px}
+  .inm-inf .inm-curve-card, .inm-inf .inm-res-card, .inm-inf .inm-headline{box-shadow:none}
+  .inm-inf .inm-res-line{padding:4px 0; font-size:11.5px}
+  .inm-inf-limits ul{margin:0; padding-left:18px; font-size:12px; line-height:1.6; color:var(--muted)}
+  .inm-inf-foot{display:flex; justify-content:space-between; gap:12px; font-size:10.5px; color:var(--faint); border-top:1px solid var(--line); padding-top:8px; margin-top:14px}
+  @page{size:A4; margin:14mm}
   /* ---------- module frames ---------- */
   .frames{display:flex; flex-direction:column; background:var(--bg)}
   .frames[hidden]{display:none}
@@ -3731,6 +3750,22 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Informe del proyecto inmobiliario':'Real-estate project report',
+      'Simulación sin cliente':'Simulation without a client',
+      'Datos de la simulación':'Simulation data',
+      'Resultados':'Results',
+      'Supuestos y límites':'Assumptions and limits',
+      'Crédito original':'Original loan',
+      'Interés original':'Original interest rate',
+      'Plazo original':'Original term',
+      'Fecha de inicio':'Start date',
+      'Fecha de refinanciación':'Refinancing date',
+      'Cálculo orientativo con amortización estándar: no es una oferta ni una cotización de ningún banco ni Bausparkasse.':'Indicative calculation with standard amortization: not an offer or a quote from any bank or Bausparkasse.',
+      'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada y puede variar.':'The saving years are an assumption: the Bausparkasse’s allocation (Zuteilung) is not guaranteed and may vary.',
+      'Los tipos de interés son datos introducidos, no pronósticos; los escenarios posteriores a la Zinsbindung son hipotéticos.':'Interest rates are entered values, not forecasts; scenarios after the Zinsbindung are hypothetical.',
+      'No incluye alquiler, revalorización, impuestos, gastos de compra ni lo que rendiría el ahorro en otra parte.':'Not included: rent, appreciation, taxes, purchase costs or what the savings would earn elsewhere.',
+      'Para decidir hace falta la ilustración oficial (Modellrechnung) y la oferta vinculante con el Effektiver Jahreszins.':'To decide you need the official illustration (Modellrechnung) and the binding offer with the effective annual rate.',
+      'Modelo de cálculo: proyecto inmobiliario':'Calculation model: real-estate project',
       'Banco directo: qué pasa al terminar la Zinsbindung':'Direct bank: what happens when the Zinsbindung ends',
       'Con este pago el banco se liquida dentro de la Zinsbindung (':'With this payment the bank loan is paid off within the Zinsbindung (',
       '): no hay que refinanciar.':'): no refinancing needed.',
@@ -3970,6 +4005,22 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Informe del proyecto inmobiliario':'Bericht zum Immobilienprojekt',
+      'Simulación sin cliente':'Simulation ohne Kunde',
+      'Datos de la simulación':'Simulationsdaten',
+      'Resultados':'Ergebnisse',
+      'Supuestos y límites':'Annahmen und Grenzen',
+      'Crédito original':'Ursprüngliches Darlehen',
+      'Interés original':'Ursprünglicher Zinssatz',
+      'Plazo original':'Ursprüngliche Laufzeit',
+      'Fecha de inicio':'Startdatum',
+      'Fecha de refinanciación':'Datum der Anschlussfinanzierung',
+      'Cálculo orientativo con amortización estándar: no es una oferta ni una cotización de ningún banco ni Bausparkasse.':'Orientierende Berechnung mit Standardtilgung: weder ein Angebot noch eine Offerte einer Bank oder Bausparkasse.',
+      'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada y puede variar.':'Die Sparjahre sind eine Annahme: die Zuteilung der Bausparkasse ist nicht garantiert und kann abweichen.',
+      'Los tipos de interés son datos introducidos, no pronósticos; los escenarios posteriores a la Zinsbindung son hipotéticos.':'Die Zinssätze sind eingegebene Werte, keine Prognosen; Szenarien nach der Zinsbindung sind hypothetisch.',
+      'No incluye alquiler, revalorización, impuestos, gastos de compra ni lo que rendiría el ahorro en otra parte.':'Nicht enthalten: Miete, Wertsteigerung, Steuern, Kaufnebenkosten und die Rendite der Ersparnisse anderswo.',
+      'Para decidir hace falta la ilustración oficial (Modellrechnung) y la oferta vinculante con el Effektiver Jahreszins.':'Für eine Entscheidung braucht es die offizielle Modellrechnung und das verbindliche Angebot mit dem effektiven Jahreszins.',
+      'Modelo de cálculo: proyecto inmobiliario':'Berechnungsmodell: Immobilienprojekt',
       'Banco directo: qué pasa al terminar la Zinsbindung':'Direktbank: Was nach Ende der Zinsbindung passiert',
       'Con este pago el banco se liquida dentro de la Zinsbindung (':'Mit dieser Zahlung ist die Bankfinanzierung innerhalb der Zinsbindung abbezahlt (',
       '): no hay que refinanciar.':'): keine Anschlussfinanzierung nötig.',
@@ -5306,13 +5357,56 @@
           '</div>'+
           '<div id="inm-results-wrap">'+inmuebleResultsHTML(inm.precio,inm)+'</div>';
       return '<div class="ws-card"><h3>Proyecto inmobiliario</h3>'+
-        inmuebleModeToggle(inm.modo)+
+        '<div class="inm-toprow">'+inmuebleModeToggle(inm.modo)+'<button type="button" class="ws-cta ghost inm-print" id="inm-print-btn">🖨 Imprimir informe</button></div>'+
         '<p class="ws-lead">'+(inm.modo==='refi'
           ?'Compara seguir con el crédito actual, refinanciar con banco a tipo de mercado, o refinanciar con Badenia a un tipo fijo sobre el saldo pendiente. Cálculo orientativo con amortización estándar.'
           :'Compara financiar la compra con un Bausparvertrag (fase de ahorro a interés casi nulo + préstamo a tipo fijo pactado hoy) frente a una hipoteca bancaria directa a tipo de mercado. Cálculo orientativo con amortización estándar; la Bausparkasse asigna el préstamo real según su propio algoritmo colectivo, que puede variar el plazo de ahorro.')+'</p>'+
         '<p class="inm-eff-note">El <b>interés efectivo del préstamo</b> ya descuenta la comisión de apertura sobre lo que el cliente recibe de verdad — es el mismo cálculo (interés actuarial/IRR) que exige la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.</p>'+
         (inm.modo!=='refi'?'<p class="inm-eff-note">Una hipoteca bancaria alemana casi nunca fija el tipo para todo el plazo: lo normal es una <b>Zinsbindung</b> de 10-15 años, tras la cual el saldo pendiente (<b>Restschuld</b>) se refinancia al tipo que haya entonces (<b>Anschlussfinanzierung</b>). La certeza de tipo durante todo el plazo que muestra "Banco directo" aquí es el caso favorable — coméntalo con el cliente si su horizonte real es más largo que la Zinsbindung que le ofrecerán.</p>':'')+
         body+
+      '</div>';
+    }
+    // Informe imprimible del Proyecto inmobiliario: reutiliza el overlay #afa-informe (mismo mecanismo
+    // y mismo @media print que el informe de AfA). Los resultados se generan con LAS MISMAS funciones que
+    // la pantalla (inmuebleResultsHTML / inmuebleRefiResultsHTML), así cifras, gráficas y textos
+    // coinciden exactamente; aquí solo se añade la cabecera de marca, los datos de partida y los
+    // supuestos y límites. El nombre del cliente solo sale si hay cliente (no en modo genérico).
+    function buildInmuebleInforme(rec){
+      var inm=normalizeInmueble(rec), generic=(rec.id==='aoraes_generic');
+      var fecha=new Date().toLocaleDateString('es-DE');
+      function row(k,v){ return '<div class="afa-inf-row"><span>'+k+'</span><b>'+v+'</b></div>'; }
+      function pct(x){ return String(Math.round((x||0)*100)/100).replace('.',',')+'%'; }
+      function fechaIso(iso){ var d=iso?new Date(iso+'T00:00:00'):null; return (d&&!isNaN(d.getTime()))?d.toLocaleDateString('es-DE'):'—'; }
+      var datos, resultados;
+      if(inm.modo==='refi'){
+        var rf=inm.refi, rem=calcRefiRemaining(rf), estCfg=(rf.estrategia==='refiB')?rf.b:rf.a;
+        datos='<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+
+          row('Crédito original',eur(rf.importeOriginal))+row('Interés original',pct(rf.interesOriginal))+row('Plazo original',fmtAnos((rf.plazoOriginal||0)*12))+
+          row('Fecha de inicio',fechaIso(rf.fechaInicio))+row('Saldo pendiente hoy',eur(rem.saldoPendiente))+row('Fecha de refinanciación',fechaIso(fechaRefiEfectiva(rf)))+
+          '</div><div class="afa-inf-sec"><h4>Refinanciar con banco</h4>'+row('Interés del préstamo',pct(rf.banco.interesPrestamo))+row('Vigencia del tipo (Zinsbindung)',fmtAnos((rf.banco.zinsbindung||0)*12))+
+          '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(estCfg.pct))+row('Interés del ahorro',pct(estCfg.interesAhorro))+row('Interés del préstamo',pct(estCfg.interesPrestamo))+row('Comisión de apertura',pct(estCfg.comision))+'</div>';
+        resultados=inmuebleRefiResultsHTML(rf);
+      } else {
+        var e=(inm.estrategia==='b')?inm.b:inm.a, rE=calcInmuebleOption(inm.precio,e);
+        datos='<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+row('Precio del inmueble',eur(inm.precio))+row('Cómo comparar',inm.comparar==='igual'?'Mismo pago mensual':'Cada camino como es')+
+          '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(e.pct))+row('Años de ahorro',fmtAnos(rE.mesesAhorro))+row('Interés del ahorro',pct(e.interesAhorro))+row('Interés del préstamo',pct(e.interesPrestamo))+row('Plazo del préstamo',fmtAnos(rE.mesesPrestamo))+row('Comisión de apertura',pct(e.comision))+
+          '</div><div class="afa-inf-sec"><h4>Banco directo</h4>'+row('Interés del préstamo',pct(inm.banco.interesPrestamo))+row('Vigencia del tipo (Zinsbindung)',fmtAnos((inm.banco.zinsbindung||0)*12))+'</div>';
+        resultados=inmuebleResultsHTML(inm.precio,inm);
+      }
+      return '<div class="inm-inf">'+
+        '<div class="afa-inf-brand"><img src="./logo-icon-gold.png" alt=""><div><div style="font-family:\'Fraunces\',serif;font-size:15px;color:var(--navy)">AORAES</div><span>Departamento Español</span></div></div>'+
+        '<div class="afa-inf-title">Informe del proyecto inmobiliario</div>'+
+        '<div class="afa-inf-sub">'+(generic?'<span>Simulación sin cliente</span>':'<span data-no-i18n>'+esc(rec.name||'Cliente')+'</span>')+' · '+fecha+'</div>'+
+        '<div class="inm-inf-data">'+datos+'</div>'+
+        '<div class="afa-inf-sec inm-inf-res"><h4>Resultados</h4>'+resultados+'</div>'+
+        '<div class="afa-inf-sec inm-inf-limits"><h4>Supuestos y límites</h4><ul>'+
+          '<li>Cálculo orientativo con amortización estándar: no es una oferta ni una cotización de ningún banco ni Bausparkasse.</li>'+
+          '<li>Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada y puede variar.</li>'+
+          '<li>Los tipos de interés son datos introducidos, no pronósticos; los escenarios posteriores a la Zinsbindung son hipotéticos.</li>'+
+          '<li>No incluye alquiler, revalorización, impuestos, gastos de compra ni lo que rendiría el ahorro en otra parte.</li>'+
+          '<li>Para decidir hace falta la ilustración oficial (Modellrechnung) y la oferta vinculante con el Effektiver Jahreszins.</li>'+
+        '</ul></div>'+
+        '<div class="inm-inf-foot"><span>Modelo de cálculo: proyecto inmobiliario</span> <span>v2 · '+fecha+'</span></div>'+
       '</div>';
     }
     function refreshInmuebleResults(){
@@ -6045,6 +6139,13 @@
         var afaC=normalizeAfa(wsRec); afaC[afaChk.getAttribute('data-afa-check')]=afaChk.checked;
         var secAfaC=document.getElementById('sec-afa'); if(secAfaC) secAfaC.innerHTML=afaBlock(wsRec);
         scheduleAfaSave();
+        return;
+      }
+      var inmPrint=e.target.closest('#inm-print-btn'); if(inmPrint){
+        if(!wsRec||!wsRec.inmueble) return;
+        document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(wsRec);
+        document.getElementById('afa-informe').classList.add('on');
+        window.print();
         return;
       }
       var afaPrint=e.target.closest('#afa-print-btn'); if(afaPrint){
