@@ -6766,7 +6766,12 @@
       }
     });
     wsScreen.addEventListener('focusout',function(e){
-      var tf=e.target; if(tf.hasAttribute&&tf.hasAttribute('data-pres-tipo')&&tf.closest&&tf.closest('#inm-results-wrap')) delete _presRawTipo[tf.getAttribute('data-pres-tipo')];
+      var tf=e.target;
+      if(tf.hasAttribute&&tf.hasAttribute('data-pres-tipo')&&tf.closest&&tf.closest('#inm-results-wrap')){
+        // Al salir del campo, el texto bruto se descarta y se muestra el tipo realmente guardado (si lo escrito no era válido, vuelve al anterior).
+        var kF=tf.getAttribute('data-pres-tipo'); delete _presRawTipo[kF];
+        if(wsRec&&wsRec.inmueble){ var inmF=normalizeInmueble(wsRec), cfgF=(inmF.modo==='refi')?inmF.refi.banco:inmF.banco; tf.value=String(Math.round(inmuebleTiposPost(cfgF)[+kF-1]*100)/100).replace('.',','); }
+      }
     });
     wsScreen.addEventListener('input',function(e){
       var t=e.target;
