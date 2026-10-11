@@ -744,7 +744,7 @@
     #afa-informe{position:static !important; display:block !important; background:#fff}
     .afa-inf-topbar{display:none}
     .inm-inf-ctl{display:none !important}
-    .inm-inf .inm-pres-name,.inm-inf .inm-pres-pago{border-bottom:0; padding:0}
+    .inm-inf .inm-pres-name,.inm-inf .inm-pres-pago,.inm-inf .inm-pres-tipo{border-bottom:0; padding:0}
     #afa-inf-body{overflow:visible; padding:0}
   }
 
@@ -770,6 +770,8 @@
   .inm-pres-inner .inm-headline{font-size:19px}
   .inm-pres-inner .inm-big b{font-size:38px}
   .inm-pres-tipo{width:64px; font-family:'Fraunces',sans-serif; font-size:17px; font-weight:600; color:var(--navy); border:0; border-bottom:1px dashed var(--line-strong); background:transparent; padding:0 2px; text-align:right}
+  /* En el informe los campos del pago y del tipo se ajustan a su contenido (donde el navegador lo permite) para que impresos se lean como texto. */
+  .inm-inf .inm-pres-pago,.inm-inf .inm-pres-tipo{field-sizing:content; width:auto; min-width:3ch; text-align:left}
   .inm-pres-tipo:focus{outline:0; border-bottom-color:var(--gold-deep)}
   .inm-pres-pago{width:84px; font:inherit; font-weight:700; color:var(--navy); border:0; border-bottom:1px dashed var(--line-strong); background:transparent; padding:0 2px; text-align:right}
   .inm-pres-date{width:auto; font-family:'Fraunces',sans-serif; font-size:22px; font-weight:600; text-align:left}
@@ -5824,12 +5826,12 @@
         // El bloque "Cubrir la deuda pendiente" va en la primera página (las otras dos no tienen sitio con 5 escenarios).
         pages=[page(brand+'<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+P.frase+(P.hedge?'<div class="inm-curve-card">'+P.hedge+'</div>':'')+limits),
                page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.curva+(P.tablaInf||'')),
-               page(P.stressEdit('pago',true)+(P.capacidad||'')),
+               page(P.stressEdit(true,true)+(P.capacidad||'')),
                page(P.cards)];
       } else {
         pages=[page(brand+'<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+P.frase+(P.capacidad||'')+limits),
                page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.curva+P.tablaInf),
-               page(P.stressEdit('pago')+P.cards)];
+               page(P.stressEdit(true)+P.cards)];
       }
       _infRec=rec;
       // Control de pantalla (no se imprime): número de escenarios post-Zinsbindung del informe.
@@ -6530,6 +6532,19 @@
     document.getElementById('inm-pres-close').addEventListener('click', presClose);
     document.getElementById('afa-inf-body').addEventListener('input', function(e){
       var tp=e.target;
+      if(tp.hasAttribute&&tp.hasAttribute('data-pres-tipo')&&_infRec){
+        // Tipo del escenario editado en la vista previa del informe: mismo campo que Opciones avanzadas, presentación y pantalla. El informe se
+        // rehace conservando lo tecleado (p. ej. "3,") y devolviendo el foco al campo.
+        var kIT=tp.getAttribute('data-pres-tipo'), vIT=parseFloat(String(tp.value).replace(',','.'));
+        _presRawTipo[kIT]=tp.value;
+        if(!isNaN(vIT)&&vIT>=0&&vIT<=30){
+          var inmIT=normalizeInmueble(_infRec), cfgIT=(inmIT.modo==='refi')?inmIT.refi.banco:inmIT.banco; cfgIT['tipoPost'+kIT]=vIT;
+          var fIT=document.querySelector('[data-inm-opt="'+((inmIT.modo==='refi')?'refiBanco':'banco')+'"][data-inm-field="tipoPost'+kIT+'"]'); if(fIT) fIT.value=vIT;
+          document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(_infRec); scheduleInmuebleSave();
+          var nIT=document.querySelector('#afa-inf-body [data-pres-tipo="'+kIT+'"]'); if(nIT){ nIT.focus(); try{ nIT.setSelectionRange(nIT.value.length,nIT.value.length); }catch(_){} }
+        }
+        return;
+      }
       if(tp.hasAttribute&&tp.hasAttribute('data-pres-pago')&&_infRec){
         // Pago mensual tras la Zinsbindung editado en la vista previa del informe: mismo campo que Opciones avanzadas, presentación y pantalla
         // (vacío o 0 = el mismo pago). El informe se rehace conservando lo tecleado y devolviendo el foco al campo.
@@ -6550,7 +6565,13 @@
       scheduleInmuebleSave();
     });
     document.getElementById('afa-inf-body').addEventListener('focusout', function(e){
-      var tf=e.target; if(!(tf.hasAttribute&&tf.hasAttribute('data-pres-pago'))) return;
+      var tf=e.target;
+      if(tf.hasAttribute&&tf.hasAttribute('data-pres-tipo')){
+        var kFT=tf.getAttribute('data-pres-tipo'); delete _presRawTipo[kFT];
+        if(_infRec){ var inmFT=normalizeInmueble(_infRec), cfgFT=(inmFT.modo==='refi')?inmFT.refi.banco:inmFT.banco; tf.value=String(Math.round(inmuebleTiposPost(cfgFT)[+kFT-1]*100)/100).replace('.',','); }
+        return;
+      }
+      if(!(tf.hasAttribute&&tf.hasAttribute('data-pres-pago'))) return;
       delete _presRawPago.pagoPost;
       var vF=parseFloat(String(tf.value).replace(',','.')); if(String(tf.value).trim()===''||isNaN(vF)||vF<0) tf.value=tf.defaultValue;
     });
