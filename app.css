@@ -705,6 +705,8 @@
   @media print{
     .inm-chip{border:0; padding:0 4px; cursor:default}
     .inm-chip.off{display:none}
+    .inm-inf-in{border:0 !important}
+    .inm-inf-opt.vacio{display:none}
     html,body{height:auto !important; overflow:visible !important; display:block !important; background:#fff !important}
     body > *:not(#afa-informe){display:none !important}
     #afa-informe{position:static !important; display:block !important; background:#fff}
@@ -754,6 +756,8 @@
   .inm-inf-data{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:0 26px}
   .inm-inf-data .afa-inf-sec{margin-bottom:12px}
   .inm-inf-data .afa-inf-row{font-size:12px; padding:3px 0}
+  .inm-inf-in{width:70px; font:inherit; font-weight:700; text-align:right; color:var(--navy); border:0; border-bottom:1px dashed var(--line-strong,#b9b3a4); background:transparent; padding:0 2px}
+  .inm-inf-in:focus{outline:0; border-bottom-color:var(--gold-deep)}
   .inm-inf .inm-results{grid-template-columns:1fr 1fr !important}
   .inm-inf .inm-res-card{padding:12px}
   .inm-inf .inm-results{break-inside:avoid}

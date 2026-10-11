@@ -568,17 +568,23 @@ function inmuebleFmtFecha(iso){ var d=iso?new Date(iso+'T00:00:00'):null; return
 function inmuebleDatosHTML(inm){
   function row(k,v){ return '<div class="afa-inf-row"><span>'+k+'</span><b>'+v+'</b></div>'; }
   var pct=inmuebleFmtPct;
+  // Sonderzahlung anual del ahorro: editable en la vista previa; sin valor se oculta al imprimir (clase vacio).
+  function rowSonder(cfg){
+    if(!(cfg.pct>0)) return '';
+    var v=cfg.sonderAhorro||0;
+    return '<div class="afa-inf-row inm-inf-opt'+(v>0?'':' vacio')+'"><span>Sonderzahlung anual del ahorro</span><b><input type="text" inputmode="decimal" class="inm-inf-in" data-inf-sonder="1" value="'+(v>0?String(Math.round(v)):'')+'" placeholder="0"> €/año</b></div>';
+  }
   if(inm.modo==='refi'){
     var rf=inm.refi, rem=calcRefiRemaining(rf), estCfg=(rf.estrategia==='refiB')?rf.b:rf.a;
     return '<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+
       row('Crédito original',eur(rf.importeOriginal))+row('Interés original',pct(rf.interesOriginal))+row('Plazo original',fmtAnos((rf.plazoOriginal||0)*12))+
       row('Fecha de inicio',inmuebleFmtFecha(rf.fechaInicio))+row('Saldo pendiente hoy',eur(rem.saldoPendiente))+row('Fecha de refinanciación',inmuebleFmtFecha(fechaRefiEfectiva(rf)))+
       '</div><div class="afa-inf-sec"><h4>Refinanciar con banco</h4>'+row('Interés del préstamo',pct(rf.banco.interesPrestamo))+row('Vigencia del tipo (Zinsbindung)',fmtAnos((rf.banco.zinsbindung||0)*12))+
-      '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(estCfg.pct))+row('Interés del ahorro',pct(estCfg.interesAhorro))+row('Interés del préstamo',pct(estCfg.interesPrestamo))+row('Comisión de apertura',pct(estCfg.comision))+'</div>';
+      '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(estCfg.pct))+row('Interés del ahorro',pct(estCfg.interesAhorro))+row('Interés del préstamo',pct(estCfg.interesPrestamo))+row('Comisión de apertura',pct(estCfg.comision))+rowSonder(estCfg)+'</div>';
   }
   var e=(inm.estrategia==='b')?inm.b:inm.a, rE=calcInmuebleOption(inmuebleFin(inm),e);
   return '<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+row('Precio del inmueble',eur(inm.precio))+((inm.gastosPct||0)>0?row('Gastos de compra',pct(inm.gastosPct)):'')+((inm.capitalPropio||0)>0?row('Capital propio',eur(inm.capitalPropio)):'')+(inmuebleFin(inm)!==inm.precio?row('Importe a financiar',eur(inmuebleFin(inm))):'')+row('Mes de inicio',inmuebleMesAnio(0))+row('Cómo comparar',inm.comparar==='igual'?'Mismo pago mensual':'Cada camino como es')+
-    '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(e.pct))+row('Años de ahorro',fmtAnos(rE.mesesAhorro))+row('Interés del ahorro',pct(e.interesAhorro))+row('Interés del préstamo',pct(e.interesPrestamo))+row('Plazo del préstamo',fmtAnos(rE.mesesPrestamo))+row('Comisión de apertura',pct(e.comision))+
+    '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(e.pct))+row('Años de ahorro',fmtAnos(rE.mesesAhorro))+row('Interés del ahorro',pct(e.interesAhorro))+row('Interés del préstamo',pct(e.interesPrestamo))+row('Plazo del préstamo',fmtAnos(rE.mesesPrestamo))+row('Comisión de apertura',pct(e.comision))+rowSonder(e)+
     '</div><div class="afa-inf-sec"><h4>Banco directo</h4>'+row('Interés del préstamo',pct(inm.banco.interesPrestamo))+row('Vigencia del tipo (Zinsbindung)',fmtAnos((inm.banco.zinsbindung||0)*12))+'</div>';
 }
 
@@ -934,6 +940,21 @@ function inmuebleInstallListeners(){
       var ctI=e.target.closest('[data-curva-tipo]'); if(!ctI||!_infRec) return;
       inmuebleToggleCurvaTipo(normalizeInmueble(_infRec),parseFloat(ctI.getAttribute('data-curva-tipo')));
       document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(_infRec); scheduleInmuebleSave();
+    });
+    document.getElementById('afa-inf-body').addEventListener('input', function(e){
+      // Sonderzahlung anual editada en la vista previa del informe: mismo campo que Más opciones; se rehace el informe conservando el foco.
+      var ti=e.target; if(!ti.hasAttribute||!ti.hasAttribute('data-inf-sonder')||!_infRec) return;
+      var raw=String(ti.value).trim(), vi=(raw==='')?0:parseFloat(raw.replace(',','.'));
+      if(isNaN(vi)||vi<0||vi>1000000) return;
+      var inmI=normalizeInmueble(_infRec), refiI=(inmI.modo==='refi');
+      var cfgI=refiI?((inmI.refi.estrategia==='refiB')?inmI.refi.b:inmI.refi.a):((inmI.estrategia==='b')?inmI.b:inmI.a);
+      cfgI.sonderAhorro=vi;
+      var bodyI=document.getElementById('afa-inf-body'), posI=ti.selectionStart;
+      bodyI.innerHTML=buildInmuebleInforme(_infRec);
+      var nI=bodyI.querySelector('[data-inf-sonder]'); if(nI){ nI.value=raw; nI.focus(); try{ nI.setSelectionRange(posI,posI); }catch(_){} }
+      var optI=refiI?((inmI.refi.estrategia==='refiB')?'refiB':'refiA'):((inmI.estrategia==='b')?'b':'a');
+      var fI=document.querySelector('[data-inm-opt="'+optI+'"][data-inm-field="sonderAhorro"]'); if(fI) fI.value=vi||0;
+      refreshInmuebleResults(); scheduleInmuebleSave();
     });
     document.getElementById('inm-pres-prev').addEventListener('click', function(){ presShow(_presIdx-1); });
     document.getElementById('inm-pres-next').addEventListener('click', function(){ presShow(_presIdx+1); });
