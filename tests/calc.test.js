@@ -14,10 +14,12 @@ assert(a > 0 && b > a, 'No se encontró el motor en index.html (marcadores cambi
 const f1 = html.indexOf('function inmuebleFin('), f2 = html.indexOf('function inmuebleFinLine(');
 assert(f1 > 0 && f2 > f1, 'No se encontró inmuebleFin en index.html');
 const c1 = html.indexOf('function inmuebleCapacidadHTML('), c2 = html.indexOf('function inmuebleFinLine(');
+const k1 = html.indexOf('function inmuebleCurvaSaldo('), k2 = html.indexOf('function inmuebleCurvaSaldoRefi(');
+assert(k1 > 0 && k2 > k1, 'No se encontró inmuebleCurvaSaldo en index.html');
 assert(c1 > 0 && c2 > c1, 'No se encontró inmuebleCapacidadHTML en index.html');
-const engine = new Function(html.slice(a, b) + html.slice(f1, f2) + 'function eur(n){ return Math.round(n) + " €"; }' + html.slice(c1, c2) +
+const engine = new Function(html.slice(a, b) + html.slice(f1, f2) + 'function eur(n){ return Math.round(n) + " €"; }' + html.slice(c1, c2) + html.slice(k1, k2) +
   '\nreturn {annuityQuota,effectiveAnnualRate,savingsQuota,monthsToPayoff,simLoan,calcInmuebleOption,' +
-  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin,inmuebleCapacidadHTML,saldoEnFecha};')();
+  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin,inmuebleCapacidadHTML,saldoEnFecha,inmuebleCurvaSaldo,inmuebleHitosComprar,inmuebleCurvaTipos,inmuebleToggleCurvaTipo,inmuebleValorEn};')();
 
 let passed = 0, failed = 0;
 const gaps = [];
@@ -196,6 +198,30 @@ test('un pago de ahorro tan alto que alcanzaría el objetivo antes del mínimo: 
 });
 test('Refinanciar (sinMinimoAhorro) no recalcula: se avisa en pantalla, el cálculo queda como estaba', () => {
   assert.strictEqual(mesesAh(bsMin({ anios: 2, sinMinimoAhorro: true })), 24);
+});
+
+console.log('Gráfica: hitos y escenarios de interés')
+test('hitos de Comprar: Zuteilung con lo ahorrado, Zinsbindung con la deuda del banco y pagos finales a 0', () => {
+  const precio = 300000;
+  const est = { pct: 40, anios: 5, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 6, comision: 1.6 };
+  const bk = { pct: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 };
+  const rEst = engine.calcInmuebleOption(precio, est), rk = engine.calcInmuebleOption(precio, bk);
+  const ptsE = engine.inmuebleCurvaSaldo(precio, rEst, est), ptsB = engine.inmuebleCurvaSaldo(precio, rk, bk);
+  const rows = engine.inmuebleHitosComprar(precio, rEst, rk, ptsE, ptsB, 120);
+  assert.deepStrictEqual(rows.map(r => r.n), ['Zuteilung del Bausparvertrag', 'Fin de la Zinsbindung', 'Bausparvertrag pagado', 'Banco pagado']);
+  near(rows[0].m, rEst.mesesAhorro, 0); near(rows[0].ahorro, rEst.objetivoAhorro, 1, 'ahorrado en la Zuteilung');
+  near(rows[0].baus, precio - rEst.objetivoAhorro, 1, 'deuda del Bausparvertrag en la Zuteilung');
+  near(rows[1].banco, rk.restschuldZinsbindung, 1, 'deuda del banco al fin de la Zinsbindung');
+  assert.strictEqual(rows[2].baus, 0); assert.strictEqual(rows[3].banco, 0); assert.strictEqual(rows[3].baus, 0);
+  assert(rows.every((r, i) => i === 0 || r.m >= rows[i - 1].m), 'hitos ordenados en el tiempo');
+});
+test('escenarios de interés: por defecto 3, 4 y 5 %, y apagar/encender uno', () => {
+  assert.deepStrictEqual(engine.inmuebleCurvaTipos({}), [3, 4, 5]);
+  assert.deepStrictEqual(engine.inmuebleCurvaTipos({ curvaTipos: [2, 3, 4, 5] }), [2, 3, 4]);
+  const inm = { curvaOff: [] };
+  engine.inmuebleToggleCurvaTipo(inm, 4); assert.deepStrictEqual(inm.curvaOff, [4]);
+  engine.inmuebleToggleCurvaTipo(inm, 5); assert.deepStrictEqual(inm.curvaOff, [4, 5]);
+  engine.inmuebleToggleCurvaTipo(inm, 4); assert.deepStrictEqual(inm.curvaOff, [5]);
 });
 
 console.log('Cubrir la deuda pendiente de la Zinsbindung con un Bausparvertrag')
