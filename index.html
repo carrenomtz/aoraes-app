@@ -3792,6 +3792,7 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Pago mensual tras la Zinsbindung (0 = el mismo)':'Monthly payment after the Zinsbindung (0 = the same)','€/mes':'€/month','con un pago mensual de':'with a monthly payment of',
       'Nombre del escenario {0}':'Scenario {0} name','Opcional':'Optional',
       'Tipo posterior a la Zinsbindung · escenario {0}':'Rate after the Zinsbindung · scenario {0}',
       'Tope anual de Sondertilgung (0 = sin tope)':'Annual Sondertilgung cap (0 = no cap)',
@@ -4064,6 +4065,7 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Pago mensual tras la Zinsbindung (0 = el mismo)':'Monatliche Zahlung nach der Zinsbindung (0 = gleich)','€/mes':'€/Monat','con un pago mensual de':'bei einer monatlichen Zahlung von',
       'Nombre del escenario {0}':'Name von Szenario {0}','Opcional':'Optional',
       'Tipo posterior a la Zinsbindung · escenario {0}':'Zinssatz nach der Zinsbindung · Szenario {0}',
       'Tope anual de Sondertilgung (0 = sin tope)':'Jährliche Sondertilgungsgrenze (0 = keine Grenze)',
@@ -4897,6 +4899,7 @@
       advanced+=inmuebleOptField(opt,'topeST','Tope anual de Sondertilgung (0 = sin tope)',cfg.topeST||0,'0.5','% del préstamo','min="0" max="100"');
       advanced+=inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
       if(opt==='banco'){
+        advanced+=inmuebleOptField(opt,'pagoPost','Pago mensual tras la Zinsbindung (0 = el mismo)',cfg.pagoPost||0,'50','€/mes','min="0"');
         inmuebleTiposPost(cfg).forEach(function(v,i){ advanced+=inmuebleOptField(opt,'tipoPost'+(i+1),'Tipo posterior a la Zinsbindung · escenario '+(i+1),Math.round(v*100)/100,'0.1','%','min="0" max="20"');
           advanced+='<label class="inm-f"><span>Nombre del escenario '+(i+1)+'</span><span class="inm-inp-wrap"><input type="text" class="inm-inp" maxlength="40" data-inm-nombre="'+(i+1)+'" value="'+esc(cfg['nombrePost'+(i+1)]||'')+'" placeholder="Opcional"></span></label>'; });
       }
@@ -5262,23 +5265,25 @@
       } else {
         var pmt=rk.cuotaPrestamo, R=rk.restschuldZinsbindung||0, r0=cfgBanco.interesPrestamo||0;
         var stS=Math.max(0,rk.sondertilgung||0);
+        // Pago mensual tras la Zinsbindung: por defecto el mismo; editable (pagoPost) para simular que el cliente lo sube o baja al refinanciar.
+        var pagoPost=Math.max(0,cfgBanco.pagoPost||0), pmt2=pagoPost>0?pagoPost:pmt;
         var intDurante=stS>0?simLoan(precio,r0,pmt,stS,0,zMeses).interes:Math.max(0,pmt*zMeses-(precio-R));
         function fmtTipo(x){ return String(Math.round(x*100)/100).replace('.',',')+'%'; }
         var tiles=inmuebleTiposPost(cfgBanco).map(function(r,i){ return {r:r,now:Math.abs(r-r0)<0.001,n:String(cfgBanco['nombrePost'+(i+1)]||'').trim()}; }).map(function(t){
-          var r2=t.r, rm=r2/100/12, cubre=(pmt>R*rm+0.005);
+          var r2=t.r, rm=r2/100/12, cubre=(pmt2>R*rm+0.005);
           var inner;
           if(!cubre){
             inner='<div class="inm-stress-warn">Tu pago no cubre los intereses</div>';
           } else {
             var m2, intDesp;
-            if(stS>0){ var sm2=simLoan(R,r2,pmt,stS,zMeses,1200); m2=sm2.meses; intDesp=sm2.interes; }
-            else { m2=monthsToPayoff(R,r2,pmt); intDesp=Math.max(0,pmt*m2-(R-balanceTrasMeses(R,r2,pmt,m2))); }
+            if(stS>0){ var sm2=simLoan(R,r2,pmt2,stS,zMeses,1200); m2=sm2.meses; intDesp=sm2.interes; }
+            else { m2=monthsToPayoff(R,r2,pmt2); intDesp=Math.max(0,pmt2*m2-(R-balanceTrasMeses(R,r2,pmt2,m2))); }
             inner='<div class="inm-res-line"><span>Plazo total</span><b>'+fmtAnos(zMeses+m2)+'</b></div>'+
                   '<div class="inm-res-line"><span>Intereses totales</span><b>'+eur(intDurante+intDesp)+'</b></div>';
           }
           return '<div class="inm-stress-tile'+(t.now?' now':'')+'"><div class="inm-stress-head">'+(t.n?'<span data-no-i18n>'+esc(t.n)+'</span>':'<span>'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'</span>')+' <b>'+fmtTipo(r2)+'</b></div>'+inner+'</div>';
         }).join('');
-        body='<p class="inm-stress-lead"><span>Al terminar la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>), aún debes <b>'+eur(R)+'</b>.</span> <span>Ese saldo se refinancia al tipo que haya entonces. Tres posibilidades (no son pronósticos), con tu mismo pago de <b>'+eur(pmt)+'/mes</b>.</span></p>'+
+        body='<p class="inm-stress-lead"><span>Al terminar la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>), aún debes <b>'+eur(R)+'</b>.</span> <span>Ese saldo se refinancia al tipo que haya entonces. Tres posibilidades (no son pronósticos), '+(pagoPost>0?'con un pago mensual de':'con tu mismo pago de')+' <b>'+eur(pmt2)+'/mes</b>.</span></p>'+
           '<div class="inm-stress-grid">'+tiles+'</div>'+
           '<p class="inm-curve-note">El Bausparvertrag mantiene su tipo durante todo el préstamo: no cambia.</p>';
       }
