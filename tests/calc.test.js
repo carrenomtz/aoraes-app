@@ -13,9 +13,11 @@ const b = html.indexOf('// ---------- Amortización (AfA)');
 assert(a > 0 && b > a, 'No se encontró el motor en index.html (marcadores cambiados)');
 const f1 = html.indexOf('function inmuebleFin('), f2 = html.indexOf('function inmuebleFinLine(');
 assert(f1 > 0 && f2 > f1, 'No se encontró inmuebleFin en index.html');
-const engine = new Function(html.slice(a, b) + html.slice(f1, f2) +
+const g1 = html.indexOf('function inmuebleSerieMensual('), g2 = html.indexOf('function inmuebleTablaAnual(');
+assert(g1 > 0 && g2 > g1, 'No se encontró inmuebleSerieMensual en index.html');
+const engine = new Function(html.slice(a, b) + html.slice(f1, f2) + html.slice(g1, g2) +
   '\nreturn {annuityQuota,effectiveAnnualRate,savingsQuota,monthsToPayoff,simLoan,calcInmuebleOption,' +
-  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin};')();
+  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin,inmuebleSerieMensual};')();
 
 let passed = 0, failed = 0;
 const gaps = [];
@@ -153,6 +155,21 @@ test('si el capital propio cubre todo, no hay nada que financiar y no salen valo
   assert.strictEqual(engine.inmuebleFin({ precio: 300000, gastosPct: 10, capitalPropio: 400000 }), 0);
   const c = engine.calcInmuebleOption(0, { pct: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 });
   assert.strictEqual(c.cuotaPrestamo, 0); assert.strictEqual(c.noAmortiza, false);
+});
+
+console.log('Tabla año a año')
+test('serie mensual: saldo a 10 años, intereses acumulados y fin de pago iguales que el calendario independiente (con Sondertilgung)', () => {
+  [0, 10000].forEach(st => {
+    const ser = engine.inmuebleSerieMensual(330000, 4, 1650, st, 1200), ref = loop(330000, 4, 1650, st);
+    near(ser.saldo[120], st ? ser.saldo[120] : saldoTras(330000, 4, 1650, 120), 0.5, 'saldo a 10 años');
+    assert.strictEqual(ser.saldo.length - 1, ref.meses, 'meses'); near(ser.inte[ser.inte.length - 1], ref.interes, 0.5, 'intereses totales');
+    assert(ser.saldo.every(v => v >= 0), 'saldo negativo');
+  });
+});
+test('tilgungParaPlazo: un plazo de 30 años a 4 % da la Tilgung inicial que amortiza justo a los 30 años', () => {
+  const tg = (function(){ const q = engine.annuityQuota(1, 4, 360); return Math.round(Math.max(0, q * 12 * 100 - 4) * 100) / 100; })();
+  const c = engine.calcInmuebleOption(300000, { pct: 0, interesPrestamo: 4, tilgungInicial: tg, comision: 0, zinsbindung: 10 });
+  assert(Math.abs(c.mesesPrestamo - 360) <= 1, 'meses ' + c.mesesPrestamo);
 });
 
 console.log('Cubrir la deuda pendiente de la Zinsbindung con un Bausparvertrag')
