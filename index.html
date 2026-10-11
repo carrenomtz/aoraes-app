@@ -3792,6 +3792,7 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Pago mensual de ahorro (0 = calculado; fija cuánto se ahorra hasta la refinanciación)':'Monthly saving payment (0 = calculated; sets how much is saved by the refinancing)',
       'Pago mensual de ahorro (0 = calculado; fija los años de ahorro)':'Monthly saving payment (0 = calculated; sets the saving years)','Pago mensual del préstamo (0 = calculado; fija el plazo)':'Monthly loan payment (0 = calculated; sets the term)',
       'Pago mensual antes de la Zinsbindung (0 = calculado)':'Monthly payment before the Zinsbindung (0 = calculated)',
       'Pago mensual tras la Zinsbindung (0 = el mismo)':'Monthly payment after the Zinsbindung (0 = the same)','€/mes':'€/month','con un pago mensual de':'with a monthly payment of',
@@ -4067,6 +4068,7 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Pago mensual de ahorro (0 = calculado; fija cuánto se ahorra hasta la refinanciación)':'Monatliche Sparrate (0 = berechnet; legt fest, wie viel bis zur Anschlussfinanzierung gespart wird)',
       'Pago mensual de ahorro (0 = calculado; fija los años de ahorro)':'Monatliche Sparrate (0 = berechnet; legt die Sparjahre fest)','Pago mensual del préstamo (0 = calculado; fija el plazo)':'Monatliche Darlehensrate (0 = berechnet; legt die Laufzeit fest)',
       'Pago mensual antes de la Zinsbindung (0 = calculado)':'Monatliche Zahlung vor der Zinsbindung (0 = berechnet)',
       'Pago mensual tras la Zinsbindung (0 = el mismo)':'Monatliche Zahlung nach der Zinsbindung (0 = gleich)','€/mes':'€/Monat','con un pago mensual de':'bei einer monatlichen Zahlung von',
@@ -4654,10 +4656,18 @@
       var comisionAhorro=esBausparvertrag?precio*(cfg.comision||0)/100:0;
       var cuotaAhorro=(pct>0&&mesesAhorro>0)?savingsQuota(objetivoAhorro+comisionAhorro,cfg.interesAhorro,mesesAhorro):0;
       var interesGanadoAhorro=(pct>0&&mesesAhorro>0)?Math.max(0,objetivoAhorro+comisionAhorro-cuotaAhorro*mesesAhorro):0;
+      // Refinanciar: el tiempo de ahorro es fijo (hasta la fecha de refinanciación), así que con un pago
+      // fijado lo que cambia es CUÁNTO se ahorra (neto de la comisión, tope = el saldo) y, por tanto, el
+      // préstamo que queda.
+      if(esBausparvertrag && cfg.pagoAhorro>0 && cfg.ahorroPorTiempo && pct>0 && mesesAhorro>0){
+        var rR=(cfg.interesAhorro||0)/100/12, fvR=Math.abs(rR)<1e-9?cfg.pagoAhorro*mesesAhorro:cfg.pagoAhorro*((Math.pow(1+rR,mesesAhorro)-1)/rR);
+        objetivoAhorro=Math.min(precio,Math.max(0,fvR-comisionAhorro)); capitalPrestamo=precio-objetivoAhorro;
+        cuotaAhorro=cfg.pagoAhorro; interesGanadoAhorro=Math.max(0,fvR-cfg.pagoAhorro*mesesAhorro);
+      }
       // Pago mensual de ahorro fijado por el asesor (solo Bausparvertrag): en vez de derivarlo del plazo,
       // se simula cuánto tarda en juntarse objetivo+comisión con ese pago (último pago recortado) —
       // el plazo de ahorro pasa a ser el resultado.
-      if(esBausparvertrag && cfg.pagoAhorro>0 && pct>0 && objetivoAhorro>0){
+      if(esBausparvertrag && cfg.pagoAhorro>0 && pct>0 && objetivoAhorro>0 && !cfg.ahorroPorTiempo){
         var Ta=objetivoAhorro+comisionAhorro, rA=(cfg.interesAhorro||0)/100/12, balA=0, nA=0, contribA=0;
         while(balA<Ta-0.005 && nA<1200){ nA++; balA=balA*(1+rA); var pA=Math.min(cfg.pagoAhorro,Ta-balA); balA+=pA; contribA+=pA; }
         mesesAhorro=nA; cuotaAhorro=cfg.pagoAhorro; interesGanadoAhorro=Math.max(0,Ta-contribA);
@@ -4890,6 +4900,10 @@
       var basic='', advanced='';
       var withAhorro=(opt==='a'||opt==='b'||opt==='refiA'||opt==='refiB');
       var withAnios=(opt==='a'||opt==='b');
+      if(opt==='refiA'||opt==='refiB'){
+        advanced+=inmuebleOptField(opt,'pagoAhorro','Pago mensual de ahorro (0 = calculado; fija cuánto se ahorra hasta la refinanciación)',cfg.pagoAhorro||0,'50','€/mes','min="0"');
+        advanced+=inmuebleOptField(opt,'pagoPrestamo','Pago mensual del préstamo (0 = calculado; fija el plazo)',cfg.pagoPrestamo||0,'50','€/mes','min="0"');
+      }
       if(withAnios){
         advanced+=inmuebleOptField(opt,'pagoAhorro','Pago mensual de ahorro (0 = calculado; fija los años de ahorro)',cfg.pagoAhorro||0,'50','€/mes','min="0"');
         advanced+=inmuebleOptField(opt,'pagoPrestamo','Pago mensual del préstamo (0 = calculado; fija el plazo)',cfg.pagoPrestamo||0,'50','€/mes','min="0"');
@@ -5337,7 +5351,7 @@
       // que el crédito original realmente sigue vivo.
       var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
       var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
-      var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST});
+      var rEst=calcInmuebleOption(saldoAtRefi,{pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
       var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
       var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
       var maxMeses=Math.max(mesesHastaRefi+rBanco.mesesTotal,mesesHastaRefi+rEst.mesesTotal,1);
