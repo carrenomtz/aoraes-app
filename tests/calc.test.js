@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const html = fs.readFileSync(process.env.IDX || path.join(__dirname, '..', 'index.html'), 'utf8');
 const a = html.indexOf('function annuityQuota(');
 const b = html.indexOf('// ---------- Amortización (AfA)');
 assert(a > 0 && b > a, 'No se encontró el motor en index.html (marcadores cambiados)');
@@ -110,12 +110,23 @@ test('un interés de ahorro erróneo (0,95 en vez de 0,05) cambia el coste de fo
   const c = (ia) => engine.calcInmuebleOption(300000, { pct: 40, anios: 3.5, interesAhorro: ia, interesPrestamo: 1.75, tilgungsbeitragPerMille: 3.79, comision: 1.6 });
   assert(c(0.05).costeTotal - c(0.95).costeTotal > 1000, 'diferencia de coste < 1.000 €');
 });
-knownGap('plazo de ahorro vs referencia Badenia (132 y 157 meses)', () => {
+// Referencia: Modellrechnung de Badenia (ImmoStart, 300.000 €, inicio 30.10.2026). El plazo de ahorro del contrato son
+// 130 / 156 pagos mensuales (la "Zuteilung" cae en el mes siguiente al último pago) y el préstamo dura 105 / 86 meses.
+test('plazo de ahorro y de préstamo igual que la Modellrechnung (130+105 y 156+86 meses)', () => {
   const m1 = bs(41.8136, 1.75), m2 = bs(50.517, 0.95);
-  assert.strictEqual(m1.mesesTotal - m1.mesesPrestamo, 132); assert.strictEqual(m2.mesesTotal - m2.mesesPrestamo, 157);
+  assert.strictEqual(m1.mesesTotal - m1.mesesPrestamo, 130); assert.strictEqual(m1.mesesPrestamo, 105);
+  assert.strictEqual(m2.mesesTotal - m2.mesesPrestamo, 156); assert.strictEqual(m2.mesesPrestamo, 86);
 });
-knownGap('interés efectivo vs referencia Badenia (2,14 % y 1,41 %)', () => {
-  near(bs(41.8136, 1.75).tasaEfectiva * 100, 2.14, 0.02); near(bs(50.517, 0.95).tasaEfectiva * 100, 1.41, 0.02);
+test('interés efectivo del Bausparvertrag coincide con el de la Modellrechnung (2,14 % y 1,41 %, ±0,02)', () => {
+  near(bs(41.8136, 1.75).tasaEfectiva * 100, 2.14, 0.02, 'Classic'); near(bs(50.517, 0.95).tasaEfectiva * 100, 1.41, 0.02, 'Niedriger Zins');
+});
+test('intereses de la fase de préstamo dentro del 1,5 % de los del contrato (13.932,23 € en ClassicFinanz)', () => {
+  // El contrato abona intereses por año natural; la app los calcula mes a mes (~1 % menos).
+  near(bs(41.8136, 1.75).interesTotalPrestamo, 13932.23, 13932.23 * 0.015);
+});
+test('interés efectivo del banco sin comisión = nominal anualizado (4 % → 4,074 %)', () => {
+  const c = engine.calcInmuebleOption(330000, { pct: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 });
+  near(c.tasaEfectiva * 100, (Math.pow(1 + 0.04 / 12, 12) - 1) * 100, 0.001);
 });
 
 console.log('Refinanciar');
