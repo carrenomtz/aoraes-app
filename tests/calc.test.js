@@ -92,6 +92,16 @@ test('el interés efectivo con comisión supera al de sin comisión', () => {
   assert(con > sin && sin > 0.04);
 });
 
+// Referencia: folleto ImmoSmart de la DVAG (2026): 100.000 € a 3,34 %, Tilgung 1/2/3 % -> 44a2m/29a7m/22a7m e intereses
+// 90.996 / 57.233 / 42.234 €. El folleto cuenta un mes más que la app (los pagos + el mes de la entrega); los intereses coinciden.
+[[1, 44 * 12 + 2, 90996], [2, 29 * 12 + 7, 57233], [3, 22 * 12 + 7, 42234]].forEach(([t, mesesFolleto, interesFolleto]) => {
+  test('folleto ImmoSmart: Tilgung ' + t + ' % a 3,34 % (plazo ±1 mes, intereses ±10 €)', () => {
+    const c = engine.calcInmuebleOption(100000, { pct: 0, interesPrestamo: 3.34, tilgungInicial: t, comision: 0, zinsbindung: 10 });
+    assert(Math.abs(c.mesesPrestamo - mesesFolleto) <= 1, 'meses ' + c.mesesPrestamo + ' vs ' + mesesFolleto);
+    near(c.interesTotalPrestamo, interesFolleto, 10, 'intereses');
+  });
+});
+
 console.log('Bausparvertrag — ejemplo de referencia Badenia (300.000 €, 1.000 €/mes, 0,05 %, comisión 1,6 %)');
 const bs = (pct, tipo) => engine.calcInmuebleOption(300000, { pct, anios: 5, interesAhorro: 0.05, interesPrestamo: tipo, tilgungsbeitragPerMille: 6, comision: 1.6, pagoAhorro: 1000 });
 test('ClassicFinanz: ahorro 125.441 €, préstamo 174.559 €, cuota 1.800 €', () => {
