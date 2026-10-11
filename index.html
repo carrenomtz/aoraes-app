@@ -628,7 +628,7 @@
   .inm-headline-sub{font-size:11.5px; line-height:1.5; color:rgba(255,255,255,.7); margin-top:9px; padding-top:9px; border-top:1px solid rgba(255,255,255,.14)}
   .inm-stress-lead{font-size:12.5px; color:var(--muted); line-height:1.55; margin-bottom:12px}
   .inm-stress-lead b{color:var(--navy)}
-  .inm-stress-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+  .inm-stress-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px}
   .inm-stress-tile{border:1px solid var(--line); border-radius:var(--r-sm); padding:12px 13px; background:var(--surface)}
   .inm-stress-tile.now{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-soft)}
   .inm-stress-head{font-size:11.5px; color:var(--muted); margin-bottom:6px}
@@ -3792,6 +3792,11 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Número de escenarios (1-5)':'Number of scenarios (1-5)',
+      'Una posibilidad':'One possibility',
+      'Dos posibilidades':'Two possibilities',
+      'Cuatro posibilidades':'Four possibilities',
+      'Cinco posibilidades':'Five possibilities',
       'Línea dorada del gráfico (años; 0 = ninguna)':'Gold chart line (years; 0 = none)',
       'Pago mensual de ahorro (0 = calculado; fija cuánto se ahorra hasta la refinanciación)':'Monthly saving payment (0 = calculated; sets how much is saved by the refinancing)',
       'Pago mensual de ahorro (0 = calculado; fija los años de ahorro)':'Monthly saving payment (0 = calculated; sets the saving years)','Pago mensual del préstamo (0 = calculado; fija el plazo)':'Monthly loan payment (0 = calculated; sets the term)',
@@ -3835,7 +3840,7 @@
       '): no hay que refinanciar.':'): no refinancing needed.',
       'Al terminar la Zinsbindung (':'When the Zinsbindung ends (',
       '), aún debes':'), you still owe',
-      'Ese saldo se refinancia al tipo que haya entonces. Tres posibilidades (no son pronósticos), con tu mismo pago de':'That balance is refinanced at whatever rate applies then. Three possibilities (not forecasts), with the same payment of',
+      'Ese saldo se refinancia al tipo que haya entonces.':'That balance is refinanced at whatever rate applies then.','Tres posibilidades':'Three possibilities','(no son pronósticos), con tu mismo pago de':'(not forecasts), with the same payment of','(no son pronósticos), con un pago mensual de':'(not forecasts), with a monthly payment of',
       'Si el tipo sigue en':'If the rate stays at',
       'Si el tipo pasa a':'If the rate becomes',
       'Plazo total':'Total term',
@@ -4069,6 +4074,11 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Número de escenarios (1-5)':'Anzahl der Szenarien (1-5)',
+      'Una posibilidad':'Eine Möglichkeit',
+      'Dos posibilidades':'Zwei Möglichkeiten',
+      'Cuatro posibilidades':'Vier Möglichkeiten',
+      'Cinco posibilidades':'Fünf Möglichkeiten',
       'Línea dorada del gráfico (años; 0 = ninguna)':'Goldene Linie im Diagramm (Jahre; 0 = keine)',
       'Pago mensual de ahorro (0 = calculado; fija cuánto se ahorra hasta la refinanciación)':'Monatliche Sparrate (0 = berechnet; legt fest, wie viel bis zur Anschlussfinanzierung gespart wird)',
       'Pago mensual de ahorro (0 = calculado; fija los años de ahorro)':'Monatliche Sparrate (0 = berechnet; legt die Sparjahre fest)','Pago mensual del préstamo (0 = calculado; fija el plazo)':'Monatliche Darlehensrate (0 = berechnet; legt die Laufzeit fest)',
@@ -4112,7 +4122,7 @@
       '): no hay que refinanciar.':'): keine Anschlussfinanzierung nötig.',
       'Al terminar la Zinsbindung (':'Nach Ende der Zinsbindung (',
       '), aún debes':') schulden Sie noch',
-      'Ese saldo se refinancia al tipo que haya entonces. Tres posibilidades (no son pronósticos), con tu mismo pago de':'Dieser Restbetrag wird zum dann geltenden Zinssatz neu finanziert. Drei Möglichkeiten (keine Prognosen) bei gleicher Zahlung von',
+      'Ese saldo se refinancia al tipo que haya entonces.':'Dieser Restbetrag wird zum dann geltenden Zinssatz neu finanziert.','Tres posibilidades':'Drei Möglichkeiten','(no son pronósticos), con tu mismo pago de':'(keine Prognosen), bei gleicher Zahlung von','(no son pronósticos), con un pago mensual de':'(keine Prognosen), bei einer monatlichen Zahlung von',
       'Si el tipo sigue en':'Bei gleichbleibendem Zinssatz von',
       'Si el tipo pasa a':'Bei einem Zinssatz von',
       'Plazo total':'Gesamtlaufzeit',
@@ -4931,6 +4941,7 @@
       advanced+=inmuebleOptField(opt,'topeST','Tope anual de Sondertilgung (0 = sin tope)',cfg.topeST||0,'0.5','% del préstamo','min="0" max="100"');
       advanced+=inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
       if(opt==='banco'){
+        advanced+=inmuebleOptField(opt,'numEscenarios','Número de escenarios (1-5)',inmuebleNumEscenarios(cfg),'1','','min="1" max="5"');
         advanced+=inmuebleOptField(opt,'marcaAnios','Línea dorada del gráfico (años; 0 = ninguna)',cfg.marcaAnios==null?10:cfg.marcaAnios,'1','años','min="0" max="40"');
         advanced+=inmuebleOptField(opt,'pagoPost','Pago mensual tras la Zinsbindung (0 = el mismo)',cfg.pagoPost||0,'50','€/mes','min="0"');
         inmuebleTiposPost(cfg).forEach(function(v,i){ advanced+=inmuebleOptField(opt,'tipoPost'+(i+1),'Tipo posterior a la Zinsbindung · escenario '+(i+1),Math.round(v*100)/100,'0.1','%','min="0" max="20"');
@@ -5293,9 +5304,12 @@
     // fijado para todo el préstamo, por eso aquí solo se analiza el banco.
     // Los tres tipos posteriores a la Zinsbindung: por defecto uno menos, el mismo y dos puntos más que el
     // actual; el asesor puede fijar cada uno (tipoPost1..3). Sin valor guardado siguen al tipo actual.
+    // Número de escenarios editable (1-5, por defecto 3); los valores por defecto dependen de cuántos sean.
+    function inmuebleNumEscenarios(cfg){ var n=Math.round(cfg.numEscenarios||3); return Math.max(1,Math.min(5,isNaN(n)?3:n)); }
     function inmuebleTiposPost(cfg){
-      var r0=cfg.interesPrestamo||0, d=[Math.max(0,r0-1),r0,r0+2];
-      return [1,2,3].map(function(k,i){ var v=cfg['tipoPost'+k]; return (v==null||isNaN(v))?d[i]:Math.max(0,v); });
+      var r0=cfg.interesPrestamo||0, n=inmuebleNumEscenarios(cfg);
+      var D={1:[r0+2],2:[r0,r0+2],3:[r0-1,r0,r0+2],4:[r0-1,r0,r0+2,r0+3],5:[r0-2,r0-1,r0,r0+2,r0+3]}[n].map(function(x){ return Math.max(0,x); });
+      return D.map(function(d,i){ var v=cfg['tipoPost'+(i+1)]; return (v==null||isNaN(v))?d:Math.max(0,v); });
     }
     function inmuebleStressHTML(precio,rk,cfgBanco){
       var zMeses=Math.round((cfgBanco.zinsbindung||0)*12);
@@ -5310,6 +5324,7 @@
         var pagoPost=Math.max(0,cfgBanco.pagoPost||0), pmt2=pagoPost>0?pagoPost:pmt;
         var intDurante=stS>0?simLoan(precio,r0,pmt,stS,0,zMeses).interes:Math.max(0,pmt*zMeses-(precio-R));
         function fmtTipo(x){ return String(Math.round(x*100)/100).replace('.',',')+'%'; }
+        var tilesN=inmuebleTiposPost(cfgBanco).length;
         var tiles=inmuebleTiposPost(cfgBanco).map(function(r,i){ return {r:r,now:Math.abs(r-r0)<0.001,n:String(cfgBanco['nombrePost'+(i+1)]||'').trim()}; }).map(function(t){
           var r2=t.r, rm=r2/100/12, cubre=(pmt2>R*rm+0.005);
           var inner;
@@ -5324,7 +5339,7 @@
           }
           return '<div class="inm-stress-tile'+(t.now?' now':'')+'"><div class="inm-stress-head">'+(t.n?'<span data-no-i18n>'+esc(t.n)+'</span>':'<span>'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'</span>')+' <b>'+fmtTipo(r2)+'</b></div>'+inner+'</div>';
         }).join('');
-        body='<p class="inm-stress-lead"><span>Al terminar la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>), aún debes <b>'+eur(R)+'</b>.</span> <span>Ese saldo se refinancia al tipo que haya entonces. Tres posibilidades (no son pronósticos), '+(pagoPost>0?'con un pago mensual de':'con tu mismo pago de')+' <b>'+eur(pmt2)+'/mes</b>.</span></p>'+
+        body='<p class="inm-stress-lead"><span>Al terminar la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>), aún debes <b>'+eur(R)+'</b>.</span> <span>Ese saldo se refinancia al tipo que haya entonces.</span> <span>'+(tilesN===3?'Tres posibilidades':(tilesN===1?'Una posibilidad':(tilesN===2?'Dos posibilidades':(tilesN===4?'Cuatro posibilidades':'Cinco posibilidades'))))+'</span> <span>(no son pronósticos), '+(pagoPost>0?'con un pago mensual de':'con tu mismo pago de')+' <b>'+eur(pmt2)+'/mes</b>.</span></p>'+
           '<div class="inm-stress-grid">'+tiles+'</div>'+
           '<p class="inm-curve-note">El Bausparvertrag mantiene su tipo durante todo el préstamo: no cambia.</p>';
       }
@@ -6518,6 +6533,22 @@
         return;
       }
       var opt=t.getAttribute('data-inm-opt'), field=t.getAttribute('data-inm-field');
+      if(opt==='banco'&&field==='numEscenarios'&&wsRec){
+        // Cambia cuántos campos de escenario se dibujan: hay que reconstruir el bloque, conservando qué
+        // "Opciones avanzadas" estaban abiertas y el foco del campo.
+        var inmE=normalizeInmueble(wsRec), nE=Math.round(parseFloat(t.value));
+        if(isNaN(nE)||nE<1||nE>5) return;
+        inmE.banco.numEscenarios=nE;
+        var secE=document.getElementById('sec-inmueble');
+        if(secE){
+          var abiertos=[].map.call(secE.querySelectorAll('details.inm-advanced'),function(d){return d.open;});
+          secE.innerHTML=inmuebleBlock(wsRec);
+          [].forEach.call(secE.querySelectorAll('details.inm-advanced'),function(d,i){ d.open=!!abiertos[i]; });
+          var fE=secE.querySelector('[data-inm-opt="banco"][data-inm-field="numEscenarios"]'); if(fE) fE.focus();
+        }
+        scheduleInmuebleSave();
+        return;
+      }
       if(opt&&field&&wsRec){
         var inm=normalizeInmueble(wsRec);
         var val=parseFloat(t.value); val=isNaN(val)?0:val;
