@@ -744,7 +744,7 @@
     #afa-informe{position:static !important; display:block !important; background:#fff}
     .afa-inf-topbar{display:none}
     .inm-inf-ctl{display:none !important}
-    .inm-inf .inm-pres-name{border-bottom:0; padding:0}
+    .inm-inf .inm-pres-name,.inm-inf .inm-pres-pago{border-bottom:0; padding:0}
     #afa-inf-body{overflow:visible; padding:0}
   }
 
@@ -5452,7 +5452,7 @@
           }
           return '<div class="inm-stress-tile'+(t.now?' now':'')+'"><div class="inm-stress-head">'+(editable?'<input type="text" class="inm-pres-name" maxlength="40" data-pres-nombre="'+(t.i+1)+'" value="'+esc(t.n)+'" placeholder="'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'">':(t.n?'<span data-no-i18n>'+esc(t.n)+'</span>':'<span>'+(t.now?'Si el tipo sigue en':'Si el tipo pasa a')+'</span>'))+((editable===true||editable==='tipos')?' <input type="text" inputmode="decimal" class="inm-pres-tipo" data-pres-tipo="'+(t.i+1)+'" value="'+esc(_presRawTipo[t.i+1]!=null?_presRawTipo[t.i+1]:String(Math.round(r2*100)/100).replace('.',','))+'"> %':' <b>'+fmtTipo(r2)+'</b>')+'</div>'+inner+'</div>';
         }).join('');
-        body='<p class="inm-stress-lead"><span>Al terminar la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>), aún debes <b>'+eur(R)+'</b>.</span> <span>Ese saldo se refinancia al tipo que haya entonces.</span> <span>'+(tilesN===3?'Tres posibilidades':(tilesN===1?'Una posibilidad':(tilesN===2?'Dos posibilidades':(tilesN===4?'Cuatro posibilidades':'Cinco posibilidades'))))+'</span> <span>(no son pronósticos), '+(pagoPost>0?'con un pago mensual de':'con tu mismo pago de')+' '+(editable===true?'<input type="text" inputmode="decimal" class="inm-pres-pago" data-pres-pago="pagoPost" value="'+esc(_presRawPago.pagoPost!=null?_presRawPago.pagoPost:String(Math.round(pmt2)))+'"> €/mes.':'<b>'+eur(pmt2)+'/mes</b>.')+'</span></p>'+
+        body='<p class="inm-stress-lead"><span>Al terminar la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>), aún debes <b>'+eur(R)+'</b>.</span> <span>Ese saldo se refinancia al tipo que haya entonces.</span> <span>'+(tilesN===3?'Tres posibilidades':(tilesN===1?'Una posibilidad':(tilesN===2?'Dos posibilidades':(tilesN===4?'Cuatro posibilidades':'Cinco posibilidades'))))+'</span> <span>(no son pronósticos), '+(pagoPost>0?'con un pago mensual de':'con tu mismo pago de')+' '+((editable===true||editable==='pago')?'<input type="text" inputmode="decimal" class="inm-pres-pago" data-pres-pago="pagoPost" value="'+esc(_presRawPago.pagoPost!=null?_presRawPago.pagoPost:String(Math.round(pmt2)))+'"> €/mes.':'<b>'+eur(pmt2)+'/mes</b>.')+'</span></p>'+
           '<div class="inm-stress-grid">'+tiles+'</div>'+
           '<p class="inm-curve-note">El Bausparvertrag mantiene su tipo durante todo el préstamo: no cambia.</p>'+(sinHedge?'':inmuebleHedgeHTML(R,zMeses,cfgBauspar));
       }
@@ -5824,12 +5824,12 @@
         // El bloque "Cubrir la deuda pendiente" va en la primera página (las otras dos no tienen sitio con 5 escenarios).
         pages=[page(brand+'<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+P.frase+(P.hedge?'<div class="inm-curve-card">'+P.hedge+'</div>':'')+limits),
                page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.curva+(P.tablaInf||'')),
-               page(P.stressEdit('names',true)+(P.capacidad||'')),
+               page(P.stressEdit('pago',true)+(P.capacidad||'')),
                page(P.cards)];
       } else {
         pages=[page(brand+'<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+P.frase+(P.capacidad||'')+limits),
                page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.curva+P.tablaInf),
-               page(P.stressEdit('names')+P.cards)];
+               page(P.stressEdit('pago')+P.cards)];
       }
       _infRec=rec;
       // Control de pantalla (no se imprime): número de escenarios post-Zinsbindung del informe.
@@ -6529,10 +6529,28 @@
     });
     document.getElementById('inm-pres-close').addEventListener('click', presClose);
     document.getElementById('afa-inf-body').addEventListener('input', function(e){
+      var tp=e.target;
+      if(tp.hasAttribute&&tp.hasAttribute('data-pres-pago')&&_infRec){
+        // Pago mensual tras la Zinsbindung editado en la vista previa del informe: mismo campo que Opciones avanzadas, presentación y pantalla
+        // (vacío o 0 = el mismo pago). El informe se rehace conservando lo tecleado y devolviendo el foco al campo.
+        var rawIP=String(tp.value).trim(), vIP=(rawIP==='')?0:parseFloat(rawIP.replace(',','.'));
+        _presRawPago.pagoPost=tp.value;
+        if(!isNaN(vIP)&&vIP>=0&&vIP<=1000000){
+          var inmIP=normalizeInmueble(_infRec), cfgIP=(inmIP.modo==='refi')?inmIP.refi.banco:inmIP.banco; cfgIP.pagoPost=vIP;
+          document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(_infRec); scheduleInmuebleSave();
+          var nIP=document.querySelector('#afa-inf-body [data-pres-pago="pagoPost"]'); if(nIP){ nIP.focus(); try{ nIP.setSelectionRange(nIP.value.length,nIP.value.length); }catch(_){} }
+        }
+        return;
+      }
       var t=e.target; if(!t.hasAttribute||!t.hasAttribute('data-pres-nombre')||!_infRec) return;
       var inmN=normalizeInmueble(_infRec), cfgN=(inmN.modo==='refi')?inmN.refi.banco:inmN.banco, kN='nombrePost'+t.getAttribute('data-pres-nombre');
       if(t.value.trim()) cfgN[kN]=t.value; else delete cfgN[kN];
       scheduleInmuebleSave();
+    });
+    document.getElementById('afa-inf-body').addEventListener('focusout', function(e){
+      var tf=e.target; if(!(tf.hasAttribute&&tf.hasAttribute('data-pres-pago'))) return;
+      delete _presRawPago.pagoPost;
+      var vF=parseFloat(String(tf.value).replace(',','.')); if(String(tf.value).trim()===''||isNaN(vF)||vF<0) tf.value=tf.defaultValue;
     });
     document.getElementById('afa-inf-body').addEventListener('click', function(e){
       var b=e.target.closest('[data-pres-n]'); if(!b||!_infRec) return;
