@@ -645,6 +645,8 @@
   .inm-adv-btn .inm-lab-close{display:none}
   .inm-adv-mode .inm-adv-btn .inm-lab-close{display:inline}
   .inm-adv-mode .inm-adv-btn .inm-lab-open{display:none}
+  .inm-fin{margin:0 0 12px; padding:8px 12px; background:var(--gold-tint); border-radius:var(--r-md)}
+  .inm-fin .inm-curve-note{margin:4px 0 0}
   .inm-curve-card > .inm-hedge{margin-top:0; padding-top:0; border-top:0}
   .inm-hedge h6{margin:0 0 6px; font-size:12.5px; font-weight:700; color:var(--navy)}
   /* En el informe (A4) el bloque va en dos columnas para que la página con la tarjeta de escenarios no desborde. */
@@ -3833,6 +3835,7 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Gastos de compra (% del precio · típico 7–12 %)':'Purchase costs (% of the price · typically 7–12 %)','Capital propio':'Own capital','Gastos de compra':'Purchase costs','Importe a financiar':'Amount to finance','Con ese capital propio no hay nada que financiar.':'With that own capital there is nothing to finance.','No incluye alquiler, revalorización, impuestos ni lo que rendiría el ahorro en otra parte; los gastos de compra y el capital propio indicados solo cambian el importe a financiar.':'Does not include rent, appreciation, taxes or what the savings would earn elsewhere; the purchase costs and own capital entered only change the amount to finance.',
       'Opción de Bausparvertrag':'Bausparvertrag option',
       '⚙ Opciones avanzadas':'⚙ Advanced options','✕ Ocultar opciones avanzadas':'✕ Hide advanced options','Más opciones':'More options','Cuéntanos del crédito actual y el tipo del banco: el resto se calcula solo.':'Tell us about the current loan and the bank rate: the rest is calculated for you.','Escribe el precio y el tipo del banco: el resto se calcula solo.':'Enter the price and the bank rate: the rest is calculated for you.','Para ajustar fechas, pagos o Sondertilgung, pulsa «Opciones avanzadas».':'To adjust dates, payments or Sondertilgung, press «Advanced options».',
       'Cubrir la deuda pendiente con un Bausparvertrag':'Covering the remaining debt with a Bausparvertrag','Bausparsumme (la deuda pendiente)':'Bausparsumme (the remaining debt)','Ahorro mensual durante la Zinsbindung':'Monthly saving during the Zinsbindung','Ahorrado al terminar la Zinsbindung':'Saved when the Zinsbindung ends','Préstamo del Bausparvertrag':'Bausparvertrag loan','Tipo fijo del préstamo':'Fixed loan rate','Cuota del préstamo después':'Loan payment afterwards','Orientativo: este ahorro se suma a la cuota del banco.':'Indicative: this saving is on top of the bank payment.','La asignación (Zuteilung) y las condiciones reales las fija la Bausparkasse.':'The allocation (Zuteilung) and the real terms are set by the Bausparkasse.',
@@ -4123,6 +4126,7 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Gastos de compra (% del precio · típico 7–12 %)':'Kaufnebenkosten (% des Preises · üblich 7–12 %)','Capital propio':'Eigenkapital','Gastos de compra':'Kaufnebenkosten','Importe a financiar':'Finanzierungsbetrag','Con ese capital propio no hay nada que financiar.':'Mit diesem Eigenkapital muss nichts finanziert werden.','No incluye alquiler, revalorización, impuestos ni lo que rendiría el ahorro en otra parte; los gastos de compra y el capital propio indicados solo cambian el importe a financiar.':'Nicht enthalten: Miete, Wertsteigerung, Steuern und die Erträge der Ersparnisse anderswo; die angegebenen Kaufnebenkosten und das Eigenkapital ändern nur den Finanzierungsbetrag.',
       'Opción de Bausparvertrag':'Bausparvertrag-Option',
       '⚙ Opciones avanzadas':'⚙ Erweiterte Optionen','✕ Ocultar opciones avanzadas':'✕ Erweiterte Optionen ausblenden','Más opciones':'Weitere Optionen','Cuéntanos del crédito actual y el tipo del banco: el resto se calcula solo.':'Erzählen Sie uns vom aktuellen Darlehen und vom Bankzins: Den Rest berechnen wir automatisch.','Escribe el precio y el tipo del banco: el resto se calcula solo.':'Geben Sie den Preis und den Bankzins ein: Den Rest berechnen wir automatisch.','Para ajustar fechas, pagos o Sondertilgung, pulsa «Opciones avanzadas».':'Um Daten, Zahlungen oder Sondertilgung anzupassen, drücken Sie «Erweiterte Optionen».',
       'Cubrir la deuda pendiente con un Bausparvertrag':'Restschuld mit einem Bausparvertrag abdecken','Bausparsumme (la deuda pendiente)':'Bausparsumme (die Restschuld)','Ahorro mensual durante la Zinsbindung':'Monatliche Sparrate während der Zinsbindung','Ahorrado al terminar la Zinsbindung':'Angespart am Ende der Zinsbindung','Préstamo del Bausparvertrag':'Darlehen des Bausparvertrags','Tipo fijo del préstamo':'Fester Darlehenszins','Cuota del préstamo después':'Darlehensrate danach','Orientativo: este ahorro se suma a la cuota del banco.':'Unverbindlich: Diese Sparrate kommt zur Rate der Bank hinzu.','La asignación (Zuteilung) y las condiciones reales las fija la Bausparkasse.':'Die Zuteilung und die tatsächlichen Konditionen legt die Bausparkasse fest.',
@@ -5575,10 +5579,23 @@
       var quotaPerUnit=annuityQuota(1,cfg.interesPrestamo,Math.max(1,Math.round((cfg.plazoPrestamo||0)*12)));
       cfg.tilgungsbeitragPerMille=Math.ceil(Math.max(0,quotaPerUnit*capitalPrestamo/bausparsumme*1000)*10000-1e-6)/10000;
     }
+    // Importe a financiar en Comprar: precio + gastos de compra (% del precio) - capital propio. Con los valores por defecto (0 y 0)
+    // es el precio, es decir, el comportamiento de siempre. Todo el cálculo (Bausparsumme, préstamo, banco) parte de este importe.
+    function inmuebleFin(inm){
+      var p=Math.max(0,inm.precio||0), g=Math.max(0,inm.gastosPct||0), c=Math.max(0,inm.capitalPropio||0);
+      return Math.max(0,Math.round((p*(1+g/100)-c)*100)/100);
+    }
+    function inmuebleFinLine(inm){
+      if(!((inm.gastosPct||0)>0||(inm.capitalPropio||0)>0)) return '';
+      var fin=inmuebleFin(inm);
+      return '<div class="inm-fin"><div class="inm-res-line"><span>Importe a financiar</span><b>'+eur(fin)+'</b></div>'+(fin>0?'':'<p class="inm-curve-note"><span>Con ese capital propio no hay nada que financiar.</span></p>')+'</div>';
+    }
     function normalizeInmueble(rec){
       if(!rec.inmueble) rec.inmueble=defaultInmueble();
       var inm=rec.inmueble, def=defaultInmueble();
       if(!inm.modo) inm.modo='compra';
+      if(inm.gastosPct==null||isNaN(inm.gastosPct)) inm.gastosPct=0;
+      if(inm.capitalPropio==null||isNaN(inm.capitalPropio)) inm.capitalPropio=0;
       if(!inm.refi) inm.refi=def.refi;
       if(!inm.refi.a) inm.refi.a=def.refi.a;
       if(!inm.refi.b) inm.refi.b=def.refi.b;
@@ -5645,18 +5662,20 @@
           '<div id="inm-results-wrap">'+inmuebleRefiResultsHTML(inm.refi)+'</div>'
         : '<div class="inm-toprow inm-precio-row"><label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
           '<label class="inm-f inm-inicio inm-adv"><span>Mes de inicio</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-inicio" value="'+(inm.inicio||(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);})())+'"></span></label><label class="inm-f inm-inicio inm-adv"><span>Fecha de refinanciación</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-fecha-refi" value="'+inmuebleFechaRefiYM(inm)+'"></span></label></div>'+
+          '<div class="inm-toprow inm-adv"><label class="inm-f inm-inicio"><span>Gastos de compra (% del precio · típico 7–12 %)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-gastos" value="'+(inm.gastosPct||0)+'" step="0.5" min="0" max="30"><span class="inm-suf">%</span></span></label>'+
+          '<label class="inm-f inm-inicio"><span>Capital propio</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-capital" value="'+(inm.capitalPropio||0)+'" step="1000" min="0"><span class="inm-suf">€</span></span></label></div>'+
           '<div class="inm-cmp-wrap inm-simple-only"><span class="inm-cmp-lab">Opción de Bausparvertrag</span></div>'+inmuebleStrategyToggle(inm.estrategia,[
             {key:'a',label:inmuebleEstNombre(inm.a)},
             {key:'b',label:inmuebleEstNombre(inm.b)}
           ])+
-          '<div class="inm-adv">'+inmuebleCompareToggle(inm.comparar,(function(){ var e=(inm.estrategia==='b')?inm.b:inm.a; var pe=(inm.pagoIgual>0)?inm.pagoIgual:calcInmuebleOption(inm.precio,e).cuotaAhorro; return inm.precio>0 && pe>calcInmuebleOption(inm.precio,inm.banco).cuotaPrestamo+0.5; })(),inm.pagoIgual)+'</div>'+
+          '<div class="inm-adv">'+inmuebleCompareToggle(inm.comparar,(function(){ var e=(inm.estrategia==='b')?inm.b:inm.a; var pe=(inm.pagoIgual>0)?inm.pagoIgual:calcInmuebleOption(inmuebleFin(inm),e).cuotaAhorro; return inmuebleFin(inm)>0 && pe>calcInmuebleOption(inmuebleFin(inm),inm.banco).cuotaPrestamo+0.5; })(),inm.pagoIgual)+'</div>'+
           '<div class="inm-grid">'+
             (inm.estrategia==='a'
-              ?inmuebleOptionCard('a','Bausparvertrag · '+inmuebleEstNombre(inm.a),inm.a,'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.',inm.precio)
-              :inmuebleOptionCard('b','Bausparvertrag · '+inmuebleEstNombre(inm.b),inm.b,'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.',inm.precio))+
+              ?inmuebleOptionCard('a','Bausparvertrag · '+inmuebleEstNombre(inm.a),inm.a,'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.',inmuebleFin(inm))
+              :inmuebleOptionCard('b','Bausparvertrag · '+inmuebleEstNombre(inm.b),inm.b,'Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada. Valores de ejemplo — sustituye por la ilustración oficial.',inmuebleFin(inm)))+
             inmuebleOptionCard('banco','Banco directo',inm.banco,'Sin fase de ahorro: se financia el 100% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.')+
           '</div>'+
-          '<div id="inm-results-wrap">'+inmuebleResultsHTML(inm.precio,inm)+'</div>';
+          '<div id="inm-results-wrap">'+inmuebleFinLine(inm)+inmuebleResultsHTML(inmuebleFin(inm),inm)+'</div>';
       return '<div class="ws-card '+(_inmAdv?'inm-adv-mode':'inm-simple')+'"><h3>Proyecto inmobiliario</h3>'+
         '<div class="inm-toprow">'+inmuebleModeToggle(inm.modo)+'<div class="inm-actions"><button type="button" class="ws-cta inm-print" id="inm-pres-btn">🎬 Presentación</button><button type="button" class="ws-cta ghost inm-print" id="inm-print-btn">🖨 Imprimir informe</button><button type="button" class="ws-cta ghost inm-print inm-adv-btn" id="inm-adv-btn" aria-pressed="'+(_inmAdv?'true':'false')+'"><span class="inm-lab-open">⚙ Opciones avanzadas</span><span class="inm-lab-close">✕ Ocultar opciones avanzadas</span></button></div></div>'+
         '<p class="ws-lead inm-simple-only"><span>'+(inm.modo==='refi'?'Cuéntanos del crédito actual y el tipo del banco: el resto se calcula solo.':'Escribe el precio y el tipo del banco: el resto se calcula solo.')+'</span> <span>Para ajustar fechas, pagos o Sondertilgung, pulsa «Opciones avanzadas».</span></p>'+
@@ -5673,12 +5692,13 @@
     // la pantalla (inmuebleResultsHTML / inmuebleRefiResultsHTML), así cifras, gráficas y textos
     // coinciden exactamente; aquí solo se añade la cabecera de marca, los datos de partida y los
     // supuestos y límites. El nombre del cliente solo sale si hay cliente (no en modo genérico).
-    function inmuebleLimitsHTML(){
+    function inmuebleLimitsHTML(inm){
+      var conCostes=!!(inm&&((inm.gastosPct||0)>0||(inm.capitalPropio||0)>0));
       return '<ul>'+
         '<li>Cálculo orientativo con amortización estándar: no es una oferta ni una cotización de ningún banco ni Bausparkasse.</li>'+
         '<li>Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada y puede variar.</li>'+
         '<li>Los tipos de interés son datos introducidos, no pronósticos; los escenarios posteriores a la Zinsbindung son hipotéticos.</li>'+
-        '<li>No incluye alquiler, revalorización, impuestos, gastos de compra ni lo que rendiría el ahorro en otra parte.</li>'+
+        (conCostes?'<li>No incluye alquiler, revalorización, impuestos ni lo que rendiría el ahorro en otra parte; los gastos de compra y el capital propio indicados solo cambian el importe a financiar.</li>':'<li>No incluye alquiler, revalorización, impuestos, gastos de compra ni lo que rendiría el ahorro en otra parte.</li>')+
         '<li>Para decidir hace falta la ilustración oficial (Modellrechnung) y la oferta vinculante con el Effektiver Jahreszins.</li>'+
       '</ul>';
     }
@@ -5701,8 +5721,8 @@
           '</div><div class="afa-inf-sec"><h4>Refinanciar con banco</h4>'+row('Interés del préstamo',pct(rf.banco.interesPrestamo))+row('Vigencia del tipo (Zinsbindung)',fmtAnos((rf.banco.zinsbindung||0)*12))+
           '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(estCfg.pct))+row('Interés del ahorro',pct(estCfg.interesAhorro))+row('Interés del préstamo',pct(estCfg.interesPrestamo))+row('Comisión de apertura',pct(estCfg.comision))+'</div>';
       }
-      var e=(inm.estrategia==='b')?inm.b:inm.a, rE=calcInmuebleOption(inm.precio,e);
-      return '<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+row('Precio del inmueble',eur(inm.precio))+row('Mes de inicio',inmuebleMesAnio(0))+row('Cómo comparar',inm.comparar==='igual'?'Mismo pago mensual':'Cada camino como es')+
+      var e=(inm.estrategia==='b')?inm.b:inm.a, rE=calcInmuebleOption(inmuebleFin(inm),e);
+      return '<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+row('Precio del inmueble',eur(inm.precio))+((inm.gastosPct||0)>0?row('Gastos de compra',pct(inm.gastosPct)):'')+((inm.capitalPropio||0)>0?row('Capital propio',eur(inm.capitalPropio)):'')+(inmuebleFin(inm)!==inm.precio?row('Importe a financiar',eur(inmuebleFin(inm))):'')+row('Mes de inicio',inmuebleMesAnio(0))+row('Cómo comparar',inm.comparar==='igual'?'Mismo pago mensual':'Cada camino como es')+
         '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(e.pct))+row('Años de ahorro',fmtAnos(rE.mesesAhorro))+row('Interés del ahorro',pct(e.interesAhorro))+row('Interés del préstamo',pct(e.interesPrestamo))+row('Plazo del préstamo',fmtAnos(rE.mesesPrestamo))+row('Comisión de apertura',pct(e.comision))+
         '</div><div class="afa-inf-sec"><h4>Banco directo</h4>'+row('Interés del préstamo',pct(inm.banco.interesPrestamo))+row('Vigencia del tipo (Zinsbindung)',fmtAnos((inm.banco.zinsbindung||0)*12))+'</div>';
     }
@@ -5712,13 +5732,13 @@
       var inm=normalizeInmueble(rec), generic=(rec.id==='aoraes_generic');
       _inmInicio=inm.inicio||'';
       var fecha=new Date().toLocaleDateString('es-DE');
-      var P=(inm.modo==='refi')?inmuebleRefiResultsHTML(inm.refi,true):inmuebleResultsHTML(inm.precio,inm,true);
+      var P=(inm.modo==='refi')?inmuebleRefiResultsHTML(inm.refi,true):inmuebleResultsHTML(inmuebleFin(inm),inm,true);
       function foot(){ return '<div class="inm-inf-foot"><span>Modelo de cálculo: proyecto inmobiliario</span> <span>v2 · '+fecha+'</span></div>'; }
       function page(inner){ return '<section class="inm-page">'+inner+foot()+'</section>'; }
       var brand='<div class="afa-inf-brand"><img src="./logo-icon-gold.png" alt=""><div><div style="font-family:\'Fraunces\',serif;font-size:15px;color:var(--navy)">AORAES</div><span>Departamento Español</span></div></div>'+
         '<div class="afa-inf-title">Informe del proyecto inmobiliario</div>'+
         '<div class="afa-inf-sub">'+(generic?'<span>Simulación sin cliente</span>':'<span data-no-i18n>'+esc(rec.name||'Cliente')+'</span>')+' · '+fecha+'</div>';
-      var limits='<div class="afa-inf-sec inm-inf-limits"><h4>Supuestos y límites</h4>'+inmuebleLimitsHTML()+'</div>';
+      var limits='<div class="afa-inf-sec inm-inf-limits"><h4>Supuestos y límites</h4>'+inmuebleLimitsHTML(inm)+'</div>';
       var pages;
       if(inm.modo==='refi'){
         // El bloque "Cubrir la deuda pendiente" va en la primera página (las otras dos no tienen sitio con 5 escenarios).
@@ -5738,7 +5758,7 @@
     // Diapositivas de la presentación: una idea por pantalla, cifras grandes, mismas funciones.
     function buildInmuebleSlides(rec){
       var inm=normalizeInmueble(rec); _inmInicio=inm.inicio||'';
-      var limits='<div class="inm-pres-limits">'+inmuebleLimitsHTML()+'</div>';
+      var limits='<div class="inm-pres-limits">'+inmuebleLimitsHTML(inm)+'</div>';
       var sl=[];
       if(inm.modo==='refi'){
         var P=inmuebleRefiResultsHTML(inm.refi,true), rf=inm.refi;
@@ -5753,8 +5773,8 @@
         sl.push({t:'Comparación',h:P.frase+P.cards});
         sl.push({t:'Qué tener en cuenta',h:limits});
       } else {
-        var Q=inmuebleResultsHTML(inm.precio,inm,true), rE=Q.rEst, rk=Q.rk;
-        sl.push({t:'La propiedad',h:inmuebleBigs([['Precio del inmueble',eur(inm.precio)],['Mes de inicio',inmuebleMesAnio(0)],['Años de ahorro',fmtAnos(rE.mesesAhorro)],['Banco directo',inmuebleFmtPct(inm.banco.interesPrestamo)]])});
+        var Q=inmuebleResultsHTML(inmuebleFin(inm),inm,true), rE=Q.rEst, rk=Q.rk;
+        sl.push({t:'La propiedad',h:inmuebleBigs([['Precio del inmueble',eur(inm.precio)],].concat(inmuebleFin(inm)!==inm.precio?[['Importe a financiar',eur(inmuebleFin(inm))]]:[]).concat([['Mes de inicio',inmuebleMesAnio(0)],['Años de ahorro',fmtAnos(rE.mesesAhorro)],['Banco directo',inmuebleFmtPct(inm.banco.interesPrestamo)]]))});
         var cuotas=[]; if(rE.cuotaAhorro>0){ cuotas.push(['Cuota ahorro',eur(rE.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:rE.cuotaAhorro}]); var eCfg=(inm.estrategia==='b')?inm.b:inm.a; cuotas.push(['Interés del ahorro',inmuebleFmtPct(eCfg.interesAhorro),{f:'interesAhorro',v:eCfg.interesAhorro||0,u:'%'}]); } cuotas.push(['Cuota préstamo',eur(rE.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:rE.cuotaPrestamo}]); cuotas.push(['Banco directo',eur(rk.cuotaPrestamo)+'/mes',{f:(inm.comparar==='igual'?'pagoIgual':'pagoPre'),v:rk.cuotaPrestamo}]);
         sl.push({t:'Tu pago cada mes',h:inmuebleBigs(cuotas)+Q.cuota});
         sl.push({t:'Cuánto debes con el tiempo',h:Q.curva});
@@ -5803,7 +5823,7 @@
         el.innerHTML=inmuebleRefiResultsHTML(inm.refi);
         var sw=document.getElementById('inm-refi-saldo-wrap'); if(sw) sw.innerHTML=inmuebleRefiSaldoHTML(inm.refi);
       } else {
-        el.innerHTML=inmuebleResultsHTML(inm.precio,inm);
+        el.innerHTML=inmuebleFinLine(inm)+inmuebleResultsHTML(inmuebleFin(inm),inm);
       }
     }
     function persistInmueble(){
@@ -6660,6 +6680,13 @@
         refreshInmuebleResults(); scheduleInmuebleSave();
         return;
       }
+      if(t.id==='inm-gastos'||t.id==='inm-capital'){
+        if(!wsRec) return;
+        var inmG=normalizeInmueble(wsRec), vG=parseFloat(t.value); vG=(isNaN(vG)||vG<0)?0:vG;
+        if(t.id==='inm-gastos') inmG.gastosPct=Math.min(30,vG); else inmG.capitalPropio=vG;
+        refreshInmuebleResults(); scheduleInmuebleSave();
+        return;
+      }
       if(t.hasAttribute('data-inm-nombre')){
         if(!wsRec) return;
         var inmN=normalizeInmueble(wsRec), kN='nombrePost'+t.getAttribute('data-inm-nombre'), cN=(t.getAttribute('data-inm-opt')==='refiBanco')?inmN.refi.banco:inmN.banco;
@@ -6713,7 +6740,7 @@
       if(optPlazo&&t.hasAttribute('data-inm-plazo')&&wsRec){
         var inmP=normalizeInmueble(wsRec);
         var cfgP=(optPlazo==='refiA')?inmP.refi.a:(optPlazo==='refiB')?inmP.refi.b:inmP[optPlazo];
-        var bausparsummeP=(optPlazo==='refiA'||optPlazo==='refiB')?inmP.refi.importeOriginal:inmP.precio;
+        var bausparsummeP=(optPlazo==='refiA'||optPlazo==='refiB')?inmP.refi.importeOriginal:inmuebleFin(inmP);
         var plazoAnios=parseFloat(t.value); plazoAnios=isNaN(plazoAnios)||plazoAnios<=0?1:plazoAnios;
         var capitalPrestamoP=(bausparsummeP||0)*(1-(cfgP.pct||0)/100);
         if(capitalPrestamoP>0 && bausparsummeP>0){
