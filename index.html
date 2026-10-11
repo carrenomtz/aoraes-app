@@ -662,6 +662,14 @@
   .inm-inf .inm-inf-limits ul{line-height:1.45; font-size:11.5px}
   .inm-inf .inm-cap .cap-extra{display:none}
   .inm-cap-tabla td.cap-ok{color:var(--navy); font-weight:700} .inm-cap-tabla td.cap-mid{color:var(--amber); font-weight:700} .inm-cap-tabla td.cap-hi{color:var(--red); font-weight:700}
+  .inm-curve-chips{display:flex; align-items:center; gap:6px; margin:0 0 4px; font-size:10.5px; color:var(--faint)}
+  .inm-chip{display:inline-flex; align-items:center; gap:5px; border:1px solid var(--line); background:transparent; border-radius:999px; padding:2px 9px; font:inherit; font-size:10.5px; color:var(--muted); cursor:pointer; opacity:.85}
+  .inm-chip i{display:inline-block; width:14px; height:0; border-top:2px dashed var(--c)}
+  .inm-chip:hover{opacity:1}
+  .inm-chip.off{opacity:.42; text-decoration:line-through}
+  .inm-hitos{margin-top:8px}
+  .inm-hitos th:nth-child(2),.inm-hitos td:nth-child(2){text-align:left; font-weight:400; color:var(--muted)}
+  .inm-hitos td:first-child{white-space:normal; max-width:190px}
   .inm-fin{margin:0 0 12px; padding:8px 12px; background:var(--gold-tint); border-radius:var(--r-md)}
   .inm-fin .inm-curve-note{margin:4px 0 0}
   .inm-curve-card > .inm-hedge{margin-top:0; padding-top:0; border-top:0}
@@ -739,6 +747,8 @@
     #afa-informe{position:static !important; display:block !important; background:#fff}
     .afa-inf-topbar{display:none}
     .inm-inf-ctl{display:none !important}
+    .inm-chip{border:0; padding:0 4px; cursor:default}
+    .inm-chip.off{display:none}
     .inm-inf .inm-pres-name,.inm-inf .inm-pres-pago,.inm-inf .inm-pres-tipo{border-bottom:0; padding:0}
     #afa-inf-body{overflow:visible; padding:0}
   }
@@ -3855,6 +3865,9 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Cuota {0} €/mes':'Payment {0} €/month',
+      'Banco a':'Bank at',
+      'Hito':'Milestone','Cuándo':'When','Banco: debes':'Bank: you owe','Bausparvertrag: ahorrado':'Bausparvertrag: saved','Bausparvertrag: debes':'Bausparvertrag: you owe','Badenia: ahorrado':'Badenia: saved','Badenia: debes':'Badenia: you owe','Zuteilung del Bausparvertrag':'Bausparvertrag allocation (Zuteilung)','Fin de la Zinsbindung':'End of the Zinsbindung','Bausparvertrag pagado':'Bausparvertrag paid off','Banco pagado':'Bank paid off','Refinanciación (Zuteilung de Badenia)':'Refinancing (Badenia allocation)','Badenia pagada':'Badenia paid off','Zuteilung':'Zuteilung','Ahorrado':'Saved','* Tras la Zinsbindung el banco refinancia al tipo de ese momento: la cifra supone que el tipo no cambia.':'* After the Zinsbindung the bank refinances at that moment\'s rate: the figure assumes the rate does not change.',
       'El Bausparvertrag no se puede activar antes de {0} años: se usa ese mínimo.':'The Bausparvertrag cannot be activated before {0} years: that minimum is used.','Faltan menos de {0} años hasta la refinanciación: el Bausparvertrag no puede activarse antes.':'There are less than {0} years until the refinancing: the Bausparvertrag cannot be activated earlier.','Esta comparación solo es realizable con una fecha de refinanciación posterior.':'This comparison is only feasible with a later refinancing date.','Años de ahorro (mínimo {0})':'Years of saving (minimum {0})',
       'Capacidad de pago':'Affordability','Ingreso neto mensual del hogar (opcional)':'Household net monthly income (optional)','Ingreso neto mensual del hogar':'Household net monthly income','Límite de la cuota (% del ingreso)':'Payment limit (% of income)','Cuota máxima recomendada':'Maximum recommended payment','Préstamo orientativo (sueldo neto anual × 8)':'Indicative loan (annual net salary × 8)','Cuota mensual':'Monthly payment','Del ingreso':'Of income','Estado':'Status','Dentro':'Within','Ajustado':'Tight','Por encima':'Above','Bausparvertrag · ahorro':'Bausparvertrag · saving','Bausparvertrag · préstamo':'Bausparvertrag · loan','Regla orientativa: la vivienda no debería pasar del 30–35 % del ingreso neto del hogar, y además de la cuota hay seguros, Grundsteuer y otros gastos.':'Rule of thumb: housing should not exceed 30–35 % of the household net income, and besides the payment there is insurance, Grundsteuer and other costs.','No sustituye el análisis de solvencia del banco.':'It does not replace the bank\'s creditworthiness check.',
       'Gastos de compra (% del precio · típico 7–12 %)':'Purchase costs (% of the price · typically 7–12 %)','Capital propio':'Own capital','Gastos de compra':'Purchase costs','Importe a financiar':'Amount to finance','Con ese capital propio no hay nada que financiar.':'With that own capital there is nothing to finance.','No incluye alquiler, revalorización, impuestos ni lo que rendiría el ahorro en otra parte; los gastos de compra y el capital propio indicados solo cambian el importe a financiar.':'Does not include rent, appreciation, taxes or what the savings would earn elsewhere; the purchase costs and own capital entered only change the amount to finance.',
@@ -4148,6 +4161,9 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Cuota {0} €/mes':'Rate {0} €/Monat',
+      'Banco a':'Bank mit',
+      'Hito':'Meilenstein','Cuándo':'Wann','Banco: debes':'Bank: Restschuld','Bausparvertrag: ahorrado':'Bausparvertrag: angespart','Bausparvertrag: debes':'Bausparvertrag: Restschuld','Badenia: ahorrado':'Badenia: angespart','Badenia: debes':'Badenia: Restschuld','Zuteilung del Bausparvertrag':'Zuteilung des Bausparvertrags','Fin de la Zinsbindung':'Ende der Zinsbindung','Bausparvertrag pagado':'Bausparvertrag getilgt','Banco pagado':'Bank getilgt','Refinanciación (Zuteilung de Badenia)':'Umschuldung (Zuteilung der Badenia)','Badenia pagada':'Badenia getilgt','Zuteilung':'Zuteilung','Ahorrado':'Angespart','* Tras la Zinsbindung el banco refinancia al tipo de ese momento: la cifra supone que el tipo no cambia.':'* Nach der Zinsbindung finanziert die Bank zum dann geltenden Zins um: Der Wert setzt voraus, dass sich der Zins nicht ändert.',
       'El Bausparvertrag no se puede activar antes de {0} años: se usa ese mínimo.':'Der Bausparvertrag kann nicht vor {0} Jahren zugeteilt werden: Es wird diese Mindestdauer verwendet.','Faltan menos de {0} años hasta la refinanciación: el Bausparvertrag no puede activarse antes.':'Bis zur Umschuldung sind es weniger als {0} Jahre: Der Bausparvertrag kann nicht früher zugeteilt werden.','Esta comparación solo es realizable con una fecha de refinanciación posterior.':'Dieser Vergleich ist nur mit einem späteren Umschuldungsdatum umsetzbar.','Años de ahorro (mínimo {0})':'Sparjahre (Mindestdauer {0})',
       'Capacidad de pago':'Finanzierbarkeit','Ingreso neto mensual del hogar (opcional)':'Monatliches Haushaltsnettoeinkommen (optional)','Ingreso neto mensual del hogar':'Monatliches Haushaltsnettoeinkommen','Límite de la cuota (% del ingreso)':'Ratenobergrenze (% des Einkommens)','Cuota máxima recomendada':'Maximal empfohlene Rate','Préstamo orientativo (sueldo neto anual × 8)':'Orientierungsdarlehen (Jahresnettogehalt × 8)','Cuota mensual':'Monatliche Rate','Del ingreso':'Vom Einkommen','Estado':'Status','Dentro':'Im Rahmen','Ajustado':'Knapp','Por encima':'Darüber','Bausparvertrag · ahorro':'Bausparvertrag · Sparrate','Bausparvertrag · préstamo':'Bausparvertrag · Darlehensrate','Regla orientativa: la vivienda no debería pasar del 30–35 % del ingreso neto del hogar, y además de la cuota hay seguros, Grundsteuer y otros gastos.':'Faustregel: Die Wohnkosten sollten 30–35 % des Haushaltsnettoeinkommens nicht übersteigen; zusätzlich fallen Versicherungen, Grundsteuer und weitere Kosten an.','No sustituye el análisis de solvencia del banco.':'Ersetzt nicht die Bonitätsprüfung der Bank.',
       'Gastos de compra (% del precio · típico 7–12 %)':'Kaufnebenkosten (% des Preises · üblich 7–12 %)','Capital propio':'Eigenkapital','Gastos de compra':'Kaufnebenkosten','Importe a financiar':'Finanzierungsbetrag','Con ese capital propio no hay nada que financiar.':'Mit diesem Eigenkapital muss nichts finanziert werden.','No incluye alquiler, revalorización, impuestos ni lo que rendiría el ahorro en otra parte; los gastos de compra y el capital propio indicados solo cambian el importe a financiar.':'Nicht enthalten: Miete, Wertsteigerung, Steuern und die Erträge der Ersparnisse anderswo; die angegebenen Kaufnebenkosten und das Eigenkapital ändern nur den Finanzierungsbetrag.',
@@ -5194,25 +5210,31 @@
     // líneas bajando solas no cuentan nada: se añaden dos avisos con la cifra exacta en el momento
     // en que el Bausparvertrag termina de pagar (cuánto le falta al banco justo entonces) y una
     // franja sombreada de ahí en adelante — la ventaja ya conseguida, en positivo, no la deuda.
-    function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst,mesesZinsbindung){
+    // Valor de una serie de puntos {meses,pendiente} en un mes dado (interpolación lineal entre puntos).
+    function inmuebleValorEn(pts,meses){
+      for(var i=1;i<pts.length;i++){
+        if(pts[i].meses>=meses){
+          var a=pts[i-1],b=pts[i];
+          if(b.meses===a.meses) return b.pendiente;
+          var f=(meses-a.meses)/(b.meses-a.meses);
+          return a.pendiente+(b.pendiente-a.pendiente)*f;
+        }
+      }
+      return pts[pts.length-1].pendiente;
+    }
+    // extra (opcional): {zuteilung: mes de la Zuteilung, ahorro:{hasta:mes, total:€, base:'precio'|'banco'}} — marca el ahorro acumulado (zona
+    // sombreada entre la línea de arriba y la del Bausparvertrag hasta la Zuteilung) y dibuja la línea de la Zuteilung.
+    function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst,mesesZinsbindung,extra){
       var W=600,H=232,padL=44,padR=10,padT=20,padB=24;
       var maxMeses=Math.max(ptsEst[ptsEst.length-1].meses,ptsBanco[ptsBanco.length-1].meses,1);
+      var escAct=(extra&&extra.escenarios||[]).filter(function(e){ return e.activo; });
+      escAct.forEach(function(e){ maxMeses=Math.max(maxMeses,e.pts[e.pts.length-1].meses); });
       var maxY=Math.max(precio,1);
       var colorBanco='var(--gold-deep)';
       function px(m){ return padL+(m/maxMeses)*(W-padL-padR); }
       function py(v){ return padT+(1-(v/maxY))*(H-padT-padB); }
       function path(pts){ return pts.map(function(p,i){ return (i===0?'M':'L')+px(p.meses).toFixed(1)+','+py(p.pendiente).toFixed(1); }).join(' '); }
-      function valorEn(pts,meses){
-        for(var i=1;i<pts.length;i++){
-          if(pts[i].meses>=meses){
-            var a=pts[i-1],b=pts[i];
-            if(b.meses===a.meses) return b.pendiente;
-            var f=(meses-a.meses)/(b.meses-a.meses);
-            return a.pendiente+(b.pendiente-a.pendiente)*f;
-          }
-        }
-        return pts[pts.length-1].pendiente;
-      }
+      var valorEn=inmuebleValorEn;
       var gridY=[0,0.25,0.5,0.75,1].map(function(f){
         var v=maxY*f, yy=py(v);
         return '<line x1="'+padL+'" y1="'+yy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+yy.toFixed(1)+'" stroke="var(--line-soft)" stroke-width="1"/>'+
@@ -5252,8 +5274,39 @@
           // dejaba el símbolo duplicado ("112.356 € € aún"). \s sí cubre el NBSP.
           '<text x="'+px(finEst).toFixed(1)+'" y="'+(py(yBancoAhi)-8).toFixed(1)+'" font-size="10" font-weight="700" fill="'+colorBanco+'" text-anchor="middle">'+eur(yBancoAhi).replace(/\s*€/,'')+' € aún</text>';
       }
+      var ahorroArea='', zuteil='';
+      if(extra && extra.ahorro && extra.ahorro.hasta>0 && extra.ahorro.total>0){
+        var hA=extra.ahorro.hasta, poly2=[];
+        if(extra.ahorro.base==='banco'){
+          ptsBanco.filter(function(p){return p.meses<=hA;}).forEach(function(p){ poly2.push(px(p.meses).toFixed(1)+','+py(p.pendiente).toFixed(1)); });
+          poly2.push(px(hA).toFixed(1)+','+py(valorEn(ptsBanco,hA)).toFixed(1));
+          poly2.push(px(hA).toFixed(1)+','+py(valorEn(ptsEst,hA)).toFixed(1));
+          ptsEst.filter(function(p){return p.meses<hA;}).reverse().forEach(function(p){ poly2.push(px(p.meses).toFixed(1)+','+py(p.pendiente).toFixed(1)); });
+        } else {
+          poly2.push(px(0).toFixed(1)+','+py(precio).toFixed(1));
+          ptsEst.filter(function(p){return p.meses<=hA;}).forEach(function(p){ poly2.push(px(p.meses).toFixed(1)+','+py(p.pendiente).toFixed(1)); });
+          poly2.push(px(hA).toFixed(1)+','+py(valorEn(ptsEst,hA)).toFixed(1));
+          poly2.push(px(hA).toFixed(1)+','+py(precio).toFixed(1));
+        }
+        ahorroArea='<polygon points="'+poly2.join(' ')+'" fill="var(--navy)" fill-opacity="0.10"/>'+
+          '<text x="'+(px(hA)-9).toFixed(1)+'" y="'+(py(valorEn(ptsEst,hA))+16).toFixed(1)+'" font-size="10" font-weight="700" fill="var(--navy)" text-anchor="end">Ahorrado</text>'+
+          '<text x="'+(px(hA)-9).toFixed(1)+'" y="'+(py(valorEn(ptsEst,hA))+28).toFixed(1)+'" font-size="10" font-weight="700" fill="var(--navy)" text-anchor="end">'+eur(extra.ahorro.total)+'</text>';
+      }
+      if(extra && extra.zuteilung>0 && extra.zuteilung<maxMeses){
+        var zx=px(extra.zuteilung).toFixed(1);
+        zuteil='<line x1="'+zx+'" y1="'+padT+'" x2="'+zx+'" y2="'+(H-padB)+'" stroke="var(--navy)" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4,3"/>'+
+          '<circle cx="'+zx+'" cy="'+py(valorEn(ptsEst,extra.zuteilung)).toFixed(1)+'" r="3.5" fill="var(--navy)"/>'+
+          '<text x="'+zx+'" y="'+(padT+9)+'" font-size="9" font-weight="700" fill="var(--navy)" text-anchor="middle">Zuteilung</text>';
+        // La etiqueta de la Zinsbindung baja una fila si cae pegada a la de la Zuteilung.
+        if(marcaZins && Math.abs(px(mesesZinsbindung)-px(extra.zuteilung))<70) marcaZins=marcaZins.replace('y="'+(padT+9).toFixed(1)+'"','y="'+(padT+21).toFixed(1)+'"');
+      }
+      var escLineas=escAct.map(function(e){
+        var fin=e.pts[e.pts.length-1];
+        return '<path d="'+path(e.pts)+'" fill="none" stroke="'+e.color+'" stroke-width="1.8" stroke-dasharray="5,3"/>'+
+          '<text x="'+(px(fin.meses)-2).toFixed(1)+'" y="'+(py(0)-6).toFixed(1)+'" font-size="9" font-weight="700" fill="'+e.color+'" text-anchor="end">'+inmuebleFmtPct(e.r)+'</text>';
+      }).join('');
       return '<svg viewBox="0 0 '+W+' '+H+'" class="inm-curve-svg" role="img" aria-label="Cuánto queda por pagar, comparado en el tiempo">'+
-        area+gridY+gridX+marca+marcaZins+
+        area+ahorroArea+gridY+gridX+marca+marcaZins+zuteil+escLineas+
         '<path d="'+path(ptsBanco)+'" fill="none" stroke="'+colorBanco+'" stroke-width="2.5"/>'+
         '<path d="'+path(ptsEst)+'" fill="none" stroke="var(--navy)" stroke-width="2.5"/>'+
         callout+
@@ -5265,6 +5318,53 @@
     // Comprar), así que lo que de verdad queda por pagar es el saldo del crédito menos lo ya
     // ahorrado. En "Refinanciar con banco" no hay esa fase de ahorro, así que su línea hasta la
     // fecha de refinanciación es sencillamente el crédito actual amortizándose solo.
+    // Escenarios de interés del banco en el gráfico (por defecto 3, 4 y 5 %): una línea fina de cada color por escenario, que el asesor puede
+    // encender/apagar con unos botones discretos (inm.curvaOff guarda los apagados).
+    var INM_CURVA_COLORES=['#4a8c85','#5b7fa6','#b0473a'];
+    function inmuebleCurvaTipos(inm){
+      var t=(inm&&inm.curvaTipos&&inm.curvaTipos.length)?inm.curvaTipos:[3,4,5];
+      return t.slice(0,3).map(Number).filter(function(x){ return !isNaN(x)&&x>=0; });
+    }
+    function inmuebleCurvaChips(escen){
+      if(!escen.length) return '';
+      return '<div class="inm-curve-chips" role="group" aria-label="Escenarios de interés del banco"><span>Banco a</span>'+escen.map(function(e){
+        return '<button type="button" class="inm-chip'+(e.activo?'':' off')+'" data-curva-tipo="'+e.r+'" aria-pressed="'+(e.activo?'true':'false')+'" style="--c:'+e.color+'"'+(e.cuota>0?' title="Cuota '+eur(e.cuota)+'/mes"':'')+'><i></i>'+inmuebleFmtPct(e.r)+'</button>';
+      }).join('')+'</div>';
+    }
+    function inmuebleToggleCurvaTipo(inm,r){
+      var off=(inm.curvaOff||[]).slice(), i=off.indexOf(r); if(i>=0) off.splice(i,1); else off.push(r); inm.curvaOff=off;
+    }
+    // Hitos del gráfico (Comprar): Zuteilung, fin de la Zinsbindung, Bausparvertrag pagado y banco pagado, con lo que debe cada camino y lo
+    // ahorrado en ese momento. Los valores salen de las mismas curvas que el gráfico.
+    function inmuebleHitosComprar(precio,rEst,rk,ptsEst,ptsBanco,zMeses){
+      var rows=[];
+      function ahorroEn(m){ return (rEst.mesesAhorro>0 && m<=rEst.mesesAhorro)?Math.max(0,precio-inmuebleValorEn(ptsEst,m)):(rEst.objetivoAhorro||0); }
+      function add(n,m){ rows.push({n:n,m:m,banco:(m>=rk.mesesTotal)?0:inmuebleValorEn(ptsBanco,m),baus:(m>=rEst.mesesTotal)?0:inmuebleValorEn(ptsEst,m),ahorro:(rEst.mesesAhorro>0)?ahorroEn(m):0}); }
+      if(rEst.mesesAhorro>0) add('Zuteilung del Bausparvertrag',rEst.mesesAhorro);
+      if(zMeses>0 && zMeses<rk.mesesTotal) add('Fin de la Zinsbindung',zMeses);
+      add('Bausparvertrag pagado',rEst.mesesTotal);
+      add('Banco pagado',rk.mesesTotal);
+      return rows.sort(function(a,b){ return a.m-b.m; });
+    }
+    function inmuebleHitosRefi(refi,mesesHastaRefi,rEst,rBanco,ptsEst,ptsBanco){
+      var rows=[], zMeses=Math.round((refi.banco.zinsbindung||0)*12), finEst=mesesHastaRefi+rEst.mesesPrestamo, finBanco=mesesHastaRefi+rBanco.mesesPrestamo;
+      function add(n,m){ rows.push({n:n,m:m,banco:(m>=finBanco)?0:inmuebleValorEn(ptsBanco,m),baus:(m>=finEst)?0:inmuebleValorEn(ptsEst,m),ahorro:(rEst.cuotaAhorro>0&&m>=mesesHastaRefi)?rEst.objetivoAhorro:0}); }
+      add('Refinanciación (Zuteilung de Badenia)',mesesHastaRefi);
+      if(zMeses>0 && mesesHastaRefi+zMeses<finBanco) add('Fin de la Zinsbindung',mesesHastaRefi+zMeses);
+      add('Badenia pagada',finEst);
+      add('Banco pagado',finBanco);
+      return rows.sort(function(a,b){ return a.m-b.m; });
+    }
+    function inmuebleHitosHTML(rows,nombreBaus,zFin){
+      if(!rows.length) return '';
+      var hayPost=false;
+      var body=rows.map(function(r){
+        var post=(zFin>0&&r.m>zFin&&r.banco>0.5); if(post) hayPost=true;
+        return '<tr><td>'+r.n+'</td><td>'+fmtAnos(r.m)+' · '+inmuebleMesAnio(r.m)+'</td><td>'+eur(r.banco)+(post?'*':'')+'</td><td>'+eur(r.ahorro)+'</td><td>'+eur(r.baus)+'</td></tr>';
+      }).join('');
+      return '<table class="inm-tabla inm-hitos"><thead><tr><th>Hito</th><th>Cuándo</th><th>Banco: debes</th><th>'+nombreBaus+': ahorrado</th><th>'+nombreBaus+': debes</th></tr></thead><tbody>'+body+'</tbody></table>'+
+        (hayPost?'<p class="inm-curve-note"><span>* Tras la Zinsbindung el banco refinancia al tipo de ese momento: la cifra supone que el tipo no cambia.</span></p>':'');
+    }
     function inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rNew,cfgNew,tieneAhorroParalelo){
       var paso=3,puntos=[];
       var rateAhorroM=(cfgNew.interesAhorro||0)/100/12;
@@ -5474,11 +5574,18 @@
         '</div>';
       }
       var ptsBanco=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rBanco,refi.banco,false);
+      var escen=inmuebleCurvaTipos(inm).map(function(r,i){
+        var cfgE=Object.assign({},refi.banco,{interesPrestamo:r});
+        if(refi.banco.plazoObjetivo>0&&!(refi.banco.pagoPre>0)) cfgE.tilgungInicial=tilgungParaPlazo(r,refi.banco.plazoObjetivo);
+        var rrE=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:r,tilgungInicial:cfgE.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
+        return {r:r,color:INM_CURVA_COLORES[i],activo:(((inm&&inm.curvaOff)||[]).indexOf(r)<0),cuota:rrE.cuotaPrestamo,pts:inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rrE,cfgE,false)};
+      });
       var ptsEst=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rEst,estCfg,true);
       var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
-        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>Refinanciar con banco</span></div></div>'+
-        inmuebleCurvaSVG(rem.saldoPendiente,ptsEst,ptsBanco,mesesHastaRefi)+
+        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>Refinanciar con banco</span></div></div>'+inmuebleCurvaChips(escen)+
+        inmuebleCurvaSVG(rem.saldoPendiente,ptsEst,ptsBanco,mesesHastaRefi,Math.round((refi.banco.zinsbindung||0)*12)+mesesHastaRefi,{escenarios:escen,zuteilung:(rEst.cuotaAhorro>0?mesesHastaRefi:0),ahorro:{hasta:(rEst.cuotaAhorro>0?mesesHastaRefi:0),total:rEst.objetivoAhorro,base:'banco'}})+
         '<p class="inm-curve-note">La línea de puntos dorada marca la fecha de refinanciación. Hasta entonces, las dos siguen pagando el crédito actual — en la opción Badenia, el ahorro corre en paralelo y ya descuenta de lo pendiente. La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
+        inmuebleHitosHTML(inmuebleHitosRefi(refi,mesesHastaRefi,rEst,rBanco,ptsEst,ptsBanco),'Badenia',mesesHastaRefi+Math.round((refi.banco.zinsbindung||0)*12))+
         '</div>';
       // Tiempo total desde HOY, no solo desde la refinanciación — rNew.mesesTotal no vale tal cual
       // para el banco porque no incluye la espera hasta refinanciar (su fase de ahorro es 0).
@@ -5525,10 +5632,17 @@
           '</div>';
       }
       var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg), ptsBanco=inmuebleCurvaSaldo(precio,rk,cfgBanco);
+      var escen=inmuebleCurvaTipos(inm).map(function(r,i){
+        var cfgE=Object.assign({},cfgBanco,{interesPrestamo:r});
+        if(igual) cfgE.tilgungInicial=Math.max(0,payEq*1200/precio-r); else if(cfgBanco.plazoObjetivo>0&&!(cfgBanco.pagoPre>0)) cfgE.tilgungInicial=tilgungParaPlazo(r,cfgBanco.plazoObjetivo);
+        var rrE=calcInmuebleOption(precio,cfgE);
+        return {r:r,color:INM_CURVA_COLORES[i],activo:((inm.curvaOff||[]).indexOf(r)<0),cuota:rrE.cuotaPrestamo,pts:inmuebleCurvaSaldo(precio,rrE,cfgE)};
+      });
       var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
-        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>'+esc(bancoTitle)+'</span></div></div>'+
-        inmuebleCurvaSVG(precio,ptsEst,ptsBanco,marcaMeses,Math.round((inm.banco.zinsbindung||0)*12))+
+        '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>'+esc(bancoTitle)+'</span></div></div>'+inmuebleCurvaChips(escen)+
+        inmuebleCurvaSVG(precio,ptsEst,ptsBanco,marcaMeses,Math.round((inm.banco.zinsbindung||0)*12),{escenarios:escen,zuteilung:rEst.mesesAhorro,ahorro:{hasta:rEst.mesesAhorro,total:rEst.objetivoAhorro,base:'precio'}})+
         '<p class="inm-curve-note">'+(marcaMeses>0?'La línea de puntos dorada marca los '+(marcaMeses/12)+' años — el plazo al que un banco tradicional suele exigir refinanciación (Anschlussfinanzierung). ':'')+'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
+        inmuebleHitosHTML(inmuebleHitosComprar(precio,rEst,rk,ptsEst,ptsBanco,Math.round((inm.banco.zinsbindung||0)*12)),'Bausparvertrag',Math.round((inm.banco.zinsbindung||0)*12))+
         '</div>';
       var parts={frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0),capacidad:inmuebleCapacidadHTML(inm,precio,[['Banco directo',rk.cuotaPrestamo],['Bausparvertrag · ahorro',rEst.cuotaAhorro],['Bausparvertrag · préstamo',rEst.cuotaPrestamo]]),curva:curva,stress:inmuebleStressHTML(precio,rk,cfgBanco,false,estCfg),stressEdit:function(m){ return inmuebleStressHTML(precio,rk,cfgBanco,m||true,estCfg); },
         cards:'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>',rEst:rEst,rk:rk,estCfg:estCfg};
@@ -5601,6 +5715,7 @@
       if(inm.gastosPct==null||isNaN(inm.gastosPct)) inm.gastosPct=0;
       if(inm.capitalPropio==null||isNaN(inm.capitalPropio)) inm.capitalPropio=0;
       if(inm.ingresoNeto==null||isNaN(inm.ingresoNeto)) inm.ingresoNeto=0;
+      if(!Array.isArray(inm.curvaOff)) inm.curvaOff=[];
       if(inm.ratioMax==null||isNaN(inm.ratioMax)||inm.ratioMax<=0) inm.ratioMax=35;
       if(!inm.refi) inm.refi=def.refi;
       if(!inm.refi.a) inm.refi.a=def.refi.a;
@@ -6500,6 +6615,12 @@
       var vF=parseFloat(String(tf.value).replace(',','.')); if(String(tf.value).trim()===''||isNaN(vF)||vF<0) tf.value=tf.defaultValue;
     });
     document.getElementById('afa-inf-body').addEventListener('click', function(e){
+      var ctI=e.target.closest('[data-curva-tipo]');
+      if(ctI&&_infRec){
+        inmuebleToggleCurvaTipo(normalizeInmueble(_infRec),parseFloat(ctI.getAttribute('data-curva-tipo')));
+        document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(_infRec); scheduleInmuebleSave();
+        return;
+      }
       var b=e.target.closest('[data-pres-n]'); if(!b||!_infRec) return;
       var inmI=normalizeInmueble(_infRec), cfgI=(inmI.modo==='refi')?inmI.refi.banco:inmI.banco;
       cfgI.numEscenarios=Math.max(1,Math.min(5,inmuebleNumEscenarios(cfgI)+(+b.getAttribute('data-pres-n'))));
@@ -6553,6 +6674,12 @@
     });
     document.getElementById('inm-pres-inner').addEventListener('focusout', function(e){ if(e.target.hasAttribute&&e.target.hasAttribute('data-pres-tipo')) delete _presRawTipo[e.target.getAttribute('data-pres-tipo')]; if(e.target.hasAttribute&&e.target.hasAttribute('data-pres-pago')) delete _presRawPago[e.target.getAttribute('data-pres-pago')]; });
     document.getElementById('inm-pres-inner').addEventListener('click', function(e){
+      var ct=e.target.closest('[data-curva-tipo]');
+      if(ct&&_presRec){
+        inmuebleToggleCurvaTipo(normalizeInmueble(_presRec),parseFloat(ct.getAttribute('data-curva-tipo')));
+        var idxC=_presIdx; _presSlides=buildInmuebleSlides(_presRec); presShow(idxC); scheduleInmuebleSave();
+        return;
+      }
       var b=e.target.closest('[data-pres-n]'); if(!b||!_presRec) return;
       var inmP=normalizeInmueble(_presRec), cfgP=(inmP.modo==='refi')?inmP.refi.banco:inmP.banco;
       cfgP.numEscenarios=Math.max(1,Math.min(5,inmuebleNumEscenarios(cfgP)+(+b.getAttribute('data-pres-n'))));
@@ -6676,6 +6803,13 @@
         var afaC=normalizeAfa(wsRec); afaC[afaChk.getAttribute('data-afa-check')]=afaChk.checked;
         var secAfaC=document.getElementById('sec-afa'); if(secAfaC) secAfaC.innerHTML=afaBlock(wsRec);
         scheduleAfaSave();
+        return;
+      }
+      var cTipo=e.target.closest('#inm-results-wrap [data-curva-tipo]'); if(cTipo){
+        // Encender/apagar un escenario de interés del banco en el gráfico (se guarda en la ficha: la presentación y el informe lo respetan).
+        if(!wsRec||!wsRec.inmueble) return;
+        inmuebleToggleCurvaTipo(normalizeInmueble(wsRec),parseFloat(cTipo.getAttribute('data-curva-tipo')));
+        refreshInmuebleResults(); scheduleInmuebleSave();
         return;
       }
       var nEsc=e.target.closest('#inm-results-wrap [data-pres-n]'); if(nEsc){
