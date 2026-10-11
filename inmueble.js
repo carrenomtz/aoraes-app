@@ -618,7 +618,7 @@ function buildInmuebleSlides(rec){
     var P=inmuebleRefiResultsHTML(inm.refi,true,inm), rf=inm.refi;
     sl.push({t:'Tu crédito actual',h:inmuebleBigs([['Saldo pendiente hoy',eur(P.rem.saldoPendiente),{f:'saldoHoy',v:P.rem.saldoPendiente,u:'€'}],['Fecha de refinanciación',inmuebleFmtFecha(fechaRefiEfectiva(rf)),{f:'fechaRefi',v:fechaRefiEfectiva(rf),t:'date'}],['Crédito original',eur(rf.importeOriginal),{f:'importeOriginal',v:rf.importeOriginal,u:'€'}],['Interés original',inmuebleFmtPct(rf.interesOriginal),{f:'interesOriginal',v:rf.interesOriginal,u:'%'}]])});
     var cuotasR=[['Cuota actual',eur(P.rem.cuotaOriginal)+'/mes',{f:'cuotaActual',v:P.rem.cuotaOriginal}]];
-    if(P.rEst.cuotaAhorro>0){ cuotasR.push(['Cuota ahorro',eur(P.rEst.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:P.rEst.cuotaAhorro}]); var eCfgR=(rf.estrategia==='refiB')?rf.b:rf.a; cuotasR.push(['Interés del ahorro',inmuebleFmtPct(eCfgR.interesAhorro),{f:'interesAhorro',v:eCfgR.interesAhorro||0,u:'%'}]); }
+    if(P.rEst.cuotaAhorro>0){ cuotasR.push(['Cuota ahorro',eur(P.rEst.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:P.rEst.cuotaAhorro}]); var eCfgR=(rf.estrategia==='refiB')?rf.b:rf.a; cuotasR.push(['Interés del ahorro',inmuebleFmtPct(eCfgR.interesAhorro),{f:'interesAhorro',v:eCfgR.interesAhorro||0,u:'%'}]); cuotasR.push(['Sonderzahlung anual',eur(eCfgR.sonderAhorro||0)+'/año',{f:'sonderAhorro',v:eCfgR.sonderAhorro||0,u:'€/año'}]); }
     cuotasR.push(['Cuota préstamo',eur(P.rEst.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:P.rEst.cuotaPrestamo}]);
     cuotasR.push(['Refinanciar con banco',eur(P.rBanco.cuotaPrestamo)+'/mes',{f:'pagoPre',v:P.rBanco.cuotaPrestamo}]);
     sl.push({t:'Tu pago cada mes',h:inmuebleBigs(cuotasR)});
@@ -629,7 +629,7 @@ function buildInmuebleSlides(rec){
   } else {
     var Q=inmuebleResultsHTML(inmuebleFin(inm),inm,true), rE=Q.rEst, rk=Q.rk;
     sl.push({t:'La propiedad',h:inmuebleBigs([['Precio del inmueble',eur(inm.precio)],].concat(inmuebleFin(inm)!==inm.precio?[['Importe a financiar',eur(inmuebleFin(inm))]]:[]).concat([['Mes de inicio',inmuebleMesAnio(0)],['Años de ahorro',fmtAnos(rE.mesesAhorro)],['Banco directo',inmuebleFmtPct(inm.banco.interesPrestamo)]]))});
-    var cuotas=[]; if(rE.cuotaAhorro>0){ cuotas.push(['Cuota ahorro',eur(rE.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:rE.cuotaAhorro}]); var eCfg=(inm.estrategia==='b')?inm.b:inm.a; cuotas.push(['Interés del ahorro',inmuebleFmtPct(eCfg.interesAhorro),{f:'interesAhorro',v:eCfg.interesAhorro||0,u:'%'}]); } cuotas.push(['Cuota préstamo',eur(rE.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:rE.cuotaPrestamo}]); cuotas.push(['Banco directo',eur(rk.cuotaPrestamo)+'/mes',{f:(inm.comparar==='igual'?'pagoIgual':'pagoPre'),v:rk.cuotaPrestamo}]);
+    var cuotas=[]; if(rE.cuotaAhorro>0){ cuotas.push(['Cuota ahorro',eur(rE.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:rE.cuotaAhorro}]); var eCfg=(inm.estrategia==='b')?inm.b:inm.a; cuotas.push(['Interés del ahorro',inmuebleFmtPct(eCfg.interesAhorro),{f:'interesAhorro',v:eCfg.interesAhorro||0,u:'%'}]); cuotas.push(['Sonderzahlung anual',eur(eCfg.sonderAhorro||0)+'/año',{f:'sonderAhorro',v:eCfg.sonderAhorro||0,u:'€/año'}]); } cuotas.push(['Cuota préstamo',eur(rE.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:rE.cuotaPrestamo}]); cuotas.push(['Banco directo',eur(rk.cuotaPrestamo)+'/mes',{f:(inm.comparar==='igual'?'pagoIgual':'pagoPre'),v:rk.cuotaPrestamo}]);
     sl.push({t:'Tu pago cada mes',h:inmuebleBigs(cuotas)});
     if(Q.capacidad) sl.push({t:'Capacidad de pago',h:Q.capacidad});
     sl.push({t:'Cuánto debes con el tiempo',h:Q.curva});
@@ -910,7 +910,7 @@ function inmuebleInstallListeners(){
         _presRawPago[fP]=tt.value;
         if(!isNaN(vP)&&vP>=0&&vP<=((fP==='interesOriginal'||fP==='interesAhorro')?(fP==='interesAhorro'?20:30):1000000)){
           var inmP=normalizeInmueble(_presRec), refiP=(inmP.modo==='refi'), objP;
-          if(fP==='pagoAhorro'||fP==='pagoPrestamo'||fP==='interesAhorro') objP=refiP?((inmP.refi.estrategia==='refiB')?inmP.refi.b:inmP.refi.a):((inmP.estrategia==='b')?inmP.b:inmP.a);
+          if(fP==='pagoAhorro'||fP==='pagoPrestamo'||fP==='interesAhorro'||fP==='sonderAhorro') objP=refiP?((inmP.refi.estrategia==='refiB')?inmP.refi.b:inmP.refi.a):((inmP.estrategia==='b')?inmP.b:inmP.a);
           else if(fP==='pagoIgual') objP=inmP;
           else if(fP==='cuotaActual'||fP==='interesOriginal'||fP==='importeOriginal'||fP==='saldoHoy') objP=inmP.refi;
           else objP=refiP?inmP.refi.banco:inmP.banco;
