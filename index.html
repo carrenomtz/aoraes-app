@@ -3792,6 +3792,7 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Año de refinanciación':'Refinancing year',
       'Pago mensual tras la Zinsbindung (0 = el mismo)':'Monthly payment after the Zinsbindung (0 = the same)','€/mes':'€/month','con un pago mensual de':'with a monthly payment of',
       'Nombre del escenario {0}':'Scenario {0} name','Opcional':'Optional',
       'Tipo posterior a la Zinsbindung · escenario {0}':'Rate after the Zinsbindung · scenario {0}',
@@ -4065,6 +4066,7 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Año de refinanciación':'Jahr der Anschlussfinanzierung',
       'Pago mensual tras la Zinsbindung (0 = el mismo)':'Monatliche Zahlung nach der Zinsbindung (0 = gleich)','€/mes':'€/Monat','con un pago mensual de':'bei einer monatlichen Zahlung von',
       'Nombre del escenario {0}':'Name von Szenario {0}','Opcional':'Optional',
       'Tipo posterior a la Zinsbindung · escenario {0}':'Zinssatz nach der Zinsbindung · Szenario {0}',
@@ -5237,6 +5239,11 @@
     // mm/aaaa a N meses desde hoy — numérico a propósito (sin nombres de mes) para que no dependa del
     // idioma con el que se dibujó el bloque.
     var _inmInicio='';
+    // Año de refinanciación (Comprar) = año de inicio + años de Zinsbindung del banco: es otra forma de
+    // verla (misma fuente de verdad, banco.zinsbindung), no un dato aparte.
+    function inmuebleInicioAnio(inm){ return inmuebleInicioDate(inm&&inm.inicio).getFullYear(); }
+    function inmuebleAnioRefi(inm){ return inmuebleInicioAnio(inm)+Math.round(inm.banco.zinsbindung||0); }
+    function inmuebleSyncAnioRefi(inm){ var e=document.getElementById('inm-anio-refi'); if(e&&document.activeElement!==e) e.value=inmuebleAnioRefi(inm); }
     function inmuebleInicioDate(ini){
       var m=/^(\d{4})-(\d{2})$/.exec(ini||''), d=new Date(); d.setDate(1);
       if(m){ d.setFullYear(+m[1],+m[2]-1,1); }
@@ -5484,7 +5491,7 @@
           '</div>'+
           '<div id="inm-results-wrap">'+inmuebleRefiResultsHTML(inm.refi)+'</div>'
         : '<div class="inm-toprow inm-precio-row"><label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
-          '<label class="inm-f inm-inicio"><span>Mes de inicio</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-inicio" value="'+(inm.inicio||(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);})())+'"></span></label></div>'+
+          '<label class="inm-f inm-inicio"><span>Mes de inicio</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-inicio" value="'+(inm.inicio||(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);})())+'"></span></label><label class="inm-f inm-inicio"><span>Año de refinanciación</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-anio-refi" step="1" value="'+inmuebleAnioRefi(inm)+'"></span></label></div>'+
           inmuebleStrategyToggle(inm.estrategia,[
             {key:'a',label:inmuebleEstNombre(inm.a)},
             {key:'b',label:inmuebleEstNombre(inm.b)}
@@ -6417,10 +6424,21 @@
         refreshInmuebleResults(); scheduleInmuebleSave();
         return;
       }
+      if(t.id==='inm-anio-refi'){
+        if(!wsRec) return;
+        var inmY=normalizeInmueble(wsRec), y=parseInt(t.value,10), y0=inmuebleInicioAnio(inmY);
+        if(!isNaN(y) && y>=y0+1 && y<=y0+40){
+          inmY.banco.zinsbindung=y-y0;
+          var zi=document.querySelector('[data-inm-opt="banco"][data-inm-field="zinsbindung"]'); if(zi) zi.value=inmY.banco.zinsbindung;
+          refreshInmuebleResults(); scheduleInmuebleSave();
+        }
+        return;
+      }
       if(t.id==='inm-inicio'){
         if(!wsRec) return;
         var inmI=normalizeInmueble(wsRec);
         if(/^\d{4}-\d{2}$/.test(t.value)) inmI.inicio=t.value; else delete inmI.inicio;
+        inmuebleSyncAnioRefi(inmI);
         refreshInmuebleResults(); scheduleInmuebleSave();
         return;
       }
@@ -6462,6 +6480,7 @@
         else if(opt==='refiA') inm.refi.a[field]=val;
         else if(opt==='refiB') inm.refi.b[field]=val;
         else inm[opt][field]=val;
+        if(opt==='banco'&&field==='zinsbindung') inmuebleSyncAnioRefi(inm);
         refreshInmuebleResults(); scheduleInmuebleSave();
         return;
       }
