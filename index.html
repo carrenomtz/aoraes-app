@@ -638,7 +638,17 @@
   .inm-stress-head{font-size:11.5px; color:var(--muted); margin-bottom:6px}
   .inm-stress-head b{font-family:'Fraunces',sans-serif; font-size:17px; color:var(--navy); margin-left:3px}
   .inm-hedge{margin-top:12px; padding-top:10px; border-top:1px solid var(--line-strong)}
+  .inm-curve-card > .inm-hedge{margin-top:0; padding-top:0; border-top:0}
   .inm-hedge h6{margin:0 0 6px; font-size:12.5px; font-weight:700; color:var(--navy)}
+  /* En el informe (A4) el bloque va en dos columnas para que la página con la tarjeta de escenarios no desborde. */
+  .inm-inf .inm-hedge{display:grid; grid-template-columns:1fr 1fr; column-gap:22px}
+  .inm-inf .inm-hedge h6,.inm-inf .inm-hedge .inm-curve-note{grid-column:1 / -1}
+  .inm-inf .inm-hedge{margin-top:8px; padding-top:8px}
+  .inm-inf .inm-hedge h6{margin-bottom:2px}
+  .inm-inf .inm-hedge .inm-res-line{padding:3px 0}
+  .inm-inf .inm-hedge .inm-curve-note{margin:3px 0 0}
+  .inm-inf .inm-stress-lead{margin-bottom:8px}
+  .inm-inf .inm-curve-card{padding-top:12px; padding-bottom:12px}
   .inm-res-warn{font-size:12px; font-weight:700; color:var(--red); line-height:1.4; margin:6px 0}
   .inm-stress-warn{font-size:12px; font-weight:700; color:var(--red); line-height:1.4}
   @media(max-width:620px){.inm-stress-grid{grid-template-columns:1fr}}
@@ -5384,7 +5394,7 @@
         '<div class="inm-res-line"><span>Cuota del préstamo después</span><b>'+eur(h.cuotaPrestamo)+'/mes</b></div>'+
         '<p class="inm-curve-note"><span>Orientativo: este ahorro se suma a la cuota del banco.</span> <span>La asignación (Zuteilung) y las condiciones reales las fija la Bausparkasse.</span></p></div>';
     }
-    function inmuebleStressHTML(precio,rk,cfgBanco,editable,cfgBauspar){
+    function inmuebleStressHTML(precio,rk,cfgBanco,editable,cfgBauspar,sinHedge){
       var zMeses=Math.round((cfgBanco.zinsbindung||0)*12);
       if(!(zMeses>0)||!(precio>0)||!(rk.cuotaPrestamo>0)) return '';
       var body;
@@ -5414,7 +5424,7 @@
         }).join('');
         body='<p class="inm-stress-lead"><span>Al terminar la Zinsbindung (<b>'+fmtAnos(zMeses)+'</b>), aún debes <b>'+eur(R)+'</b>.</span> <span>Ese saldo se refinancia al tipo que haya entonces.</span> <span>'+(tilesN===3?'Tres posibilidades':(tilesN===1?'Una posibilidad':(tilesN===2?'Dos posibilidades':(tilesN===4?'Cuatro posibilidades':'Cinco posibilidades'))))+'</span> <span>(no son pronósticos), '+(pagoPost>0?'con un pago mensual de':'con tu mismo pago de')+' '+(editable===true?'<input type="text" inputmode="decimal" class="inm-pres-pago" data-pres-pago="pagoPost" value="'+esc(_presRawPago.pagoPost!=null?_presRawPago.pagoPost:String(Math.round(pmt2)))+'"> €/mes.':'<b>'+eur(pmt2)+'/mes</b>.')+'</span></p>'+
           '<div class="inm-stress-grid">'+tiles+'</div>'+
-          '<p class="inm-curve-note">El Bausparvertrag mantiene su tipo durante todo el préstamo: no cambia.</p>'+inmuebleHedgeHTML(R,zMeses,cfgBauspar);
+          '<p class="inm-curve-note">El Bausparvertrag mantiene su tipo durante todo el préstamo: no cambia.</p>'+(sinHedge?'':inmuebleHedgeHTML(R,zMeses,cfgBauspar));
       }
       return '<div class="inm-curve-card"><div class="inm-curve-head"><h5>Banco directo: qué pasa al terminar la Zinsbindung</h5></div>'+body+'</div>';
     }
@@ -5485,7 +5495,7 @@
         rEst.mesesPrestamo,rEst.mesesPrestamo,Math.min((refi.banco.zinsbindung||0)*12,rBanco.mesesPrestamo),rBanco.mesesPrestamo);
       var cardsR='<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+row(estTitle,rEst,costeEstAbs,false,false)+'</div>';
       var stressR=inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,false,estCfg);
-      return asParts?{frase:frase,curva:curva,stress:stressR,stressEdit:function(m){ return inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,m||true,estCfg); },cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+curva+stressR+cardsR);
+      return asParts?{frase:frase,curva:curva,stress:stressR,stressEdit:function(m,sh){ return inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,m||true,estCfg,sh); },hedge:inmuebleHedgeHTML(rBanco.restschuldZinsbindung||0,Math.round((refi.banco.zinsbindung||0)*12),estCfg),cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+curva+stressR+cardsR);
     }
     function inmuebleResultsHTML(precio,inm,asParts){
       _inmInicio=inm.inicio||'';
@@ -5695,8 +5705,9 @@
       var limits='<div class="afa-inf-sec inm-inf-limits"><h4>Supuestos y límites</h4>'+inmuebleLimitsHTML()+'</div>';
       var pages;
       if(inm.modo==='refi'){
-        pages=[page(brand+'<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+P.frase+limits),
-               page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.curva+P.stressEdit('names')),
+        // El bloque "Cubrir la deuda pendiente" va en la primera página (las otras dos no tienen sitio con 5 escenarios).
+        pages=[page(brand+'<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+P.frase+(P.hedge?'<div class="inm-curve-card">'+P.hedge+'</div>':'')+limits),
+               page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.curva+P.stressEdit('names',true)),
                page(P.cards)];
       } else {
         pages=[page(brand+'<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+P.frase+limits),
