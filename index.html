@@ -719,6 +719,9 @@
   .inm-pres-inner{position:absolute; transform-origin:top left; width:1000px}
   .inm-pres-inner .inm-headline{font-size:19px}
   .inm-pres-inner .inm-big b{font-size:38px}
+  .inm-pres-ctl{display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-bottom:10px; font-size:13px; color:var(--muted)}
+  .inm-pres-ctl button{width:34px; height:34px; border-radius:50%; border:1px solid var(--line-strong); background:var(--surface); color:var(--navy); font-size:18px; font-weight:700; cursor:pointer}
+  .inm-pres-ctl b{min-width:20px; text-align:center; font-size:18px; color:var(--navy)}
   .inm-pres-limits ul{margin:0; padding-left:24px; font-size:19px; line-height:1.7; color:var(--ink)}
   .inm-pres-nav{flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:12px clamp(16px,3vw,36px); border-top:1px solid var(--line); background:var(--surface)}
   .inm-pres-nav button{background:var(--navy)}
@@ -3796,6 +3799,7 @@
       'Sin fase de ahorro: se financia el {0}% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.':'No savings phase: {0}% is financed from the start. In German practice the rate is usually fixed (Zinsbindung) for only part of the term, not all of it — see the note below.',
       'Tiempo total hasta terminar de pagar':'Total time until fully paid off',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Escenarios':'Scenarios',
       'Número de escenarios (1-5)':'Number of scenarios (1-5)',
       'Una posibilidad':'One possibility',
       'Dos posibilidades':'Two possibilities',
@@ -4078,6 +4082,7 @@
       'Ahorras vs. banco':'Sie sparen ggü. der Bank','Más caro que el banco':'Teurer als die Bank',
       'Tiempo total hasta terminar de pagar':'Gesamtzeit bis zur vollständigen Rückzahlung',
       // ---- Proyecto inmobiliario: comparación sin titulares de "ahorro" ----
+      'Escenarios':'Szenarien',
       'Número de escenarios (1-5)':'Anzahl der Szenarien (1-5)',
       'Una posibilidad':'Eine Möglichkeit',
       'Dos posibilidades':'Zwei Möglichkeiten',
@@ -5641,7 +5646,7 @@
         var P=inmuebleRefiResultsHTML(inm.refi,true), rf=inm.refi;
         sl.push({t:'Tu crédito actual',h:inmuebleBigs([['Saldo pendiente hoy',eur(P.rem.saldoPendiente)],['Fecha de refinanciación',inmuebleFmtFecha(fechaRefiEfectiva(rf))],['Crédito original',eur(rf.importeOriginal)],['Interés original',inmuebleFmtPct(rf.interesOriginal)]])});
         sl.push({t:'Cuánto debes con el tiempo',h:P.curva});
-        if(P.stress) sl.push({t:'El banco y la Zinsbindung',h:P.stress});
+        if(P.stress) sl.push({t:'El banco y la Zinsbindung',h:presEscenariosCtl(rf.banco)+P.stress,stress:true});
         sl.push({t:'Comparación',h:P.frase+P.cards});
         sl.push({t:'Qué tener en cuenta',h:limits});
       } else {
@@ -5650,13 +5655,17 @@
         var cuotas=[]; if(rE.cuotaAhorro>0) cuotas.push(['Cuota ahorro',eur(rE.cuotaAhorro)+'/mes']); cuotas.push(['Cuota préstamo',eur(rE.cuotaPrestamo)+'/mes']); cuotas.push(['Banco directo',eur(rk.cuotaPrestamo)+'/mes']);
         sl.push({t:'Tu pago cada mes',h:inmuebleBigs(cuotas)+Q.cuota});
         sl.push({t:'Cuánto debes con el tiempo',h:Q.curva});
-        if(Q.stress) sl.push({t:'El banco y la Zinsbindung',h:Q.stress});
+        if(Q.stress) sl.push({t:'El banco y la Zinsbindung',h:presEscenariosCtl(inm.banco)+Q.stress,stress:true});
         sl.push({t:'Comparación',h:Q.frase+Q.cards});
         sl.push({t:'Qué tener en cuenta',h:limits});
       }
       return sl;
     }
-    var _presSlides=[], _presIdx=0;
+    var _presSlides=[], _presIdx=0, _presRec=null;
+    // Control del número de escenarios dentro de la propia diapositiva (la presentación lo edita en vivo).
+    function presEscenariosCtl(cfg){
+      return '<div class="inm-pres-ctl"><span>Escenarios</span><button type="button" data-pres-n="-1" aria-label="Menos escenarios">−</button><b>'+inmuebleNumEscenarios(cfg)+'</b><button type="button" data-pres-n="1" aria-label="Más escenarios">+</button></div>';
+    }
     function presFit(){
       var st=document.getElementById('inm-pres-stage'), inn=document.getElementById('inm-pres-inner'); if(!st||!inn) return;
       inn.style.transform='none'; inn.style.width='1000px';
@@ -5676,10 +5685,11 @@
       presFit(); setTimeout(presFit,80);
     }
     function presOpen(rec){
-      _presSlides=buildInmuebleSlides(rec); var ov=document.getElementById('inm-pres'); ov.hidden=false; presShow(0);
+      _presRec=rec; _presSlides=buildInmuebleSlides(rec); var ov=document.getElementById('inm-pres'); ov.hidden=false; presShow(0);
     }
     function presClose(){
       var ov=document.getElementById('inm-pres'); if(ov.hidden) return; ov.hidden=true;
+      var secP=document.getElementById('sec-inmueble'); if(secP&&wsRec) secP.innerHTML=inmuebleBlock(wsRec);
       try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
     }
     function refreshInmuebleResults(){
@@ -6310,6 +6320,12 @@
       openGenericAfa();
     });
     document.getElementById('inm-pres-close').addEventListener('click', presClose);
+    document.getElementById('inm-pres-inner').addEventListener('click', function(e){
+      var b=e.target.closest('[data-pres-n]'); if(!b||!_presRec) return;
+      var inmP=normalizeInmueble(_presRec), cfgP=(inmP.modo==='refi')?inmP.refi.banco:inmP.banco;
+      cfgP.numEscenarios=Math.max(1,Math.min(5,inmuebleNumEscenarios(cfgP)+(+b.getAttribute('data-pres-n'))));
+      var idx=_presIdx; _presSlides=buildInmuebleSlides(_presRec); presShow(idx); scheduleInmuebleSave();
+    });
     document.getElementById('inm-pres-prev').addEventListener('click', function(){ presShow(_presIdx-1); });
     document.getElementById('inm-pres-next').addEventListener('click', function(){ presShow(_presIdx+1); });
     document.getElementById('inm-pres-dots').addEventListener('click', function(e){ var d=e.target.closest('[data-pres-go]'); if(d) presShow(+d.getAttribute('data-pres-go')); });
