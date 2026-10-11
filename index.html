@@ -5427,7 +5427,7 @@
         rEst.mesesPrestamo,rEst.mesesPrestamo,Math.min((refi.banco.zinsbindung||0)*12,rBanco.mesesPrestamo),rBanco.mesesPrestamo);
       var cardsR='<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+row(estTitle,rEst,costeEstAbs,false,false)+'</div>';
       var stressR=inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco);
-      return asParts?{frase:frase,curva:curva,stress:stressR,stressEdit:function(){ return inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,true); },cards:cardsR,rem:rem,fr:fr}:(frase+curva+stressR+cardsR);
+      return asParts?{frase:frase,curva:curva,stress:stressR,stressEdit:function(){ return inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,true); },cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+curva+stressR+cardsR);
     }
     function inmuebleResultsHTML(precio,inm,asParts){
       _inmInicio=inm.inicio||'';
@@ -5654,6 +5654,11 @@
       if(inm.modo==='refi'){
         var P=inmuebleRefiResultsHTML(inm.refi,true), rf=inm.refi;
         sl.push({t:'Tu crédito actual',h:inmuebleBigs([['Saldo pendiente hoy',eur(P.rem.saldoPendiente)],['Fecha de refinanciación',inmuebleFmtFecha(fechaRefiEfectiva(rf))],['Crédito original',eur(rf.importeOriginal)],['Interés original',inmuebleFmtPct(rf.interesOriginal)]])});
+        var cuotasR=[['Cuota actual',eur(P.rem.cuotaOriginal)+'/mes']];
+        if(P.rEst.cuotaAhorro>0) cuotasR.push(['Cuota ahorro',eur(P.rEst.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:P.rEst.cuotaAhorro}]);
+        cuotasR.push(['Cuota préstamo',eur(P.rEst.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:P.rEst.cuotaPrestamo}]);
+        cuotasR.push(['Refinanciar con banco',eur(P.rBanco.cuotaPrestamo)+'/mes',{f:'pagoPre',v:P.rBanco.cuotaPrestamo}]);
+        sl.push({t:'Tu pago cada mes',h:inmuebleBigs(cuotasR)});
         sl.push({t:'Cuánto debes con el tiempo',h:P.curva});
         if(P.stress) sl.push({t:'El banco y la Zinsbindung',h:presEscenariosCtl(rf.banco)+P.stressEdit(),stress:true});
         sl.push({t:'Comparación',h:P.frase+P.cards});
