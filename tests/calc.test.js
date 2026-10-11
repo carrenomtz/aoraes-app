@@ -179,6 +179,25 @@ test('semáforo: ≤30 % del ingreso dentro, hasta el límite ajustado, por enci
   assert(/990[^<]*<\/td><td>33 %<\/td><td class="cap-mid">Ajustado/.test(j), '33 % ajustado');
 });
 
+console.log('Tiempo mínimo de ahorro del Bausparvertrag (3,6 años)')
+const bsMin = (extra) => engine.calcInmuebleOption(300000, Object.assign({ pct: 40, anios: 5, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 6, comision: 1.6 }, extra));
+const mesesAh = (c) => c.mesesTotal - c.mesesPrestamo;
+test('años de ahorro por debajo del mínimo se suben a 3,6 años (43 meses) y se avisa', () => {
+  const c = bsMin({ anios: 2 }); assert.strictEqual(mesesAh(c), 43); assert.strictEqual(c.minAhorroAplicado, true);
+  near(c.cuotaAhorro, engine.savingsQuota(120000 + 300000 * 0.016, 0.05, 43), 0.01, 'cuota para 43 meses');
+});
+test('3,6 años o más no se tocan', () => {
+  const c = bsMin({ anios: 3.6 }); assert.strictEqual(mesesAh(c), 43); assert.strictEqual(c.minAhorroAplicado, false);
+  assert.strictEqual(mesesAh(bsMin({ anios: 5 })), 60);
+});
+test('un pago de ahorro tan alto que alcanzaría el objetivo antes del mínimo: el ahorro dura el mínimo y la cuota baja a la necesaria', () => {
+  const c = bsMin({ pagoAhorro: 5000 }); assert.strictEqual(mesesAh(c), 43); assert.strictEqual(c.minAhorroAplicado, true); assert(c.cuotaAhorro < 5000, 'cuota ' + c.cuotaAhorro);
+  const d = bsMin({ pagoAhorro: 1000 }); assert.strictEqual(d.minAhorroAplicado, false); assert(mesesAh(d) > 100);
+});
+test('Refinanciar (sinMinimoAhorro) no recalcula: se avisa en pantalla, el cálculo queda como estaba', () => {
+  assert.strictEqual(mesesAh(bsMin({ anios: 2, sinMinimoAhorro: true })), 24);
+});
+
 console.log('Cubrir la deuda pendiente de la Zinsbindung con un Bausparvertrag')
 test('Bausparsumme = deuda pendiente: el ahorro mensual alcanza el % elegido + comisión en los años de la Zinsbindung', () => {
   const R = engine.calcInmuebleOption(330000, { pct: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 }).restschuldZinsbindung;
