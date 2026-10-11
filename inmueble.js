@@ -572,7 +572,7 @@ function inmuebleDatosHTML(inm){
   function rowSonder(cfg){
     if(!(cfg.pct>0)) return '';
     var v=cfg.sonderAhorro||0;
-    return '<div class="afa-inf-row inm-inf-opt'+(v>0?'':' vacio')+'"><span>Sonderzahlung anual del ahorro</span><b><input type="text" inputmode="decimal" class="inm-inf-in" data-inf-sonder="1" value="'+(v>0?String(Math.round(v)):'')+'" placeholder="0"> €/año</b></div>';
+    return '<div class="afa-inf-row inm-inf-opt'+(v>0?'':' vacio')+'"><span>Sonderzahlung anual</span><b><input type="text" inputmode="decimal" class="inm-inf-in" data-inf-sonder="1" value="'+(v>0?String(Math.round(v)):'')+'" placeholder="0"> €/año</b></div>';
   }
   if(inm.modo==='refi'){
     var rf=inm.refi, rem=calcRefiRemaining(rf), estCfg=(rf.estrategia==='refiB')?rf.b:rf.a;
