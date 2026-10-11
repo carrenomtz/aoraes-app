@@ -8,10 +8,14 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'calc.js'
+      - 'afa.js'
       - 'tests/**'
   pull_request:
     paths:
       - 'index.html'
+      - 'calc.js'
+      - 'afa.js'
       - 'tests/**'
 
 jobs:
