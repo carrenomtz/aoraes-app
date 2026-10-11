@@ -722,6 +722,7 @@
   .inm-pres-tipo{width:64px; font-family:'Fraunces',sans-serif; font-size:17px; font-weight:600; color:var(--navy); border:0; border-bottom:1px dashed var(--line-strong); background:transparent; padding:0 2px; text-align:right}
   .inm-pres-tipo:focus{outline:0; border-bottom-color:var(--gold-deep)}
   .inm-pres-pago{width:84px; font:inherit; font-weight:700; color:var(--navy); border:0; border-bottom:1px dashed var(--line-strong); background:transparent; padding:0 2px; text-align:right}
+  .inm-pres-date{width:auto; font-family:'Fraunces',sans-serif; font-size:22px; font-weight:600; text-align:left}
   .inm-pres-pago-big{width:150px; font-family:'Fraunces',sans-serif; font-size:38px; font-weight:600}
   .inm-pres-pago:focus{outline:0; border-bottom-color:var(--gold-deep)}
   .inm-pres-name{width:100%; font:inherit; font-size:11.5px; color:var(--navy); border:0; border-bottom:1px dashed var(--line-strong); background:transparent; padding:2px 0; margin-bottom:2px}
@@ -5605,7 +5606,7 @@
     }
     function inmuebleBigs(items){
       return '<div class="inm-bigs">'+items.map(function(i){
-        var v=i[2]?'<b><input type="text" inputmode="decimal" class="inm-pres-pago inm-pres-pago-big" data-pres-pago="'+i[2].f+'" value="'+esc(_presRawPago[i[2].f]!=null?_presRawPago[i[2].f]:(i[2].u==='%'?String(Math.round(i[2].v*100)/100).replace('.',','):String(Math.round(i[2].v))))+'"> '+(i[2].u||'€/mes')+'</b>':'<b>'+i[1]+'</b>';
+        var v=(i[2]&&i[2].t==='date')?'<b><input type="date" class="inm-pres-pago inm-pres-date" data-pres-pago="'+i[2].f+'" value="'+esc(i[2].v)+'"></b>':i[2]?'<b><input type="text" inputmode="decimal" class="inm-pres-pago inm-pres-pago-big" data-pres-pago="'+i[2].f+'" value="'+esc(_presRawPago[i[2].f]!=null?_presRawPago[i[2].f]:(i[2].u==='%'?String(Math.round(i[2].v*100)/100).replace('.',','):String(Math.round(i[2].v))))+'"> '+(i[2].u||'€/mes')+'</b>':'<b>'+i[1]+'</b>';
         return '<div class="inm-big">'+v+'<span>'+i[0]+'</span></div>'; }).join('')+'</div>';
     }
     function inmuebleFmtPct(x){ return String(Math.round((x||0)*100)/100).replace('.',',')+'%'; }
@@ -5659,7 +5660,7 @@
       var sl=[];
       if(inm.modo==='refi'){
         var P=inmuebleRefiResultsHTML(inm.refi,true), rf=inm.refi;
-        sl.push({t:'Tu crédito actual',h:inmuebleBigs([['Saldo pendiente hoy',eur(P.rem.saldoPendiente)],['Fecha de refinanciación',inmuebleFmtFecha(fechaRefiEfectiva(rf))],['Crédito original',eur(rf.importeOriginal),{f:'importeOriginal',v:rf.importeOriginal,u:'€'}],['Interés original',inmuebleFmtPct(rf.interesOriginal),{f:'interesOriginal',v:rf.interesOriginal,u:'%'}]])});
+        sl.push({t:'Tu crédito actual',h:inmuebleBigs([['Saldo pendiente hoy',eur(P.rem.saldoPendiente)],['Fecha de refinanciación',inmuebleFmtFecha(fechaRefiEfectiva(rf)),{f:'fechaRefi',v:fechaRefiEfectiva(rf),t:'date'}],['Crédito original',eur(rf.importeOriginal),{f:'importeOriginal',v:rf.importeOriginal,u:'€'}],['Interés original',inmuebleFmtPct(rf.interesOriginal),{f:'interesOriginal',v:rf.interesOriginal,u:'%'}]])});
         var cuotasR=[['Cuota actual',eur(P.rem.cuotaOriginal)+'/mes',{f:'cuotaActual',v:P.rem.cuotaOriginal}]];
         if(P.rEst.cuotaAhorro>0) cuotasR.push(['Cuota ahorro',eur(P.rEst.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:P.rEst.cuotaAhorro}]);
         cuotasR.push(['Cuota préstamo',eur(P.rEst.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:P.rEst.cuotaPrestamo}]);
@@ -6346,7 +6347,15 @@
         // Pago mensual editado en la presentación: se guarda en el mismo campo que Opciones avanzadas
         // (pagoAhorro/pagoPrestamo del Bausparvertrag, pagoPre/pagoPost/pagoIgual del banco); vacío = 0
         // = calculado. Se recalcula en vivo conservando lo tecleado, el foco y el cursor.
-        var fP=tt.getAttribute('data-pres-pago'), rawP=String(tt.value).trim(), vP=(rawP==='')?0:parseFloat(rawP.replace(',','.'));
+        var fP=tt.getAttribute('data-pres-pago');
+        if(fP==='fechaRefi'){
+          if(/^\d{4}-\d{2}-\d{2}$/.test(tt.value)){
+            normalizeInmueble(_presRec).refi.fechaRefi=tt.value;
+            var idxF=_presIdx; _presSlides=buildInmuebleSlides(_presRec); presShow(idxF); scheduleInmuebleSave();
+          }
+          return;
+        }
+        var rawP=String(tt.value).trim(), vP=(rawP==='')?0:parseFloat(rawP.replace(',','.'));
         _presRawPago[fP]=tt.value;
         if(!isNaN(vP)&&vP>=0&&vP<=(fP==='interesOriginal'?30:1000000)){
           var inmP=normalizeInmueble(_presRec), refiP=(inmP.modo==='refi'), objP;
