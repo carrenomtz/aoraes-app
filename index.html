@@ -5527,7 +5527,7 @@
       var stressR=inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,false,estCfg);
       var capR=inm?inmuebleCapacidadHTML(inm,saldoAtRefi,[['Tu crédito actual',rem.cuotaOriginal],['Refinanciar con banco',rBanco.cuotaPrestamo],['Badenia · ahorro',rEst.cuotaAhorro],['Badenia · préstamo',rEst.cuotaPrestamo]]):'';
       var tabla=inmuebleTablaAnualRefi(rem,refi,mesesHastaRefi,rBanco,rEst,estCfg,30), tablaPres=inmuebleTablaAnualRefi(rem,refi,mesesHastaRefi,rBanco,rEst,estCfg,16), tablaInf=inmuebleTablaAnualRefi(rem,refi,mesesHastaRefi,rBanco,rEst,estCfg,12);
-      return asParts?{frase:frase,capacidad:capR,tabla:tabla,tablaPres:tablaPres,tablaInf:tablaInf,curva:curva,stress:stressR,stressEdit:function(m,sh){ return inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,m||true,estCfg,sh); },hedge:inmuebleHedgeHTML(rBanco.restschuldZinsbindung||0,Math.round((refi.banco.zinsbindung||0)*12),estCfg),cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+capR+curva+tabla+(stressR?'<div class="inm-stress-ctl">'+presEscenariosCtl(refi.banco)+'</div>'+inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,'tipos',estCfg):'')+cardsR);
+      return asParts?{frase:frase,capacidad:capR,tabla:tabla,tablaPres:tablaPres,tablaInf:tablaInf,curva:curva,stress:stressR,stressEdit:function(m,sh){ return inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,m||true,estCfg,sh); },hedge:inmuebleHedgeHTML(rBanco.restschuldZinsbindung||0,Math.round((refi.banco.zinsbindung||0)*12),estCfg),cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+capR+curva+tabla+(stressR?'<div class="inm-stress-ctl">'+presEscenariosCtl(refi.banco)+'</div>'+inmuebleStressHTML(saldoAtRefi,rBanco,refi.banco,true,estCfg):'')+cardsR);
     }
     function inmuebleResultsHTML(precio,inm,asParts){
       _inmInicio=inm.inicio||'';
@@ -5570,7 +5570,7 @@
         '</div>';
       var parts={frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0),capacidad:inmuebleCapacidadHTML(inm,precio,[['Banco directo',rk.cuotaPrestamo],['Bausparvertrag · ahorro',rEst.cuotaAhorro],['Bausparvertrag · préstamo',rEst.cuotaPrestamo]]),curva:curva,tabla:inmuebleTablaAnual(precio,rEst,estCfg,rk,cfgBanco,Math.round((inm.banco.zinsbindung||0)*12),30),tablaPres:inmuebleTablaAnual(precio,rEst,estCfg,rk,cfgBanco,Math.round((inm.banco.zinsbindung||0)*12),16),tablaInf:inmuebleTablaAnual(precio,rEst,estCfg,rk,cfgBanco,Math.round((inm.banco.zinsbindung||0)*12),12),stress:inmuebleStressHTML(precio,rk,cfgBanco,false,estCfg),stressEdit:function(m){ return inmuebleStressHTML(precio,rk,cfgBanco,m||true,estCfg); },
         cards:'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>',rEst:rEst,rk:rk,estCfg:estCfg};
-      return asParts?parts:(parts.frase+parts.capacidad+parts.curva+parts.tabla+(parts.stress?'<div class="inm-stress-ctl">'+presEscenariosCtl(inm.banco)+'</div>'+parts.stressEdit('tipos'):'')+parts.cards);
+      return asParts?parts:(parts.frase+parts.capacidad+parts.curva+parts.tabla+(parts.stress?'<div class="inm-stress-ctl">'+presEscenariosCtl(inm.banco)+'</div>'+parts.stressEdit(true):'')+parts.cards);
     }
     // Fichas guardadas con el esquema anterior (plazoPrestamo en años + anualidad) migran a la
     // cuota fija real (Tilgung inicial % para banco, Tilgungsbeitrag ‰ para Bausparvertrag) SIN
@@ -6767,6 +6767,11 @@
     });
     wsScreen.addEventListener('focusout',function(e){
       var tf=e.target;
+      if(tf.hasAttribute&&tf.hasAttribute('data-pres-pago')&&tf.closest&&tf.closest('#inm-results-wrap')){
+        // Pago mensual tras la Zinsbindung: al salir se descarta el texto bruto; si lo escrito no era un importe válido vuelve al último mostrado.
+        delete _presRawPago[tf.getAttribute('data-pres-pago')];
+        var vPF=parseFloat(String(tf.value).replace(',','.')); if(String(tf.value).trim()===''||isNaN(vPF)||vPF<0) tf.value=tf.defaultValue;
+      }
       if(tf.hasAttribute&&tf.hasAttribute('data-pres-tipo')&&tf.closest&&tf.closest('#inm-results-wrap')){
         // Al salir del campo, el texto bruto se descarta y se muestra el tipo realmente guardado (si lo escrito no era válido, vuelve al anterior).
         var kF=tf.getAttribute('data-pres-tipo'); delete _presRawTipo[kF];
@@ -6794,6 +6799,20 @@
         var inmG=normalizeInmueble(wsRec), vG=parseFloat(t.value); vG=(isNaN(vG)||vG<0)?0:vG;
         if(t.id==='inm-gastos') inmG.gastosPct=Math.min(30,vG); else inmG.capitalPropio=vG;
         refreshInmuebleResults(); scheduleInmuebleSave();
+        return;
+      }
+      if(t.hasAttribute('data-pres-pago')&&t.closest('#inm-results-wrap')){
+        // Pago mensual tras la Zinsbindung escrito en la pantalla de resultados: mismo campo que Opciones avanzadas, presentación e informe
+        // (vacío o 0 = el mismo pago de antes). Se recalcula conservando lo tecleado y devolviendo el foco.
+        if(!wsRec) return;
+        var kPS=t.getAttribute('data-pres-pago'), rawPS=String(t.value).trim(), vPS=(rawPS==='')?0:parseFloat(rawPS.replace(',','.'));
+        _presRawPago[kPS]=t.value;
+        if(kPS==='pagoPost'&&!isNaN(vPS)&&vPS>=0&&vPS<=1000000){
+          var inmPS=normalizeInmueble(wsRec), cfgPS=(inmPS.modo==='refi')?inmPS.refi.banco:inmPS.banco; cfgPS.pagoPost=vPS;
+          var fPS=document.querySelector('[data-inm-opt="'+((inmPS.modo==='refi')?'refiBanco':'banco')+'"][data-inm-field="pagoPost"]'); if(fPS) fPS.value=vPS;
+          refreshInmuebleResults(); scheduleInmuebleSave();
+          var nPS=document.querySelector('#inm-results-wrap [data-pres-pago="'+kPS+'"]'); if(nPS){ nPS.focus(); try{ nPS.setSelectionRange(nPS.value.length,nPS.value.length); }catch(_){} }
+        }
         return;
       }
       if(t.hasAttribute('data-pres-tipo')&&t.closest('#inm-results-wrap')){
