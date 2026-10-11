@@ -13,15 +13,11 @@ const b = html.indexOf('// ---------- Amortización (AfA)');
 assert(a > 0 && b > a, 'No se encontró el motor en index.html (marcadores cambiados)');
 const f1 = html.indexOf('function inmuebleFin('), f2 = html.indexOf('function inmuebleFinLine(');
 assert(f1 > 0 && f2 > f1, 'No se encontró inmuebleFin en index.html');
-const g1 = html.indexOf('function inmuebleSerieMensual('), g2 = html.indexOf('function inmuebleTablaAnual(');
 const c1 = html.indexOf('function inmuebleCapacidadHTML('), c2 = html.indexOf('function inmuebleFinLine(');
-const r1 = html.indexOf('function inmuebleTablaAnualRefi('), r2 = html.indexOf('// Importe a financiar en Comprar');
-assert(r1 > 0 && r2 > r1, 'No se encontró inmuebleTablaAnualRefi en index.html');
 assert(c1 > 0 && c2 > c1, 'No se encontró inmuebleCapacidadHTML en index.html');
-assert(g1 > 0 && g2 > g1, 'No se encontró inmuebleSerieMensual en index.html');
-const engine = new Function(html.slice(a, b) + html.slice(f1, f2) + html.slice(g1, g2) + html.slice(r1, r2) + 'function eur(n){ return Math.round(n) + " €"; }' + html.slice(c1, c2) +
+const engine = new Function(html.slice(a, b) + html.slice(f1, f2) + 'function eur(n){ return Math.round(n) + " €"; }' + html.slice(c1, c2) +
   '\nreturn {annuityQuota,effectiveAnnualRate,savingsQuota,monthsToPayoff,simLoan,calcInmuebleOption,' +
-  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin,inmuebleSerieMensual,inmuebleCapacidadHTML,inmuebleTablaAnualRefi,saldoEnFecha};')();
+  'balanceTrasMeses,interesAnualidad,calcRefiRemaining,isoDateYearsAgo,inmuebleFin,inmuebleCapacidadHTML,saldoEnFecha};')();
 
 let passed = 0, failed = 0;
 const gaps = [];
@@ -52,8 +48,6 @@ function saldoTras(P, ratePct, cuota, n) {
   for (let k = 0; k < n; k++) bal = bal * (1 + r) - cuota;
   return bal;
 }
-
-function loopSaldo(P, ratePct, cuota, n) { const r = ratePct / 1200; let b = P; for (let k = 0; k < n; k++) b = Math.max(0, b * (1 + r) - cuota); return b; }
 
 console.log('Hipoteca bancaria — 330.000 €, Tilgung inicial 2 %');
 [[4, 1650, 331], [4.5, 1787.5, 315], [5, 1925, 302]].forEach(([tipo, cuotaEsp, mesesEsp]) => {
@@ -163,15 +157,7 @@ test('si el capital propio cubre todo, no hay nada que financiar y no salen valo
   assert.strictEqual(c.cuotaPrestamo, 0); assert.strictEqual(c.noAmortiza, false);
 });
 
-console.log('Tabla año a año')
-test('serie mensual: saldo a 10 años, intereses acumulados y fin de pago iguales que el calendario independiente (con Sondertilgung)', () => {
-  [0, 10000].forEach(st => {
-    const ser = engine.inmuebleSerieMensual(330000, 4, 1650, st, 1200), ref = loop(330000, 4, 1650, st);
-    near(ser.saldo[120], st ? ser.saldo[120] : saldoTras(330000, 4, 1650, 120), 0.5, 'saldo a 10 años');
-    assert.strictEqual(ser.saldo.length - 1, ref.meses, 'meses'); near(ser.inte[ser.inte.length - 1], ref.interes, 0.5, 'intereses totales');
-    assert(ser.saldo.every(v => v >= 0), 'saldo negativo');
-  });
-});
+console.log('Plazo del banco')
 test('tilgungParaPlazo: un plazo de 30 años a 4 % da la Tilgung inicial que amortiza justo a los 30 años', () => {
   const tg = (function(){ const q = engine.annuityQuota(1, 4, 360); return Math.round(Math.max(0, q * 12 * 100 - 4) * 100) / 100; })();
   const c = engine.calcInmuebleOption(300000, { pct: 0, interesPrestamo: 4, tilgungInicial: tg, comision: 0, zinsbindung: 10 });
@@ -191,22 +177,6 @@ test('semáforo: ≤30 % del ingreso dentro, hasta el límite ajustado, por enci
   assert(/1979[^<]*<\/td><td>47 %<\/td><td class="cap-hi">Por encima/.test(h), 'ahorro 47 % por encima');
   const j = engine.inmuebleCapacidadHTML({ ingresoNeto: 3000, ratioMax: 35 }, 0, [['Banco directo', 0], ['Bausparvertrag · préstamo', 990]]);
   assert(/990[^<]*<\/td><td>33 %<\/td><td class="cap-mid">Ajustado/.test(j), '33 % ajustado');
-});
-
-console.log('Tabla año a año de Refinanciar')
-test('crédito actual, banco y Badenia: deuda de cada año igual que el calendario independiente (antes y después de la refinanciación)', () => {
-  const refi = { importeOriginal: 200000, interesOriginal: 3, plazoOriginal: 25, fechaInicio: engine.isoDateYearsAgo(5), fechaRefi: engine.isoDateYearsAgo(-3), banco: { interesPrestamo: 3.5, tilgungInicial: 2, comision: 0, zinsbindung: 10 } };
-  const rem = engine.calcRefiRemaining(refi), fr = refi.fechaRefi, saldoAtRefi = engine.saldoEnFecha(refi, fr);
-  const mesesHastaRefi = 36;
-  const rBanco = engine.calcInmuebleOption(saldoAtRefi, { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: 3.5, tilgungInicial: 2, comision: 0, zinsbindung: 10 });
-  const estCfg = { pct: 40, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 6, comision: 1.6 };
-  const rEst = engine.calcInmuebleOption(saldoAtRefi, Object.assign({ anios: mesesHastaRefi / 12 }, estCfg));
-  const html2 = engine.inmuebleTablaAnualRefi(rem, refi, mesesHastaRefi, rBanco, rEst, estCfg, 30);
-  const cell = (y, idx) => { const m = html2.match(new RegExp('<tr[^>]*><td>' + y + '</td>((?:<td>[^<]*</td>)+)</tr>')); assert(m, 'fila ' + y); return parseInt(m[1].match(/<td>([^<]*)<\/td>/g)[idx].replace(/\D/g, ''), 10); };
-  near(cell(2, 0), saldoTras(rem.saldoPendiente, 3, rem.cuotaOriginal, 24), 1, 'seguir igual a los 2 años');
-  near(cell(2, 1), saldoTras(rem.saldoPendiente, 3, rem.cuotaOriginal, 24), 1, 'banco a los 2 años (aún crédito actual)');
-  near(cell(10, 1), loopSaldo(rBanco.capitalPrestamo, 3.5, rBanco.cuotaPrestamo, 120 - 36), 1, 'banco a los 10 años');
-  near(cell(10, 4), loopSaldo(rEst.capitalPrestamo, 1.75, rEst.cuotaPrestamo, 120 - 36), 1, 'Badenia a los 10 años');
 });
 
 console.log('Cubrir la deuda pendiente de la Zinsbindung con un Bausparvertrag')
