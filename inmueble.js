@@ -21,6 +21,19 @@ function inmuebleQuickButtons(field,values,unit){
 // Tilgungsbeitrag, comisión, Zinsbindung, interés del ahorro) ya trae puesto el valor
 // estándar que usaría un banco/Bausparkasse por defecto, y queda oculto en "Opciones
 // avanzadas" — ahí sigue disponible por si hay que ajustar uno a una oferta real concreta.
+// Resultado del banco del último cálculo (lo fijan inmuebleResultsHTML / inmuebleRefiResultsHTML) para el recuadro "Pago mensual del cliente" de su tarjeta.
+var _inmLiveBanco=null;
+function inmuebleLiveBancoHTML(){
+  var r=_inmLiveBanco; if(!r||!(r.capitalPrestamo>0)) return '';
+  if(r.noAmortiza) return '<div class="inm-live-line"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span></div>';
+  var h='<div class="inm-live-line"><span>Pago mensual del cliente</span><b>'+eur(r.cuotaPrestamo)+'/mes</b><span>Dura</span><b>'+fmtAnos(r.mesesPrestamo)+'</b></div>';
+  if(r.sondertilgung>0) h+='<div class="inm-live-line inm-live-sub"><span>Más una Sondertilgung de</span><b>'+eur(r.sondertilgung)+'/año</b><span>(unos</span><b>'+eur(r.sondertilgung/12)+'/mes</b><span>)</span></div>';
+  return h;
+}
+function inmuebleUpdateLiveBanco(){
+  var el=document.getElementById('inm-live-banco')||document.getElementById('inm-live-refiBanco'); if(el) el.innerHTML=inmuebleLiveBancoHTML();
+}
+
 function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
   var basic='', advanced='';
   var withAhorro=(opt==='a'||opt==='b'||opt==='refiA'||opt==='refiB');
@@ -42,7 +55,7 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
     // normalmente 3,5 años) y cuánto dura el préstamo — este último SÍ lo elige el cliente, así
     // que va aquí, no escondido. Por debajo se sigue guardando como Tilgungsbeitrag fijo en ‰;
     // ver bausparPlazoActual() y el manejador de data-inm-plazo más abajo.
-    basic+='<label class="inm-f"><span>Plazo del préstamo</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" data-inm-opt="'+opt+'" data-inm-plazo="1" value="'+bausparPlazoActual(bausparsumme,cfg)+'" step="0.5" min="1" max="40"><span class="inm-suf">años</span></span></label></div>';
+    basic+='<label class="inm-f"><span>Plazo del préstamo</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" data-inm-opt="'+opt+'" data-inm-plazo="1" value="'+bausparPlazoActual(bausparsumme,cfg)+'" step="any" min="1" max="40"><span class="inm-suf">años</span></span></label></div>';
     advanced+=inmuebleOptField(opt,'sonderAhorro','Sonderzahlung anual durante el ahorro (0 = ninguna)',cfg.sonderAhorro||0,'500','€/año','min="0"');
     advanced+=inmuebleOptField(opt,'interesAhorro','Interés del ahorro',cfg.interesAhorro,'0.01','%','min="0" max="20"');
     // Aviso: el Guthabenzins de un Bausparvertrag ronda el 0,05 %; más de 0,5 % suele ser el interés del préstamo escrito en el campo equivocado.
@@ -53,10 +66,11 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
     basic+=inmuebleQuickButtons('interesPrestamo',[2,3,4,4.2,5],'%');
     // Plazo y Zinsbindung del banco, a la vista: es lo primero que se ajusta con el cliente ("¿a 30 años?"). El plazo se guarda como la
     // Tilgung inicial equivalente (ver tilgungParaPlazo) y se mantiene al cambiar el interés mientras no se toque la Tilgung a mano.
-    basic+='<label class="inm-f"><span>Plazo del préstamo</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" data-inm-opt="'+opt+'" data-inm-bankplazo="1" value="'+bancoPlazoActual(cfg)+'" step="1" min="5" max="40"><span class="inm-suf">años</span></span></label>';
+    basic+='<label class="inm-f"><span>Plazo del préstamo</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" data-inm-opt="'+opt+'" data-inm-bankplazo="1" value="'+bancoPlazoActual(cfg)+'" step="any" min="5" max="40"><span class="inm-suf">años</span></span></label>';
     basic+=inmuebleOptField(opt,'zinsbindung','Vigencia del tipo (Zinsbindung)',cfg.zinsbindung,'1','años','min="1" max="40"');
   }
   basic+=inmuebleOptField(opt,'sondertilgung','Sondertilgung anual',cfg.sondertilgung||0,'500','€/año','min="0"');
+  if(opt==='banco'||opt==='refiBanco') basic+='<div class="inm-live" id="inm-live-'+opt+'"><!--INMLIVE--></div>';
   // La Tilgung/Tilgungsbeitrag salió de "Opciones avanzadas" a pedido explícito — el valor por
   // defecto (el mismo que ya traía cada campo) sigue usándose en el cálculo tal cual, solo que
   // ya no se ve ni se puede tocar desde aquí; confundía más de lo que ayudaba a explicar.
@@ -363,7 +377,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
   // terminado de pagar solo, no se sigue pagando cuota en ese tramo — se limita al tiempo
   // que el crédito original realmente sigue vivo.
   var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
-  var rBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
+  var rBanco=_inmLiveBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
   var rEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,sonderAhorro:estCfg.sonderAhorro,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
   var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
   var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
@@ -431,7 +445,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
   var igual=(inm.comparar==='igual' && precio>0 && payEq>rk0.cuotaPrestamo+0.5);
   var cfgBanco=inm.banco;
   if(igual) cfgBanco=Object.assign({},inm.banco,{pagoPre:0,tilgungInicial:Math.max(0,payEq*1200/precio-(inm.banco.interesPrestamo||0))});
-  var rk=igual?calcInmuebleOption(precio,cfgBanco):rk0;
+  var rk=_inmLiveBanco=igual?calcInmuebleOption(precio,cfgBanco):rk0;
   var bancoTitle=igual?'Banco directo · mismo pago mensual':'Banco directo';
   var maxMeses=Math.max(rEst.mesesTotal,rk.mesesTotal,1);
   var dif=rk.costeTotal-rEst.costeTotal;
@@ -526,7 +540,7 @@ function inmuebleBlock(rec){
         inmuebleOptionCard('banco','Banco directo',inm.banco,'Sin fase de ahorro: se financia el 100% desde el inicio. En la práctica alemana el tipo solo suele fijarse (Zinsbindung) durante parte del plazo, no todo — ver aviso más abajo.',undefined,inm)+
       '</div>'+
       '<div id="inm-results-wrap">'+inmuebleFinLine(inm)+inmuebleResultsHTML(inmuebleFin(inm),inm)+'</div>';
-  return '<div class="ws-card '+(_inmAdv?'inm-adv-mode':'inm-simple')+'"><h3>Proyecto inmobiliario</h3>'+
+  return ('<div class="ws-card '+(_inmAdv?'inm-adv-mode':'inm-simple')+'"><h3>Proyecto inmobiliario</h3>'+
     '<div class="inm-toprow">'+inmuebleModeToggle(inm.modo)+'<div class="inm-actions"><button type="button" class="ws-cta inm-print" id="inm-pres-btn">🎬 Presentación</button><button type="button" class="ws-cta ghost inm-print" id="inm-print-btn">🖨 Imprimir informe</button><button type="button" class="ws-cta ghost inm-print inm-adv-btn" id="inm-adv-btn" aria-pressed="'+(_inmAdv?'true':'false')+'"><span class="inm-lab-open">⚙ Opciones avanzadas</span><span class="inm-lab-close">✕ Ocultar opciones avanzadas</span></button></div></div>'+
     '<p class="ws-lead inm-simple-only"><span>'+(inm.modo==='refi'?'Cuéntanos del crédito actual y el tipo del banco: el resto se calcula solo.':'Escribe el precio, el plazo y el tipo del banco, y el ahorro mensual: el resto se calcula solo.')+'</span> <span>Para ajustar fechas, pagos o Sondertilgung, pulsa «Opciones avanzadas».</span></p>'+
     '<p class="ws-lead inm-adv">'+(inm.modo==='refi'
@@ -535,7 +549,7 @@ function inmuebleBlock(rec){
     '<p class="inm-eff-note inm-adv">El <b>interés efectivo del préstamo</b> mide la fase de préstamo y ya descuenta la comisión de apertura sobre lo que el cliente recibe (en el Bausparvertrag, la parte de la Abschlussgebühr proporcional al préstamo, como en la Modellrechnung de Badenia). Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.</p>'+
     (inm.modo!=='refi'?'<p class="inm-eff-note inm-adv">Una hipoteca bancaria alemana casi nunca fija el tipo para todo el plazo: lo normal es una <b>Zinsbindung</b> de 10-15 años, tras la cual el saldo pendiente (<b>Restschuld</b>) se refinancia al tipo que haya entonces (<b>Anschlussfinanzierung</b>). La certeza de tipo durante todo el plazo que muestra "Banco directo" aquí es el caso favorable — coméntalo con el cliente si su horizonte real es más largo que la Zinsbindung que le ofrecerán.</p>':'')+
     body+
-  '</div>';
+  '</div>').replace('<!--INMLIVE-->',inmuebleLiveBancoHTML());
 }
 
 // Informe imprimible del Proyecto inmobiliario: reutiliza el overlay #afa-informe (mismo mecanismo
@@ -690,6 +704,7 @@ function refreshInmuebleResults(){
   } else {
     el.innerHTML=inmuebleFinLine(inm)+inmuebleResultsHTML(inmuebleFin(inm),inm);
   }
+  inmuebleUpdateLiveBanco();
 }
 
 function persistInmueble(){

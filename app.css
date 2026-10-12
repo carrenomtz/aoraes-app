@@ -660,6 +660,12 @@
   .inm-res-line.save{border-bottom:0}
   .inm-res-line.inm-eff b{color:var(--amber)}
   .inm-eff-hint{color:var(--faint); font-weight:400}
+  .inm-live{margin-top:12px}
+  .inm-live:empty{display:none}
+  .inm-live-line{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 8px; background:#f6f0de; border-radius:10px; padding:10px 12px; font-size:13px; color:var(--ink)}
+  .inm-live-line b{font-size:16px; color:var(--navy); font-variant-numeric:var(--tab)}
+  .inm-live-sub{background:none; padding:4px 12px 0; font-size:12px; color:var(--muted)}
+  .inm-live-sub b{font-size:13px}
   .inm-eff-note{font-size:11px; color:var(--faint); line-height:1.5; margin:-6px 0 16px}
   .inm-mode{display:inline-flex; gap:3px; background:var(--surface-soft); border:1px solid var(--line); border-radius:999px; padding:3px; margin-bottom:14px}
   .inm-mode button{font-family:inherit; font-size:12.5px; font-weight:700; color:var(--muted); background:transparent; border:0; border-radius:999px; padding:7px 16px; cursor:pointer; transition:.14s}
