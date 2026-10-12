@@ -165,12 +165,15 @@ function inmuebleRefiSaldoHTML(refi){
 // pagar" contradecían a la frase de cabecera (inmuebleFraseRefi), que sí los cuenta.
 function inmuebleTimeRow(r,maxMeses,isBanco,esperaMeses){
   esperaMeses=esperaMeses||0;
-  var totalConEspera=esperaMeses+r.mesesTotal;
+  // Refinanciar con ahorro en paralelo (Badenia): el ahorro corre DURANTE la espera, no después, así que el total desde hoy es espera + préstamo.
+  var ahorroParalelo=(esperaMeses>0&&r.mesesAhorro>0);
+  var totalConEspera=esperaMeses+(ahorroParalelo?r.mesesPrestamo:r.mesesTotal);
   var pctWidth=maxMeses>0?Math.max(4,Math.round(totalConEspera/maxMeses*100)):0;
   var detalle=(r.mesesAhorro>0)
     ?(inmuebleAnios(r.mesesAhorro)+' de ahorro + '+inmuebleAnios(r.mesesPrestamo)+' de préstamo')
     :(inmuebleAnios(r.mesesPrestamo)+' de préstamo');
-  if(esperaMeses>0) detalle=inmuebleAnios(esperaMeses)+' de espera + '+detalle;
+  if(ahorroParalelo) detalle=inmuebleAnios(esperaMeses)+' de espera, con ahorro en paralelo + '+inmuebleAnios(r.mesesPrestamo)+' de préstamo';
+  else if(esperaMeses>0) detalle=inmuebleAnios(esperaMeses)+' de espera + '+detalle;
   return '<div class="inm-time"><div class="inm-time-lab"><span>Tiempo total hasta terminar de pagar</span><b>'+inmuebleAnios(totalConEspera)+'</b></div>'+
     '<div class="inm-time-bar inm-detalle'+(isBanco?' risk':'')+'"><span style="width:'+pctWidth+'%"></span></div>'+
     '<div class="inm-time-lab inm-detalle"><span>'+detalle+'</span></div></div>';
@@ -402,7 +405,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
   var rEst=_inmLiveEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,sonderAhorro:estCfg.sonderAhorro,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
   var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
   var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
-  var maxMeses=Math.max(mesesHastaRefi+rBanco.mesesTotal,mesesHastaRefi+rEst.mesesTotal,1);
+  var maxMeses=Math.max(mesesHastaRefi+rBanco.mesesTotal,mesesHastaRefi+(rEst.mesesAhorro>0?rEst.mesesPrestamo:rEst.mesesTotal),1);
   function baseRow(){
     return '<div class="inm-res-card"><h5>Tu crédito actual</h5>'+
       '<div class="inm-res-line"><span>Cuota actual</span><b>'+eur(rem.cuotaOriginal)+'/mes</b></div>'+
