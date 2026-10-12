@@ -496,6 +496,23 @@ function inmuebleFin(inm){
   return Math.max(0,Math.round((p*(1+g/100)-c)*100)/100);
 }
 
+// Límites de los campos numéricos: solo evitan valores absurdos (negativos, miles de millones…); no son recomendaciones.
+var INM_LIMITES={
+  precio:[0,1e8], ingresoNeto:[0,1e6], capitalPropio:[0,1e8], gastosPct:[0,30], pagoIgual:[0,1e6],
+  interesPrestamo:[0,20], interesAhorro:[0,20], interesOriginal:[0,20], recargoST:[0,5], comision:[0,10],
+  zinsbindung:[0,40], plazoOriginal:[0,60], pct:[0,100], anios:[0,40], marcaAnios:[0,40], topeST:[0,100],
+  sondertilgung:[0,1e7], sonderAhorro:[0,1e6], pagoAhorro:[0,1e6], pagoPrestamo:[0,1e6], pagoPre:[0,1e6],
+  cuotaActual:[0,1e6], saldoHoy:[0,1e8], importeOriginal:[0,1e8]
+};
+// Devuelve {v: valor dentro de límites, recortado: true si hubo que cambiarlo}. Texto vacío o no numérico = 0 (sin recorte).
+function inmuebleLimitar(campo,valor){
+  var v=(typeof valor==='number')?valor:parseFloat(valor), l=INM_LIMITES[campo];
+  if(isNaN(v)) return {v:0,recortado:false};
+  if(!l) return {v:v,recortado:false};
+  var r=Math.min(l[1],Math.max(l[0],v));
+  return {v:r,recortado:(r!==v)};
+}
+
 function normalizeInmueble(rec){
   if(!rec.inmueble) rec.inmueble=defaultInmueble();
   var inm=rec.inmueble, def=defaultInmueble();
@@ -519,6 +536,12 @@ function normalizeInmueble(rec){
   // certeza de tipo — 10 es el ejemplo que el propio Lernskript usa como plazo típico fijado.
   if(inm.banco.zinsbindung==null) inm.banco.zinsbindung=def.banco.zinsbindung;
   if(inm.refi.banco.zinsbindung==null) inm.refi.banco.zinsbindung=def.refi.banco.zinsbindung;
+  // Valores guardados fuera de límites (p. ej. un interés negativo tecleado antes de existir el recorte) se reponen al límite más cercano.
+  ['precio','ingresoNeto','capitalPropio','gastosPct','pagoIgual'].forEach(function(k){ if(typeof inm[k]==='number') inm[k]=inmuebleLimitar(k,inm[k]).v; });
+  [inm.a,inm.b,inm.banco,inm.refi,inm.refi.a,inm.refi.b,inm.refi.banco].forEach(function(cfg){
+    if(!cfg||typeof cfg!=='object') return;
+    Object.keys(INM_LIMITES).forEach(function(k){ if(typeof cfg[k]==='number') cfg[k]=inmuebleLimitar(k,cfg[k]).v; });
+  });
   migrateBancoTilgung(inm.banco);
   migrateBancoTilgung(inm.refi.banco);
   migrateBausparTilgungsbeitrag(inm.a,inm.precio);
@@ -587,4 +610,4 @@ function inmuebleToggleCurvaTipo(inm,r){
   var off=(inm.curvaOff||[]).slice(), i=off.indexOf(r); if(i>=0) off.splice(i,1); else off.push(r); inm.curvaOff=off;
 }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble }; }

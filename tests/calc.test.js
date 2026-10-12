@@ -326,6 +326,49 @@ test('el recargo no afecta al Bausparvertrag', () => {
   near(a.cuotaPrestamo, b.cuotaPrestamo, 1e-9); near(a.interesTotalPrestamo, b.interesTotalPrestamo, 1e-6);
 });
 
+console.log('Límites de entrada y traducciones');
+test('inmuebleLimitar: recorta negativos y excesos, vacío = 0 sin recorte', () => {
+  assert.deepStrictEqual(engine.inmuebleLimitar('interesPrestamo', -3), { v: 0, recortado: true });
+  assert.deepStrictEqual(engine.inmuebleLimitar('interesPrestamo', '4,5'.replace(',', '.')), { v: 4.5, recortado: false });
+  assert.deepStrictEqual(engine.inmuebleLimitar('interesAhorro', 30), { v: 20, recortado: true });
+  assert.deepStrictEqual(engine.inmuebleLimitar('precio', ''), { v: 0, recortado: false });
+  assert.deepStrictEqual(engine.inmuebleLimitar('precio', 5e9), { v: 1e8, recortado: true });
+  assert.deepStrictEqual(engine.inmuebleLimitar('campoDesconocido', -7), { v: -7, recortado: false });
+});
+test('normalizeInmueble repone al límite los valores guardados fuera de rango y es idempotente', () => {
+  const d = engine.defaultInmueble(); d.precio = 5e9; Object.assign(d.banco, { interesPrestamo: -3, zinsbindung: -4, sondertilgung: -1000 }); Object.assign(d.a, { interesAhorro: 30, comision: 99 });
+  const rec = { inmueble: d };
+  const inm = engine.normalizeInmueble(rec);
+  assert.strictEqual(inm.precio, 1e8); assert.strictEqual(inm.banco.interesPrestamo, 0); assert.strictEqual(inm.banco.zinsbindung, 0);
+  assert.strictEqual(inm.banco.sondertilgung, 0); assert.strictEqual(inm.a.interesAhorro, 20); assert.strictEqual(inm.a.comision, 10);
+  const j = JSON.stringify(inm); assert.strictEqual(JSON.stringify(engine.normalizeInmueble({ inmueble: JSON.parse(j) })), j);
+});
+test('con valores válidos normalizeInmueble no cambia nada', () => {
+  const inm = engine.normalizeInmueble({ inmueble: null }), j = JSON.stringify(inm);
+  assert.strictEqual(JSON.stringify(engine.normalizeInmueble({ inmueble: JSON.parse(j) })), j);
+  assert.strictEqual(inm.banco.interesPrestamo, 3.5);
+});
+// Traducciones: el traductor de la app sustituye cada número del texto por {n} antes de buscar la clave, así que una clave con un
+// dígito escrito ("(0 = calculado)") nunca casa y el texto se queda en español. Esta prueba lo impide.
+const i18nSrc = require('fs').readFileSync(process.env.I18N || path.join(__dirname, '..', 'i18n.js'), 'utf8');
+const dicts = new Function(i18nSrc + ';return {EN:SHELL_I18N_EN,DE:SHELL_I18N_DE};')();
+const NUMRE = /\d+(?:[.,\/:]\d+)*/g;
+test('ninguna clave del diccionario EN/DE lleva dígitos escritos (usar {0}, {1})', () => {
+  for (const [n, map] of Object.entries(dicts)) {
+    const malas = Object.keys(map).filter(k => /\d/.test(k.replace(/\{\d\}/g, '')));
+    assert.deepStrictEqual(malas, [], n + ': claves con dígitos escritos');
+  }
+});
+test('los textos del Proyecto inmobiliario con números se traducen (EN y DE)', () => {
+  const textos = ['Pago mensual de ahorro (0 = calculado; fija los años de ahorro)', 'Tope anual de Sondertilgung (0 = sin tope)',
+    'Gastos de compra (% del precio · típico 7–12 %)', 'Sonderzahlung anual durante el ahorro (0 = ninguna)',
+    'Un interés del ahorro superior al 0,5 % es poco habitual en un Bausparvertrag.', 'Con este pago el préstamo no se amortiza en menos de 100 años.', 'Banco'];
+  for (const [n, map] of Object.entries(dicts)) for (const t of textos) {
+    const nums = []; const tpl = t.replace(NUMRE, m => { nums.push(m); return '{' + (nums.length - 1) + '}'; });
+    assert(Object.prototype.hasOwnProperty.call(map, tpl), n + ' sin traducción: ' + t);
+  }
+});
+
 console.log('Refinanciar');
 test('saldo e interés restante de un crédito existente igual que el calendario', () => {
   const refi = { importeOriginal: 200000, interesOriginal: 3, plazoOriginal: 25, fechaInicio: engine.isoDateYearsAgo(5) };

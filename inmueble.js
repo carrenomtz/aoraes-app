@@ -854,6 +854,18 @@ function inmuebleOnClick(e){
 
   return false;
 }
+// Campo con un valor fuera de límites: se usa el límite en el cálculo, la caja conserva lo tecleado (para no pelear con el cursor)
+// y se corrige al salir del campo. El aviso es discreto y sin cifras.
+function inmuebleMarcarRango(el,recortado,valor){
+  var lab=el.closest&&el.closest('label'); if(!lab) return;
+  var h=lab.querySelector('.inm-clamp-hint');
+  if(recortado){
+    el.setAttribute('data-clampv',String(valor));
+    if(!h){ h=document.createElement('span'); h.className='inm-clamp-hint'; h.setAttribute('role','status'); h.textContent='Valor fuera de rango: se ha usado el límite.'; lab.appendChild(h); }
+  } else {
+    el.removeAttribute('data-clampv'); if(h) h.remove();
+  }
+}
 function inmuebleOnInput(e){
   var t=e.target;
   if(t.id==='inm-curva-tipos'){
@@ -870,21 +882,22 @@ function inmuebleOnInput(e){
   if(t.id==='inm-precio'){
         if(!APP_HOST.wsRec) return true;
         if(!APP_HOST.wsRec.inmueble) APP_HOST.wsRec.inmueble=defaultInmueble();
-        var v=parseFloat(t.value); APP_HOST.wsRec.inmueble.precio=isNaN(v)?0:v;
+        var limPr=inmuebleLimitar('precio',t.value); APP_HOST.wsRec.inmueble.precio=limPr.v; inmuebleMarcarRango(t,limPr.recortado,limPr.v);
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
       if(t.id==='inm-ingreso'||t.id==='inm-ratio'){
         if(!APP_HOST.wsRec) return true;
         var inmC=normalizeInmueble(APP_HOST.wsRec), vC=parseFloat(t.value);
-        if(t.id==='inm-ingreso') inmC.ingresoNeto=(isNaN(vC)||vC<0)?0:vC; else if(vC>=10&&vC<=60) inmC.ratioMax=vC;
+        if(t.id==='inm-ingreso'){ var limIn=inmuebleLimitar('ingresoNeto',t.value); inmC.ingresoNeto=limIn.v; inmuebleMarcarRango(t,limIn.recortado,limIn.v); } else if(vC>=10&&vC<=60) inmC.ratioMax=vC;
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
       if(t.id==='inm-gastos'||t.id==='inm-capital'){
         if(!APP_HOST.wsRec) return true;
-        var inmG=normalizeInmueble(APP_HOST.wsRec), vG=parseFloat(t.value); vG=(isNaN(vG)||vG<0)?0:vG;
-        if(t.id==='inm-gastos') inmG.gastosPct=Math.min(30,vG); else inmG.capitalPropio=vG;
+        var inmG=normalizeInmueble(APP_HOST.wsRec), limG=inmuebleLimitar(t.id==='inm-gastos'?'gastosPct':'capitalPropio',t.value);
+        if(t.id==='inm-gastos') inmG.gastosPct=limG.v; else inmG.capitalPropio=limG.v;
+        inmuebleMarcarRango(t,limG.recortado,limG.v);
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
@@ -903,7 +916,7 @@ function inmuebleOnInput(e){
       }
       if(t.id==='inm-pago-igual'){
         if(!APP_HOST.wsRec) return true;
-        var vI=parseFloat(t.value); normalizeInmueble(APP_HOST.wsRec).pagoIgual=(isNaN(vI)||vI<0)?0:vI;
+        var limPI=inmuebleLimitar('pagoIgual',t.value); normalizeInmueble(APP_HOST.wsRec).pagoIgual=limPI.v; inmuebleMarcarRango(t,limPI.recortado,limPI.v);
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
@@ -933,6 +946,7 @@ function inmuebleOnInput(e){
         var cfgP=(optPlazo==='refiA')?inmP.refi.a:(optPlazo==='refiB')?inmP.refi.b:inmP[optPlazo];
         var bausparsummeP=(optPlazo==='refiA'||optPlazo==='refiB')?inmP.refi.importeOriginal:inmuebleFin(inmP);
         var plazoAnios=parseFloat(t.value); plazoAnios=isNaN(plazoAnios)||plazoAnios<=0?1:plazoAnios;
+        inmuebleMarcarRango(t,plazoAnios>40,40); plazoAnios=Math.min(40,plazoAnios);
         var capitalPrestamoP=(bausparsummeP||0)*(1-(cfgP.pct||0)/100);
         if(capitalPrestamoP>0 && bausparsummeP>0){
           var quotaPerUnitP=annuityQuota(1,cfgP.interesPrestamo,Math.max(1,Math.round(plazoAnios*12)));
@@ -945,7 +959,7 @@ function inmuebleOnInput(e){
         // Plazo del banco en años: fija la Tilgung inicial equivalente y anula el pago mensual fijo (si no, el plazo escrito no mandaría).
         var optBP=t.getAttribute('data-inm-opt'), inmBP=normalizeInmueble(APP_HOST.wsRec), cfgBP=(optBP==='refiBanco')?inmBP.refi.banco:inmBP.banco;
         if(String(t.value).trim()===''){ delete cfgBP.plazoObjetivo; cfgBP.tilgungInicial=2; refreshInmuebleResults(); scheduleInmuebleSave(); return true; }
-        var anBP=parseFloat(t.value); if(!(anBP>=5&&anBP<=40)) return true;
+        var anBP=parseFloat(t.value); inmuebleMarcarRango(t,!(anBP>=5&&anBP<=40),anBP>40?40:5); if(!(anBP>=5&&anBP<=40)) return true;
         cfgBP.plazoObjetivo=anBP; cfgBP.tilgungInicial=tilgungParaPlazo(cfgBP.interesPrestamo,anBP); cfgBP.pagoPre=0;
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
@@ -953,7 +967,7 @@ function inmuebleOnInput(e){
       var opt=t.getAttribute('data-inm-opt'), field=t.getAttribute('data-inm-field');
       if(opt&&field&&APP_HOST.wsRec){
         var inm=normalizeInmueble(APP_HOST.wsRec);
-        var val=parseFloat(t.value); val=isNaN(val)?0:val;
+        var limV=inmuebleLimitar(field,t.value), val=limV.v; inmuebleMarcarRango(t,limV.recortado,limV.v);
         if(opt==='refiActual') inm.refi[field]=val;
         else if(opt==='refiBanco') inm.refi.banco[field]=val;
         else if(opt==='refiA') inm.refi.a[field]=val;
@@ -974,6 +988,11 @@ function inmuebleOnInput(e){
 }
 // Eventos de la presentación a pantalla completa (se instalan una vez, cuando index.html ya tiene el DOM).
 function inmuebleInstallListeners(){
+  // Al salir de un campo que se había recortado, la caja muestra el valor realmente usado.
+  document.addEventListener('focusout', function(e){
+    var el=e.target; if(!el||!el.getAttribute||!el.hasAttribute('data-clampv')) return;
+    el.value=el.getAttribute('data-clampv'); inmuebleMarcarRango(el,false);
+  });
   document.getElementById('inm-pres-close').addEventListener('click', presClose);
     document.getElementById('inm-pres-inner').addEventListener('input', function(e){
       var tt=e.target;

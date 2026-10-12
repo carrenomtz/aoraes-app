@@ -10,12 +10,14 @@ on:
       - 'index.html'
       - 'calc.js'
       - 'afa.js'
+      - 'i18n.js'
       - 'tests/**'
   pull_request:
     paths:
       - 'index.html'
       - 'calc.js'
       - 'afa.js'
+      - 'i18n.js'
       - 'tests/**'
 
 jobs:

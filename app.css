@@ -665,6 +665,7 @@
   .inm-res-line.save{border-bottom:0}
   .inm-res-line.inm-eff b{color:var(--amber)}
   .inm-eff-hint{color:var(--faint); font-weight:400}
+  .inm-clamp-hint{display:block; margin-top:4px; font-size:12px; color:#8a6a1f}
   .inm-live{margin-top:12px}
   .inm-live:empty{display:none}
   .inm-live-line{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 8px; background:#f6f0de; border-radius:10px; padding:10px 12px; font-size:13px; color:var(--ink)}
