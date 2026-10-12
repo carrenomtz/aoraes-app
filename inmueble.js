@@ -22,7 +22,7 @@ function inmuebleQuickButtons(field,values,unit){
 // estándar que usaría un banco/Bausparkasse por defecto, y queda oculto en "Opciones
 // avanzadas" — ahí sigue disponible por si hay que ajustar uno a una oferta real concreta.
 // Resultado del banco del último cálculo (lo fijan inmuebleResultsHTML / inmuebleRefiResultsHTML) para el recuadro "Pago mensual del cliente" de su tarjeta.
-var _inmLiveBanco=null;
+var _inmLiveBanco=null, _inmLiveEst=null;
 function inmuebleLiveBancoHTML(){
   var r=_inmLiveBanco; if(!r||!(r.capitalPrestamo>0)) return '';
   if(r.noAmortiza) return '<div class="inm-live-line"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span></div>';
@@ -30,8 +30,22 @@ function inmuebleLiveBancoHTML(){
   if(r.sondertilgung>0) h+='<div class="inm-live-line inm-live-sub"><span>Más una Sondertilgung de</span><b>'+eur(r.sondertilgung)+'/año</b><span>(unos</span><b>'+eur(r.sondertilgung/12)+'/mes</b><span>)</span></div>';
   return h;
 }
+// Lo mismo para el Bausparvertrag: ahorro mensual y su duración, y luego el préstamo (o solo el préstamo si no hay ahorro).
+function inmuebleLiveEstHTML(){
+  var r=_inmLiveEst; if(!r||!(r.capitalPrestamo>0||r.cuotaAhorro>0)) return '';
+  var h='';
+  if(r.cuotaAhorro>0) h+='<div class="inm-live-line"><span>Ahorro mensual</span><b>'+eur(r.cuotaAhorro)+'/mes</b><span>durante</span><b>'+fmtAnos(r.mesesAhorro)+'</b></div>';
+  if(r.capitalPrestamo>0){
+    if(r.noAmortiza) h+='<div class="inm-live-line"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span></div>';
+    else h+='<div class="inm-live-line'+(r.cuotaAhorro>0?' inm-live-next':'')+'"><span>'+(r.cuotaAhorro>0?'Después, préstamo':'Pago mensual del cliente')+'</span><b>'+eur(r.cuotaPrestamo)+'/mes</b><span>durante</span><b>'+fmtAnos(r.mesesPrestamo)+'</b></div>';
+  }
+  if(r.cuotaAhorro>0&&r.sonderAhorro>0) h+='<div class="inm-live-line inm-live-sub"><span>Más una Sonderzahlung de</span><b>'+eur(r.sonderAhorro)+'/año</b><span>en el ahorro</span></div>';
+  if(r.capitalPrestamo>0&&r.sondertilgung>0) h+='<div class="inm-live-line inm-live-sub"><span>Más una Sondertilgung de</span><b>'+eur(r.sondertilgung)+'/año</b><span>en el préstamo</span></div>';
+  return h;
+}
 function inmuebleUpdateLiveBanco(){
   var el=document.getElementById('inm-live-banco')||document.getElementById('inm-live-refiBanco'); if(el) el.innerHTML=inmuebleLiveBancoHTML();
+  var ee=document.querySelector('.inm-live-est'); if(ee) ee.innerHTML=inmuebleLiveEstHTML();
 }
 
 function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
@@ -71,6 +85,7 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
   }
   basic+=inmuebleOptField(opt,'sondertilgung','Sondertilgung anual',cfg.sondertilgung||0,'500','€/año','min="0"');
   if(opt==='banco'||opt==='refiBanco') basic+='<div class="inm-live" id="inm-live-'+opt+'"><!--INMLIVE--></div>';
+  else basic+='<div class="inm-live inm-live-est"><!--INMLIVEEST--></div>';
   // La Tilgung/Tilgungsbeitrag salió de "Opciones avanzadas" a pedido explícito — el valor por
   // defecto (el mismo que ya traía cada campo) sigue usándose en el cálculo tal cual, solo que
   // ya no se ve ni se puede tocar desde aquí; confundía más de lo que ayudaba a explicar.
@@ -378,7 +393,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
   // que el crédito original realmente sigue vivo.
   var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
   var rBanco=_inmLiveBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
-  var rEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,sonderAhorro:estCfg.sonderAhorro,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
+  var rEst=_inmLiveEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,sonderAhorro:estCfg.sonderAhorro,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
   var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
   var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
   var maxMeses=Math.max(mesesHastaRefi+rBanco.mesesTotal,mesesHastaRefi+rEst.mesesTotal,1);
@@ -438,7 +453,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
   var estKey=(inm.estrategia==='b')?'b':'a';
   var estCfg=(estKey==='b')?inm.b:inm.a;
   var estTitle='Bausparvertrag · '+inmuebleEstNombre(estCfg);
-  var rEst=calcInmuebleOption(precio,estCfg), rk0=calcInmuebleOption(precio,inm.banco);
+  var rEst=_inmLiveEst=calcInmuebleOption(precio,estCfg), rk0=calcInmuebleOption(precio,inm.banco);
   // Mismo pago mensual: el banco paga desde el mes 0 lo mismo que la cuota de ahorro. Solo tiene
   // sentido si esa cuota supera la del banco; si no, se deja como estaba.
   var payEq=(inm.pagoIgual>0)?inm.pagoIgual:rEst.cuotaAhorro;
@@ -549,7 +564,7 @@ function inmuebleBlock(rec){
     '<p class="inm-eff-note inm-adv">El <b>interés efectivo del préstamo</b> mide la fase de préstamo y ya descuenta la comisión de apertura sobre lo que el cliente recibe (en el Bausparvertrag, la parte de la Abschlussgebühr proporcional al préstamo, como en la Modellrechnung de Badenia). Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.</p>'+
     (inm.modo!=='refi'?'<p class="inm-eff-note inm-adv">Una hipoteca bancaria alemana casi nunca fija el tipo para todo el plazo: lo normal es una <b>Zinsbindung</b> de 10-15 años, tras la cual el saldo pendiente (<b>Restschuld</b>) se refinancia al tipo que haya entonces (<b>Anschlussfinanzierung</b>). La certeza de tipo durante todo el plazo que muestra "Banco directo" aquí es el caso favorable — coméntalo con el cliente si su horizonte real es más largo que la Zinsbindung que le ofrecerán.</p>':'')+
     body+
-  '</div>').replace('<!--INMLIVE-->',inmuebleLiveBancoHTML());
+  '</div>').replace('<!--INMLIVE-->',inmuebleLiveBancoHTML()).replace('<!--INMLIVEEST-->',inmuebleLiveEstHTML());
 }
 
 // Informe imprimible del Proyecto inmobiliario: reutiliza el overlay #afa-informe (mismo mecanismo
