@@ -369,6 +369,50 @@ test('los textos del Proyecto inmobiliario con números se traducen (EN y DE)', 
   }
 });
 
+console.log('Coherencia entre duración, gráfica y hitos');
+// La duración total desde hoy sale de inmuebleMesesDesdeHoy; el final de cada curva y la fila "pagado" de los hitos tienen que coincidir
+// con ella. (Un error de este tipo, sumar dos veces el ahorro en Refinanciar, llegó a mostrarse: ahora lo vigila esta prueba.)
+const rr = (a, b) => a + Math.random() * (b - a), ri = (a, b) => Math.floor(rr(a, b + 1));
+test('Comprar: la duración de cada opción coincide con el final de su curva y con su fila "pagado" de los hitos', () => {
+  for (let i = 0; i < 400; i++) {
+    const precio = ri(80000, 900000);
+    const est = { pct: ri(10, 100), anios: rr(3.6, 12), interesAhorro: rr(0, 0.5), interesPrestamo: rr(0.8, 4), tilgungsbeitragPerMille: rr(4, 10), comision: 1.6, sondertilgung: Math.random() < 0.3 ? ri(0, 8000) : 0, sonderAhorro: Math.random() < 0.3 ? ri(0, 6000) : 0, pagoAhorro: Math.random() < 0.3 ? ri(300, 3000) : 0 };
+    const bank = { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: rr(1.5, 6), tilgungInicial: rr(1, 4), comision: 0, zinsbindung: ri(5, 25), sondertilgung: Math.random() < 0.3 ? ri(0, 8000) : 0, recargoST: rr(0, 0.4) };
+    const rEst = engine.calcInmuebleOption(precio, est), rk = engine.calcInmuebleOption(precio, bank);
+    if (rEst.noAmortiza || rk.noAmortiza) continue;
+    const pe = engine.inmuebleCurvaSaldo(precio, rEst, est), pb = engine.inmuebleCurvaSaldo(precio, rk, bank);
+    const rows = engine.inmuebleHitosComprar(precio, rEst, rk, pe, pb, Math.round(bank.zinsbindung * 12));
+    const tEst = engine.inmuebleMesesDesdeHoy(rEst, 0), tBanco = engine.inmuebleMesesDesdeHoy(rk, 0);
+    assert.strictEqual(pe[pe.length - 1].meses, tEst, 'fin de la curva del Bausparvertrag');
+    assert.strictEqual(pb[pb.length - 1].meses, tBanco, 'fin de la curva del banco');
+    assert.strictEqual(rows.find(r => r.n === 'Bausparvertrag pagado').m, tEst, 'hito Bausparvertrag pagado');
+    assert.strictEqual(rows.find(r => r.n === 'Banco pagado').m, tBanco, 'hito Banco pagado');
+    assert.strictEqual(tEst, rEst.mesesTotal); assert.strictEqual(tEst, (rEst.mesesTotal - rEst.mesesPrestamo) + rEst.mesesPrestamo);
+  }
+});
+test('Refinanciar: la duración desde hoy (espera + préstamo, con el ahorro en paralelo) coincide con la curva y los hitos', () => {
+  let casos = 0;
+  for (let i = 0; i < 400; i++) {
+    const refi = { importeOriginal: ri(100000, 500000), interesOriginal: rr(1, 6), plazoOriginal: ri(15, 35), fechaInicio: engine.isoDateYearsAgo(ri(1, 12)), fechaRefi: engine.isoDateYearsAgo(-ri(1, 10)), saldoHoy: 0,
+      banco: { interesPrestamo: rr(1.5, 6), tilgungInicial: rr(1, 4), comision: 0, zinsbindung: ri(5, 20), sondertilgung: 0, recargoST: 0, topeST: 0, pagoPre: 0 },
+      a: { pct: ri(10, 100), interesAhorro: rr(0, 0.5), interesPrestamo: rr(0.8, 4), tilgungsbeitragPerMille: rr(4, 10), comision: 1.6, sondertilgung: 0, topeST: 0, sonderAhorro: 0, pagoAhorro: 0, pagoPrestamo: 0 } };
+    const rem = engine.calcRefiRemaining(refi), fr = engine.fechaRefiEfectiva(refi), espera = engine.mesesEntreFechas(engine.todayISO(), fr), saldo = engine.saldoEnFecha(refi, fr);
+    if (!(espera > 0) || !(saldo > 1000)) continue;
+    const rBanco = engine.calcInmuebleOption(saldo, { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: refi.banco.interesPrestamo, tilgungInicial: refi.banco.tilgungInicial, comision: 0, zinsbindung: refi.banco.zinsbindung });
+    const rEst = engine.calcInmuebleOption(saldo, Object.assign({ sinMinimoAhorro: true, anios: espera / 12, ahorroPorTiempo: true }, refi.a));
+    if (rBanco.noAmortiza || rEst.noAmortiza) continue;
+    const pb = engine.inmuebleCurvaSaldoRefi(rem, refi, espera, rBanco, refi.banco, false), pe = engine.inmuebleCurvaSaldoRefi(rem, refi, espera, rEst, refi.a, true);
+    const rows = engine.inmuebleHitosRefi(refi, espera, rEst, rBanco, pe, pb);
+    const tEst = engine.inmuebleMesesDesdeHoy(rEst, espera), tBanco = engine.inmuebleMesesDesdeHoy(rBanco, espera);
+    assert.strictEqual(tBanco, espera + rBanco.mesesPrestamo, 'banco: espera + préstamo');
+    assert.strictEqual(tEst, espera + rEst.mesesPrestamo, 'Badenia: el ahorro corre en paralelo durante la espera, no se suma aparte');
+    assert.strictEqual(pe[pe.length - 1].meses, tEst, 'fin de la curva de Badenia'); assert.strictEqual(pb[pb.length - 1].meses, tBanco, 'fin de la curva del banco');
+    assert.strictEqual(rows.find(r => r.n === 'Badenia pagada').m, tEst, 'hito Badenia pagada'); assert.strictEqual(rows.find(r => r.n === 'Banco pagado').m, tBanco, 'hito Banco pagado');
+    casos++;
+  }
+  assert(casos > 100, 'pocos casos válidos: ' + casos);
+});
+
 console.log('Refinanciar');
 test('saldo e interés restante de un crédito existente igual que el calendario', () => {
   const refi = { importeOriginal: 200000, interesOriginal: 3, plazoOriginal: 25, fechaInicio: engine.isoDateYearsAgo(5) };

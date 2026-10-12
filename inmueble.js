@@ -166,8 +166,8 @@ function inmuebleRefiSaldoHTML(refi){
 function inmuebleTimeRow(r,maxMeses,isBanco,esperaMeses){
   esperaMeses=esperaMeses||0;
   // Refinanciar con ahorro en paralelo (Badenia): el ahorro corre DURANTE la espera, no después, así que el total desde hoy es espera + préstamo.
-  var ahorroParalelo=(esperaMeses>0&&r.mesesAhorro>0);
-  var totalConEspera=esperaMeses+(ahorroParalelo?r.mesesPrestamo:r.mesesTotal);
+  var ahorroParalelo=(esperaMeses>0&&(r.mesesTotal-r.mesesPrestamo)>0);
+  var totalConEspera=inmuebleMesesDesdeHoy(r,esperaMeses);
   var pctWidth=maxMeses>0?Math.max(4,Math.round(totalConEspera/maxMeses*100)):0;
   var detalle=(r.mesesAhorro>0)
     ?(inmuebleAnios(r.mesesAhorro)+' de ahorro + '+inmuebleAnios(r.mesesPrestamo)+' de préstamo')
@@ -334,7 +334,7 @@ function inmuebleFraseComprar(rEst,rk,igual,custom){
   var h, sub;
   var costeEst=rEst.interesTotalPrestamo+rEst.comision-rEst.interesGanadoAhorro;
   if(igual){
-    h='<span>'+(custom?'Con un pago mensual del banco de':'Con el mismo pago mensual de')+' <b>'+eur(rk.cuotaPrestamo)+'/mes</b>, el banco termina en <b>'+inmuebleAnios(rk.mesesTotal)+'</b> y paga <b>'+eur(rk.interesTotalPrestamo+rk.comision)+'</b> de intereses y comisiones; el Bausparvertrag termina en <b>'+inmuebleAnios(rEst.mesesTotal)+'</b> y paga <b>'+eur(costeEst)+'</b>';
+    h='<span>'+(custom?'Con un pago mensual del banco de':'Con el mismo pago mensual de')+' <b>'+eur(rk.cuotaPrestamo)+'/mes</b>, el banco termina en <b>'+inmuebleAnios(inmuebleMesesDesdeHoy(rk,0))+'</b> y paga <b>'+eur(rk.interesTotalPrestamo+rk.comision)+'</b> de intereses y comisiones; el Bausparvertrag termina en <b>'+inmuebleAnios(inmuebleMesesDesdeHoy(rEst,0))+'</b> y paga <b>'+eur(costeEst)+'</b>';
     h+=(rEst.mesesAhorro>0)?(' en intereses y comisiones, pero durante los primeros <b>'+inmuebleAnios(rEst.mesesAhorro)+'</b>, todavía no eres propietario.</span>'):' en intereses y comisiones.</span>';
     // Alquiler de equilibrio: ambos caminos terminan pagando el mismo precio, así que la diferencia
     // de desembolso en efectivo (costeTotal) es solo intereses y comisiones. Durante los meses de
@@ -353,9 +353,9 @@ function inmuebleFraseComprar(rEst,rk,igual,custom){
       ?'<span>Con el Bausparvertrag ahorras <b>'+eur(rEst.cuotaAhorro)+'/mes</b> y después pagas <b>'+eur(rEst.cuotaPrestamo)+'/mes</b>.</span>'
       :'<span>Con el Bausparvertrag pagas <b>'+eur(rEst.cuotaPrestamo)+'/mes</b> desde el principio.</span>';
     h+=' <span>Con el banco pagas <b>'+eur(rk.cuotaPrestamo)+'/mes</b> desde el principio.</span>';
-    h+=(inmuebleAnios(rEst.mesesTotal)===inmuebleAnios(rk.mesesTotal))
-      ?' <span>Duración total:</span> <b>'+inmuebleAniosUnos(rEst.mesesTotal)+'</b> <span>con las dos opciones.</span>'
-      :' <span>Duración total: con el Bausparvertrag,</span> <b>'+inmuebleAniosUnos(rEst.mesesTotal)+'</b><span>; con el banco,</span> <b>'+inmuebleAniosUnos(rk.mesesTotal)+'</b>.';
+    h+=(inmuebleAnios(inmuebleMesesDesdeHoy(rEst,0))===inmuebleAnios(inmuebleMesesDesdeHoy(rk,0)))
+      ?' <span>Duración total:</span> <b>'+inmuebleAniosUnos(inmuebleMesesDesdeHoy(rEst,0))+'</b> <span>con las dos opciones.</span>'
+      :' <span>Duración total: con el Bausparvertrag,</span> <b>'+inmuebleAniosUnos(inmuebleMesesDesdeHoy(rEst,0))+'</b><span>; con el banco,</span> <b>'+inmuebleAniosUnos(inmuebleMesesDesdeHoy(rk,0))+'</b>.';
     sub='No incluye alquiler, revalorización, impuestos ni lo que rendiría tu ahorro en otra parte. Con «Mismo pago mensual» comparas en igualdad.';
   }
   return '<div class="inm-headline">'+h+'<div class="inm-headline-sub">'+sub+'</div></div>';
@@ -406,7 +406,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
   var rEst=_inmLiveEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,sonderAhorro:estCfg.sonderAhorro,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
   var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
   var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
-  var maxMeses=Math.max(mesesHastaRefi+rBanco.mesesTotal,mesesHastaRefi+(rEst.mesesAhorro>0?rEst.mesesPrestamo:rEst.mesesTotal),1);
+  var maxMeses=Math.max(inmuebleMesesDesdeHoy(rBanco,mesesHastaRefi),inmuebleMesesDesdeHoy(rEst,mesesHastaRefi),1);
   function baseRow(){
     return '<div class="inm-res-card"><h5>Tu crédito actual</h5>'+
       '<div class="inm-res-line"><span>Cuota actual</span><b>'+eur(rem.cuotaOriginal)+'/mes</b></div>'+
@@ -450,9 +450,8 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
     '<p class="inm-curve-note">La línea de puntos dorada marca la fecha de refinanciación. Hasta entonces, las dos siguen pagando el crédito actual — en la opción Badenia, el ahorro corre en paralelo y ya descuenta de lo pendiente. La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
     inmuebleHitosHTML(inmuebleHitosRefi(refi,mesesHastaRefi,rEst,rBanco,ptsEst,ptsBanco),'Badenia',mesesHastaRefi+Math.round((refi.banco.zinsbindung||0)*12))+
     '</div>';
-  // Tiempo total desde HOY, no solo desde la refinanciación — rNew.mesesTotal no vale tal cual
-  // para el banco porque no incluye la espera hasta refinanciar (su fase de ahorro es 0).
-  var totalDesdeHoyEst=mesesHastaRefi+rEst.mesesPrestamo, totalDesdeHoyBanco=mesesHastaRefi+rBanco.mesesPrestamo;
+  // Tiempo total desde HOY: siempre vía inmuebleMesesDesdeHoy (calc.js), la única fuente de esa suma.
+  var totalDesdeHoyEst=inmuebleMesesDesdeHoy(rEst,mesesHastaRefi), totalDesdeHoyBanco=inmuebleMesesDesdeHoy(rBanco,mesesHastaRefi);
   var frase=inmuebleFraseRefi({cuotaBanco:rBanco.cuotaPrestamo,cuotaEst:rEst.cuotaPrestamo,cuotaAhorro:rEst.cuotaAhorro,mesesBanco:totalDesdeHoyBanco,mesesEst:totalDesdeHoyEst,
     bancoParcial:(Math.min((refi.banco.zinsbindung||0)*12,rBanco.mesesPrestamo)<rBanco.mesesPrestamo)});
   var cardsR='<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+row(estTitle,rEst,costeEstAbs,false,false)+'</div>';
@@ -474,7 +473,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
   if(igual) cfgBanco=Object.assign({},inm.banco,{pagoPre:0,tilgungInicial:Math.max(0,payEq*1200/precio-(inm.banco.interesPrestamo||0)-inmuebleRecargoST(inm.banco))});
   var rk=_inmLiveBanco=igual?calcInmuebleOption(precio,cfgBanco):rk0;
   var bancoTitle=igual?'Banco directo · mismo pago mensual':'Banco directo';
-  var maxMeses=Math.max(rEst.mesesTotal,rk.mesesTotal,1);
+  var maxMeses=Math.max(inmuebleMesesDesdeHoy(rEst,0),inmuebleMesesDesdeHoy(rk,0),1);
   var dif=rk.costeTotal-rEst.costeTotal;
   var marcaMeses=Math.round((inm.banco.marcaAnios==null?10:Math.max(0,inm.banco.marcaAnios))*12);
   function row(title,r,isBanco){

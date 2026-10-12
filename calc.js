@@ -394,19 +394,29 @@ function inmuebleValorEn(pts,meses){
 // fecha de refinanciación es sencillamente el crédito actual amortizándose solo.
 // Hitos del gráfico (Comprar): Zuteilung, fin de la Zinsbindung, Bausparvertrag pagado y banco pagado, con lo que debe cada camino y lo
 // ahorrado en ese momento. Los valores salen de las mismas curvas que el gráfico.
+// ÚNICA fuente de la duración total DESDE HOY de una opción (titular, tarjetas, hitos y gráfica leen esto; nadie vuelve a sumar fases por su cuenta).
+// Comprar (espera 0): ahorro + préstamo. Refinanciar: durante la espera sigue el crédito actual; una opción con ahorro (Badenia) ahorra EN
+// PARALELO en esa espera, así que no se suma aparte; una sin ahorro (banco) empieza su préstamo cuando acaba la espera.
+function inmuebleMesesDesdeHoy(r,esperaMeses){
+  esperaMeses=esperaMeses||0;
+  if(!(esperaMeses>0)) return r.mesesTotal;
+  var mesesAhorro=r.mesesTotal-r.mesesPrestamo;
+  return (mesesAhorro>0?Math.max(esperaMeses,mesesAhorro):esperaMeses)+r.mesesPrestamo;
+}
+
 function inmuebleHitosComprar(precio,rEst,rk,ptsEst,ptsBanco,zMeses){
   var rows=[];
   function ahorroEn(m){ return (rEst.mesesAhorro>0 && m<=rEst.mesesAhorro)?Math.max(0,precio-inmuebleValorEn(ptsEst,m)):(rEst.objetivoAhorro||0); }
   function add(n,m){ rows.push({n:n,m:m,banco:(m>=rk.mesesTotal)?0:inmuebleValorEn(ptsBanco,m),baus:(m>=rEst.mesesTotal)?0:inmuebleValorEn(ptsEst,m),ahorro:(rEst.mesesAhorro>0)?ahorroEn(m):0}); }
   if(rEst.mesesAhorro>0) add('Asignación del Bausparvertrag',rEst.mesesAhorro);
   if(zMeses>0 && zMeses<rk.mesesTotal) add('Fin del tipo fijo',zMeses);
-  add('Bausparvertrag pagado',rEst.mesesTotal);
-  add('Banco pagado',rk.mesesTotal);
+  add('Bausparvertrag pagado',inmuebleMesesDesdeHoy(rEst,0));
+  add('Banco pagado',inmuebleMesesDesdeHoy(rk,0));
   return rows.sort(function(a,b){ return a.m-b.m; });
 }
 
 function inmuebleHitosRefi(refi,mesesHastaRefi,rEst,rBanco,ptsEst,ptsBanco){
-  var rows=[], zMeses=Math.round((refi.banco.zinsbindung||0)*12), finEst=mesesHastaRefi+rEst.mesesPrestamo, finBanco=mesesHastaRefi+rBanco.mesesPrestamo;
+  var rows=[], zMeses=Math.round((refi.banco.zinsbindung||0)*12), finEst=inmuebleMesesDesdeHoy(rEst,mesesHastaRefi), finBanco=inmuebleMesesDesdeHoy(rBanco,mesesHastaRefi);
   function add(n,m){ rows.push({n:n,m:m,banco:(m>=finBanco)?0:inmuebleValorEn(ptsBanco,m),baus:(m>=finEst)?0:inmuebleValorEn(ptsEst,m),ahorro:(rEst.cuotaAhorro>0&&m>=mesesHastaRefi)?rEst.objetivoAhorro:0}); }
   add('Refinanciación (asignación de Badenia)',mesesHastaRefi);
   if(zMeses>0 && mesesHastaRefi+zMeses<finBanco) add('Fin del tipo fijo',mesesHastaRefi+zMeses);
@@ -417,7 +427,7 @@ function inmuebleHitosRefi(refi,mesesHastaRefi,rEst,rBanco,ptsEst,ptsBanco){
 
 function inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rNew,cfgNew,tieneAhorroParalelo){
   var paso=3,puntos=[];
-  var totalMeses=mesesHastaRefi+rNew.mesesPrestamo;
+  var totalMeses=inmuebleMesesDesdeHoy(rNew,mesesHastaRefi);
   for(var t=0;t<=totalMeses;t+=paso){
     var pendiente;
     if(t<=mesesHastaRefi){
@@ -610,4 +620,4 @@ function inmuebleToggleCurvaTipo(inm,r){
   var off=(inm.curvaOff||[]).slice(), i=off.indexOf(r); if(i>=0) off.splice(i,1); else off.push(r); inm.curvaOff=off;
 }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble }; }
