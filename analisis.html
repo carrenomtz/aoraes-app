@@ -1000,7 +1000,21 @@
        degradado suave) — en el PDF exportado, estas tarjetas se apoyan solo en su borde. */
     .sh-card,.sh-stat,.pz-lvl{box-shadow:none !important}
   }
+  /* Modo "embebido": dentro de la app (iframe de index.html) la barra azul con el logo, el chip del cliente y el menú ya los pone la app;
+     esta página no repite la marca ni los botones de idioma (la app ya envía el idioma a cada iframe). Solo pantalla: el PDF ("Informe PDF")
+     conserva su cabecera. No se quita nada del DOM, solo se oculta; fuera de la app (página abierta sola) todo queda como antes. */
+  @media screen{
+    html.embedded header.top .brand{display:none}
+    html.embedded header.top{justify-content:flex-start;padding-top:16px;padding-bottom:16px}
+    html.embedded .cs-top .cs-brand,
+    html.embedded .cs-top .lang-switch,
+    html.embedded .lang-switch-ws{display:none}
+    html.embedded .cs-top{background:transparent;color:var(--navy);justify-content:flex-end;padding-top:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+    html.embedded .cs-top .btn-ghost{background:#ffffff;border:1px solid var(--line);color:var(--navy)}
+    html.embedded .cs-top .btn-ghost:hover{background:var(--ivory);border-color:var(--gold)}
+  }
 </style>
+<script>try{ if(window.parent && window.parent!==window) document.documentElement.classList.add('embedded'); }catch(e){}</script>
 </head>
 <body>
 
