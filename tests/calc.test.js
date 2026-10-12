@@ -186,14 +186,14 @@ test('Refinanciar (sinMinimoAhorro) no recalcula: se avisa en pantalla, el cálc
 });
 
 console.log('Gráfica: hitos y escenarios de interés')
-test('hitos de Comprar: Zuteilung con lo ahorrado, Zinsbindung con la deuda del banco y pagos finales a 0', () => {
+test('hitos de Comprar: asignación con lo ahorrado, fin del tipo fijo con la deuda del banco y pagos finales a 0', () => {
   const precio = 300000;
   const est = { pct: 40, anios: 5, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 6, comision: 1.6 };
   const bk = { pct: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 };
   const rEst = engine.calcInmuebleOption(precio, est), rk = engine.calcInmuebleOption(precio, bk);
   const ptsE = engine.inmuebleCurvaSaldo(precio, rEst, est), ptsB = engine.inmuebleCurvaSaldo(precio, rk, bk);
   const rows = engine.inmuebleHitosComprar(precio, rEst, rk, ptsE, ptsB, 120);
-  assert.deepStrictEqual(rows.map(r => r.n), ['Zuteilung del Bausparvertrag', 'Fin de la Zinsbindung', 'Bausparvertrag pagado', 'Banco pagado']);
+  assert.deepStrictEqual(rows.map(r => r.n), ['Asignación del Bausparvertrag', 'Fin del tipo fijo', 'Bausparvertrag pagado', 'Banco pagado']);
   near(rows[0].m, rEst.mesesAhorro, 0); near(rows[0].ahorro, rEst.objetivoAhorro, 1, 'ahorrado en la Zuteilung');
   near(rows[0].baus, precio - rEst.objetivoAhorro, 1, 'deuda del Bausparvertrag en la Zuteilung');
   near(rows[1].banco, rk.restschuldZinsbindung, 1, 'deuda del banco al fin de la Zinsbindung');
@@ -360,8 +360,8 @@ test('ninguna clave del diccionario EN/DE lleva dígitos escritos (usar {0}, {1}
   }
 });
 test('los textos del Proyecto inmobiliario con números se traducen (EN y DE)', () => {
-  const textos = ['Pago mensual de ahorro (0 = calculado; fija los años de ahorro)', 'Tope anual de Sondertilgung (0 = sin tope)',
-    'Gastos de compra (% del precio · típico 7–12 %)', 'Sonderzahlung anual durante el ahorro (0 = ninguna)',
+  const textos = ['Pago mensual de ahorro (0 = calculado; fija los años de ahorro)', 'Tope anual de amortización extra (0 = sin tope)',
+    'Gastos de compra (% del precio · típico 7–12 %)', 'Pago extra anual durante el ahorro (Sonderzahlung; 0 = ninguno)',
     'Un interés del ahorro superior al 0,5 % es poco habitual en un Bausparvertrag.', 'Con este pago el préstamo no se amortiza en menos de 100 años.', 'Banco'];
   for (const [n, map] of Object.entries(dicts)) for (const t of textos) {
     const nums = []; const tpl = t.replace(NUMRE, m => { nums.push(m); return '{' + (nums.length - 1) + '}'; });

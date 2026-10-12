@@ -398,8 +398,8 @@ function inmuebleHitosComprar(precio,rEst,rk,ptsEst,ptsBanco,zMeses){
   var rows=[];
   function ahorroEn(m){ return (rEst.mesesAhorro>0 && m<=rEst.mesesAhorro)?Math.max(0,precio-inmuebleValorEn(ptsEst,m)):(rEst.objetivoAhorro||0); }
   function add(n,m){ rows.push({n:n,m:m,banco:(m>=rk.mesesTotal)?0:inmuebleValorEn(ptsBanco,m),baus:(m>=rEst.mesesTotal)?0:inmuebleValorEn(ptsEst,m),ahorro:(rEst.mesesAhorro>0)?ahorroEn(m):0}); }
-  if(rEst.mesesAhorro>0) add('Zuteilung del Bausparvertrag',rEst.mesesAhorro);
-  if(zMeses>0 && zMeses<rk.mesesTotal) add('Fin de la Zinsbindung',zMeses);
+  if(rEst.mesesAhorro>0) add('Asignación del Bausparvertrag',rEst.mesesAhorro);
+  if(zMeses>0 && zMeses<rk.mesesTotal) add('Fin del tipo fijo',zMeses);
   add('Bausparvertrag pagado',rEst.mesesTotal);
   add('Banco pagado',rk.mesesTotal);
   return rows.sort(function(a,b){ return a.m-b.m; });
@@ -408,8 +408,8 @@ function inmuebleHitosComprar(precio,rEst,rk,ptsEst,ptsBanco,zMeses){
 function inmuebleHitosRefi(refi,mesesHastaRefi,rEst,rBanco,ptsEst,ptsBanco){
   var rows=[], zMeses=Math.round((refi.banco.zinsbindung||0)*12), finEst=mesesHastaRefi+rEst.mesesPrestamo, finBanco=mesesHastaRefi+rBanco.mesesPrestamo;
   function add(n,m){ rows.push({n:n,m:m,banco:(m>=finBanco)?0:inmuebleValorEn(ptsBanco,m),baus:(m>=finEst)?0:inmuebleValorEn(ptsEst,m),ahorro:(rEst.cuotaAhorro>0&&m>=mesesHastaRefi)?rEst.objetivoAhorro:0}); }
-  add('Refinanciación (Zuteilung de Badenia)',mesesHastaRefi);
-  if(zMeses>0 && mesesHastaRefi+zMeses<finBanco) add('Fin de la Zinsbindung',mesesHastaRefi+zMeses);
+  add('Refinanciación (asignación de Badenia)',mesesHastaRefi);
+  if(zMeses>0 && mesesHastaRefi+zMeses<finBanco) add('Fin del tipo fijo',mesesHastaRefi+zMeses);
   add('Badenia pagada',finEst);
   add('Banco pagado',finBanco);
   return rows.sort(function(a,b){ return a.m-b.m; });
