@@ -117,6 +117,10 @@ function simLoan(P,ratePct,cuota,st,offset,maxM){
   return {meses:m,interes:interes,saldos:saldos,bal:bal};
 }
 
+// Zinsaufschlag (recargo de interés) que muchos bancos cobran por permitir la Sondertilgung: puntos porcentuales sobre el interés del
+// préstamo, solo si hay Sondertilgung. Campo opcional recargoST (por defecto 0 = el comportamiento de siempre).
+function inmuebleRecargoST(cfg){ return (cfg&&(cfg.sondertilgung||0)>0)?Math.max(0,Math.min(5,cfg.recargoST||0)):0; }
+
 function calcInmuebleOption(precio,cfg){
   precio=precio||0;
   var pct=Math.max(0,Math.min(100,cfg.pct||0));
@@ -124,6 +128,9 @@ function calcInmuebleOption(precio,cfg){
   var capitalPrestamo=precio-objetivoAhorro;
   var mesesAhorro=Math.max(0,Math.round((cfg.anios||0)*12));
   var esBausparvertrag=(cfg.tilgungsbeitragPerMille!=null);
+  // Banco con Sondertilgung: el interés aplicado a todo el préstamo (cuota, plazo, intereses, Restschuld) incluye el recargo.
+  var cfgOrig=cfg, recargoST=(!esBausparvertrag&&capitalPrestamo>0)?inmuebleRecargoST(cfg):0;
+  if(recargoST>0) cfg=Object.assign({},cfg,{interesPrestamo:(cfg.interesPrestamo||0)+recargoST});
   var minAhorroAplicado=false;
   if(esBausparvertrag && pct>0 && !cfg.sinMinimoAhorro && mesesAhorro<BAUSPAR_MIN_MESES){ mesesAhorro=BAUSPAR_MIN_MESES; minAhorroAplicado=true; }
   // La Abschlussgebühr de un Bausparvertrag se cobra sobre la Bausparsumme (aquí, precio) y se
@@ -215,6 +222,13 @@ function calcInmuebleOption(precio,cfg){
     var sm=simLoan(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,st,0,1200);
     res.sondertilgung=st; res.topeAplicado=(st<stPedida-0.5); res.saldos=sm.saldos;
     res.ahorroInteresST=Math.max(0,res.interesTotalPrestamo-sm.interes); res.mesesAntesST=Math.max(0,res.mesesPrestamo-sm.meses);
+    if(recargoST>0){
+      // Frente a no contratar la opción (tipo base, sin Sondertilgung): el beneficio real descuenta el recargo.
+      var base=calcInmuebleOption(precio,Object.assign({},cfgOrig,{sondertilgung:0}));
+      var netoI=base.interesTotalPrestamo-sm.interes;
+      res.recargoST=recargoST; res.recargoSuperaAhorro=(netoI<0);
+      res.ahorroInteresST=Math.max(0,netoI); res.mesesAntesST=Math.max(0,base.mesesPrestamo-sm.meses);
+    }
     res.interesTotalPrestamo=sm.interes; res.mesesPrestamo=sm.meses; res.mesesTotal=mesesAhorroEfectivo+sm.meses;
     res.costeTotal=precio+sm.interes+comision-interesGanadoAhorro; res.tasaEfectiva=null;
     if(!esBausparvertrag&&cfg.zinsbindung!=null) res.restschuldZinsbindung=(zM>=sm.meses)?0:sm.saldos[zM-1];
@@ -573,4 +587,4 @@ function inmuebleToggleCurvaTipo(inm,r){
   var off=(inm.curvaOff||[]).slice(), i=off.indexOf(r); if(i>=0) off.splice(i,1); else off.push(r); inm.curvaOff=off;
 }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble }; }

@@ -295,6 +295,37 @@ test('la curva de saldo usa el ahorro con Sonderzahlung', () => {
   near(p24.pendiente, 300000 - simAhorro(r.cuotaAhorro, 2000, 1, 24), 1, 'saldo mes 24');
 });
 
+console.log('Recargo de interés por Sondertilgung');
+const recBase = { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 };
+test('sin Sondertilgung el recargo no se aplica', () => {
+  const a = engine.calcInmuebleOption(300000, recBase), b = engine.calcInmuebleOption(300000, Object.assign({}, recBase, { recargoST: 0.3 }));
+  near(a.cuotaPrestamo, b.cuotaPrestamo, 1e-9); near(a.costeTotal, b.costeTotal, 1e-6);
+  assert(!b.recargoST, 'recargo sin Sondertilgung');
+});
+test('con Sondertilgung y recargo: cuota y plazo con el interés + recargo, simulados mes a mes', () => {
+  const cfg = Object.assign({}, recBase, { sondertilgung: 6000, recargoST: 0.3 });
+  const r = engine.calcInmuebleOption(300000, cfg);
+  near(r.cuotaPrestamo, 300000 * (4.3 + 2) / 1200, 1e-6, 'cuota');
+  const sim = loop(300000, 4.3, r.cuotaPrestamo, 6000);
+  near(r.mesesPrestamo, sim.meses, 0, 'meses'); near(r.interesTotalPrestamo, sim.interes, 1, 'intereses');
+  assert.strictEqual(r.recargoST, 0.3);
+});
+test('el beneficio de la Sondertilgung descuenta el recargo (frente a no contratarla)', () => {
+  const cfg = Object.assign({}, recBase, { sondertilgung: 6000, recargoST: 0.3 });
+  const con = engine.calcInmuebleOption(300000, cfg), base = engine.calcInmuebleOption(300000, recBase);
+  near(con.ahorroInteresST, base.interesTotalPrestamo - con.interesTotalPrestamo, 1, 'ahorro neto');
+  assert(con.ahorroInteresST < engine.calcInmuebleOption(300000, Object.assign({}, recBase, { sondertilgung: 6000 })).ahorroInteresST, 'con recargo debe ahorrar menos que sin recargo');
+});
+test('un recargo enorme con poca Sondertilgung se marca como que cuesta más de lo que ahorra', () => {
+  const r = engine.calcInmuebleOption(300000, Object.assign({}, recBase, { sondertilgung: 500, recargoST: 2 }));
+  assert.strictEqual(r.recargoSuperaAhorro, true); near(r.ahorroInteresST, 0, 1e-9);
+});
+test('el recargo no afecta al Bausparvertrag', () => {
+  const bs = { pct: 40, anios: 4, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 6, comision: 1.6, sondertilgung: 3000 };
+  const a = engine.calcInmuebleOption(300000, bs), b = engine.calcInmuebleOption(300000, Object.assign({}, bs, { recargoST: 0.5 }));
+  near(a.cuotaPrestamo, b.cuotaPrestamo, 1e-9); near(a.interesTotalPrestamo, b.interesTotalPrestamo, 1e-6);
+});
+
 console.log('Refinanciar');
 test('saldo e interés restante de un crédito existente igual que el calendario', () => {
   const refi = { importeOriginal: 200000, interesOriginal: 3, plazoOriginal: 25, fechaInicio: engine.isoDateYearsAgo(5) };

@@ -28,6 +28,7 @@ function inmuebleLiveBancoHTML(){
   if(r.noAmortiza) return '<div class="inm-live-line"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span></div>';
   var h='<div class="inm-live-line"><span>Pago mensual del cliente</span><b>'+eur(r.cuotaPrestamo)+'/mes</b><span>Dura</span><b>'+fmtAnos(r.mesesPrestamo)+'</b></div>';
   if(r.sondertilgung>0) h+='<div class="inm-live-line inm-live-sub"><span>Más una Sondertilgung de</span><b>'+eur(r.sondertilgung)+'/año</b><span>(unos</span><b>'+eur(r.sondertilgung/12)+'/mes</b><span>)</span></div>';
+  if(r.recargoST>0) h+='<div class="inm-live-line inm-live-sub"><span>Incluye un recargo de interés de</span><b>'+String(Math.round(r.recargoST*100)/100).replace('.',',')+' puntos</b></div>';
   return h;
 }
 // Lo mismo para el Bausparvertrag: ahorro mensual y su duración, y luego el préstamo (o solo el préstamo si no hay ahorro).
@@ -89,6 +90,7 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
   // La Tilgung/Tilgungsbeitrag salió de "Opciones avanzadas" a pedido explícito — el valor por
   // defecto (el mismo que ya traía cada campo) sigue usándose en el cálculo tal cual, solo que
   // ya no se ve ni se puede tocar desde aquí; confundía más de lo que ayudaba a explicar.
+  if(opt==='banco'||opt==='refiBanco') advanced+=inmuebleOptField(opt,'recargoST','Recargo de interés por la Sondertilgung (0 = ninguno; puntos porcentuales sobre el interés)',cfg.recargoST||0,'0.05','puntos','min="0" max="5"');
   advanced+=inmuebleOptField(opt,'topeST','Tope anual de Sondertilgung (0 = sin tope)',cfg.topeST||0,'0.5','% del préstamo','min="0" max="100"');
   advanced+=inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
   if(opt==='banco'||opt==='refiBanco'){
@@ -392,7 +394,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
   // terminado de pagar solo, no se sigue pagando cuota en ese tramo — se limita al tiempo
   // que el crédito original realmente sigue vivo.
   var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
-  var rBanco=_inmLiveBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
+  var rBanco=_inmLiveBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,recargoST:refi.banco.recargoST,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
   var rEst=_inmLiveEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,sonderAhorro:estCfg.sonderAhorro,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
   var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
   var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
@@ -417,6 +419,8 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
       (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
       (r.sondertilgung>0?'<div class="inm-res-line"><span>Con Sondertilgung de '+eur(r.sondertilgung)+'/año, intereses menos</span><b>'+eur(r.ahorroInteresST)+'</b></div><div class="inm-res-line"><span>Y terminas antes</span><b>'+fmtAnos(r.mesesAntesST)+'</b></div>':'')+
       (r.topeAplicado?'<div class="inm-res-line inm-eff-hint"><span>Tope aplicado: como máximo '+eur(r.sondertilgung)+'/año</span></div>':'')+
+      (r.recargoST>0?'<div class="inm-res-line inm-eff-hint"><span>Con un recargo de interés de</span><b>'+String(Math.round(r.recargoST*100)/100).replace('.',',')+' puntos</b><span>por la Sondertilgung (ya incluido en la cuota y los intereses)</span></div>':'')+
+      (r.recargoSuperaAhorro?'<div class="inm-res-warn"><span>El recargo cuesta más de lo que ahorra la Sondertilgung.</span></div>':'')+
       (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
       '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(costeAbs)+'</b></div>'+
       '<div class="inm-res-line save"><span>'+(ahorroVs>=0?'Menos intereses y comisiones que seguir igual':'Más intereses y comisiones que seguir igual')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>'+
@@ -429,7 +433,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
   var escen=inmuebleCurvaTipos(inm).map(function(r,i){
     var cfgE=Object.assign({},refi.banco,{interesPrestamo:r});
     if(refi.banco.plazoObjetivo>0&&!(refi.banco.pagoPre>0)) cfgE.tilgungInicial=tilgungParaPlazo(r,refi.banco.plazoObjetivo);
-    var rrE=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:r,tilgungInicial:cfgE.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
+    var rrE=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:r,tilgungInicial:cfgE.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,recargoST:refi.banco.recargoST,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
     return {r:r,color:INM_CURVA_COLORES[i],activo:(((inm&&inm.curvaOff)||[]).indexOf(r)<0),cuota:rrE.cuotaPrestamo,pts:inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rrE,cfgE,false)};
   });
   var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
@@ -459,7 +463,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
   var payEq=(inm.pagoIgual>0)?inm.pagoIgual:rEst.cuotaAhorro;
   var igual=(inm.comparar==='igual' && precio>0 && payEq>rk0.cuotaPrestamo+0.5);
   var cfgBanco=inm.banco;
-  if(igual) cfgBanco=Object.assign({},inm.banco,{pagoPre:0,tilgungInicial:Math.max(0,payEq*1200/precio-(inm.banco.interesPrestamo||0))});
+  if(igual) cfgBanco=Object.assign({},inm.banco,{pagoPre:0,tilgungInicial:Math.max(0,payEq*1200/precio-(inm.banco.interesPrestamo||0)-inmuebleRecargoST(inm.banco))});
   var rk=_inmLiveBanco=igual?calcInmuebleOption(precio,cfgBanco):rk0;
   var bancoTitle=igual?'Banco directo · mismo pago mensual':'Banco directo';
   var maxMeses=Math.max(rEst.mesesTotal,rk.mesesTotal,1);
@@ -477,6 +481,8 @@ function inmuebleResultsHTML(precio,inm,asParts){
       (r.restschuldZinsbindung!=null?'<div class="inm-res-line"><span>Deuda pendiente al fin de la Zinsbindung</span><b>'+eur(r.restschuldZinsbindung)+'</b></div>':'')+
       (r.sondertilgung>0?'<div class="inm-res-line"><span>Con Sondertilgung de '+eur(r.sondertilgung)+'/año, intereses menos</span><b>'+eur(r.ahorroInteresST)+'</b></div><div class="inm-res-line"><span>Y terminas antes</span><b>'+fmtAnos(r.mesesAntesST)+'</b></div>':'')+
       (r.topeAplicado?'<div class="inm-res-line inm-eff-hint"><span>Tope aplicado: como máximo '+eur(r.sondertilgung)+'/año</span></div>':'')+
+      (r.recargoST>0?'<div class="inm-res-line inm-eff-hint"><span>Con un recargo de interés de</span><b>'+String(Math.round(r.recargoST*100)/100).replace('.',',')+' puntos</b><span>por la Sondertilgung (ya incluido en la cuota y los intereses)</span></div>':'')+
+      (r.recargoSuperaAhorro?'<div class="inm-res-warn"><span>El recargo cuesta más de lo que ahorra la Sondertilgung.</span></div>':'')+
       (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
       '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(r.costeTotal)+'</b></div>'+
       (!isBanco?'<div class="inm-res-line save"><span>'+(dif>=0?'Menos intereses y comisiones que el banco':'Más intereses y comisiones que el banco')+'</span><b>'+eur(Math.abs(dif))+'</b></div>':'')+
@@ -487,7 +493,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
   var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg), ptsBanco=inmuebleCurvaSaldo(precio,rk,cfgBanco);
   var escen=inmuebleCurvaTipos(inm).map(function(r,i){
     var cfgE=Object.assign({},cfgBanco,{interesPrestamo:r});
-    if(igual) cfgE.tilgungInicial=Math.max(0,payEq*1200/precio-r); else if(cfgBanco.plazoObjetivo>0&&!(cfgBanco.pagoPre>0)) cfgE.tilgungInicial=tilgungParaPlazo(r,cfgBanco.plazoObjetivo);
+    if(igual) cfgE.tilgungInicial=Math.max(0,payEq*1200/precio-r-inmuebleRecargoST(cfgBanco)); else if(cfgBanco.plazoObjetivo>0&&!(cfgBanco.pagoPre>0)) cfgE.tilgungInicial=tilgungParaPlazo(r,cfgBanco.plazoObjetivo);
     var rrE=calcInmuebleOption(precio,cfgE);
     return {r:r,color:INM_CURVA_COLORES[i],activo:((inm.curvaOff||[]).indexOf(r)<0),cuota:rrE.cuotaPrestamo,pts:inmuebleCurvaSaldo(precio,rrE,cfgE)};
   });
