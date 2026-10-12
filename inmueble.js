@@ -564,6 +564,7 @@ function inmuebleBlock(rec){
     '<p class="inm-eff-note inm-adv">El <b>interés efectivo del préstamo</b> mide la fase de préstamo y ya descuenta la comisión de apertura sobre lo que el cliente recibe (en el Bausparvertrag, la parte de la Abschlussgebühr proporcional al préstamo, como en la Modellrechnung de Badenia). Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.</p>'+
     (inm.modo!=='refi'?'<p class="inm-eff-note inm-adv">Una hipoteca bancaria alemana casi nunca fija el tipo para todo el plazo: lo normal es una <b>Zinsbindung</b> de 10-15 años, tras la cual el saldo pendiente (<b>Restschuld</b>) se refinancia al tipo que haya entonces (<b>Anschlussfinanzierung</b>). La certeza de tipo durante todo el plazo que muestra "Banco directo" aquí es el caso favorable — coméntalo con el cliente si su horizonte real es más largo que la Zinsbindung que le ofrecerán.</p>':'')+
     body+
+    '<div class="inm-adv inm-reset-wrap"><button type="button" class="inm-reset" id="inm-reset-btn">Restablecer valores por defecto</button></div>'+
   '</div>').replace('<!--INMLIVE-->',inmuebleLiveBancoHTML()).replace('<!--INMLIVEEST-->',inmuebleLiveEstHTML());
 }
 
@@ -573,11 +574,15 @@ function inmuebleBlock(rec){
 // coinciden exactamente; aquí solo se añade la cabecera de marca, los datos de partida y los
 // supuestos y límites. El nombre del cliente solo sale si hay cliente (no en modo genérico).
 function inmuebleLimitsHTML(inm){
+  // Aviso discreto (solo si el valor es raro): un Guthabenzins de un Bausparvertrag ronda el 0,05 %; más de 0,5 % suele ser un dato mal puesto.
+  var eAh=inm?((inm.modo==='refi')?((inm.refi.estrategia==='refiB')?inm.refi.b:inm.refi.a):((inm.estrategia==='b')?inm.b:inm.a)):null;
+  var ahorroAlto=!!(eAh&&eAh.pct>0&&eAh.interesAhorro>0.5);
   var conCostes=!!(inm&&((inm.gastosPct||0)>0||(inm.capitalPropio||0)>0));
   return '<ul>'+
     '<li>Cálculo orientativo con amortización estándar: no es una oferta ni una cotización de ningún banco ni Bausparkasse.</li>'+
     '<li>Los años de ahorro son un supuesto: la asignación (Zuteilung) de la Bausparkasse no está garantizada y puede variar.</li>'+
     '<li>Los tipos de interés son datos introducidos, no pronósticos.</li>'+
+    (ahorroAlto?'<li><span>El interés del ahorro indicado supera el 0,5 %, algo poco habitual en un Bausparvertrag.</span> <span>Confirma el valor con el contrato real.</span></li>':'')+
     (conCostes?'<li>No incluye alquiler, revalorización, impuestos ni lo que rendiría el ahorro en otra parte; los gastos de compra y el capital propio indicados solo cambian el importe a financiar.</li>':'<li>No incluye alquiler, revalorización, impuestos, gastos de compra ni lo que rendiría el ahorro en otra parte.</li>')+
     '<li>Para decidir hace falta la ilustración oficial (Modellrechnung) y la oferta vinculante con el Effektiver Jahreszins.</li>'+
   '</ul>';
@@ -758,6 +763,15 @@ window.addEventListener('beforeunload',flushInmuebleSave);
 
 // Eventos de clic y de teclado de la pantalla del módulo: index.html los llama antes de sus propias ramas y, si devuelven true, ya está atendido.
 function inmuebleOnClick(e){
+  if(e.target.closest('#inm-reset-btn')){
+    // Vuelve el proyecto (del modo actual y del otro) a los valores de partida; pide confirmación porque se pierden los cambios.
+    if(!APP_HOST.wsRec||!APP_HOST.wsRec.inmueble) return true;
+    if(!confirm('¿Restablecer todos los valores de este proyecto a los de partida? Se pierden los cambios hechos.')) return true;
+    var nuevoI=defaultInmueble(); nuevoI.modo=APP_HOST.wsRec.inmueble.modo; APP_HOST.wsRec.inmueble=nuevoI; normalizeInmueble(APP_HOST.wsRec);
+    var secRs=document.getElementById('sec-inmueble'); if(secRs) secRs.innerHTML=inmuebleBlock(APP_HOST.wsRec);
+    scheduleInmuebleSave();
+    return true;
+  }
   var cTipo=e.target.closest('#inm-results-wrap [data-curva-tipo]');
   if(cTipo){
     // Encender/apagar una línea de banco de la gráfica (se guarda en la ficha: la presentación y el informe lo respetan).
