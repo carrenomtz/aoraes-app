@@ -583,10 +583,12 @@ function inmuebleLimitsHTML(inm){
   '</ul>';
 }
 
+// Duración bajo una cifra de la presentación ("durante 10,1 años"); vacío si el préstamo no se amortiza.
+function inmuebleSubDur(meses,noAmortiza){ return (noAmortiza||!(meses>0))?'':'durante '+fmtAnos(meses); }
 function inmuebleBigs(items){
   return '<div class="inm-bigs">'+items.map(function(i){
     var v=(i[2]&&i[2].t==='date')?'<b><input type="date" class="inm-pres-pago inm-pres-date" data-pres-pago="'+i[2].f+'" value="'+esc(i[2].v)+'"></b>':i[2]?'<b><input type="text" inputmode="decimal" class="inm-pres-pago inm-pres-pago-big" data-pres-pago="'+i[2].f+'" value="'+esc(_presRawPago[i[2].f]!=null?_presRawPago[i[2].f]:(i[2].u==='%'?String(Math.round(i[2].v*100)/100).replace('.',','):String(Math.round(i[2].v))))+'"> '+(i[2].u||'€/mes')+'</b>':'<b>'+i[1]+'</b>';
-    return '<div class="inm-big">'+v+'<span>'+i[0]+'</span></div>'; }).join('')+'</div>';
+    return '<div class="inm-big">'+v+'<span>'+i[0]+'</span>'+((i[2]&&i[2].sub)?'<div class="inm-big-sub">'+i[2].sub+'</div>':'')+'</div>'; }).join('')+'</div>';
 }
 
 function inmuebleFmtPct(x){ return String(Math.round((x||0)*100)/100).replace('.',',')+'%'; }
@@ -655,10 +657,10 @@ function buildInmuebleSlides(rec){
   if(inm.modo==='refi'){
     var P=inmuebleRefiResultsHTML(inm.refi,true,inm), rf=inm.refi;
     sl.push({t:'Tu crédito actual',h:inmuebleBigs([['Saldo pendiente hoy',eur(P.rem.saldoPendiente),{f:'saldoHoy',v:P.rem.saldoPendiente,u:'€'}],['Fecha de refinanciación',inmuebleFmtFecha(fechaRefiEfectiva(rf)),{f:'fechaRefi',v:fechaRefiEfectiva(rf),t:'date'}],['Crédito original',eur(rf.importeOriginal),{f:'importeOriginal',v:rf.importeOriginal,u:'€'}],['Interés original',inmuebleFmtPct(rf.interesOriginal),{f:'interesOriginal',v:rf.interesOriginal,u:'%'}]])});
-    var cuotasR=[['Cuota actual',eur(P.rem.cuotaOriginal)+'/mes',{f:'cuotaActual',v:P.rem.cuotaOriginal}]];
-    if(P.rEst.cuotaAhorro>0){ cuotasR.push(['Cuota ahorro',eur(P.rEst.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:P.rEst.cuotaAhorro}]); var eCfgR=(rf.estrategia==='refiB')?rf.b:rf.a; cuotasR.push(['Interés del ahorro',inmuebleFmtPct(eCfgR.interesAhorro),{f:'interesAhorro',v:eCfgR.interesAhorro||0,u:'%'}]); cuotasR.push(['Sonderzahlung anual',eur(eCfgR.sonderAhorro||0)+'/año',{f:'sonderAhorro',v:eCfgR.sonderAhorro||0,u:'€/año'}]); }
-    cuotasR.push(['Cuota préstamo',eur(P.rEst.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:P.rEst.cuotaPrestamo}]);
-    cuotasR.push(['Refinanciar con banco',eur(P.rBanco.cuotaPrestamo)+'/mes',{f:'pagoPre',v:P.rBanco.cuotaPrestamo}]);
+    var cuotasR=[['Cuota actual',eur(P.rem.cuotaOriginal)+'/mes',{f:'cuotaActual',v:P.rem.cuotaOriginal,sub:inmuebleSubDur(P.rem.mesesRestantes)}]];
+    if(P.rEst.cuotaAhorro>0){ cuotasR.push(['Cuota ahorro',eur(P.rEst.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:P.rEst.cuotaAhorro,sub:inmuebleSubDur(P.rEst.mesesAhorro)}]); var eCfgR=(rf.estrategia==='refiB')?rf.b:rf.a; cuotasR.push(['Interés del ahorro',inmuebleFmtPct(eCfgR.interesAhorro),{f:'interesAhorro',v:eCfgR.interesAhorro||0,u:'%'}]); cuotasR.push(['Sonderzahlung anual',eur(eCfgR.sonderAhorro||0)+'/año',{f:'sonderAhorro',v:eCfgR.sonderAhorro||0,u:'€/año'}]); }
+    cuotasR.push(['Cuota préstamo',eur(P.rEst.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:P.rEst.cuotaPrestamo,sub:inmuebleSubDur(P.rEst.mesesPrestamo,P.rEst.noAmortiza)}]);
+    cuotasR.push(['Refinanciar con banco',eur(P.rBanco.cuotaPrestamo)+'/mes',{f:'pagoPre',v:P.rBanco.cuotaPrestamo,sub:inmuebleSubDur(P.rBanco.mesesPrestamo,P.rBanco.noAmortiza)}]);
     sl.push({t:'Tu pago cada mes',h:inmuebleBigs(cuotasR)});
     if(P.capacidad) sl.push({t:'Capacidad de pago',h:P.capacidad});
     sl.push({t:'Cuánto debes con el tiempo',h:P.curva});
@@ -667,7 +669,7 @@ function buildInmuebleSlides(rec){
   } else {
     var Q=inmuebleResultsHTML(inmuebleFin(inm),inm,true), rE=Q.rEst, rk=Q.rk;
     sl.push({t:'La propiedad',h:inmuebleBigs([['Precio del inmueble',eur(inm.precio)],].concat(inmuebleFin(inm)!==inm.precio?[['Importe a financiar',eur(inmuebleFin(inm))]]:[]).concat([['Mes de inicio',inmuebleMesAnio(0)],['Años de ahorro',fmtAnos(rE.mesesAhorro)],['Banco directo',inmuebleFmtPct(inm.banco.interesPrestamo)]]))});
-    var cuotas=[]; if(rE.cuotaAhorro>0){ cuotas.push(['Cuota ahorro',eur(rE.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:rE.cuotaAhorro}]); var eCfg=(inm.estrategia==='b')?inm.b:inm.a; cuotas.push(['Interés del ahorro',inmuebleFmtPct(eCfg.interesAhorro),{f:'interesAhorro',v:eCfg.interesAhorro||0,u:'%'}]); cuotas.push(['Sonderzahlung anual',eur(eCfg.sonderAhorro||0)+'/año',{f:'sonderAhorro',v:eCfg.sonderAhorro||0,u:'€/año'}]); } cuotas.push(['Cuota préstamo',eur(rE.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:rE.cuotaPrestamo}]); cuotas.push(['Banco directo',eur(rk.cuotaPrestamo)+'/mes',{f:(inm.comparar==='igual'?'pagoIgual':'pagoPre'),v:rk.cuotaPrestamo}]);
+    var cuotas=[]; if(rE.cuotaAhorro>0){ cuotas.push(['Cuota ahorro',eur(rE.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:rE.cuotaAhorro,sub:inmuebleSubDur(rE.mesesAhorro)}]); var eCfg=(inm.estrategia==='b')?inm.b:inm.a; cuotas.push(['Interés del ahorro',inmuebleFmtPct(eCfg.interesAhorro),{f:'interesAhorro',v:eCfg.interesAhorro||0,u:'%'}]); cuotas.push(['Sonderzahlung anual',eur(eCfg.sonderAhorro||0)+'/año',{f:'sonderAhorro',v:eCfg.sonderAhorro||0,u:'€/año'}]); } cuotas.push(['Cuota préstamo',eur(rE.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:rE.cuotaPrestamo,sub:inmuebleSubDur(rE.mesesPrestamo,rE.noAmortiza)}]); cuotas.push(['Banco directo',eur(rk.cuotaPrestamo)+'/mes',{f:(inm.comparar==='igual'?'pagoIgual':'pagoPre'),v:rk.cuotaPrestamo,sub:inmuebleSubDur(rk.mesesPrestamo,rk.noAmortiza)}]);
     sl.push({t:'Tu pago cada mes',h:inmuebleBigs(cuotas)});
     if(Q.capacidad) sl.push({t:'Capacidad de pago',h:Q.capacidad});
     sl.push({t:'Cuánto debes con el tiempo',h:Q.curva});
