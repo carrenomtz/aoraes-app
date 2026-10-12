@@ -524,8 +524,16 @@ function inmuebleLimitar(campo,valor){
 }
 
 function normalizeInmueble(rec){
-  if(!rec.inmueble) rec.inmueble=defaultInmueble();
-  var inm=rec.inmueble, def=defaultInmueble();
+  var def=defaultInmueble();
+  // Un registro mal formado (inmueble o un sub-objeto que no es objeto) vuelve al valor por defecto en vez de romper la herramienta.
+  var esObj=function(x){ return !!x&&typeof x==='object'&&!Array.isArray(x); };
+  if(!esObj(rec.inmueble)) rec.inmueble=defaultInmueble();
+  var inm=rec.inmueble;
+  ['a','b','banco','refi'].forEach(function(k){ if(!esObj(inm[k])) inm[k]=def[k]; });
+  ['a','b','banco'].forEach(function(k){ if(!esObj(inm.refi[k])) inm.refi[k]=def.refi[k]; });
+  // Campos de funciones que se quitaron (escenarios de interés tras la Zinsbindung): ya no se usan; se limpian de los proyectos antiguos.
+  var huerfano=/^(numEscenarios|tipoPost\d*|nombrePost\d*|pagoPost)$/;
+  [inm,inm.a,inm.b,inm.banco,inm.refi,inm.refi.a,inm.refi.b,inm.refi.banco].forEach(function(o){ Object.keys(o).forEach(function(k){ if(huerfano.test(k)) delete o[k]; }); });
   if(!inm.modo) inm.modo='compra';
   [inm.a,inm.b].forEach(function(c){ if(c&&c.anios!=null&&c.anios<BAUSPAR_MIN_ANIOS) c.anios=BAUSPAR_MIN_ANIOS; });
   if(inm.gastosPct==null||isNaN(inm.gastosPct)) inm.gastosPct=0;

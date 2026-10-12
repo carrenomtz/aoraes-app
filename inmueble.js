@@ -253,7 +253,7 @@ function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst,mesesZinsbindung
       // eur() usa Intl.NumberFormat, que en es-ES separa el número del símbolo con un espacio
       // de NO separación (U+00A0) — un .replace(' €','') con espacio normal no lo detecta y
       // dejaba el símbolo duplicado ("112.356 € € aún"). \s sí cubre el NBSP.
-      '<text class="inm-detalle" x="'+px(finEst).toFixed(1)+'" y="'+(py(yBancoAhi)-8).toFixed(1)+'" font-size="10" font-weight="700" fill="'+colorBanco+'" text-anchor="middle" stroke="var(--surface)" stroke-width="3" paint-order="stroke" stroke-linejoin="round">'+eur(yBancoAhi).replace(/\s*€/,'')+' € aún</text>';
+      '<text class="inm-detalle" x="'+px(finEst).toFixed(1)+'" y="'+(py(yBancoAhi)-8).toFixed(1)+'" font-size="10" font-weight="700" fill="var(--gold-text,#7d611c)" text-anchor="middle" stroke="var(--surface)" stroke-width="3" paint-order="stroke" stroke-linejoin="round">'+eur(yBancoAhi).replace(/\s*€/,'')+' € aún</text>';
   }
   var ahorroArea='', zuteil='';
   if(extra && extra.ahorro && extra.ahorro.hasta>0 && extra.ahorro.total>0){
@@ -285,7 +285,8 @@ function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst,mesesZinsbindung
     return '<path d="'+path(e.pts)+'" fill="none" stroke="'+e.color+'" stroke-width="1.8" stroke-dasharray="5,3"/>'+
       '<text x="'+(px(fin.meses)-2).toFixed(1)+'" y="'+(py(0)-6).toFixed(1)+'" font-size="9" font-weight="700" fill="'+e.color+'" text-anchor="end">'+inmuebleFmtPct(e.r)+'</text>';
   }).join('');
-  return '<svg viewBox="0 0 '+W+' '+H+'" class="inm-curve-svg" role="img" aria-label="Cuánto queda por pagar, comparado en el tiempo">'+
+  var descGraf='Cuánto queda por pagar, comparado en el tiempo. La línea azul termina en '+inmuebleAnios(ptsEst[ptsEst.length-1].meses)+'; la dorada, en '+inmuebleAnios(ptsBanco[ptsBanco.length-1].meses)+'.';
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="inm-curve-svg" role="img" aria-label="'+esc(descGraf)+'">'+
     area+ahorroArea+gridY+gridX+marca+marcaZins+zuteil+escLineas+
     '<path d="'+path(ptsBanco)+'" fill="none" stroke="'+colorBanco+'" stroke-width="2.5"/>'+
     '<path d="'+path(ptsEst)+'" fill="none" stroke="var(--navy)" stroke-width="2.5"/>'+
@@ -740,6 +741,10 @@ var _presSlides=[], _presIdx=0, _presRec=null, _infRec=null;
 
 function presFit(){
   var st=document.getElementById('inm-pres-stage'), inn=document.getElementById('inm-pres-inner'); if(!st||!inn) return;
+  // Pantallas estrechas (móvil): sin lienzo escalado de 1000 px; la diapositiva ocupa el ancho real y se desplaza en vertical, con letra legible.
+  var ovp=document.getElementById('inm-pres'), compacto=(st.clientWidth>0&&st.clientWidth<700);
+  if(ovp) ovp.classList.toggle('pres-compact',compacto);
+  if(compacto){ inn.style.transform='none'; inn.style.width='auto'; inn.style.left='0'; inn.style.top='0'; return; }
   inn.style.transform='none'; inn.style.width='1000px';
   var h=inn.offsetHeight, sc=Math.min(st.clientWidth/1000*0.97, st.clientHeight/Math.max(h,1)*0.97, 1.5);
   inn.style.transform='scale('+sc+')';
@@ -758,8 +763,11 @@ function presShow(i){
   presFit(); setTimeout(presFit,80);
 }
 
+var _presOpener=null, _infOpener=null;
 function presOpen(rec){
+  _presOpener=document.activeElement;
   _presRec=rec; _presSlides=buildInmuebleSlides(rec); var ov=document.getElementById('inm-pres'); ov.hidden=false; presShow(0);
+  var cb=document.getElementById('inm-pres-close'); if(cb) try{ cb.focus(); }catch(e){}
 }
 
 function presClose(){
@@ -767,6 +775,8 @@ function presClose(){
   _presRawPago={};
   var secP=document.getElementById('sec-inmueble'); if(secP&&APP_HOST.wsRec) secP.innerHTML=inmuebleBlock(APP_HOST.wsRec);
   try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
+  // Devuelve el foco a lo que abrió la presentación (el bloque se vuelve a pintar, así que se busca el botón por su id).
+  var op=_presOpener&&_presOpener.id?document.getElementById(_presOpener.id):null; _presOpener=null; if(op) try{ op.focus(); }catch(e){}
 }
 
 function refreshInmuebleResults(){
@@ -807,6 +817,8 @@ function flushInmuebleSave(){
 }
 
 window.addEventListener('beforeunload',flushInmuebleSave);
+window.addEventListener('pagehide',flushInmuebleSave);
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') flushInmuebleSave(); });
 
 // Eventos de clic y de teclado de la pantalla del módulo: index.html los llama antes de sus propias ramas y, si devuelven true, ya está atendido.
 function inmuebleOnClick(e){
@@ -874,7 +886,9 @@ function inmuebleOnClick(e){
         if(!APP_HOST.wsRec||!APP_HOST.wsRec.inmueble) return true;
         document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(APP_HOST.wsRec);
         // Vista previa editable primero (p. ej. la Sonderzahlung); se imprime con el botón "Imprimir / PDF" de la barra superior.
+        _infOpener=document.activeElement;
         document.getElementById('afa-informe').classList.add('inm','on');
+        var ipb=document.getElementById('afa-inf-print'); if(ipb) try{ ipb.focus(); }catch(e){}
         return true;
       }
 
@@ -1084,6 +1098,13 @@ function inmuebleInstallListeners(){
       refreshInmuebleResults(); scheduleInmuebleSave();
     });
     document.getElementById('afa-inf-print').addEventListener('click', function(){ window.print(); });
+    document.getElementById('afa-inf-close').addEventListener('click', function(){
+      var op=_infOpener&&_infOpener.id?document.getElementById(_infOpener.id):null; _infOpener=null; if(op) try{ op.focus(); }catch(e){}
+    });
+    document.addEventListener('keydown', function(e){
+      var inf=document.getElementById('afa-informe');
+      if(e.key==='Escape'&&inf&&inf.classList.contains('on')&&inf.classList.contains('inm')){ document.getElementById('afa-inf-close').click(); }
+    });
     document.getElementById('inm-pres-prev').addEventListener('click', function(){ presShow(_presIdx-1); });
     document.getElementById('inm-pres-next').addEventListener('click', function(){ presShow(_presIdx+1); });
     document.getElementById('inm-pres-dots').addEventListener('click', function(e){ var d=e.target.closest('[data-pres-go]'); if(d) presShow(+d.getAttribute('data-pres-go')); });

@@ -423,6 +423,28 @@ test('eur(): punto de millares siempre (también 1.090), espacio de no separaci�
   assert.strictEqual(eurFmt(null), '—'); assert.strictEqual(eurFmt(NaN), '—');
 });
 
+console.log('Registros mal formados y campos huérfanos');
+test('normalizeInmueble no rompe con registros mal formados y devuelve algo utilizable', () => {
+  const malos = [{}, { inmueble: null }, { inmueble: 'x' }, { inmueble: 5 }, { inmueble: [] },
+    { inmueble: { precio: 'abc', a: null, b: 7, banco: 5, refi: 'z' } },
+    { inmueble: { modo: 'zzz', curvaTipos: 'x', curvaOff: 5, refi: { a: 3, b: null, banco: [] } } }];
+  for (const rec of malos) {
+    const inm = engine.normalizeInmueble(rec);
+    const r = engine.calcInmuebleOption(engine.inmuebleFin(inm), inm.a), rb = engine.calcInmuebleOption(engine.inmuebleFin(inm), inm.banco);
+    assert(isFinite(r.costeTotal) && isFinite(rb.costeTotal), 'cálculo no finito tras normalizar ' + JSON.stringify(rec));
+    const j = JSON.stringify(inm); assert.strictEqual(JSON.stringify(engine.normalizeInmueble({ inmueble: JSON.parse(j) })), j, 'no idempotente');
+  }
+});
+test('los campos huérfanos de los escenarios quitados se limpian', () => {
+  const d = engine.defaultInmueble();
+  Object.assign(d.banco, { numEscenarios: 3, tipoPost1: 3, tipoPost2: 4, tipoPost3: 6, pagoPost: 0, nombrePost1: 'x' });
+  Object.assign(d.refi.banco, { numEscenarios: 2, tipoPost1: 2.5 }); d.numEscenarios = 3;
+  const inm = engine.normalizeInmueble({ inmueble: d });
+  const mal = k => /^(numEscenarios|tipoPost\d*|nombrePost\d*|pagoPost)$/.test(k);
+  [inm, inm.banco, inm.refi, inm.refi.banco].forEach(o => assert.deepStrictEqual(Object.keys(o).filter(mal), [], 'quedan campos huérfanos'));
+  assert.strictEqual(inm.banco.interesPrestamo, 3.5);
+});
+
 console.log('Refinanciar');
 test('saldo e interés restante de un crédito existente igual que el calendario', () => {
   const refi = { importeOriginal: 200000, interesOriginal: 3, plazoOriginal: 25, fechaInicio: engine.isoDateYearsAgo(5) };
