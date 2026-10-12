@@ -447,19 +447,19 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
     var rrE=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:r,tilgungInicial:cfgE.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,recargoST:refi.banco.recargoST,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
     return {r:r,color:INM_CURVA_COLORES[i],activo:(((inm&&inm.curvaOff)||[]).indexOf(r)<0),cuota:rrE.cuotaPrestamo,pts:inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rrE,cfgE,false)};
   });
-  var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
+  var curvaHead='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
     '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>Refinanciar con banco</span></div></div>'+inmuebleCurvaChips(escen)+
     inmuebleCurvaSVG(rem.saldoPendiente,ptsEst,ptsBanco,mesesHastaRefi,Math.round((refi.banco.zinsbindung||0)*12)+mesesHastaRefi,{escenarios:escen,zuteilung:(rEst.cuotaAhorro>0?mesesHastaRefi:0),ahorro:{hasta:(rEst.cuotaAhorro>0?mesesHastaRefi:0),total:rEst.objetivoAhorro,base:'banco'}})+
-    '<p class="inm-curve-note">La línea de puntos dorada marca la fecha de refinanciación. Hasta entonces, las dos siguen pagando el crédito actual — en la opción Badenia, el ahorro corre en paralelo y ya descuenta de lo pendiente. La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
-    inmuebleHitosHTML(inmuebleHitosRefi(refi,mesesHastaRefi,rEst,rBanco,ptsEst,ptsBanco),'Badenia',mesesHastaRefi+Math.round((refi.banco.zinsbindung||0)*12))+
-    '</div>';
+    '<p class="inm-curve-note">La línea de puntos dorada marca la fecha de refinanciación. Hasta entonces, las dos siguen pagando el crédito actual — en la opción Badenia, el ahorro corre en paralelo y ya descuenta de lo pendiente. La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>';
+  var hitosH=inmuebleHitosHTML(inmuebleHitosRefi(refi,mesesHastaRefi,rEst,rBanco,ptsEst,ptsBanco),'Badenia',mesesHastaRefi+Math.round((refi.banco.zinsbindung||0)*12));
+  var curva=curvaHead+hitosH+'</div>', curvaSolo=curvaHead+'</div>', hitosCard=hitosH?('<div class="inm-curve-card">'+hitosH+'</div>'):'';
   // Tiempo total desde HOY: siempre vía inmuebleMesesDesdeHoy (calc.js), la única fuente de esa suma.
   var totalDesdeHoyEst=inmuebleMesesDesdeHoy(rEst,mesesHastaRefi), totalDesdeHoyBanco=inmuebleMesesDesdeHoy(rBanco,mesesHastaRefi);
   var frase=inmuebleFraseRefi({cuotaBanco:rBanco.cuotaPrestamo,cuotaEst:rEst.cuotaPrestamo,cuotaAhorro:rEst.cuotaAhorro,mesesBanco:totalDesdeHoyBanco,mesesEst:totalDesdeHoyEst,
     bancoParcial:(Math.min((refi.banco.zinsbindung||0)*12,rBanco.mesesPrestamo)<rBanco.mesesPrestamo)});
   var cardsR='<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+row(estTitle,rEst,costeEstAbs,false,false)+'</div>';
   var capR=inm?inmuebleCapacidadHTML(inm,saldoAtRefi,[['Tu crédito actual',rem.cuotaOriginal],['Refinanciar con banco',rBanco.cuotaPrestamo],['Badenia · ahorro',rEst.cuotaAhorro],['Badenia · préstamo',rEst.cuotaPrestamo]]):'';
-  return asParts?{frase:frase,capacidad:capR,curva:curva,cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+capR+curva+cardsR);
+  return asParts?{frase:frase,capacidad:capR,curva:curva,curvaSolo:curvaSolo,hitos:hitosCard,cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+capR+curva+cardsR);
 }
 
 function inmuebleResultsHTML(precio,inm,asParts){
@@ -508,13 +508,13 @@ function inmuebleResultsHTML(precio,inm,asParts){
     var rrE=calcInmuebleOption(precio,cfgE);
     return {r:r,color:INM_CURVA_COLORES[i],activo:((inm.curvaOff||[]).indexOf(r)<0),cuota:rrE.cuotaPrestamo,pts:inmuebleCurvaSaldo(precio,rrE,cfgE)};
   });
-  var curva='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
+  var curvaHead='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
     '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>'+esc(bancoTitle)+'</span></div></div>'+inmuebleCurvaChips(escen)+
     inmuebleCurvaSVG(precio,ptsEst,ptsBanco,marcaMeses,Math.round((inm.banco.zinsbindung||0)*12),{escenarios:escen,zuteilung:rEst.mesesAhorro,ahorro:{hasta:rEst.mesesAhorro,total:rEst.objetivoAhorro,base:'precio'}})+
-    '<p class="inm-curve-note">'+(marcaMeses>0?'La línea de puntos dorada marca hasta cuándo suele mantenerse fijo el tipo de un banco; después hay que renovar la financiación. ':'')+'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>'+
-    inmuebleHitosHTML(inmuebleHitosComprar(precio,rEst,rk,ptsEst,ptsBanco,Math.round((inm.banco.zinsbindung||0)*12)),'Bausparvertrag',Math.round((inm.banco.zinsbindung||0)*12))+
-    '</div>';
-  var parts={frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0),capacidad:inmuebleCapacidadHTML(inm,precio,[['Banco directo',rk.cuotaPrestamo],['Bausparvertrag · ahorro',rEst.cuotaAhorro],['Bausparvertrag · préstamo',rEst.cuotaPrestamo]]),curva:curva,
+    '<p class="inm-curve-note">'+(marcaMeses>0?'La línea de puntos dorada marca hasta cuándo suele mantenerse fijo el tipo de un banco; después hay que renovar la financiación. ':'')+'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>';
+  var hitosH=inmuebleHitosHTML(inmuebleHitosComprar(precio,rEst,rk,ptsEst,ptsBanco,Math.round((inm.banco.zinsbindung||0)*12)),'Bausparvertrag',Math.round((inm.banco.zinsbindung||0)*12));
+  var curva=curvaHead+hitosH+'</div>', curvaSolo=curvaHead+'</div>', hitosCard=hitosH?('<div class="inm-curve-card">'+hitosH+'</div>'):'';
+  var parts={frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0),capacidad:inmuebleCapacidadHTML(inm,precio,[['Banco directo',rk.cuotaPrestamo],['Bausparvertrag · ahorro',rEst.cuotaAhorro],['Bausparvertrag · préstamo',rEst.cuotaPrestamo]]),curva:curva,curvaSolo:curvaSolo,hitos:hitosCard,
     cards:'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>',rEst:rEst,rk:rk,estCfg:estCfg};
   return asParts?parts:(parts.frase+parts.capacidad+parts.curva+parts.cards);
 }
@@ -695,16 +695,11 @@ function buildInmuebleInformeCore(rec){
     '<div class="afa-inf-title">Informe del proyecto inmobiliario</div>'+
     '<div class="afa-inf-sub">'+(generic?'<span>Simulación sin cliente</span>':'<span data-no-i18n>'+esc(rec.name||'Cliente')+'</span>')+' · '+fecha+'</div>';
   var limits='<div class="afa-inf-sec inm-inf-limits"><h4>Supuestos y límites</h4>'+inmuebleLimitsHTML(inm)+'</div>';
-  var pages;
-  if(inm.modo==='refi'){
-    pages=[page(brand+'<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+P.frase+limits),
-           page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.curva+(P.capacidad||'')),
-           page(P.cards)];
-  } else {
-    pages=[page(brand+'<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+P.frase+limits),
-           page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.curva+(P.capacidad||'')),
-           page(P.cards)];
-  }
+  // Primera hoja = resumen para el cliente (titular, gráfica y preguntas habituales); el detalle va detrás como anexo.
+  var faq='<div class="afa-inf-sec inm-inf-faq"><h4>Preguntas habituales</h4>'+inmuebleFaqHTML()+'</div>';
+  var pages=[page(brand+P.frase+P.curvaSolo+faq),
+             page('<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+limits+(P.capacidad||'')),
+             page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.cards+(P.hitos||''))];
   _infRec=rec;
   return '<div class="inm-inf">'+pages.join('')+'</div>';
 }
