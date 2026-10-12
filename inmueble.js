@@ -707,6 +707,7 @@ function presOpen(rec){
 
 function presClose(){
   var ov=document.getElementById('inm-pres'); if(ov.hidden) return; ov.hidden=true;
+  _presRawPago={};
   var secP=document.getElementById('sec-inmueble'); if(secP&&APP_HOST.wsRec) secP.innerHTML=inmuebleBlock(APP_HOST.wsRec);
   try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
 }
