@@ -698,8 +698,8 @@ function buildInmuebleInformeCore(rec){
   // Primera hoja = resumen para el cliente (titular, gráfica y preguntas habituales); el detalle va detrás como anexo.
   var faq='<div class="afa-inf-sec inm-inf-faq"><h4>Preguntas habituales</h4>'+inmuebleFaqHTML()+'</div>';
   var pages=[page(brand+P.frase+P.curvaSolo+faq),
-             page('<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+limits+(P.capacidad||'')),
-             page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.cards+(P.hitos||''))];
+             page('<div class="inm-inf-data">'+inmuebleDatosHTML(inm)+'</div>'+(P.hitos||'')+(P.capacidad||'')+limits),
+             page('<div class="afa-inf-sec"><h4>Resultados</h4></div>'+P.cards)];
   _infRec=rec;
   return '<div class="inm-inf">'+pages.join('')+'</div>';
 }
