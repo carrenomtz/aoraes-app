@@ -413,6 +413,16 @@ test('Refinanciar: la duración desde hoy (espera + préstamo, con el ahorro en 
   assert(casos > 100, 'pocos casos válidos: ' + casos);
 });
 
+console.log('Formato de importes');
+const utilSrc = require('fs').readFileSync(process.env.UTIL || path.join(__dirname, '..', 'util.js'), 'utf8');
+const { eur: eurFmt } = new Function(utilSrc + ';return {eur:eur};')();
+test('eur(): punto de millares siempre (también 1.090), espacio de no separación y negativos', () => {
+  assert.strictEqual(eurFmt(1090), '1.090\u00a0€'); assert.strictEqual(eurFmt(1000), '1.000\u00a0€'); assert.strictEqual(eurFmt(999), '999\u00a0€');
+  assert.strictEqual(eurFmt(10902), '10.902\u00a0€'); assert.strictEqual(eurFmt(1234567), '1.234.567\u00a0€');
+  assert.strictEqual(eurFmt(-1090), '-1.090\u00a0€'); assert.strictEqual(eurFmt(999.5), '1.000\u00a0€');
+  assert.strictEqual(eurFmt(null), '—'); assert.strictEqual(eurFmt(NaN), '—');
+});
+
 console.log('Refinanciar');
 test('saldo e interés restante de un crédito existente igual que el calendario', () => {
   const refi = { importeOriginal: 200000, interesOriginal: 3, plazoOriginal: 25, fechaInicio: engine.isoDateYearsAgo(5) };

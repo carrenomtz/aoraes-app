@@ -22,7 +22,7 @@ function inmuebleQuickButtons(field,values,unit){
 // estándar que usaría un banco/Bausparkasse por defecto, y queda oculto en "Opciones
 // avanzadas" — ahí sigue disponible por si hay que ajustar uno a una oferta real concreta.
 // Resultado del banco del último cálculo (lo fijan inmuebleResultsHTML / inmuebleRefiResultsHTML) para el recuadro "Pago mensual del cliente" de su tarjeta.
-var _inmLiveBanco=null, _inmLiveEst=null;
+var _inmLiveBanco=null, _inmLiveEst=null, _inmLiveEstRefi=false;
 function inmuebleLiveBancoHTML(){
   var r=_inmLiveBanco; if(!r||!(r.capitalPrestamo>0)) return '';
   if(r.noAmortiza) return '<div class="inm-live-line"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span></div>';
@@ -40,6 +40,8 @@ function inmuebleLiveEstHTML(){
     if(r.noAmortiza) h+='<div class="inm-live-line"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span></div>';
     else h+='<div class="inm-live-line'+(r.cuotaAhorro>0?' inm-live-next':'')+'"><span>'+(r.cuotaAhorro>0?'Después, préstamo':'Pago mensual del cliente')+'</span><b>'+eur(r.cuotaPrestamo)+'/mes</b><span>durante</span><b>'+inmuebleAniosUnos(r.mesesPrestamo)+'</b></div>';
   }
+  // Aviso suave (sin cifras) cuando el ahorro se alarga mucho: suele ser un pago de ahorro fijado sin querer. Solo en Comprar.
+  if(!_inmLiveEstRefi&&r.cuotaAhorro>0&&r.mesesAhorro>120) h+='<div class="inm-live-warn" role="status">Con este pago el ahorro tarda mucho: confirma que es lo que buscas.</div>';
   if(r.cuotaAhorro>0&&r.sonderAhorro>0) h+='<div class="inm-live-line inm-live-sub"><span>Más un pago extra anual de</span><b>'+eur(r.sonderAhorro)+'/año</b><span>en el ahorro</span></div>';
   if(r.capitalPrestamo>0&&r.sondertilgung>0) h+='<div class="inm-live-line inm-live-sub"><span>Más un pago extra anual de</span><b>'+eur(r.sondertilgung)+'/año</b><span>en el préstamo</span></div>';
   return h;
@@ -403,6 +405,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
   // que el crédito original realmente sigue vivo.
   var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
   var rBanco=_inmLiveBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,recargoST:refi.banco.recargoST,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
+  _inmLiveEstRefi=true;
   var rEst=_inmLiveEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,sonderAhorro:estCfg.sonderAhorro,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
   var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
   var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
@@ -464,6 +467,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
   var estKey=(inm.estrategia==='b')?'b':'a';
   var estCfg=(estKey==='b')?inm.b:inm.a;
   var estTitle='Bausparvertrag · '+inmuebleEstNombre(estCfg);
+  _inmLiveEstRefi=false;
   var rEst=_inmLiveEst=calcInmuebleOption(precio,estCfg), rk0=calcInmuebleOption(precio,inm.banco);
   // Mismo pago mensual: el banco paga desde el mes 0 lo mismo que la cuota de ahorro. Solo tiene
   // sentido si esa cuota supera la del banco; si no, se deja como estaba.
@@ -630,9 +634,11 @@ function inmuebleAniosUnos(meses){
 }
 // Duración bajo una cifra de la presentación ("durante 10,1 años"); vacío si el préstamo no se amortiza.
 function inmuebleSubDur(meses,noAmortiza){ return (noAmortiza||!(meses>0))?'':'durante '+inmuebleAniosUnos(meses); }
+// Miles con punto, como eur() ("1.090"); las cifras editables de la presentación se leen igual que el resto.
+function inmuebleMiles(n){ return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
 function inmuebleBigs(items){
   return '<div class="inm-bigs">'+items.map(function(i){
-    var v=(i[2]&&i[2].t==='date')?'<b><input type="date" class="inm-pres-pago inm-pres-date" data-pres-pago="'+i[2].f+'" value="'+esc(i[2].v)+'"></b>':i[2]?'<b><input type="text" inputmode="decimal" class="inm-pres-pago inm-pres-pago-big" data-pres-pago="'+i[2].f+'" value="'+esc(_presRawPago[i[2].f]!=null?_presRawPago[i[2].f]:(i[2].u==='%'?String(Math.round(i[2].v*100)/100).replace('.',','):String(Math.round(i[2].v))))+'"> '+(i[2].u||'€/mes')+'</b>':'<b>'+i[1]+'</b>';
+    var v=(i[2]&&i[2].t==='date')?'<b><input type="date" class="inm-pres-pago inm-pres-date" data-pres-pago="'+i[2].f+'" value="'+esc(i[2].v)+'"></b>':i[2]?'<b><input type="text" inputmode="decimal" class="inm-pres-pago inm-pres-pago-big" data-pres-pago="'+i[2].f+'" value="'+esc(_presRawPago[i[2].f]!=null?_presRawPago[i[2].f]:(i[2].u==='%'?String(Math.round(i[2].v*100)/100).replace('.',','):inmuebleMiles(i[2].v)))+'"> '+(i[2].u||'€/mes')+'</b>':'<b>'+i[1]+'</b>';
     return '<div class="inm-big">'+v+'<span>'+i[0]+'</span>'+((i[2]&&i[2].sub)?'<div class="inm-big-sub">'+i[2].sub+'</div>':'')+'</div>'; }).join('')+'</div>';
 }
 
@@ -1033,7 +1039,7 @@ function inmuebleInstallListeners(){
           }
           return;
         }
-        var rawP=String(tt.value).trim(), vP=(rawP==='')?0:parseFloat(rawP.replace(',','.'));
+        var rawP=String(tt.value).trim(), esPctP=(fP==='interesOriginal'||fP==='interesAhorro'), vP=(rawP==='')?0:parseFloat(esPctP?rawP.replace(',','.'):rawP.replace(/\./g,'').replace(',','.'));
         _presRawPago[fP]=tt.value;
         if(!isNaN(vP)&&vP>=0&&vP<=((fP==='interesOriginal'||fP==='interesAhorro')?(fP==='interesAhorro'?20:30):1000000)){
           var inmP=normalizeInmueble(_presRec), refiP=(inmP.modo==='refi'), objP;
