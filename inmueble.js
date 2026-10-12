@@ -588,6 +588,19 @@ function inmuebleLimitsHTML(inm){
   '</ul>';
 }
 
+// Diapositiva "Preguntas habituales": objeciones frecuentes con respuesta corta y neutra (sin cifras ni promesas). Cada frase va en su propio <span> para que se traduzca.
+var INM_FAQ=[
+  ['Un conocido me ha dicho que tiene una oferta mejor.',['Comparar bien es justo lo que buscamos: se ponen las dos ofertas con el mismo importe, el mismo plazo y el mismo periodo de tipo fijo.','Hay que incluir también las comisiones y la deuda que queda al terminar el tipo fijo.','Con los mismos supuestos la comparación es justa.']],
+  ['¿Por qué piden tantos documentos?',['El banco debe comprobar ingresos, gastos y el inmueble antes de conceder el préstamo.','Tener todo preparado desde el principio acorta el proceso y evita retrasos.']],
+  ['¿Por qué no elegir un tipo fijo más corto, que suele ser más barato?',['Un tipo fijo más corto suele tener un interés menor, pero al terminar hay que refinanciar al tipo que haya entonces y la cuota puede subir.','Uno más largo cuesta algo más hoy y da más seguridad.','Depende de cuánta incertidumbre quiera asumir el cliente.']],
+  ['¿Qué pasa si los tipos suben cuando termine el tipo fijo?',['La cuota puede subir.','Por eso conviene saber cuánta deuda quedará pendiente (la gráfica y la tarjeta del banco la muestran) y decidir con tiempo cómo cubrirla: con ahorro, con una Sondertilgung o con un Bausparvertrag.','Ninguna opción elimina el riesgo por completo.']]
+];
+function inmuebleFaqHTML(){
+  return '<div class="inm-faq">'+INM_FAQ.map(function(f){
+    return '<div class="inm-faq-item"><h5>'+f[0]+'</h5><p>'+f[1].map(function(t){ return '<span>'+t+'</span>'; }).join(' ')+'</p></div>';
+  }).join('')+'</div>';
+}
+
 // Duración bajo una cifra de la presentación ("durante 10,1 años"); vacío si el préstamo no se amortiza.
 function inmuebleSubDur(meses,noAmortiza){ return (noAmortiza||!(meses>0))?'':'durante '+fmtAnos(meses); }
 function inmuebleBigs(items){
@@ -675,6 +688,7 @@ function buildInmuebleSlides(rec){
     if(P.capacidad) sl.push({t:'Capacidad de pago',h:P.capacidad});
     sl.push({t:'Cuánto debes con el tiempo',h:P.curva});
     sl.push({t:'Comparación',h:P.frase+P.cards});
+    sl.push({t:'Preguntas habituales',h:inmuebleFaqHTML()});
     sl.push({t:'Qué tener en cuenta',h:limits});
   } else {
     var Q=inmuebleResultsHTML(inmuebleFin(inm),inm,true), rE=Q.rEst, rk=Q.rk;
@@ -684,6 +698,7 @@ function buildInmuebleSlides(rec){
     if(Q.capacidad) sl.push({t:'Capacidad de pago',h:Q.capacidad});
     sl.push({t:'Cuánto debes con el tiempo',h:Q.curva});
     sl.push({t:'Comparación',h:Q.frase+Q.cards});
+    sl.push({t:'Preguntas habituales',h:inmuebleFaqHTML()});
     sl.push({t:'Qué tener en cuenta',h:limits});
   }
   return sl;
