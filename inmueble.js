@@ -176,11 +176,11 @@ function inmuebleTimeRow(r,maxMeses,isBanco,esperaMeses){
     '<div class="inm-time-lab"><span>'+detalle+'</span></div></div>';
 }
 
-// Cuántos años del plazo del préstamo tienen el tipo REALMENTE garantizado. En un Bausparvertrag
+// Cuántos años del plazo del préstamo tienen el tipo REALMENTE fijado. En un Bausparvertrag
 // es todo el plazo: el tipo se pacta hoy con la Bausparkasse para toda la Darlehensphase (así lo
 // dice el propio Lernskript: "Zinssicherungskonto... sichert langfristig niedrige Zinsen"). En un
 // banco directo, tal como se modela aquí con una cuota constante todo el plazo, solo está
-// garantizado durante la Zinsbindung que el asesor indique — el resto es el caso favorable, no
+// fijado durante la Zinsbindung que el asesor indique — el resto es el caso favorable, no
 // lo habitual: pasada la Zinsbindung, el saldo (Restschuld) se refinancia al tipo que haya
 // entonces (Anschlussfinanzierung), y la cuota puede subir.
 function inmuebleCertRow(r,zinsbindungAnios,isBanco){
@@ -192,7 +192,7 @@ function inmuebleCertRow(r,zinsbindungAnios,isBanco){
       ?'La Zinsbindung indicada cubre todo el plazo del préstamo — caso favorable, confírmalo con la oferta real del banco.'
       :'Tras la Zinsbindung, el saldo pendiente se refinancia (Anschlussfinanzierung) al tipo que haya en ese momento — la cuota puede subir.')
     :'Tipo pactado hoy con la Bausparkasse para toda la fase de préstamo, no depende del mercado en ese momento.';
-  return '<div class="inm-cert"><div class="inm-cert-lab"><span>Tipo garantizado</span><b>'+fmtAnos(certAnios*12)+' de '+fmtAnos(totalAnios*12)+'</b></div>'+
+  return '<div class="inm-cert"><div class="inm-cert-lab"><span>Tipo fijado</span><b>'+fmtAnos(certAnios*12)+' de '+fmtAnos(totalAnios*12)+'</b></div>'+
     '<div class="inm-cert-bar"><span class="cert" style="width:'+pctCert+'%"></span><span class="uncert" style="width:'+(100-pctCert)+'%"></span></div>'+
     '<div class="inm-cert-note">'+nota+'</div></div>';
 }
@@ -320,7 +320,7 @@ function inmuebleFraseRefi(etiqueta,euros,mesesDif,cuotaAhorro,certMesesEst,tota
   if(cuotaAhorro>0) h+=' <span>Mientras esperas, pagas además <b>'+eur(cuotaAhorro)+'/mes</b> de ahorro.</span>';
   var certEstTxt=certMesesEst>=totalMesesEst?'todo el plazo':(fmtAnos(certMesesEst)+' de '+fmtAnos(totalMesesEst));
   var certBancoTxt=certMesesBanco>=totalMesesBanco?'todo el plazo':(fmtAnos(certMesesBanco)+' de '+fmtAnos(totalMesesBanco));
-  h+=' <span>Tu cuota está garantizada <b>'+certEstTxt+'</b> — con el banco, solo <b>'+certBancoTxt+'</b>.</span>';
+  h+=' <span>Tu cuota queda fijada <b>'+certEstTxt+'</b> — con el banco, solo <b>'+certBancoTxt+'</b>.</span>';
   return '<div class="inm-headline">'+h+'<div class="inm-headline-sub">No incluye alquiler, revalorización, impuestos ni lo que rendiría tu ahorro en otra parte.</div></div>';
 }
 
