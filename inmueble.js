@@ -570,24 +570,25 @@ function inmuebleDatosHTML(inm){
   var pct=inmuebleFmtPct;
   // Cifras del Bausparvertrag editables en la vista previa (Sonderzahlung anual; interés del ahorro); se imprimen como texto.
   // La Sonderzahlung sin valor se oculta al imprimir (clase vacio).
-  function rowEdit(label,field,v,suf,vacioSiCero){
+  function rowEdit(label,opt,field,v,suf,vacioSiCero){
     var txt=(v>0||!vacioSiCero)?String(Math.round(v*100)/100).replace('.',','):'';
-    return '<div class="afa-inf-row inm-inf-opt'+((vacioSiCero&&!(v>0))?' vacio':'')+'"><span>'+label+'</span><b><input type="text" inputmode="decimal" class="inm-inf-in" data-inf-field="'+field+'" value="'+txt+'" placeholder="0"> '+suf+'</b></div>';
+    return '<div class="afa-inf-row inm-inf-opt'+((vacioSiCero&&!(v>0))?' vacio':'')+'"><span>'+label+'</span><b><input type="text" inputmode="decimal" class="inm-inf-in" data-inf-opt="'+opt+'" data-inf-field="'+field+'" value="'+txt+'" placeholder="0"> '+suf+'</b></div>';
   }
-  function rowSonder(cfg){ return (cfg.pct>0)?rowEdit('Sonderzahlung anual','sonderAhorro',cfg.sonderAhorro||0,'€/año',true):''; }
-  function rowInteresAhorro(cfg){ return rowEdit('Interés del ahorro','interesAhorro',cfg.interesAhorro||0,'%',false); }
+  function rowSonder(cfg){ return (cfg.pct>0)?rowEdit('Sonderzahlung anual','bs','sonderAhorro',cfg.sonderAhorro||0,'€/año',true):''; }
+  function rowInteresAhorro(cfg){ return rowEdit('Interés del ahorro','bs','interesAhorro',cfg.interesAhorro||0,'%',false); }
+  function rowInteresPrestamo(opt,cfg){ return rowEdit('Interés del préstamo',opt,'interesPrestamo',cfg.interesPrestamo||0,'%',false); }
   if(inm.modo==='refi'){
     var rf=inm.refi, rem=calcRefiRemaining(rf), estCfg=(rf.estrategia==='refiB')?rf.b:rf.a;
     return '<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+
       row('Crédito original',eur(rf.importeOriginal))+row('Interés original',pct(rf.interesOriginal))+row('Plazo original',fmtAnos((rf.plazoOriginal||0)*12))+
       row('Fecha de inicio',inmuebleFmtFecha(rf.fechaInicio))+row('Saldo pendiente hoy',eur(rem.saldoPendiente))+row('Fecha de refinanciación',inmuebleFmtFecha(fechaRefiEfectiva(rf)))+
-      '</div><div class="afa-inf-sec"><h4>Refinanciar con banco</h4>'+row('Interés del préstamo',pct(rf.banco.interesPrestamo))+row('Vigencia del tipo (Zinsbindung)',fmtAnos((rf.banco.zinsbindung||0)*12))+
-      '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(estCfg.pct))+rowInteresAhorro(estCfg)+row('Interés del préstamo',pct(estCfg.interesPrestamo))+row('Comisión de apertura',pct(estCfg.comision))+rowSonder(estCfg)+'</div>';
+      '</div><div class="afa-inf-sec"><h4>Refinanciar con banco</h4>'+rowInteresPrestamo('banco',rf.banco)+row('Vigencia del tipo (Zinsbindung)',fmtAnos((rf.banco.zinsbindung||0)*12))+
+      '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(estCfg.pct))+rowInteresAhorro(estCfg)+rowInteresPrestamo('bs',estCfg)+row('Comisión de apertura',pct(estCfg.comision))+rowSonder(estCfg)+'</div>';
   }
   var e=(inm.estrategia==='b')?inm.b:inm.a, rE=calcInmuebleOption(inmuebleFin(inm),e);
   return '<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+row('Precio del inmueble',eur(inm.precio))+((inm.gastosPct||0)>0?row('Gastos de compra',pct(inm.gastosPct)):'')+((inm.capitalPropio||0)>0?row('Capital propio',eur(inm.capitalPropio)):'')+(inmuebleFin(inm)!==inm.precio?row('Importe a financiar',eur(inmuebleFin(inm))):'')+row('Mes de inicio',inmuebleMesAnio(0))+row('Cómo comparar',inm.comparar==='igual'?'Mismo pago mensual':'Cada camino como es')+
-    '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(e.pct))+row('Años de ahorro',fmtAnos(rE.mesesAhorro))+rowInteresAhorro(e)+row('Interés del préstamo',pct(e.interesPrestamo))+row('Plazo del préstamo',fmtAnos(rE.mesesPrestamo))+row('Comisión de apertura',pct(e.comision))+rowSonder(e)+
-    '</div><div class="afa-inf-sec"><h4>Banco directo</h4>'+row('Interés del préstamo',pct(inm.banco.interesPrestamo))+row('Vigencia del tipo (Zinsbindung)',fmtAnos((inm.banco.zinsbindung||0)*12))+'</div>';
+    '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(e.pct))+row('Años de ahorro',fmtAnos(rE.mesesAhorro))+rowInteresAhorro(e)+rowInteresPrestamo('bs',e)+row('Plazo del préstamo',fmtAnos(rE.mesesPrestamo))+row('Comisión de apertura',pct(e.comision))+rowSonder(e)+
+    '</div><div class="afa-inf-sec"><h4>Banco directo</h4>'+rowInteresPrestamo('banco',inm.banco)+row('Vigencia del tipo (Zinsbindung)',fmtAnos((inm.banco.zinsbindung||0)*12))+'</div>';
 }
 
 // Informe A4: cada hoja es un bloque .inm-page con salto de página propio y sin cortes internos
@@ -945,20 +946,23 @@ function inmuebleInstallListeners(){
       document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(_infRec); scheduleInmuebleSave();
     });
     document.getElementById('afa-inf-body').addEventListener('input', function(e){
-      // Cifra del Bausparvertrag editada en la vista previa del informe (Sonderzahlung, interés del ahorro): mismo campo que Más opciones; se rehace el informe conservando el foco.
+      // Cifra editada en la vista previa del informe (Sonderzahlung, interés del ahorro, interés del préstamo): mismo campo que Más opciones; se rehace el informe conservando el foco.
       var ti=e.target; if(!ti.hasAttribute||!ti.hasAttribute('data-inf-field')||!_infRec) return;
-      var fld=ti.getAttribute('data-inf-field'), maxI=(fld==='interesAhorro')?20:1000000;
+      var fld=ti.getAttribute('data-inf-field'), tipoI=ti.getAttribute('data-inf-opt')||'bs', maxI=(fld==='sonderAhorro')?1000000:20;
       var raw=String(ti.value).trim(), vi=(raw==='')?0:parseFloat(raw.replace(',','.'));
       if(isNaN(vi)||vi<0||vi>maxI) return;
-      var inmI=normalizeInmueble(_infRec), refiI=(inmI.modo==='refi');
-      var optI=refiI?((inmI.refi.estrategia==='refiB')?'refiB':'refiA'):((inmI.estrategia==='b')?'b':'a');
-      var cfgI=refiI?((inmI.refi.estrategia==='refiB')?inmI.refi.b:inmI.refi.a):((inmI.estrategia==='b')?inmI.b:inmI.a);
+      var inmI=normalizeInmueble(_infRec), refiI=(inmI.modo==='refi'), optI, cfgI;
+      if(tipoI==='banco'){ optI=refiI?'refiBanco':'banco'; cfgI=refiI?inmI.refi.banco:inmI.banco; }
+      else { optI=refiI?((inmI.refi.estrategia==='refiB')?'refiB':'refiA'):((inmI.estrategia==='b')?'b':'a'); cfgI=refiI?((inmI.refi.estrategia==='refiB')?inmI.refi.b:inmI.refi.a):((inmI.estrategia==='b')?inmI.b:inmI.a); }
       cfgI[fld]=vi;
+      // Banco con un plazo fijado ("a 30 años"): la Tilgung se recalcula al cambiar el interés, igual que en pantalla.
+      if(tipoI==='banco'&&fld==='interesPrestamo'&&cfgI.plazoObjetivo>0) cfgI.tilgungInicial=tilgungParaPlazo(vi,cfgI.plazoObjetivo);
       var bodyI=document.getElementById('afa-inf-body'), posI=ti.selectionStart;
       bodyI.innerHTML=buildInmuebleInforme(_infRec);
-      var nI=bodyI.querySelector('[data-inf-field="'+fld+'"]'); if(nI){ nI.value=raw; nI.focus(); try{ nI.setSelectionRange(posI,posI); }catch(_){} }
+      var nI=bodyI.querySelector('[data-inf-field="'+fld+'"][data-inf-opt="'+tipoI+'"]'); if(nI){ nI.value=raw; nI.focus(); try{ nI.setSelectionRange(posI,posI); }catch(_){} }
       var fI=document.querySelector('[data-inm-opt="'+optI+'"][data-inm-field="'+fld+'"]'); if(fI) fI.value=vi||0;
       if(fld==='interesAhorro'){ var wnI=fI&&fI.closest('.inm-card'); wnI=wnI&&wnI.querySelector('.inm-warn-ahorro'); if(wnI) wnI.hidden=!(vi>0.5); }
+      if(tipoI==='banco'){ var plI=document.querySelector('[data-inm-opt="'+optI+'"][data-inm-bankplazo]'); if(plI) plI.value=bancoPlazoActual(cfgI); }
       refreshInmuebleResults(); scheduleInmuebleSave();
     });
     document.getElementById('afa-inf-print').addEventListener('click', function(){ window.print(); });
