@@ -805,7 +805,6 @@
   @media screen{.inm-inf .inm-page{border-bottom:2px dashed var(--line-strong); margin-bottom:22px}}
   .inm-inf, .inm-inf *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
   .inm-inf .inm-curve-card, .inm-inf .inm-res-card, .inm-inf .inm-headline{break-inside:avoid}
-  .inm-inf-res{margin-top:6px}
   .inm-inf-data{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:0 26px}
   .inm-inf-data .afa-inf-sec{margin-bottom:12px}
   .inm-inf-data .afa-inf-row{font-size:12px; padding:3px 0}

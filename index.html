@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./app.css?v=9333d6e7">
+<link rel="stylesheet" href="./app.css?v=68076c64">
 </head>
 <body>
   <div class="auth-gate" id="auth-gate">
@@ -321,7 +321,7 @@
        preguntas-medicas.html cuando corran embebidos) puedan guardar/leer sin conocer Firebase
        directamente. El apiKey de este bloque NO es secreto — Firebase lo diseña para vivir en
        el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
-  <script src="./i18n.js?v=e82ae3f6"></script>
+  <script src="./i18n.js?v=586ff8c8"></script>
 <script src="./util.js?v=3e8fcffb"></script>
 <script src="./calc.js?v=d665f4c4"></script>
 <script src="./inmueble.js?v=b1067d59"></script>
@@ -1685,16 +1685,6 @@
         document.getElementById('pool-bulk-advisor').innerHTML=advisorOptionsHtml();
         filterAndRenderPool();
       }).catch(function(e){ console.error('AORAES: fallo al listar la bolsa de contactos',e); });
-    }
-    function loadMorePool(){
-      if(_poolLoadingMore || !_poolHasMore || !window.AORAES_CLOUD.listPoolPage) return;
-      _poolLoadingMore=true; filterAndRenderPool();
-      window.AORAES_CLOUD.listPoolPage(_poolCursor, 100).then(function(res){
-        _pool=_pool.concat(res.items||[]); _poolCursor=res.lastDoc; _poolHasMore=res.hasMore;
-        if(!_poolHasMore) _poolFullyLoaded=true;
-        refreshPoolDupes();
-      }).catch(function(e){ console.error('AORAES: fallo al cargar más contactos',e); })
-        .finally(function(){ _poolLoadingMore=false; filterAndRenderPool(); });
     }
     // Trae tandas de 100 hasta tener suficiente para la página "n" (o hasta que no quede más) —
     // ir a la página 5 cuando solo hay 1 cargada necesita 4 tandas, no una sola. cb() se llama al

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>AORAES · Tu Plan de Jubilación</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -116,7 +117,6 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .ec-value .cur{color:var(--gold);font-size:.6em}
 .ec-note{font-size:.82rem;color:var(--slate);margin-top:.55rem}
 .effort-card.accent .ec-note{color:rgba(255,255,255,.6)}
-.ec-prot-note{color:var(--gold-deep)!important;font-family:var(--mono);font-size:.74rem;margin-top:.3rem}
 .effort-arrow{display:flex;flex-direction:column;align-items:center;gap:.4rem;color:var(--gold)}
 .effort-arrow .mult{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--gold-deep)}
 .effort-arrow svg{width:32px;height:32px}
@@ -133,7 +133,6 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .riester-stat-row.rs-total .rs-label{color:var(--navy);font-weight:500}
 .riester-stat-row.rs-total .rs-value{color:var(--gold-deep,#a8842f);font-size:1.05rem}
 
-.prot-section{background:var(--cream)}
 .prot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
 .prot-card{background:var(--white);border:1px solid var(--mist);border-radius:14px;padding:1.4rem;position:relative;transition:transform .2s,box-shadow .2s;box-shadow:var(--shadow)}
 .prot-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
@@ -141,8 +140,6 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .prot-icon svg{width:19px;height:19px;color:var(--gold)}
 .prot-name{font-family:var(--serif);font-size:1.05rem;font-weight:600;color:var(--navy);margin-bottom:.35rem;line-height:1.25}
 .prot-desc{font-size:.84rem;color:var(--slate);line-height:1.55}
-.prot-check{position:absolute;top:1.2rem;right:1.2rem;width:20px;height:20px;border-radius:50%;background:var(--sage);display:flex;align-items:center;justify-content:center}
-.prot-check svg{width:11px;height:11px;color:#ffffff}
 
 .comp-rows{display:flex;flex-direction:column;gap:.65rem}
 .metric-toggle{display:inline-flex;border:1px solid var(--mist);border-radius:9px;overflow:hidden;background:var(--white);flex-shrink:0}
@@ -202,22 +199,6 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .comp-val{font-family:var(--mono);font-size:.86rem;font-weight:500;text-align:right}
 .comp-tag{display:inline-block;font-size:.6rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;padding:.1rem .4rem;border-radius:5px;background:var(--gold-light);color:var(--navy);margin-left:.4rem}
 
-.vasp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
-.vasp-card{background:var(--white);border:1px solid var(--mist);border-radius:16px;padding:1.5rem;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:.9rem;transition:border-color .2s,box-shadow .2s}
-.vasp-card.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),var(--shadow)}
-.vasp-card-top{display:flex;align-items:center;gap:.7rem}
-.vasp-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(150deg,var(--navy),var(--navy-soft));display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.vasp-icon svg{width:18px;height:18px;color:var(--gold)}
-.vasp-card-name{font-family:var(--serif);font-size:1.02rem;font-weight:600;color:var(--navy);line-height:1.25}
-.vasp-card-tariff{font-family:var(--mono);font-size:.62rem;color:var(--slate);text-transform:uppercase;letter-spacing:.04em}
-.vasp-figure{display:flex;align-items:baseline;gap:.3rem;padding-top:.2rem;border-top:1px solid var(--mist)}
-.vasp-figure .num{font-family:var(--serif);font-size:1.7rem;font-weight:600;color:var(--navy)}
-.vasp-figure .unit{font-size:.78rem;color:var(--slate)}
-.vasp-card-desc{font-size:.82rem;color:var(--slate);line-height:1.55}
-.vasp-card-prima{font-family:var(--mono);font-size:.72rem;color:var(--gold-deep);background:var(--gold-glow);display:inline-block;padding:.25rem .6rem;border-radius:20px;width:fit-content}
-.vasp-level-row{display:flex;align-items:center;gap:.9rem;margin-bottom:1.1rem;flex-wrap:wrap}
-.vasp-level-label{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--slate)}
-.vasp-disclaimer{margin-top:.9rem;font-size:.72rem;color:var(--slate);line-height:1.55;font-style:italic}
 .pdf-fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:.5rem}
 .pdf-fab-btn{width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--navy),var(--midnight));color:var(--gold);cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;transition:.2s}
 .pdf-fab-btn:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(0,0,0,.35)}
@@ -226,22 +207,6 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .pdf-menu.open{display:flex}
 .pdf-menu button{padding:.5rem 1rem;border:1px solid var(--mist);border-radius:8px;background:var(--white);color:var(--navy);font-family:var(--sans);font-size:.82rem;cursor:pointer;transition:.15s;text-align:left}
 .pdf-menu button:hover{background:var(--navy);color:var(--gold);border-color:var(--navy)}
-.vasp-bonus-note{margin-top:1rem;background:var(--cream);border:1px dashed var(--gold-deep);border-radius:14px;padding:1.1rem 1.4rem;font-size:.84rem;color:var(--slate);line-height:1.6}
-.vasp-bonus-note b{color:var(--navy)}
-.vasp-total-desembolso{margin-top:1rem;background:linear-gradient(160deg,var(--navy),var(--midnight));border-radius:14px;padding:1.25rem 1.5rem;align-items:center;gap:1rem;flex-wrap:wrap}
-.vtd-item{display:flex;flex-direction:column;gap:.25rem}
-.vtd-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55)}
-.vtd-val{font-family:var(--serif);font-size:1.3rem;font-weight:600;color:#ffffff}
-.vtd-val small{font-size:.6em;font-weight:400;color:rgba(255,255,255,.5);font-family:var(--sans)}
-.vtd-total .vtd-val{color:var(--gold-light)}
-.vtd-plus,.vtd-eq{font-family:var(--serif);font-size:1.3rem;color:var(--gold);opacity:.7}
-@media(max-width:640px){.vasp-total-desembolso{flex-direction:column;align-items:flex-start}.vtd-plus,.vtd-eq{display:none}}
-.vasp-switch{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0;cursor:pointer}
-.vasp-switch input{opacity:0;width:0;height:0;position:absolute}
-.vasp-switch-track{position:absolute;inset:0;background:var(--mist);border-radius:22px;transition:background .2s}
-.vasp-switch-track::before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#ffffff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.vasp-switch input:checked + .vasp-switch-track{background:var(--gold)}
-.vasp-switch input:checked + .vasp-switch-track::before{transform:translateX(16px)}
 
 .note-card{background:var(--navy);color:#ffffff;border-radius:18px;padding:2rem 2.25rem;display:flex;gap:1.25rem;align-items:flex-start}
 .note-card>svg{width:24px;height:24px;color:var(--gold);flex-shrink:0;margin-top:.15rem}
@@ -1683,8 +1648,6 @@ $('mt-costs').addEventListener('click',()=>{compMetric='costs';$('mt-costs').cla
 $('pdf-fab-btn').addEventListener('click',()=>$('pdf-menu').classList.toggle('open'));
 document.addEventListener('click',e=>{if(!$('pdf-fab').contains(e.target))$('pdf-menu').classList.remove('open');});
 
-let jsPDFLoaded=true; // embedded inline, always available
-function loadJsPDF(){return Promise.resolve();}
 
 async function generatePDF(lang){
   $('pdf-menu').classList.remove('open');

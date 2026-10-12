@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow">
 <title>AORAES · Análisis Financiero Personal</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -394,9 +395,6 @@
   .track{height:7px;background:var(--line);border-radius:6px;overflow:hidden}
   .fill{height:100%;border-radius:6px;width:0;transition:width .5s ease}
 
-  .reco{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:22px;margin-bottom:22px}
-  .reco h3{font-size:18px;margin-bottom:4px}
-  .reco .sub{font-size:12.5px;color:var(--muted);margin-bottom:14px}
   .reco-item{display:flex;gap:11px;padding:11px 0;border-top:1px solid var(--line)}
   .reco-item:first-of-type{border-top:none}
   .dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;margin-top:5px}
@@ -700,13 +698,11 @@
   @media(max-width:760px){.rep-cards,.rep-cards.two{grid-template-columns:1fr}}
 
   .rep-analysis{margin-top:24px}
-  .ra-title{font-size:20px;margin:4px 0 14px}
   .pyr-part{cursor:pointer;transition:opacity .15s}
   .pyr-part:hover{opacity:.82}
   .pyr-part.sel{stroke:#c9a961;stroke-width:4}
   .pyramid.has-sel .pyr-part:not(.sel){opacity:.45}
   .ra-item.ra-hidden{display:none !important}
-  .ra-prompt{font-size:13px;color:var(--muted);background:var(--paper);border:1px dashed var(--line);border-radius:12px;padding:16px 18px;text-align:center}
   .ra-item{display:flex;gap:14px;align-items:flex-start;background:var(--paper);border:1px solid var(--line);
     border-left:4px solid var(--gold);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:11px}
   .ra-score{flex:0 0 auto;width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;
@@ -835,7 +831,7 @@
   .pa-field input{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;background:#ffffff;color:var(--ink);text-align:right}
   .pa-field input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,169,97,.18)}
   @media print{.rcard,.rep-cards{break-inside:avoid;page-break-inside:avoid}
-    .ra-prompt{display:none !important}.pyr-part.sel{stroke:#ffffff;stroke-width:2.5}.pyramid.has-sel .pyr-part:not(.sel){opacity:1}}
+.pyr-part.sel{stroke:#ffffff;stroke-width:2.5}.pyramid.has-sel .pyr-part:not(.sel){opacity:1}}
   @media print{
     .view-switch{display:none !important}
     #report-view{padding:0}
@@ -3536,7 +3532,6 @@ window.I18N_DE = {"Rentabilidad esperada de tu ahorro/inversión general (cuenta
     else if(scope!=='AMBOS') msg='Los gastos y la deuda del hogar se reparten a prorrata del ingreso.';
     note.textContent=msg;
   }
-  var CIRC=351.86;
   function render(){
     var r=compute();
     // dim insurance rows marked "No aplica"
