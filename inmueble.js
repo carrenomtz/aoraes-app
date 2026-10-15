@@ -577,7 +577,7 @@ function inmuebleFinLine(inm){
 function inmuebleTopFieldsHTML(inm){
   return '<div class="inm-toprow inm-precio-row"><label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
       '<label class="inm-f inm-inicio"><span>Gastos de compra (% del precio · típico 7–12 %)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-gastos" value="'+(inm.gastosPct||0)+'" step="0.5" min="0" max="30"><span class="inm-suf">%</span></span></label>'+
-      '<label class="inm-f inm-inicio"><span>Capital propio</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-capital" value="'+(inm.capitalPropio||0)+'" step="1000" min="0"><span class="inm-suf">€</span></span></label></div>'+
+      '<label class="inm-f inm-inicio"><span>Capital propio</span><span class="inm-inp-wrap"><input type="number" class="inm-inp'+inmuebleCapitalClase(inm)+'" id="inm-capital"'+inmuebleCapitalTitulo(inm)+' value="'+(inm.capitalPropio||0)+'" step="1000" min="0"><span class="inm-suf">€</span></span></label></div>'+
       '<div class="inm-toprow inm-adv"><label class="inm-f inm-inicio"><span>Ingreso neto mensual del hogar (opcional)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-ingreso" value="'+(inm.ingresoNeto||'')+'" step="100" min="0" placeholder="0"><span class="inm-suf">€</span></span></label>'+
       '<label class="inm-f inm-inicio"><span>Límite de la cuota (% del ingreso)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-ratio" value="'+(inm.ratioMax||35)+'" step="1" min="10" max="60"><span class="inm-suf">%</span></span></label>'+
       '<label class="inm-f inm-inicio"><span>Mes de inicio</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-inicio" value="'+(inm.inicio||(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);})())+'"></span></label><label class="inm-f inm-inicio"><span>Fecha de refinanciación</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-fecha-refi" value="'+inmuebleFechaRefiYM(inm)+'"></span></label></div>';
@@ -827,6 +827,18 @@ function presClose(){
   var op=_presOpener&&_presOpener.id?document.getElementById(_presOpener.id):null; _presOpener=null; if(op) try{ op.focus(); }catch(e){}
 }
 
+// Semáforo del capital propio (ver inmuebleCapitalNivel en calc.js): clase CSS y tooltip con el porcentaje.
+function inmuebleCapitalClase(inm){ var n=inmuebleCapitalNivel(inm).nivel; return n?(' cap-'+n):''; }
+function inmuebleCapitalTitulo(inm){
+  var c=inmuebleCapitalNivel(inm); if(!c.nivel) return '';
+  return ' title="Capital propio: '+String(Math.round(c.pct*10)/10).replace('.',',')+' % del precio"';
+}
+function inmuebleMarcarCapital(inm){
+  var el=document.getElementById('inm-capital'); if(!el) return;
+  var n=inmuebleCapitalNivel(inm).nivel;
+  ['rojo','amarillo','verde'].forEach(function(x){ el.classList.toggle('cap-'+x,x===n); });
+  var t=inmuebleCapitalTitulo(inm); if(t) el.setAttribute('title',t.slice(8,-1)); else el.removeAttribute('title');
+}
 function refreshInmuebleResults(){
   if(!APP_HOST.wsRec||!APP_HOST.wsRec.inmueble) return;
   var inm=normalizeInmueble(APP_HOST.wsRec);
@@ -838,6 +850,7 @@ function refreshInmuebleResults(){
     el.innerHTML=inmuebleFinLine(inm)+inmuebleResultsHTML(inmuebleFin(inm),inm);
   }
   inmuebleUpdateLiveBanco();
+  inmuebleMarcarCapital(inm);
 }
 
 function persistInmueble(){

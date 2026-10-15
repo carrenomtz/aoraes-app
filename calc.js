@@ -566,6 +566,14 @@ function inmuebleAplicarDatosCliente(rec,inm){
     if(cur===prev||(prev==null&&vacio[c[0]](cur))){ inm[c[1]]=v; inm.desdeCliente[c[0]]=v; }
   });
 }
+// Semáforo del capital propio frente al precio: menos del 10 % rojo, del 10 % hasta menos del 15 % amarillo, 15 % o más verde.
+// Sin precio no hay semáforo (nivel '').
+function inmuebleCapitalNivel(inm){
+  var precio=(inm&&inm.precio)||0, cap=Math.max(0,(inm&&inm.capitalPropio)||0);
+  if(!(precio>0)) return { pct:0, nivel:'' };
+  var pct=cap/precio*100;
+  return { pct:pct, nivel:(pct<10)?'rojo':(pct<15?'amarillo':'verde') };
+}
 // Cuota mensual orientativa que cabría según la ficha: lo que sobra al mes, sin pasar del límite de cuota (% del ingreso
 // neto), menos lo que ya se paga al banco a la vez (restar: en Refinanciar y en Comprar y refinanciar el ahorro corre en paralelo a la
 // cuota del crédito). tope = 0 si no cabe nada. null si la ficha no tiene ingresos y gastos.
@@ -722,4 +730,4 @@ function inmuebleToggleCurvaTipo(inm,r){
 }
 function inmuebleSetCurvaModo(inm,modo){ inm.curvaModo=(modo==='bauspar'||modo==='plazo')?modo:'banco'; inm.curvaOff=[]; }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, tilgungsbeitragParaPlazo, inmuebleCurvaPuntos, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCapitalNivel, tilgungsbeitragParaPlazo, inmuebleCurvaPuntos, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }

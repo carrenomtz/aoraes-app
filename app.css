@@ -601,6 +601,11 @@
   .inm-inp-wrap{position:relative; display:block}
   .inm-inp{width:100%; box-sizing:border-box; font-family:inherit; font-size:13.5px; color:var(--navy); font-weight:600; font-variant-numeric:var(--tab); background:var(--surface-soft); border:1px solid var(--line); border-radius:var(--r-sm); padding:9px 34px 9px 11px; min-height:38px; transition:border-color .14s var(--ease), box-shadow .14s var(--ease)}
   .inm-inp:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-tint); background:var(--surface)}
+  /* Semáforo del capital propio: va después de :focus para que el color también se vea mientras se escribe. */
+  .inm-inp.cap-rojo,.inm-inp.cap-rojo:focus{border-color:#b0473a; background:#fbefed; color:#8f3226}
+  .inm-inp.cap-amarillo,.inm-inp.cap-amarillo:focus{border-color:#d9a21b; background:#fdf6e0; color:#7a5a05}
+  .inm-inp.cap-verde,.inm-inp.cap-verde:focus{border-color:#2e7d4f; background:#eaf5ee; color:#1f5c38}
+  .inm-inp.cap-rojo:focus{box-shadow:0 0 0 3px #f3d5d0} .inm-inp.cap-amarillo:focus{box-shadow:0 0 0 3px #f6e4ad} .inm-inp.cap-verde:focus{box-shadow:0 0 0 3px #cfe8d8}
   .inm-inp::-webkit-outer-spin-button,.inm-inp::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
   .inm-inp[type=number]{-moz-appearance:textfield}
   .inm-suf{position:absolute; right:11px; top:50%; transform:translateY(-50%); font-size:11.5px; color:var(--muted); font-weight:600; pointer-events:none}

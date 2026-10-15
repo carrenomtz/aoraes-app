@@ -657,6 +657,19 @@ test('Refinanciar: las cifras de cada hito coinciden con una simulación indepen
   assert.ok(casos > 50, 'casos comprobados: ' + casos);
 });
 
+console.log('\nSemáforo del capital propio');
+test('menos del 10 % rojo, de 10 % a menos de 15 % amarillo, 15 % o más verde; sin precio no hay semáforo', () => {
+  const n = (precio, capitalPropio) => engine.inmuebleCapitalNivel({ precio, capitalPropio }).nivel;
+  assert.strictEqual(n(200000, 0), 'rojo');
+  assert.strictEqual(n(200000, 19999), 'rojo');
+  assert.strictEqual(n(200000, 20000), 'amarillo');
+  assert.strictEqual(n(200000, 29999), 'amarillo');
+  assert.strictEqual(n(200000, 30000), 'verde');
+  assert.strictEqual(n(200000, 80000), 'verde');
+  assert.strictEqual(n(0, 50000), '');
+  near(engine.inmuebleCapitalNivel({ precio: 250000, capitalPropio: 20000 }).pct, 8, 1e-9);
+});
+
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');
 gaps.forEach(g => console.log('  · ' + g));
 process.exit(failed ? 1 : 0);
