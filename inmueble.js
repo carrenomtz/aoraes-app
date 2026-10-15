@@ -543,7 +543,7 @@ function inmuebleFinLine(inm){
 function inmuebleBlock(rec){
   var inm=normalizeInmueble(rec);
   var body=(inm.modo==='refi')
-    ? '<div class="inm-toprow inm-precio-row"><label class="inm-f inm-precio"><span>Ingreso neto mensual del hogar (opcional)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-ingreso" value="'+(inm.ingresoNeto||'')+'" step="100" min="0" placeholder="0"><span class="inm-suf">€</span></span></label></div>'+'<div class="inm-cmp-wrap inm-simple-only"><span class="inm-cmp-lab">Opción de Bausparvertrag</span></div>'+inmuebleStrategyToggle(inm.refi.estrategia,[
+    ? '<div class="inm-toprow inm-precio-row inm-adv"><label class="inm-f inm-precio"><span>Ingreso neto mensual del hogar (opcional)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-ingreso" value="'+(inm.ingresoNeto||'')+'" step="100" min="0" placeholder="0"><span class="inm-suf">€</span></span></label></div>'+'<div class="inm-cmp-wrap inm-simple-only"><span class="inm-cmp-lab">Opción de Bausparvertrag</span></div>'+inmuebleStrategyToggle(inm.refi.estrategia,[
         {key:'refiA',label:inmuebleEstNombre(inm.refi.a)},
         {key:'refiB',label:inmuebleEstNombre(inm.refi.b)}
       ])+
@@ -556,11 +556,11 @@ function inmuebleBlock(rec){
       '</div>'+
       '<div id="inm-results-wrap">'+inmuebleRefiResultsHTML(inm.refi,false,inm)+'</div>'
     : '<div class="inm-toprow inm-precio-row"><label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
-      '<label class="inm-f inm-precio"><span>Ingreso neto mensual del hogar (opcional)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-ingreso" value="'+(inm.ingresoNeto||'')+'" step="100" min="0" placeholder="0"><span class="inm-suf">€</span></span></label>'+
-      '<label class="inm-f inm-inicio inm-adv"><span>Mes de inicio</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-inicio" value="'+(inm.inicio||(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);})())+'"></span></label><label class="inm-f inm-inicio inm-adv"><span>Fecha de refinanciación</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-fecha-refi" value="'+inmuebleFechaRefiYM(inm)+'"></span></label></div>'+
-      '<div class="inm-toprow inm-adv"><label class="inm-f inm-inicio"><span>Gastos de compra (% del precio · típico 7–12 %)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-gastos" value="'+(inm.gastosPct||0)+'" step="0.5" min="0" max="30"><span class="inm-suf">%</span></span></label>'+
-      '<label class="inm-f inm-inicio"><span>Límite de la cuota (% del ingreso)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-ratio" value="'+(inm.ratioMax||35)+'" step="1" min="10" max="60"><span class="inm-suf">%</span></span></label>'+
+      '<label class="inm-f inm-inicio"><span>Gastos de compra (% del precio · típico 7–12 %)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-gastos" value="'+(inm.gastosPct||0)+'" step="0.5" min="0" max="30"><span class="inm-suf">%</span></span></label>'+
       '<label class="inm-f inm-inicio"><span>Capital propio</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-capital" value="'+(inm.capitalPropio||0)+'" step="1000" min="0"><span class="inm-suf">€</span></span></label></div>'+
+      '<div class="inm-toprow inm-adv"><label class="inm-f inm-inicio"><span>Ingreso neto mensual del hogar (opcional)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-ingreso" value="'+(inm.ingresoNeto||'')+'" step="100" min="0" placeholder="0"><span class="inm-suf">€</span></span></label>'+
+      '<label class="inm-f inm-inicio"><span>Límite de la cuota (% del ingreso)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-ratio" value="'+(inm.ratioMax||35)+'" step="1" min="10" max="60"><span class="inm-suf">%</span></span></label>'+
+      '<label class="inm-f inm-inicio"><span>Mes de inicio</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-inicio" value="'+(inm.inicio||(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);})())+'"></span></label><label class="inm-f inm-inicio"><span>Fecha de refinanciación</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-fecha-refi" value="'+inmuebleFechaRefiYM(inm)+'"></span></label></div>'+
       '<div class="inm-cmp-wrap inm-simple-only"><span class="inm-cmp-lab">Opción de Bausparvertrag</span></div>'+inmuebleStrategyToggle(inm.estrategia,[
         {key:'a',label:inmuebleEstNombre(inm.a)},
         {key:'b',label:inmuebleEstNombre(inm.b)}
