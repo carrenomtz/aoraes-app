@@ -279,9 +279,10 @@ function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst,mesesZinsbindung
     var zx=px(extra.zuteilung).toFixed(1);
     zuteil='<line x1="'+zx+'" y1="'+padT+'" x2="'+zx+'" y2="'+(H-padB)+'" stroke="var(--navy)" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4,3"/>'+
       '<circle cx="'+zx+'" cy="'+py(valorEn(ptsEst,extra.zuteilung)).toFixed(1)+'" r="3.5" fill="var(--navy)"/>'+
-      '<text x="'+zx+'" y="'+(padT+9)+'" font-size="9" font-weight="700" fill="var(--navy)" text-anchor="middle" stroke="var(--surface)" stroke-width="3" paint-order="stroke" stroke-linejoin="round">Asignación</text>';
+      // Con los años la etiqueta es larga: si la línea cae cerca del eje, se escribe hacia la derecha para no tapar las cifras del eje.
+      '<text x="'+(zx<padL+60?(+zx+5):zx)+'" y="'+(padT+9)+'" font-size="9" font-weight="700" fill="var(--navy)" text-anchor="'+(zx<padL+60?'start':'middle')+'" stroke="var(--surface)" stroke-width="3" paint-order="stroke" stroke-linejoin="round">Asignación ('+inmuebleAnios(extra.zuteilung)+')</text>';
     // La etiqueta de la Zinsbindung baja una fila si cae pegada a la de la Zuteilung.
-    if(marcaZins && Math.abs(px(mesesZinsbindung)-px(extra.zuteilung))<70) marcaZins=marcaZins.replace('y="'+(padT+9).toFixed(1)+'"','y="'+(padT+21).toFixed(1)+'"');
+    if(marcaZins && Math.abs(px(mesesZinsbindung)-px(extra.zuteilung))<100) marcaZins=marcaZins.replace('y="'+(padT+9).toFixed(1)+'"','y="'+(padT+21).toFixed(1)+'"');
   }
   var escLineas=escAct.map(function(e){
     var fin=e.pts[e.pts.length-1];
