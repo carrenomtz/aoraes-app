@@ -227,29 +227,72 @@ test('normalizeAfa rellena una ficha vacía con los valores por defecto y toma e
   const r2 = { afa: { bundesland: 'Bayern' } }; near(afaMod.normalizeAfa(r2).itpPct, afaMod.AFA_BUNDESLAND_ITP['Bayern'], 0);
 });
 
-console.log('Líneas de banco de la gráfica (escenarios de interés)')
-test('por defecto 3, 4 y 5 %; la lista es editable (hasta 4), vacía = ninguna', () => {
-  assert.deepStrictEqual(engine.inmuebleCurvaTipos({}), [3, 4, 5]);
-  assert.deepStrictEqual(engine.inmuebleCurvaTipos({ curvaTipos: [2, 3, 4, 5, 6] }), [2, 3, 4, 5]);
-  assert.deepStrictEqual(engine.inmuebleCurvaTipos({ curvaTipos: [] }), []);
-  assert.deepStrictEqual(engine.inmuebleCurvaTipos({ curvaTipos: [3, 'x', -1, 25, 4.5] }), [3, 4.5]);
+console.log('Líneas de la gráfica (otras cuotas mensuales)');
+test('sin lista, las líneas salen alrededor de la cuota actual (×0,8 / ×1,25 / ×1,5, a 10 €); la lista propia (hasta 4) manda', () => {
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({}, 1000), [800, 1250, 1500]);
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({}, 0), []);
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaCuotas: { banco: [700, 900, 1100, 1300, 1500] } }, 1000), [700, 900, 1100, 1300]);
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaCuotas: { banco: [] } }, 1000), []);
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaCuotas: { banco: [900, 'x', -5, 900] } }, 1000), [900]);
 });
-test('el texto "3; 4; 5" o "3 4 5" se interpreta; la coma sin espacio es decimal; vacío = ninguna; basura = no interpretable', () => {
-  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('3; 4; 5'), [3, 4, 5]);
-  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('3 4 5'), [3, 4, 5]);
-  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('3, 4, 5'), [3, 4, 5]);
-  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('3,5 4'), [3.5, 4]);
-  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('2.5 3.5'), [2.5, 3.5]);
-  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos(''), []);
-  assert.strictEqual(engine.inmuebleParseCurvaTipos('abc'), null);
-  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('1 2 3 4 5 6'), [1, 2, 3, 4]);
-  assert.deepStrictEqual(engine.inmuebleParseCurvaTipos('4 4 4'), [4]);
+test('cada modo (banco / bauspar) tiene su propia lista', () => {
+  const inm = { curvaModo: 'bauspar', curvaCuotas: { banco: [700], bauspar: [1200, 1500] } };
+  assert.strictEqual(engine.inmuebleCurvaModo(inm), 'bauspar');
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas(inm, 1000), [1200, 1500]);
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaModo: 'bauspar' }, 1000), [600, 800, 1250]);
+  assert.strictEqual(engine.inmuebleCurvaModo({}), 'banco');
+  assert.strictEqual(engine.inmuebleCurvaModo({ curvaModo: 'otro' }), 'banco');
 });
-test('apagar/encender un tipo', () => {
-  const inm = { curvaOff: [] };
-  engine.inmuebleToggleCurvaTipo(inm, 4); assert.deepStrictEqual(inm.curvaOff, [4]);
-  engine.inmuebleToggleCurvaTipo(inm, 5); assert.deepStrictEqual(inm.curvaOff, [4, 5]);
-  engine.inmuebleToggleCurvaTipo(inm, 4); assert.deepStrictEqual(inm.curvaOff, [5]);
+test('el texto "800; 1000" o "800 1.200" se interpreta; la coma es decimal; vacío = automáticas (null); basura = no interpretable (undefined)', () => {
+  assert.deepStrictEqual(engine.inmuebleParseCurvaCuotas('800; 1000; 1200'), [800, 1000, 1200]);
+  assert.deepStrictEqual(engine.inmuebleParseCurvaCuotas('800 1.200'), [800, 1200]);
+  assert.deepStrictEqual(engine.inmuebleParseCurvaCuotas('950,5 1000'), [950.5, 1000]);
+  assert.strictEqual(engine.inmuebleParseCurvaCuotas(''), null);
+  assert.strictEqual(engine.inmuebleParseCurvaCuotas('abc'), undefined);
+  assert.deepStrictEqual(engine.inmuebleParseCurvaCuotas('1 2 3 4 5 6'), [1, 2, 3, 4]);
+  assert.deepStrictEqual(engine.inmuebleParseCurvaCuotas('900 900'), [900]);
+});
+test('cambiar de modo apaga ninguna línea y apagar/encender una cuota funciona', () => {
+  const inm = { curvaOff: [800] };
+  engine.inmuebleSetCurvaModo(inm, 'bauspar'); assert.strictEqual(inm.curvaModo, 'bauspar'); assert.deepStrictEqual(inm.curvaOff, []);
+  engine.inmuebleToggleCurvaTipo(inm, 1200); assert.deepStrictEqual(inm.curvaOff, [1200]);
+  engine.inmuebleToggleCurvaTipo(inm, 1500); assert.deepStrictEqual(inm.curvaOff, [1200, 1500]);
+  engine.inmuebleToggleCurvaTipo(inm, 1200); assert.deepStrictEqual(inm.curvaOff, [1500]);
+});
+test('banco: pagar más al mes termina antes (pagoPre); una cuota que no cubre el interés no amortiza', () => {
+  const base = { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 };
+  const r0 = engine.calcInmuebleOption(300000, base);
+  const rMas = engine.calcInmuebleOption(300000, Object.assign({}, base, { pagoPre: r0.cuotaPrestamo * 1.25 }));
+  const rMenos = engine.calcInmuebleOption(300000, Object.assign({}, base, { pagoPre: r0.cuotaPrestamo * 0.8 }));
+  assert.ok(rMas.mesesPrestamo < r0.mesesPrestamo && r0.mesesPrestamo < rMenos.mesesPrestamo, 'más cuota = menos meses');
+  assert.ok(engine.calcInmuebleOption(300000, Object.assign({}, base, { pagoPre: 900 })).noAmortiza, '900 € no cubre el interés de 1.000 €/mes');
+});
+test('bauspar: una cuota de ahorro menor alarga el ahorro, y nunca baja del mínimo de 3,6 años', () => {
+  const cfg = { pct: 40, anios: 5, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 6, comision: 1.6 };
+  const r0 = engine.calcInmuebleOption(200000, cfg);
+  const rMenos = engine.calcInmuebleOption(200000, Object.assign({}, cfg, { pagoAhorro: r0.cuotaAhorro * 0.8 }));
+  const rMas = engine.calcInmuebleOption(200000, Object.assign({}, cfg, { pagoAhorro: r0.cuotaAhorro * 3 }));
+  assert.ok(rMenos.mesesAhorro > r0.mesesAhorro, 'menos cuota = más meses de ahorro');
+  assert.ok(rMas.mesesAhorro >= engine.BAUSPAR_MIN_MESES, 'no baja del mínimo');
+});
+
+console.log('Margen mensual y cuota sugerida');
+test('la ficha da el margen mensual: ingresos netos menos gastos sin el alquiler/hipoteca; con gastos totales no se puede separar', () => {
+  const rec = { data: { expMode: 'cat', fields: { 'inc:salarioNeto_A': '3000', 'inc:alquiler_A': '400', 'exp:alquilerHipoteca': '900', 'exp:super': '500', 'exp:ocio': '300' } } };
+  const d = engine.inmuebleDatosCliente(rec);
+  assert.deepStrictEqual(d.flujo, { ingresoTotal: 3400, gastos: 800, libre: 2600 });
+  const rt = { data: { expMode: 'total', fields: { 'inc:salarioNeto_A': '3000', 'exptotal:': '2200' } } };
+  assert.strictEqual(engine.inmuebleDatosCliente(rt).flujo.libre, 800);
+  assert.strictEqual(engine.inmuebleDatosCliente({ data: { fields: { 'inc:salarioNeto_A': '3000' } } }).flujo, null);
+});
+test('cuota sugerida = lo que sobra sin pasar del límite de cuota (a 10 €); sin margen = 0; sin ficha = null', () => {
+  const rec = { data: { fields: { 'inc:salarioNeto_A': '3200', 'exp:super': '1000' } } };
+  const inm = engine.normalizeInmueble(rec);
+  assert.deepStrictEqual(engine.inmuebleCuotaSugerida(inm), { libre: 2200, tope: 1120 });
+  inm.ratioMax = 80; assert.strictEqual(engine.inmuebleCuotaSugerida(inm).tope, 2200);
+  const sin = engine.normalizeInmueble({ data: { fields: { 'inc:salarioNeto_A': '1000', 'exp:super': '1200' } } });
+  assert.strictEqual(engine.inmuebleCuotaSugerida(sin).tope, 0);
+  assert.strictEqual(engine.inmuebleCuotaSugerida(engine.normalizeInmueble({})), null);
 });
 
 console.log('Sonderzahlung en la fase de ahorro');

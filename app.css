@@ -642,6 +642,13 @@
   .inm-chip{display:inline-flex; align-items:center; gap:5px; border:1px solid var(--line); background:transparent; border-radius:999px; padding:2px 9px; font:inherit; font-size:10.5px; color:var(--muted); cursor:pointer; opacity:.85}
   .inm-chip i{display:inline-block; width:14px; height:0; border-top:2px dashed var(--c)}
   .inm-chip:hover{opacity:1}
+  .inm-curve-modo{display:inline-flex; gap:2px; margin-right:6px; padding:2px; border:1px solid var(--line); border-radius:999px}
+  .inm-modo{border:0; background:transparent; border-radius:999px; padding:2px 9px; font:inherit; font-size:10.5px; color:var(--muted); cursor:pointer}
+  .inm-modo.on{background:var(--navy); color:#fff}
+  .inm-sug{margin-top:10px; padding-top:10px; border-top:1px dashed var(--line-soft)}
+  .inm-sug-btn{margin:6px 0 2px; border:1px solid var(--line); background:transparent; border-radius:999px; padding:5px 12px; font:inherit; font-size:12px; font-weight:600; color:var(--navy-2); cursor:pointer}
+  .inm-sug-btn:hover{border-color:var(--navy-2)}
+  .inm-inf .inm-sug-btn, #inm-pres-inner .inm-sug-btn{display:none}
   .inm-chip.off{opacity:.42; text-decoration:line-through}
   .inm-hitos{margin-top:8px}
   .inm-hitos th:nth-child(2),.inm-hitos td:nth-child(2){text-align:left; font-weight:400; color:var(--muted)}

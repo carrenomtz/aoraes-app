@@ -523,18 +523,27 @@ function inmuebleLimitar(campo,valor){
   return {v:r,recortado:(r!==v)};
 }
 
-// Datos de la ficha del cliente que el Proyecto inmobiliario puede traer solo: neto mensual del hogar (trabajo por
-// cuenta ajena + propia, Persona A y B, como los guarda analisis.html en rec.data.fields) y el precio de la vivienda
-// objetivo (S.7). Sin ficha o sin esos datos devuelve ceros y no se toca nada.
+// Datos de la ficha del cliente que el Proyecto inmobiliario puede traer solo, tal como los guarda analisis.html en
+// rec.data.fields: neto mensual del hogar de trabajo (por cuenta ajena + propia, Persona A y B), precio de la vivienda
+// objetivo (S.7) y el margen mensual (todos los ingresos netos menos los gastos, sin el alquiler/hipoteca actual, que
+// dejaría de pagarse). Sin ficha o sin esos datos devuelve ceros/null y no se toca nada.
 function inmuebleDatosCliente(rec){
   var f=(rec&&rec.data&&rec.data.fields)||{}, n=function(k){ var v=parseFloat(f[k]); return v>0?v:0; };
   var ingreso=0; ['salarioNeto','autonomoNeto'].forEach(function(k){ ingreso+=n('inc:'+k+'_A')+n('inc:'+k+'_B'); });
-  return { ingreso:Math.round(ingreso), precio:n('sit:precioViviendaObjetivo') };
+  var total=0; ['salarioNeto','autonomoNeto','alquiler','intereses','ayudas','otros'].forEach(function(k){ total+=n('inc:'+k+'_A')+n('inc:'+k+'_B'); });
+  var gastos=0, vivienda=0;
+  if(rec&&rec.data&&rec.data.expMode==='total') gastos=n('exptotal:');
+  else Object.keys(f).forEach(function(k){ if(k.indexOf('exp:')===0){ var v=n(k); gastos+=v; if(k==='exp:alquilerHipoteca') vivienda+=v; } });
+  var flujo=(total>0&&gastos>0)?{ ingresoTotal:Math.round(total), gastos:Math.round(gastos-vivienda), libre:Math.round(total-(gastos-vivienda)) }:null;
+  return { ingreso:Math.round(ingreso), precio:n('sit:precioViviendaObjetivo'), flujo:flujo };
 }
 // Rellena precio e ingreso desde la ficha mientras el asesor no los haya cambiado a mano: inm.desdeCliente guarda lo
 // último traído, y un campo se actualiza solo si sigue vacío (ingreso 0, precio = el de ejemplo) o igual a ese valor.
+// inm.flujo (margen mensual) es un dato derivado: se recalcula en cada carga y se borra si la ficha ya no lo permite.
 function inmuebleAplicarDatosCliente(rec,inm){
-  var d=inmuebleDatosCliente(rec); if(!(d.ingreso>0||d.precio>0)) return;
+  var d=inmuebleDatosCliente(rec);
+  if(d.flujo) inm.flujo=d.flujo; else delete inm.flujo;
+  if(!(d.ingreso>0||d.precio>0)) return;
   if(!inm.desdeCliente||typeof inm.desdeCliente!=='object') inm.desdeCliente={};
   var vacio={ ingreso:function(v){ return !(v>0); }, precio:function(v){ return v===defaultInmueble().precio; } };
   [['ingreso','ingresoNeto'],['precio','precio']].forEach(function(c){
@@ -542,6 +551,14 @@ function inmuebleAplicarDatosCliente(rec,inm){
     if(!(v>0)||cur===v) { if(v>0) inm.desdeCliente[c[0]]=v; return; }
     if(cur===prev||(prev==null&&vacio[c[0]](cur))){ inm[c[1]]=v; inm.desdeCliente[c[0]]=v; }
   });
+}
+// Cuota mensual orientativa que cabría según la ficha: lo que sobra al mes, sin pasar del límite de cuota (% del ingreso
+// neto). tope = 0 si no sobra nada. null si la ficha no tiene ingresos y gastos.
+function inmuebleCuotaSugerida(inm){
+  var fl=inm&&inm.flujo; if(!fl) return null;
+  if(!(fl.libre>0)) return { libre:fl.libre, tope:0 };
+  var lim=(inm.ratioMax||35)/100*(inm.ingresoNeto>0?inm.ingresoNeto:fl.ingresoTotal);
+  return { libre:fl.libre, tope:Math.floor(Math.min(fl.libre,lim)/10)*10 };
 }
 
 function normalizeInmueble(rec){
@@ -633,21 +650,27 @@ function inmuebleCapacidadDatos(inm,fin,filas){
   };
 }
 
-// Escenarios de interés del banco en la gráfica "Cuánto queda por pagar": líneas finas de otros tipos (por defecto 3, 4 y 5 %), hasta 4.
-// inm.curvaTipos (lista de %, editable en Opciones avanzadas; [] = ninguna) e inm.curvaOff (los tipos apagados con los botones).
+// Líneas finas de la gráfica "Cuánto queda por pagar": otras cuotas mensuales, hasta 4. inm.curvaModo dice qué cuota se
+// varía: 'banco' (lo que se paga al banco al mes) o 'bauspar' (lo que se ahorra al mes en el Bausparvertrag). La lista
+// de cada modo, editable en Opciones avanzadas, está en inm.curvaCuotas.banco/.bauspar (sin lista = automática, alrededor de
+// la cuota actual); inm.curvaOff guarda las cuotas apagadas con los botones.
 var INM_CURVA_COLORES=['#4a8c85','#5b7fa6','#b0473a','#7a6aa8'], INM_CURVA_MAX=4;
-function inmuebleCurvaTipos(inm){
-  var t=(inm&&Array.isArray(inm.curvaTipos))?inm.curvaTipos:[3,4,5];
-  return t.map(Number).filter(function(x){ return !isNaN(x)&&x>=0&&x<=20; }).slice(0,INM_CURVA_MAX);
+function inmuebleCurvaModo(inm){ return (inm&&inm.curvaModo==='bauspar')?'bauspar':'banco'; }
+function inmuebleCurvaCuotas(inm,base){
+  var g=(inm&&inm.curvaCuotas&&Array.isArray(inm.curvaCuotas[inmuebleCurvaModo(inm)]))?inm.curvaCuotas[inmuebleCurvaModo(inm)]:null;
+  var l=g||(base>0?(inmuebleCurvaModo(inm)==='bauspar'?[0.6,0.8,1.25]:[0.8,1.25,1.5]).map(function(f){ return Math.round(base*f/10)*10; }):[]);
+  var out=[]; l.forEach(function(x){ x=Number(x); if(!isNaN(x)&&x>0&&x<=1e6&&out.indexOf(x)<0) out.push(x); });
+  return out.slice(0,INM_CURVA_MAX);
 }
-// "3; 4; 5" o "3 4 5" -> [3,4,5]; la coma sin espacio es decimal ("3,5 4" -> [3.5,4]); texto vacío -> []; sin números válidos -> null.
-function inmuebleParseCurvaTipos(texto){
-  var s=String(texto==null?'':texto).trim(); if(s==='') return [];
-  var out=[]; s.split(/[;\s]+|,\s+/).forEach(function(p){ var v=parseFloat(p.replace(',','.')); if(!isNaN(v)&&v>=0&&v<=20&&out.indexOf(v)<0) out.push(v); });
-  return out.length?out.slice(0,INM_CURVA_MAX):null;
+// "800; 1000 1.200" -> [800,1000,1200] (el punto seguido de 3 cifras es de miles; la coma es decimal); texto vacío -> null (automática).
+function inmuebleParseCurvaCuotas(texto){
+  var s=String(texto==null?'':texto).trim().replace(/\.(?=\d{3}(\D|$))/g,''); if(s==='') return null;
+  var out=[]; s.split(/[;\s]+/).forEach(function(p){ var v=parseFloat(p.replace(',','.')); if(!isNaN(v)&&v>0&&v<=1e6&&out.indexOf(v)<0) out.push(v); });
+  return out.length?out.slice(0,INM_CURVA_MAX):undefined;
 }
 function inmuebleToggleCurvaTipo(inm,r){
   var off=(inm.curvaOff||[]).slice(), i=off.indexOf(r); if(i>=0) off.splice(i,1); else off.push(r); inm.curvaOff=off;
 }
+function inmuebleSetCurvaModo(inm,modo){ inm.curvaModo=(modo==='bauspar')?'bauspar':'banco'; inm.curvaOff=[]; }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente }; }
