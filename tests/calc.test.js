@@ -228,8 +228,8 @@ test('normalizeAfa rellena una ficha vacía con los valores por defecto y toma e
 });
 
 console.log('Líneas de la gráfica (otras cuotas mensuales)');
-test('sin lista, las líneas salen alrededor de la cuota actual (×0,8 / ×1,25 / ×1,5, a 10 €); la lista propia (hasta 4) manda', () => {
-  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({}, 1000), [800, 1250, 1500]);
+test('sin lista, salen 2 líneas alrededor de la cuota actual (×0,8 / ×1,25, a 10 €); la lista propia (hasta 4) manda', () => {
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({}, 1000), [800, 1250]);
   assert.deepStrictEqual(engine.inmuebleCurvaCuotas({}, 0), []);
   assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaCuotas: { banco: [700, 900, 1100, 1300, 1500] } }, 1000), [700, 900, 1100, 1300]);
   assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaCuotas: { banco: [] } }, 1000), []);
@@ -239,7 +239,7 @@ test('cada modo (banco / bauspar) tiene su propia lista', () => {
   const inm = { curvaModo: 'bauspar', curvaCuotas: { banco: [700], bauspar: [1200, 1500] } };
   assert.strictEqual(engine.inmuebleCurvaModo(inm), 'bauspar');
   assert.deepStrictEqual(engine.inmuebleCurvaCuotas(inm, 1000), [1200, 1500]);
-  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaModo: 'bauspar' }, 1000), [600, 800, 1250]);
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaModo: 'bauspar' }, 1000), [750, 1250]);
   assert.strictEqual(engine.inmuebleCurvaModo({}), 'banco');
   assert.strictEqual(engine.inmuebleCurvaModo({ curvaModo: 'otro' }), 'banco');
 });
@@ -259,9 +259,9 @@ test('cambiar de modo apaga ninguna línea y apagar/encender una cuota funciona'
   engine.inmuebleToggleCurvaTipo(inm, 1500); assert.deepStrictEqual(inm.curvaOff, [1200, 1500]);
   engine.inmuebleToggleCurvaTipo(inm, 1200); assert.deepStrictEqual(inm.curvaOff, [1500]);
 });
-test('plazo del Bauspar: las líneas salen alrededor del plazo actual (×0,5 / ×0,75 / ×1,5, años enteros, máx. 40) y la ‰ pedida da ese plazo', () => {
-  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaModo: 'plazo' }, 10), [5, 8, 15]);
-  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaModo: 'plazo' }, 2), [1, 2, 3]);
+test('plazo del Bauspar: salen 2 líneas alrededor del plazo actual (×0,5 / ×1,5, años enteros, máx. 40) y la ‰ pedida da ese plazo', () => {
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaModo: 'plazo' }, 10), [5, 15]);
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaModo: 'plazo' }, 2), [1, 3]);
   assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaModo: 'plazo', curvaCuotas: { plazo: [5, 60, 12] } }, 10), [5, 12]);
   assert.strictEqual(engine.inmuebleCurvaModo({ curvaModo: 'plazo' }), 'plazo');
   const inm = {}; engine.inmuebleSetCurvaModo(inm, 'plazo'); assert.strictEqual(inm.curvaModo, 'plazo');

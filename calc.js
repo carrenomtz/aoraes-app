@@ -736,7 +736,7 @@ function tilgungsbeitragParaPlazo(bausparsumme,capitalPrestamo,interesPct,anios)
 function inmuebleCurvaCuotas(inm,base){
   var g=(inm&&inm.curvaCuotas&&Array.isArray(inm.curvaCuotas[inmuebleCurvaModo(inm)]))?inm.curvaCuotas[inmuebleCurvaModo(inm)]:null;
   var modo=inmuebleCurvaModo(inm), tope=(modo==='plazo')?40:1e6;
-  var l=g||(base>0?(modo==='plazo'?[0.5,0.75,1.5].map(function(f){ return Math.max(1,Math.round(base*f)); }):(modo==='bauspar'?[0.6,0.8,1.25]:[0.8,1.25,1.5]).map(function(f){ return Math.round(base*f/10)*10; })):[]);
+  var l=g||(base>0?(modo==='plazo'?[0.5,1.5].map(function(f){ return Math.max(1,Math.round(base*f)); }):(modo==='bauspar'?[0.75,1.25]:[0.8,1.25]).map(function(f){ return Math.round(base*f/10)*10; })):[]);
   var out=[]; l.forEach(function(x){ x=Number(x); if(!isNaN(x)&&x>0&&x<=tope&&out.indexOf(x)<0) out.push(x); });
   return out.slice(0,INM_CURVA_MAX);
 }
