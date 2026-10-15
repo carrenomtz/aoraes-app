@@ -12,6 +12,7 @@ on:
       - 'afa.js'
       - 'i18n.js'
       - 'util.js'
+      - 'leads.js'
       - 'tests/**'
   pull_request:
     paths:
@@ -20,6 +21,7 @@ on:
       - 'afa.js'
       - 'i18n.js'
       - 'util.js'
+      - 'leads.js'
       - 'tests/**'
 
 jobs:
@@ -31,3 +33,4 @@ jobs:
         with:
           node-version: 20
       - run: node tests/calc.test.js
+      - run: node tests/leads.test.js

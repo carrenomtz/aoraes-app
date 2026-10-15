@@ -79,7 +79,10 @@ service cloud.firestore {
 
     // Forma y tamaño de un contacto (users/{uid}/leads/{leadId}). Campos que escribe la app: name, email, phone, notes, status,
     // importedAt, leadNo y lastContactAt (texto o serverTimestamp); la tabla también permite corregir cualquier campo suelto a mano,
-    // por eso solo se validan los conocidos y se pone un tope de claves.
+    // por eso solo se validan los conocidos y se pone un tope de claves. Campos de la ficha del contacto (todos opcionales, así que los
+    // documentos anteriores siguen siendo válidos): nextAction/nextActionAt (siguiente acción y su día YYYY-MM-DD), source (origen),
+    // doNotContact/dncReason/dncAt (marca de no contactar, con motivo y fecha) e history (lista de eventos {at, by, type, ...}).
+    // La bolsa (/leadsPool) es solo del admin y no pasa por esta función.
     function validLeadDoc() {
       let d = request.resource.data;
       return d.keys().size() <= 40
@@ -90,7 +93,14 @@ service cloud.firestore {
         && (!('notes' in d) || (d.notes is string && d.notes.size() <= 20000))
         && (!('status' in d) || (d.status is string && d.status.size() <= 60))
         && (!('importedAt' in d) || (d.importedAt is string && d.importedAt.size() <= 60))
-        && (!('lastContactAt' in d) || (d.lastContactAt is timestamp) || (d.lastContactAt is string && d.lastContactAt.size() <= 60));
+        && (!('lastContactAt' in d) || (d.lastContactAt is timestamp) || (d.lastContactAt is string && d.lastContactAt.size() <= 60))
+        && (!('nextAction' in d) || (d.nextAction is string && d.nextAction.size() <= 200))
+        && (!('nextActionAt' in d) || (d.nextActionAt is string && d.nextActionAt.size() <= 30))
+        && (!('source' in d) || (d.source is string && d.source.size() <= 200))
+        && (!('doNotContact' in d) || d.doNotContact is bool)
+        && (!('dncReason' in d) || (d.dncReason is string && d.dncReason.size() <= 300))
+        && (!('dncAt' in d) || (d.dncAt is string && d.dncAt.size() <= 60))
+        && (!('history' in d) || (d.history is list && d.history.size() <= 1000));
     }
 
     function hasNewTimestamps() {

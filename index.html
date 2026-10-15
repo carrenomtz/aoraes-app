@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./app.css?v=68076c64">
+<link rel="stylesheet" href="./app.css?v=16ebffa2">
 </head>
 <body>
   <div class="auth-gate" id="auth-gate">
@@ -252,10 +252,15 @@
           <button type="button" id="pool-bulk-merge">🔗 Unir seleccionados</button>
           <button type="button" id="pool-bulk-delete" class="danger">🗑 Eliminar seleccionados</button>
         </div>
+        <div class="cont-backup-row">
+          <button type="button" class="cont-backup-btn" id="pool-export-json" title="Descarga la bolsa y los contactos de todos los asesores en un archivo JSON (copia fiel, con historial). Contiene datos personales: guárdalo en un sitio seguro.">💾 Copia de seguridad de TODOS los contactos</button>
+          <button type="button" class="cont-backup-btn" id="pool-export-csv" title="Lo mismo, como tabla para abrir en Excel.">📄 Excel (CSV)</button>
+          <span>Haz una copia antes de vaciar la bolsa, unir o borrar contactos.</span>
+        </div>
         <div style="margin-bottom:12px"><button type="button" id="pool-clear-all" class="danger" style="font-family:inherit;font-size:11.5px;font-weight:700;border-radius:7px;padding:6px 10px;cursor:pointer;border:1px solid #e7c3bb;color:var(--red);background:#fbeae6">🗑 Vaciar toda la bolsa…</button></div>
         <div class="pool-table-wrap">
           <table class="pool-table" data-no-i18n>
-            <thead><tr id="pool-thead-row"><th scope="col"><input type="checkbox" id="pool-check-all" aria-label="Seleccionar todo lo filtrado" title="Seleccionar todo lo filtrado"></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="status">Status<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="email">Email<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th scope="col">Asesor</th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="notes">Notas<span class="sort-arrow"></span></th></tr></thead>
+            <thead><tr id="pool-thead-row"><th scope="col"><input type="checkbox" id="pool-check-all" aria-label="Seleccionar todo lo filtrado" title="Seleccionar todo lo filtrado"></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="lastContactAt">Fecha UC<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="leadNo">Nº<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="status">Status<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="name">Nombre<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="email">Email<span class="sort-arrow"></span></th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="phone">Teléfono<span class="sort-arrow"></span></th><th scope="col">Asesor</th><th scope="col" class="sortable-th" tabindex="0" role="button" data-sort-key="notes">Notas<span class="sort-arrow"></span></th><th scope="col" class="cont-action-col"></th></tr></thead>
             <tbody id="pool-list"></tbody>
           </table>
         </div>
@@ -288,11 +293,39 @@
     </div>
   </div>
 
+  <div class="imp-overlay" id="ficha-overlay" hidden>
+    <div class="imp-box ficha-box" role="dialog" aria-modal="true" aria-labelledby="ficha-title">
+      <div class="imp-head"><h2 id="ficha-title" data-no-i18n>Ficha del contacto</h2><button type="button" class="imp-x" id="ficha-close" aria-label="Cerrar">&#10005;</button></div>
+      <div class="ficha-sub" id="ficha-sub" data-no-i18n></div>
+      <div class="ficha-grid">
+        <label class="ficha-field ficha-wide"><span>Siguiente acción</span><input type="text" id="ficha-next" maxlength="200" placeholder="Ej.: llamar para proponer una cita"></label>
+        <label class="ficha-field"><span>Para el día</span><input type="date" id="ficha-next-date"></label>
+        <div class="ficha-quick">
+          <button type="button" data-ficha-days="0">Hoy</button><button type="button" data-ficha-days="1">Mañana</button><button type="button" data-ficha-days="7">En una semana</button><button type="button" data-ficha-days="clear">Quitar</button>
+        </div>
+        <label class="ficha-field ficha-wide"><span>Origen del contacto</span><input type="text" id="ficha-source" maxlength="200" placeholder="Ej.: formulario web, evento, recomendación…"></label>
+      </div>
+      <div class="ficha-dnc">
+        <label class="ficha-check"><input type="checkbox" id="ficha-dnc"> <b>No contactar</b></label>
+        <p class="cock-note" style="margin:6px 0 8px">Márcalo si la persona pidió no recibir llamadas ni mensajes, o si no hay una base clara para contactarla. La marca se conserva al reimportar, al unir contactos y al cambiar de asesor.</p>
+        <input type="text" id="ficha-dnc-reason" maxlength="300" placeholder="Motivo (opcional)">
+      </div>
+      <h3 class="ficha-h">Historial</h3>
+      <ol class="ficha-history" id="ficha-history" data-no-i18n></ol>
+      <div class="ficha-error" id="ficha-error" role="alert" hidden data-no-i18n></div>
+      <div class="imp-actions"><button type="button" id="ficha-cancel">Cancelar</button><button type="button" class="cock-new" id="ficha-save">Guardar</button></div>
+    </div>
+  </div>
+
   <main class="scr home" id="contactos" hidden>
     <div class="cock">
       <div class="cock-head">
         <div><span class="cock-eyebrow">Contactos en frío</span><h1>Tu bolsa de contactos</h1></div>
-        <button type="button" class="cock-new" id="cont-import" hidden>📥 Importar Excel</button>
+        <div class="cont-head-actions">
+          <button type="button" class="cont-backup-btn" id="cont-export-json" title="Descarga todos tus contactos en un archivo JSON (copia fiel, con historial). Contiene datos personales: guárdalo en un sitio seguro.">💾 Copia de seguridad</button>
+          <button type="button" class="cont-backup-btn" id="cont-export-csv" title="Descarga tus contactos como tabla para abrir en Excel. Contiene datos personales.">📄 Excel (CSV)</button>
+          <button type="button" class="cock-new" id="cont-import" hidden>📥 Importar Excel</button>
+        </div>
       </div>
       <p class="cock-note" style="margin:0 0 18px">Contactos por trabajar todavía, separados de tu cartera de clientes con análisis. Márcalos según avances, y conviértelos en cliente cuando empieces el análisis real — eso los mueve a "Tu cartera de clientes".</p>
       <div class="cock-toolbar">
@@ -300,6 +333,7 @@
         <input type="search" id="cont-search" aria-label="Buscar contactos" placeholder="Buscar por nombre, correo o teléfono…" />
         <select id="cont-status" aria-label="Filtrar por estado"><option value="">Todos (sin convertidos)</option><option value="nuevo">Nuevo</option><option value="no_contesto">No contestó</option><option value="no_disponible">Número no disponible</option><option value="contactado">Contactado</option><option value="no_interesa">No interesa</option><option value="convertido">Convertido</option></select>
       </div>
+      <div class="cont-chips" id="cont-chips" data-no-i18n></div>
       <div class="imp-bulkbar" id="cont-bulkbar" hidden>
         <span id="cont-selected-count"></span>
         <select id="cont-bulk-advisor" aria-label="Enviar seleccionados a"></select>
@@ -323,6 +357,7 @@
        el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
   <script src="./i18n.js?v=76ca1307"></script>
 <script src="./util.js?v=3e8fcffb"></script>
+<script src="./leads.js?v=72b716c7"></script>
 <script src="./calc.js?v=d665f4c4"></script>
 <script src="./inmueble.js?v=b1067d59"></script>
 <script src="./afa.js?v=8c8d2660"></script>
@@ -330,7 +365,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, collectionGroup, query, where, orderBy, limit as fsLimit, startAfter, getDocs, getCountFromServer, onSnapshot, serverTimestamp, writeBatch }
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc, collection, collectionGroup, query, where, orderBy, limit as fsLimit, startAfter, getDocs, getCountFromServer, onSnapshot, serverTimestamp, writeBatch, arrayUnion }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     var firebaseConfig = {
@@ -362,6 +397,23 @@
     // más abajo), nunca de un campo dentro del documento — así que no hace falta guardarlo
     // también ahí dentro. Se usa al escribir para no duplicar el dato.
     function withoutId(obj){ var c={}; Object.keys(obj).forEach(function(k){ if(k!=='id') c[k]=obj[k]; }); return c; }
+    // Historial de cada contacto (ver leads.js): sella autor y hora y lo añade con arrayUnion (atómico, dos dispositivos no se pisan);
+    // solo si se pasara del tope escribe la lista recortada entera.
+    function stampHistory(entries){ var at=new Date().toISOString(); return (entries||[]).map(function(e){ return Object.assign({at:at, by:currentUid||''}, e); }); }
+    function historyField(lead, entries){
+      var stamped=stampHistory(entries);
+      if(leadHistoryNeedsTrim(lead&&lead.history, stamped.length)) return leadHistoryAppend(lead&&lead.history, stamped);
+      return arrayUnion.apply(null, stamped);
+    }
+    // Asignar, reasignar y devolver a la bolsa copian el documento ENTERO a la ruta nueva (set + delete): el evento se anota en la copia,
+    // así el historial viaja con el contacto y nunca queda huérfano en la ruta vieja.
+    function movedLead(lead, entry){ return withoutId(Object.assign({}, lead, {history: leadHistoryAppend(lead.history, stampHistory([entry]))})); }
+    function statusPatch(status, lead){
+      var p={status:status, lastContactAt:serverTimestamp()};
+      var from=(lead&&lead.status)||'nuevo';
+      if(from!==status) p.history=historyField(lead, [{type:'status', from:from, to:status}]);
+      return p;
+    }
 
     window.AORAES_CLOUD = {
       ready: false,
@@ -427,11 +479,42 @@
           var arr=[]; snap.forEach(function(d){ arr.push(Object.assign({}, d.data(), {id:d.id})); }); return arr;
         });
       },
-      updateLeadStatus: function(leadId, status){
+      updateLeadStatus: function(leadId, status, lead){
         var uid=viewingUid||currentUid; if(!uid||!leadId) return Promise.resolve();
         // serverTimestamp() (no una fecha calculada en el navegador) para que "última vez contactado"
         // sea fiable aunque el reloj del dispositivo del asesor esté mal puesto.
-        return updateDoc(doc(collection(db,'users',uid,'leads'),leadId), {status:status, lastContactAt:serverTimestamp()}).catch(function(e){ console.error('AORAES cloud: fallo al actualizar el contacto',e); });
+        return updateDoc(doc(collection(db,'users',uid,'leads'),leadId), statusPatch(status, lead)).catch(function(e){ console.error('AORAES cloud: fallo al actualizar el contacto',e); });
+      },
+      // Guarda varios campos de un contacto de una vez junto con sus eventos de historial (ficha: siguiente acción, origen, no contactar).
+      // Sin catch propio: la ficha enseña el error y no se cierra si falla.
+      patchLead: function(lead, patch, entries, inPool){
+        var uid=viewingUid||currentUid; if(!lead||!lead.id||(!inPool&&!uid)) return Promise.resolve();
+        var ref=inPool ? doc(leadsPoolCol(), lead.id) : doc(collection(db,'users',uid,'leads'), lead.id);
+        var data=Object.assign({}, patch);
+        if(entries&&entries.length) data.history=historyField(lead, entries);
+        return updateDoc(ref, data);
+      },
+      // Copia de seguridad completa y de SOLO LECTURA: el admin se lleva la bolsa sin asignar y los contactos de todos los asesores; un
+      // asesor, los suyos. Los Timestamp salen como texto ISO (la app ya entiende ambos formatos en lastContactAt).
+      exportLeads: function(){
+        var isAdm=(currentProfile&&currentProfile.role==='admin')||currentUid===ADMIN_UID;
+        if(!isAdm){
+          var uid=currentUid; if(!uid) return Promise.resolve([]);
+          return getDocs(collection(db,'users',uid,'leads')).then(function(snap){
+            var rows=[]; snap.forEach(function(d){ rows.push(leadExportRow(Object.assign({}, d.data(), {id:d.id}), 'asesor', uid, (currentProfile&&currentProfile.email)||'')); });
+            return rows;
+          });
+        }
+        return Promise.all([ getDocs(leadsPoolCol()), getDocs(collectionGroup(db,'leads')), getDocs(collection(db,'users')) ]).then(function(r){
+          var labels={}; r[2].forEach(function(d){ var p=d.data()||{}; labels[d.id]=p.fullName||p.email||d.id; });
+          var rows=[];
+          r[0].forEach(function(d){ rows.push(leadExportRow(Object.assign({}, d.data(), {id:d.id}), 'bolsa', '', 'Sin asignar')); });
+          r[1].forEach(function(d){
+            var owner=(d.ref.parent&&d.ref.parent.parent)?d.ref.parent.parent.id:'';
+            rows.push(leadExportRow(Object.assign({}, d.data(), {id:d.id}), 'asesor', owner, labels[owner]||owner));
+          });
+          return rows;
+        });
       },
       deleteLead: function(leadId){
         var uid=viewingUid||currentUid; if(!uid||!leadId) return Promise.resolve();
@@ -501,8 +584,8 @@
       },
       // Cambiar el estado de un contacto que todavía está en la bolsa (sin asignar) — no requiere
       // que ya tenga asesor.
-      updatePoolLeadStatus: function(leadId, status){
-        return updateDoc(doc(leadsPoolCol(),leadId), {status:status, lastContactAt:serverTimestamp()}).catch(function(e){ console.error('AORAES cloud: fallo al actualizar el estado en la bolsa',e); });
+      updatePoolLeadStatus: function(leadId, status, lead){
+        return updateDoc(doc(leadsPoolCol(),leadId), statusPatch(status, lead)).catch(function(e){ console.error('AORAES cloud: fallo al actualizar el estado en la bolsa',e); });
       },
       // Mismo criterio que updateLeadField, para contactos que todavía están en la bolsa sin asignar.
       updatePoolLeadField: function(leadId, field, value){
@@ -539,7 +622,7 @@
           return p.then(function(){
             var b=writeBatch(db);
             chunk.forEach(function(it){
-              b.set(doc(collection(db,'users',it.advisorUid,'leads'),it.lead.id), withoutId(it.lead));
+              b.set(doc(collection(db,'users',it.advisorUid,'leads'),it.lead.id), movedLead(it.lead, {type:'assign', from:'pool', to:it.advisorUid}));
               b.delete(doc(leadsPoolCol(),it.lead.id));
             });
             return b.commit();
@@ -556,7 +639,7 @@
           return p.then(function(){
             var b=writeBatch(db);
             chunk.forEach(function(it){
-              b.set(doc(collection(db,'users',it.advisorUid,'leads'),it.lead.id), withoutId(it.lead));
+              b.set(doc(collection(db,'users',it.advisorUid,'leads'),it.lead.id), movedLead(it.lead, {type:'assign', from:fromUid, to:it.advisorUid}));
               b.delete(doc(collection(db,'users',fromUid,'leads'),it.lead.id));
             });
             return b.commit();
@@ -573,7 +656,7 @@
           return p.then(function(){
             var b=writeBatch(db);
             chunk.forEach(function(it){
-              b.set(doc(leadsPoolCol(),it.lead.id), withoutId(it.lead));
+              b.set(doc(leadsPoolCol(),it.lead.id), movedLead(it.lead, {type:'assign', from:fromUid, to:'pool'}));
               b.delete(doc(collection(db,'users',fromUid,'leads'),it.lead.id));
             });
             return b.commit();
@@ -1745,7 +1828,7 @@
       // todavía — sin este corte se veía "ningún contacto coincide" un instante antes de que
       // llegaran los datos reales, como si la búsqueda no hubiera encontrado nada.
       if(q && _poolLoadingFull){
-        listEl.innerHTML='<tr><td colspan="9" class="ase-empty" style="border:0">Cargando toda la bolsa para poder buscar en ella…</td></tr>';
+        listEl.innerHTML='<tr><td colspan="10" class="ase-empty" style="border:0">Cargando toda la bolsa para poder buscar en ella…</td></tr>';
         updatePoolBulkbar();
         return;
       }
@@ -1761,7 +1844,7 @@
       // paginada (sin buscar/ordenar), esto solo cubre lo ya cargado, no la bolsa entera.
       _poolShownIds=shown.map(function(l){ return l.id; });
       updatePoolCheckAll();
-      if(!shown.length){ listEl.innerHTML='<tr><td colspan="9" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
+      if(!shown.length){ listEl.innerHTML='<tr><td colspan="10" class="ase-empty" style="border:0">'+(_pool.length?'Ningún contacto de la bolsa coincide con la búsqueda.':'La bolsa está vacía.')+'</td></tr>'; updatePoolBulkbar(); return; }
       // Páginas de tamaño fijo sobre "shown" (ya filtrado y ordenado) — mientras la bolsa siga
       // paginándose desde Firestore (sin buscar/ordenar todavía), "Siguiente" en la última página
       // conocida pide más antes de avanzar (ver el click handler de #pool-page-next). Sin buscar ni
@@ -1780,7 +1863,7 @@
       var pagerInfo=(!q && !_poolFullyLoaded)
         ? (' · '+_pool.length+' cargados de momento'+(_poolHasMore?' (hay más)':''))
         : '';
-      var pagerRow='<tr><td colspan="9" style="border:0;padding:10px 8px">'+
+      var pagerRow='<tr><td colspan="10" style="border:0;padding:10px 8px">'+
         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
           '<button type="button" id="pool-page-prev" class="cock-new" style="padding:7px 12px;font-size:12.5px"'+(canGoPrev?'':' disabled')+'>‹ Anterior</button>'+
           '<span style="font-size:12.5px;color:var(--muted)">Página <input type="number" id="pool-page-input" min="1" max="'+_poolTotalPages+'" value="'+_poolPage+'" style="width:46px;text-align:center"> de '+_poolTotalPages+pagerInfo+'</span>'+
@@ -1800,7 +1883,8 @@
         // Todo se puede corregir a mano directo en la tabla — siempre hay erratas de teléfono/nombre
         // al importar de Excel, y no tiene sentido obligar a abrir un formulario aparte para eso.
         var rowWho=l.name||l.email||l.phone||'este contacto';
-        return '<tr'+(dupeKey?' class="pool-dupe-row"':'')+'>'+
+        var rowCls=((dupeKey?'pool-dupe-row':'')+(l.doNotContact?' lead-dnc':'')).trim();
+        return '<tr'+(rowCls?' class="'+rowCls+'"':'')+'>'+
           '<td><input type="checkbox" class="pool-check" aria-label="Seleccionar a '+esc(rowWho)+'" data-pool-check="'+esc(l.id)+'"'+(_poolSelected[l.id]?' checked':'')+'></td>'+
           '<td><div class="cont-date-cell"><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-pool-field="lastContactAt" data-pool-lead="'+esc(l.id)+'" value="'+lastContactVal+'"><button type="button" class="cont-today-btn" data-pool-today="'+esc(l.id)+'" title="Poner la fecha de hoy" aria-label="Poner la fecha de hoy">↓</button></div></td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Número de lead" data-pool-field="leadNo" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
@@ -1810,6 +1894,7 @@
           '<td style="white-space:nowrap"><input type="text" class="cont-field-input" aria-label="Teléfono" style="display:inline-block;width:auto;min-width:90px" data-pool-field="phone" data-pool-lead="'+esc(l.id)+'" value="'+esc(l.phone||'')+'">'+dupeBadge+'</td>'+
           '<td>'+advisorSel+'</td>'+
           '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle data-pool-lead="'+esc(l.id)+'">'+esc(l.notes)+'</span>':'<span class="pool-notes-text" data-notes-toggle data-pool-lead="'+esc(l.id)+'" style="color:var(--faint)">— (clic para añadir)</span>')+'</td>'+
+        '<td class="cont-action-col">'+leadFichaBtn(l,'pool')+'</td>'+
         '</tr>';
       }).join('')+pagerRow;
       updatePoolBulkbar();
@@ -1885,8 +1970,9 @@
         var leadId2=stSel.getAttribute('data-pool-status'), newSt=stSel.value;
         recolorPillSelect(stSel, CONT_STATUS_COLOR);
         stSel.disabled=true;
-        window.AORAES_CLOUD.updatePoolLeadStatus(leadId2, newSt).then(function(){
-          var l2=_pool.filter(function(x){return x.id===leadId2;})[0]; if(l2) l2.status=newSt;
+        var poolObj=_pool.filter(function(x){return x.id===leadId2;})[0];
+        window.AORAES_CLOUD.updatePoolLeadStatus(leadId2, newSt, poolObj).then(function(){
+          var l2=poolObj; if(l2){ noteLocalHistory(l2,{type:'status', from:l2.status||'nuevo', to:newSt}); l2.status=newSt; }
         }).catch(function(e){ console.error('AORAES: fallo al cambiar el estado',e); alert('No se pudo cambiar el estado. Revisa la consola.'); }).finally(function(){ stSel.disabled=false; });
         return;
       }
@@ -2013,6 +2099,8 @@
       var merged={ id:base.id, name:base.name, email:email, phone:phone, notes:notes.join(' · '), status:base.status||'nuevo', importedAt:base.importedAt||new Date().toISOString() };
       if(leadNos.length) merged.leadNo=leadNos.join(', ');
       if(lastContactAt) merged.lastContactAt=lastContactAt;
+      Object.assign(merged, leadMergeMeta(group));
+      merged.history=leadHistoryAppend(merged.history, [{at:new Date().toISOString(), by:(window.AORAES_CLOUD&&window.AORAES_CLOUD.uid)||'', type:'merge', note:group.length+' contactos'}]);
       var deleteIds=group.map(function(l){ return l.id; });
       this.disabled=true;
       window.AORAES_CLOUD.mergePoolLeads(merged, deleteIds).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al unir contactos',e); alert('No se pudo unir. Revisa la consola.'); }).finally(function(){ document.getElementById('pool-bulk-merge').disabled=false; });
@@ -2150,7 +2238,7 @@
     // hay que reintentar tras un fallo — si no, cada clic en "Importar" regeneraba ids nuevos para
     // TODO, así que un reintento después de que un lote a mitad de la subida fallara reimportaba
     // como duplicados los contactos del lote anterior que ya se habían guardado bien.
-    var _impBuiltCache=null;
+    var _impBuiltCache=null, _impFileName='';
     // Localiza la fila de cabecera real: algunas plantillas (p. ej. paneles con logo/título en A1)
     // traen filas sueltas con un solo valor antes de la fila con los nombres de columna de verdad —
     // tomar "la primera fila no vacía" a secas desalinea todo el mapeo. Se exige al menos 2 celdas
@@ -2175,6 +2263,7 @@
     });
     document.getElementById('import-file').addEventListener('change', function(e){
       var file=e.target.files&&e.target.files[0]; if(!file) return;
+      _impFileName=String(file.name||'').slice(0,200);
       ensureXLSX().then(function(){
         return file.arrayBuffer();
       }).then(function(buf){
@@ -2300,6 +2389,8 @@
       var lead={ id:'lead'+Date.now()+'-'+i+'-'+Math.floor(Math.random()*1000), name:r.name, email:r.email, phone:r.phone, notes:noteParts.join(' · '), status:triageStatus(r.statusText), importedAt:now };
       if(r.lastContactText) lead.lastContactAt=r.lastContactText;
       if(r.leadNo) lead.leadNo=r.leadNo;
+      lead.source=_impFileName||'Importación Excel';
+      lead.history=[{at:now, by:(window.AORAES_CLOUD&&window.AORAES_CLOUD.uid)||'', type:'import', note:_impFileName}];
       return { lead:lead, adv:adv };
     }
     function renderImportPreview(){
@@ -2551,9 +2642,11 @@
       var cs=isAdmin?9:8; // una columna más (casilla) cuando el admin puede seleccionar
       var q=(document.getElementById('cont-search').value||'').trim().toLowerCase();
       var fs=document.getElementById('cont-status').value;
+      renderContChips();
       var shown=_contLeads.filter(function(l){
         var st=l.status||'nuevo';
         if(fs){ if(st!==fs) return false; } else if(st==='convertido') return false;
+        if(_contView && !leadMatchesView(l, _contView, leadTodayStr())) return false;
         if(!q) return true;
         var hay=[l.name,l.email,l.phone,l.notes].join(' ').toLowerCase();
         return hay.indexOf(q)>=0;
@@ -2574,7 +2667,7 @@
           : '<select class="cont-status-select" data-lead="'+esc(l.id)+'" aria-label="Estado"'+pillStyleAttr(CONT_STATUS_COLOR[st])+'>'+CONT_STATUS_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+CONT_STATUS_LABEL[s]+'</option>'; }).join('')+'</select>';
         var rowWho=l.name||l.email||l.phone||'este contacto';
         // Todo se puede corregir a mano directo en la tabla — siempre hay erratas de teléfono/nombre.
-        return '<tr>'+
+        return '<tr'+(l.doNotContact?' class="lead-dnc"':'')+'>'+
           (isAdmin?'<td><input type="checkbox" class="pool-check" aria-label="Seleccionar a '+esc(rowWho)+'" data-cont-check="'+esc(l.id)+'"'+(_contSelected[l.id]?' checked':'')+'></td>':'')+
           '<td><div class="cont-date-cell"><input type="date" class="cont-date-input" aria-label="Fecha de último contacto" data-field="lastContactAt" data-lead="'+esc(l.id)+'" value="'+lastContactVal+'"><button type="button" class="cont-today-btn" data-today="'+esc(l.id)+'" title="Poner la fecha de hoy" aria-label="Poner la fecha de hoy">↓</button></div></td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Número de lead" data-field="leadNo" data-lead="'+esc(l.id)+'" value="'+esc(l.leadNo||'')+'"></td>'+
@@ -2583,7 +2676,7 @@
           '<td><input type="text" class="cont-field-input" aria-label="Correo electrónico" data-field="email" data-lead="'+esc(l.id)+'" value="'+esc(l.email||'')+'"></td>'+
           '<td><input type="text" class="cont-field-input" aria-label="Teléfono" data-field="phone" data-lead="'+esc(l.id)+'" value="'+esc(l.phone||'')+'"></td>'+
           '<td class="pool-notes-cell">'+(l.notes?'<span class="pool-notes-text" data-notes-toggle data-lead="'+esc(l.id)+'">'+esc(l.notes)+'</span>':'<span class="pool-notes-text" data-notes-toggle data-lead="'+esc(l.id)+'" style="color:var(--faint)">— (clic para añadir)</span>')+'</td>'+
-          '<td class="cont-action-col">'+(!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir</button>':'')+'</td>'+
+          '<td class="cont-action-col">'+leadFichaBtn(l,'asesor')+(!conv?'<button type="button" class="notif-row-act" data-cont-convert="'+esc(l.id)+'" style="color:var(--navy-2);background:#e8eef7;border-color:#c7d3e6">→ Convertir</button>':'')+'</td>'+
         '</tr>';
       }).join('');
       updateContBulkbar();
@@ -2599,8 +2692,9 @@
         var leadId=sel.getAttribute('data-lead'), newSt=sel.value;
         recolorPillSelect(sel, CONT_STATUS_COLOR);
         sel.disabled=true;
-        window.AORAES_CLOUD.updateLeadStatus(leadId, newSt).then(function(){
-          var l=_contLeads.filter(function(x){return x.id===leadId;})[0]; if(l){ l.status=newSt; l.lastContactAt=new Date().toISOString(); }
+        var leadObj=_contLeads.filter(function(x){return x.id===leadId;})[0];
+        window.AORAES_CLOUD.updateLeadStatus(leadId, newSt, leadObj).then(function(){
+          var l=leadObj; if(l){ noteLocalHistory(l,{type:'status', from:l.status||'nuevo', to:newSt}); l.status=newSt; l.lastContactAt=new Date().toISOString(); }
           filterAndRenderContactos();
         });
         return;
@@ -2641,6 +2735,152 @@
       var id2=b.getAttribute('data-cont-convert');
       var lead=_contLeads.filter(function(x){return x.id===id2;})[0]; if(lead) convertLeadToClient(lead);
     });
+    /* ---------- Ficha del contacto: siguiente acción, origen, "no contactar" e historial ----------
+       Campos nuevos dentro del propio documento del contacto (nextAction, nextActionAt, source, doNotContact, dncReason, dncAt, history);
+       ninguno de los anteriores cambia. La lógica pura (vistas, historial, unión, CSV) vive en leads.js con sus pruebas. */
+    function leadTodayStr(){ return localDateStr(new Date()); }
+    function noteLocalHistory(l, entry){
+      if(!l) return;
+      l.history=leadHistoryAppend(l.history, [Object.assign({at:new Date().toISOString(), by:(window.AORAES_CLOUD&&window.AORAES_CLOUD.uid)||''}, entry)]);
+    }
+    function leadWhoName(uid){
+      if(!uid) return '';
+      if(uid===(window.AORAES_CLOUD&&window.AORAES_CLOUD.uid)) return 'ti';
+      var a=_contAdvisorsList.filter(function(p){ return p.uid===uid; })[0];
+      return a ? (a.fullName||a.email||'') : '';
+    }
+    function leadFichaBtn(l, scope){
+      var chip='';
+      if(l.doNotContact) chip='<span class="lead-chip dnc" title="'+esc(l.dncReason||'No contactar')+'">No contactar</span>';
+      else {
+        var st=leadActionState(l.nextActionAt, leadTodayStr());
+        if(st==='overdue') chip='<span class="lead-chip overdue" title="'+esc(l.nextAction||'Siguiente acción vencida')+'">Vencida</span>';
+        else if(st==='today') chip='<span class="lead-chip today" title="'+esc(l.nextAction||'Siguiente acción')+'">Hoy</span>';
+        else if(st==='future') chip='<span class="lead-chip" title="'+esc(l.nextAction||'Siguiente acción')+'">'+esc(l.nextActionAt.slice(8,10)+'/'+l.nextActionAt.slice(5,7))+'</span>';
+      }
+      return '<button type="button" class="lead-ficha-btn" data-ficha="'+esc(l.id)+'" data-ficha-scope="'+scope+'" title="Siguiente acción, origen, no contactar e historial">📋 Ficha</button>'+chip;
+    }
+    var _contView='';
+    var CONT_VIEWS=[['hoy','Para hoy o vencidas'],['sin_accion','Sin siguiente acción'],['no_contactar','No contactar']];
+    function renderContChips(){
+      var el=document.getElementById('cont-chips'); if(!el) return;
+      var today=leadTodayStr();
+      el.innerHTML=CONT_VIEWS.map(function(v){
+        var n=_contLeads.filter(function(l){ return (l.status||'nuevo')!=='convertido' && leadMatchesView(l, v[0], today); }).length;
+        return '<button type="button" class="cont-chip'+(_contView===v[0]?' on':'')+'" data-view="'+v[0]+'" aria-pressed="'+(_contView===v[0])+'">'+v[1]+' · '+n+'</button>';
+      }).join('');
+    }
+    document.getElementById('cont-chips').addEventListener('click', function(e){
+      var b=e.target.closest('[data-view]'); if(!b) return;
+      var v=b.getAttribute('data-view');
+      _contView=(_contView===v)?'':v;
+      filterAndRenderContactos();
+    });
+
+    var _fichaLead=null, _fichaScope='asesor', _fichaLastFocus=null;
+    function fichaEl(id){ return document.getElementById(id); }
+    function renderFichaHistory(){
+      var ctx={ status:CONT_STATUS_LABEL, who:leadWhoName };
+      var items=(_fichaLead.history||[]).slice().sort(function(a,b){ return String(b.at||'')<String(a.at||'')?-1:String(b.at||'')>String(a.at||'')?1:0; });
+      fichaEl('ficha-history').innerHTML=items.length ? items.map(function(e){
+        var when=''; try{ when=new Date(e.at).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(x){}
+        var by=leadWhoName(e.by);
+        return '<li><span class="fh-when">'+esc(when)+'</span> '+esc(leadHistoryText(e, ctx))+(by?' <span class="fh-by">· '+esc(by)+'</span>':'')+'</li>';
+      }).join('') : '<li class="fh-empty">Todavía no hay movimientos registrados. Desde ahora se anotan aquí los cambios de estado, de asesor y de esta ficha.</li>';
+    }
+    function openFicha(leadId, scope){
+      var list=scope==='pool'?_pool:_contLeads;
+      var l=list.filter(function(x){ return x.id===leadId; })[0]; if(!l) return;
+      _fichaLead=l; _fichaScope=scope; _fichaLastFocus=document.activeElement;
+      fichaEl('ficha-title').textContent=l.name||l.email||l.phone||'Ficha del contacto';
+      fichaEl('ficha-sub').textContent=[l.email,l.phone,l.leadNo?('Nº '+l.leadNo):''].filter(Boolean).join(' · ');
+      fichaEl('ficha-next').value=l.nextAction||'';
+      fichaEl('ficha-next-date').value=/^\d{4}-\d{2}-\d{2}$/.test(l.nextActionAt||'')?l.nextActionAt:'';
+      fichaEl('ficha-source').value=l.source||'';
+      fichaEl('ficha-dnc').checked=!!l.doNotContact;
+      fichaEl('ficha-dnc-reason').value=l.dncReason||'';
+      fichaEl('ficha-dnc-reason').hidden=!l.doNotContact;
+      fichaEl('ficha-error').hidden=true;
+      renderFichaHistory();
+      fichaEl('ficha-overlay').hidden=false;
+      fichaEl('ficha-next').focus();
+    }
+    function closeFicha(){
+      fichaEl('ficha-overlay').hidden=true; _fichaLead=null;
+      if(_fichaLastFocus&&_fichaLastFocus.focus&&document.contains(_fichaLastFocus)) _fichaLastFocus.focus();
+    }
+    function rerenderLeadTables(){ if(_fichaScope==='pool') filterAndRenderPool(); else filterAndRenderContactos(); }
+    function saveFicha(){
+      var l=_fichaLead; if(!l) return;
+      var nextText=fichaEl('ficha-next').value.trim(), nextDate=fichaEl('ficha-next-date').value;
+      var src=fichaEl('ficha-source').value.trim();
+      var dncOn=fichaEl('ficha-dnc').checked, dncReason=fichaEl('ficha-dnc-reason').value.trim();
+      var patch={}, entries=[];
+      if(nextText!==(l.nextAction||'') || nextDate!==(l.nextActionAt||'')){
+        patch.nextAction=nextText; patch.nextActionAt=nextDate;
+        entries.push({type:'next', to:nextText, note:nextDate});
+      }
+      if(src!==(l.source||'')){ patch.source=src; entries.push({type:'source', from:l.source||'', to:src}); }
+      if(dncOn!==!!l.doNotContact){
+        if(!dncOn && !confirm('¿Quitar la marca "No contactar"? Hazlo solo si la persona ha vuelto a dar permiso.')) return;
+        patch.doNotContact=dncOn; patch.dncAt=dncOn?new Date().toISOString():''; patch.dncReason=dncOn?dncReason:'';
+        entries.push({type:'dnc', to:dncOn, note:dncOn?dncReason:''});
+      } else if(dncOn && dncReason!==(l.dncReason||'')){
+        patch.dncReason=dncReason; entries.push({type:'dnc', to:true, note:dncReason});
+      }
+      if(!entries.length){ closeFicha(); return; }
+      var btn=fichaEl('ficha-save'); btn.disabled=true; btn.textContent='Guardando…';
+      window.AORAES_CLOUD.patchLead(l, patch, entries, _fichaScope==='pool').then(function(){
+        Object.assign(l, patch);
+        entries.forEach(function(e){ noteLocalHistory(l, e); });
+        closeFicha(); rerenderLeadTables();
+      }).catch(function(e){
+        console.error('AORAES: fallo al guardar la ficha',e);
+        var err=fichaEl('ficha-error'); err.textContent='No se pudo guardar. Revisa la conexión e inténtalo de nuevo.'; err.hidden=false;
+      }).finally(function(){ btn.disabled=false; btn.textContent='Guardar'; });
+    }
+    fichaEl('ficha-save').addEventListener('click', saveFicha);
+    fichaEl('ficha-cancel').addEventListener('click', closeFicha);
+    fichaEl('ficha-close').addEventListener('click', closeFicha);
+    fichaEl('ficha-overlay').addEventListener('click', function(e){ if(e.target===this) closeFicha(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape' && !fichaEl('ficha-overlay').hidden) closeFicha(); });
+    fichaEl('ficha-dnc').addEventListener('change', function(){ fichaEl('ficha-dnc-reason').hidden=!this.checked; });
+    document.querySelector('.ficha-quick').addEventListener('click', function(e){
+      var b=e.target.closest('[data-ficha-days]'); if(!b) return;
+      var v=b.getAttribute('data-ficha-days');
+      if(v==='clear'){ fichaEl('ficha-next').value=''; fichaEl('ficha-next-date').value=''; return; }
+      var d=new Date(); d.setDate(d.getDate()+parseInt(v,10));
+      fichaEl('ficha-next-date').value=localDateStr(d);
+    });
+    ['cont-list','pool-list'].forEach(function(id){
+      document.getElementById(id).addEventListener('click', function(e){
+        var b=e.target.closest('[data-ficha]'); if(!b) return;
+        openFicha(b.getAttribute('data-ficha'), b.getAttribute('data-ficha-scope'));
+      });
+    });
+
+    /* ---------- Copia de seguridad (solo lectura) ---------- */
+    function downloadBlob(name, mime, text){
+      var url=URL.createObjectURL(new Blob([text],{type:mime}));
+      var a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1000);
+    }
+    function exportLeadsCopy(kind, btn){
+      if(!window.AORAES_CLOUD||!window.AORAES_CLOUD.exportLeads){ alert('La nube no está lista todavía.'); return; }
+      var label=btn.textContent; btn.disabled=true; btn.textContent='Preparando…';
+      var restore=function(msg){ if(msg){ btn.textContent=msg; setTimeout(function(){ btn.textContent=label; btn.disabled=false; }, 3500); } else { btn.textContent=label; btn.disabled=false; } };
+      window.AORAES_CLOUD.exportLeads().then(function(rows){
+        if(!rows.length){ alert('No hay contactos que exportar.'); restore(); return; }
+        var day=localDateStr(new Date());
+        if(kind==='json') downloadBlob('aoraes-contactos-'+day+'.json','application/json',JSON.stringify({exportedAt:new Date().toISOString(), count:rows.length, leads:rows},null,1));
+        else downloadBlob('aoraes-contactos-'+day+'.csv','text/csv;charset=utf-8','﻿'+leadsToCsv(rows));
+        restore('✓ '+rows.length+' contacto'+(rows.length===1?'':'s'));
+      }).catch(function(e){ console.error('AORAES: fallo al preparar la copia',e); alert('No se pudo preparar la copia. Revisa la consola.'); restore(); });
+    }
+    [['cont-export-json','json'],['cont-export-csv','csv'],['pool-export-json','json'],['pool-export-csv','csv']].forEach(function(p){
+      document.getElementById(p[0]).addEventListener('click', function(){ exportLeadsCopy(p[1], this); });
+    });
+
     function convertLeadToClient(lead){
       setActive(null);
       ensureFrame('analisis');
@@ -2652,7 +2892,8 @@
         // No se borra: se marca "convertido" y desaparece del filtro por defecto. Si el asesor abre
         // el formulario y no llega a guardar nada, el contacto no se pierde — sigue ahí bajo el
         // filtro "Convertido" y puede reintentarlo, en vez de perder el dato para siempre.
-        window.AORAES_CLOUD.updateLeadStatus(lead.id, 'convertido').then(function(){
+        window.AORAES_CLOUD.updateLeadStatus(lead.id, 'convertido', lead).then(function(){
+          noteLocalHistory(lead,{type:'status', from:lead.status||'nuevo', to:'convertido'});
           lead.status='convertido';
           filterAndRenderContactos();
         });
