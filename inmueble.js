@@ -97,7 +97,7 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
   advanced+=inmuebleOptField(opt,'topeST','Tope anual de amortización extra (0 = sin tope)',cfg.topeST||0,'0.5','% del préstamo','min="0" max="100"');
   advanced+=inmuebleOptField(opt,'comision','Comisión de apertura',cfg.comision,'0.1','%','min="0" max="10"');
   if((opt==='banco'&&!(inmCtx&&inmCtx.modo==='refi'))||opt==='refiBanco'){
-    advanced+='<label class="inm-f"><span>Cuotas de las líneas de la gráfica (€/mes, separadas por espacios; vacío = automáticas; se aplican a «Banco» o «Bausparvertrag» según el selector de la gráfica)</span><span class="inm-inp-wrap"><input type="text" class="inm-inp" id="inm-curva-tipos" inputmode="decimal" value="'+esc(((inmCtx&&inmCtx.curvaCuotas&&inmCtx.curvaCuotas[inmuebleCurvaModo(inmCtx)])||[]).map(function(x){ return String(x).replace('.',','); }).join('; '))+'" placeholder="automáticas"></span></label>';
+    advanced+='<label class="inm-f"><span>Valores de las líneas de la gráfica (€/mes en «Banco» y «Ahorro del Bauspar»; años en «Plazo del Bauspar»; separados por espacios; vacío = automáticos)</span><span class="inm-inp-wrap"><input type="text" class="inm-inp" id="inm-curva-tipos" inputmode="decimal" value="'+esc(((inmCtx&&inmCtx.curvaCuotas&&inmCtx.curvaCuotas[inmuebleCurvaModo(inmCtx)])||[]).map(function(x){ return String(x).replace('.',','); }).join('; '))+'" placeholder="automáticas"></span></label>';
   }
   if(opt==='banco'){
     advanced+=inmuebleOptField(opt,'marcaAnios','Línea dorada del gráfico (años; 0 = ninguna)',cfg.marcaAnios==null?10:cfg.marcaAnios,'1','años','min="0" max="40"');
@@ -286,7 +286,7 @@ function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst,mesesZinsbindung
   var escLineas=escAct.map(function(e){
     var fin=e.pts[e.pts.length-1];
     return '<path d="'+path(e.pts)+'" fill="none" stroke="'+e.color+'" stroke-width="1.8" stroke-dasharray="5,3"/>'+
-      '<text x="'+(px(fin.meses)-2).toFixed(1)+'" y="'+(py(0)-6).toFixed(1)+'" font-size="9" font-weight="700" fill="'+e.color+'" text-anchor="end">'+eur(e.r)+'</text>';
+      '<text x="'+(px(fin.meses)-2).toFixed(1)+'" y="'+(py(0)-6).toFixed(1)+'" font-size="9" font-weight="700" fill="'+e.color+'" text-anchor="end">'+(e.lab||eur(e.r))+'</text>';
   }).join('');
   var descGraf='Cuánto queda por pagar, comparado en el tiempo. La línea azul termina en '+inmuebleAnios(ptsEst[ptsEst.length-1].meses)+'; la dorada, en '+inmuebleAnios(ptsBanco[ptsBanco.length-1].meses)+'.';
   return '<svg viewBox="0 0 '+W+' '+H+'" class="inm-curve-svg" role="img" aria-label="'+esc(descGraf)+'">'+
@@ -300,11 +300,11 @@ function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst,mesesZinsbindung
 // Selector de qué cuota se varía en la gráfica (banco o Bausparvertrag) y botones discretos para encender/apagar cada línea
 // (el tooltip da la duración total de ese caso).
 function inmuebleCurvaChips(escen,modo){
-  var sel='<span class="inm-curve-modo" role="group" aria-label="Qué cuota se compara">'+[['banco','Banco'],['bauspar','Bausparvertrag']].map(function(m){
+  var sel='<span class="inm-curve-modo" role="group" aria-label="Qué cuota se compara">'+[['banco','Banco'],['bauspar','Ahorro del Bauspar'],['plazo','Plazo del Bauspar']].map(function(m){
     return '<button type="button" class="inm-modo'+(m[0]===modo?' on':'')+'" data-curva-modo="'+m[0]+'" aria-pressed="'+(m[0]===modo?'true':'false')+'">'+m[1]+'</button>';
   }).join('')+'</span>';
-  return '<div class="inm-curve-chips" role="group" aria-label="Otras cuotas mensuales">'+sel+(escen.length?'<span>Con una cuota de</span>':'')+escen.map(function(e){
-    return '<button type="button" class="inm-chip'+(e.activo?'':' off')+'" data-curva-tipo="'+e.r+'" aria-pressed="'+(e.activo?'true':'false')+'" style="--c:'+e.color+'"'+(e.meses>0?' title="Duración total: '+inmuebleAniosUnos(e.meses)+'"':'')+'><i></i>'+eur(e.r)+'/mes</button>';
+  return '<div class="inm-curve-chips" role="group" aria-label="Otras cuotas mensuales">'+sel+(escen.length?'<span>'+(modo==='plazo'?'Con un plazo de':'Con una cuota de')+'</span>':'')+escen.map(function(e){
+    return '<button type="button" class="inm-chip'+(e.activo?'':' off')+'" data-curva-tipo="'+e.r+'" aria-pressed="'+(e.activo?'true':'false')+'" style="--c:'+e.color+'"'+(e.cuota>0?' title="Cuota '+eur(e.cuota)+'/mes"':(e.meses>0?' title="Duración total: '+inmuebleAniosUnos(e.meses)+'"':''))+'><i></i>'+(modo==='plazo'?e.r+' años':eur(e.r)+'/mes')+'</button>';
   }).join('')+'</div>';
 }
 // Cuadro de hitos: en cada fecha, lo que QUEDA POR PAGAR con el banco y con el Bausparvertrag (las mismas cifras que las líneas de la gráfica).
@@ -451,11 +451,11 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
   var ptsBanco=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rBanco,refi.banco,false);
   var ptsEst=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rEst,estCfg,true);
   var modoR=inmuebleCurvaModo(inm), escen=[];
-  inmuebleCurvaCuotas(inm,(modoR==='bauspar')?rEst.cuotaAhorro:rBanco.cuotaPrestamo).forEach(function(c){
+  inmuebleCurvaCuotas(inm,(modoR==='plazo')?rEst.mesesPrestamo/12:(modoR==='bauspar')?rEst.cuotaAhorro:rBanco.cuotaPrestamo).forEach(function(c){
     var rrE, ptsE;
-    if(modoR==='bauspar'){
-      var cfgA=Object.assign({},estCfg,{pagoAhorro:c});
-      rrE=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:cfgA.pct,anios:anosDisponibles,interesAhorro:cfgA.interesAhorro,interesPrestamo:cfgA.interesPrestamo,tilgungsbeitragPerMille:cfgA.tilgungsbeitragPerMille,comision:cfgA.comision,sondertilgung:cfgA.sondertilgung,topeST:cfgA.topeST,sonderAhorro:cfgA.sonderAhorro,pagoAhorro:c,pagoPrestamo:cfgA.pagoPrestamo,ahorroPorTiempo:true});
+    if(modoR!=='banco'){
+      var cfgA=(modoR==='plazo')?Object.assign({},estCfg,{tilgungsbeitragPerMille:tilgungsbeitragParaPlazo(saldoAtRefi,rEst.capitalPrestamo,estCfg.interesPrestamo,c)}):Object.assign({},estCfg,{pagoAhorro:c});
+      rrE=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:cfgA.pct,anios:anosDisponibles,interesAhorro:cfgA.interesAhorro,interesPrestamo:cfgA.interesPrestamo,tilgungsbeitragPerMille:cfgA.tilgungsbeitragPerMille,comision:cfgA.comision,sondertilgung:cfgA.sondertilgung,topeST:cfgA.topeST,sonderAhorro:cfgA.sonderAhorro,pagoAhorro:cfgA.pagoAhorro,pagoPrestamo:cfgA.pagoPrestamo,ahorroPorTiempo:true});
       ptsE=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rrE,cfgA,true);
     }else{
       var cfgE=Object.assign({},refi.banco,{pagoPre:c});
@@ -463,7 +463,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
       ptsE=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rrE,cfgE,false);
     }
     if(rrE.noAmortiza) return;
-    escen.push({r:c,color:INM_CURVA_COLORES[escen.length],activo:(((inm&&inm.curvaOff)||[]).indexOf(c)<0),meses:inmuebleMesesDesdeHoy(rrE,mesesHastaRefi),pts:ptsE});
+    escen.push({r:c,lab:(modoR==='plazo')?(c+' años'):eur(c),cuota:(modoR==='plazo')?rrE.cuotaPrestamo:0,color:INM_CURVA_COLORES[escen.length],activo:(((inm&&inm.curvaOff)||[]).indexOf(c)<0),meses:inmuebleMesesDesdeHoy(rrE,mesesHastaRefi),pts:ptsE});
   });
   var curvaHead='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
     '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>Refinanciar con banco</span></div></div>'+inmuebleCurvaChips(escen,modoR)+
@@ -521,11 +521,11 @@ function inmuebleResultsHTML(precio,inm,asParts){
   }
   var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg), ptsBanco=inmuebleCurvaSaldo(precio,rk,cfgBanco);
   var modoC=inmuebleCurvaModo(inm), escen=[];
-  inmuebleCurvaCuotas(inm,(modoC==='bauspar')?rEst.cuotaAhorro:rk.cuotaPrestamo).forEach(function(c){
-    var cfgE=(modoC==='bauspar')?Object.assign({},estCfg,{pagoAhorro:c}):Object.assign({},cfgBanco,{pagoPre:c});
+  inmuebleCurvaCuotas(inm,(modoC==='plazo')?rEst.mesesPrestamo/12:(modoC==='bauspar')?rEst.cuotaAhorro:rk.cuotaPrestamo).forEach(function(c){
+    var cfgE=(modoC==='plazo')?Object.assign({},estCfg,{tilgungsbeitragPerMille:tilgungsbeitragParaPlazo(precio,rEst.capitalPrestamo,estCfg.interesPrestamo,c)}):(modoC==='bauspar')?Object.assign({},estCfg,{pagoAhorro:c}):Object.assign({},cfgBanco,{pagoPre:c});
     var rrE=calcInmuebleOption(precio,cfgE);
-    if(rrE.noAmortiza||(modoC==='bauspar'&&rrE.mesesAhorro===rEst.mesesAhorro&&rrE.mesesPrestamo===rEst.mesesPrestamo&&rrE.cuotaAhorro===rEst.cuotaAhorro)) return;
-    escen.push({r:c,color:INM_CURVA_COLORES[escen.length],activo:((inm.curvaOff||[]).indexOf(c)<0),meses:inmuebleMesesDesdeHoy(rrE,0),pts:inmuebleCurvaSaldo(precio,rrE,cfgE)});
+    if(rrE.noAmortiza||(modoC!=='banco'&&rrE.mesesAhorro===rEst.mesesAhorro&&rrE.mesesPrestamo===rEst.mesesPrestamo&&rrE.cuotaAhorro===rEst.cuotaAhorro&&rrE.cuotaPrestamo===rEst.cuotaPrestamo)) return;
+    escen.push({r:c,lab:(modoC==='plazo')?(c+' años'):eur(c),cuota:(modoC==='plazo')?rrE.cuotaPrestamo:0,color:INM_CURVA_COLORES[escen.length],activo:((inm.curvaOff||[]).indexOf(c)<0),meses:inmuebleMesesDesdeHoy(rrE,0),pts:inmuebleCurvaSaldo(precio,rrE,cfgE)});
   });
   var curvaHead='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
     '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>'+esc(bancoTitle)+'</span></div></div>'+inmuebleCurvaChips(escen,modoC)+
@@ -1061,8 +1061,7 @@ function inmuebleOnInput(e){
         inmuebleMarcarRango(t,plazoAnios>40,40); plazoAnios=Math.min(40,plazoAnios);
         var capitalPrestamoP=(bausparsummeP||0)*(1-(cfgP.pct||0)/100);
         if(capitalPrestamoP>0 && bausparsummeP>0){
-          var quotaPerUnitP=annuityQuota(1,cfgP.interesPrestamo,Math.max(1,Math.round(plazoAnios*12)));
-          cfgP.tilgungsbeitragPerMille=Math.ceil(Math.max(0,quotaPerUnitP*capitalPrestamoP/bausparsummeP*1000)*10000-1e-6)/10000;
+          cfgP.tilgungsbeitragPerMille=tilgungsbeitragParaPlazo(bausparsummeP,capitalPrestamoP,cfgP.interesPrestamo,plazoAnios);
         }
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;

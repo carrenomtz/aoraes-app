@@ -259,6 +259,22 @@ test('cambiar de modo apaga ninguna línea y apagar/encender una cuota funciona'
   engine.inmuebleToggleCurvaTipo(inm, 1500); assert.deepStrictEqual(inm.curvaOff, [1200, 1500]);
   engine.inmuebleToggleCurvaTipo(inm, 1200); assert.deepStrictEqual(inm.curvaOff, [1500]);
 });
+test('plazo del Bauspar: las líneas salen alrededor del plazo actual (×0,5 / ×0,75 / ×1,5, años enteros, máx. 40) y la ‰ pedida da ese plazo', () => {
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaModo: 'plazo' }, 10), [5, 8, 15]);
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaModo: 'plazo' }, 2), [1, 2, 3]);
+  assert.deepStrictEqual(engine.inmuebleCurvaCuotas({ curvaModo: 'plazo', curvaCuotas: { plazo: [5, 60, 12] } }, 10), [5, 12]);
+  assert.strictEqual(engine.inmuebleCurvaModo({ curvaModo: 'plazo' }), 'plazo');
+  const inm = {}; engine.inmuebleSetCurvaModo(inm, 'plazo'); assert.strictEqual(inm.curvaModo, 'plazo');
+  const cfg = { pct: 40, anios: 5, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 6, comision: 1.6 };
+  const r0 = engine.calcInmuebleOption(200000, cfg);
+  [5, 8, 15].forEach(y => {
+    const pm = engine.tilgungsbeitragParaPlazo(200000, r0.capitalPrestamo, cfg.interesPrestamo, y);
+    const r = engine.calcInmuebleOption(200000, Object.assign({}, cfg, { tilgungsbeitragPerMille: pm }));
+    near(r.mesesPrestamo / 12, y, 0.1, 'plazo pedido ' + y);
+  });
+  const corto = engine.calcInmuebleOption(200000, Object.assign({}, cfg, { tilgungsbeitragPerMille: engine.tilgungsbeitragParaPlazo(200000, r0.capitalPrestamo, cfg.interesPrestamo, 5) }));
+  assert.ok(corto.cuotaPrestamo > r0.cuotaPrestamo, 'menos años = cuota mayor');
+});
 test('banco: pagar más al mes termina antes (pagoPre); una cuota que no cubre el interés no amortiza', () => {
   const base = { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 };
   const r0 = engine.calcInmuebleOption(300000, base);
