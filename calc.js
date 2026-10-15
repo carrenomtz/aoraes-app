@@ -352,8 +352,10 @@ function fechaRefiEfectiva(refi){
 // fórmula que ya usa Refinanciar para el saldo pendiente — no es un cálculo nuevo, es el mismo
 // aplicado mes a mes en vez de a una única fecha.
 function inmuebleCurvaSaldo(precio,r,cfg){
-  var paso=3, puntos=[];
-  for(var t=0;t<=r.mesesTotal;t+=paso){
+  // Valor exacto en un mes cualquiera: la gráfica se dibuja cada 3 meses (más los cambios de tramo), pero los hitos y las
+  // etiquetas piden meses sueltos (p. ej. 43) y NO deben salir interpolados entre dos puntos de la rejilla.
+  function pend(t){
+    if(t>=r.mesesTotal) return 0;
     var pendiente;
     if(r.mesesAhorro>0 && t<=r.mesesAhorro){
       var ahorroAcum=ahorroSaldoEn(r.cuotaAhorro,r.sonderAhorro,cfg.interesAhorro,t);
@@ -362,10 +364,20 @@ function inmuebleCurvaSaldo(precio,r,cfg){
       var tp=t-r.mesesAhorro;
       pendiente=(r.saldos&&tp>0)?(tp>r.saldos.length?0:r.saldos[tp-1]):balanceTrasMeses(r.capitalPrestamo,cfg.interesPrestamo,r.cuotaPrestamo,tp);
     }
-    puntos.push({meses:t,pendiente:Math.max(0,pendiente)});
+    return Math.max(0,pendiente);
   }
-  if(puntos.length===0||puntos[puntos.length-1].meses<r.mesesTotal) puntos.push({meses:r.mesesTotal,pendiente:0});
+  var puntos=inmuebleCurvaPuntos(pend,r.mesesTotal,[r.mesesAhorro]);
+  puntos.exacto=pend;
   return puntos;
+}
+// Rejilla de la gráfica: cada 3 meses, más los meses donde cambia el tramo (asignación, refinanciación…) y el final, para que
+// el quiebre se dibuje en su sitio y no a mitad de un segmento.
+function inmuebleCurvaPuntos(pend,totalMeses,quiebres){
+  var ts=[], t;
+  for(t=0;t<=totalMeses;t+=3) ts.push(t);
+  (quiebres||[]).concat([totalMeses]).forEach(function(q){ q=Math.round(q); if(q>0&&q<=totalMeses&&ts.indexOf(q)<0) ts.push(q); });
+  ts.sort(function(x,y){ return x-y; });
+  return ts.map(function(m){ return {meses:m,pendiente:pend(m)}; });
 }
 
 // Banco directo/refinanciar con banco NO es un peligro — es la otra opción financiera legítima —
@@ -375,6 +387,7 @@ function inmuebleCurvaSaldo(precio,r,cfg){
 // franja sombreada de ahí en adelante — la ventaja ya conseguida, en positivo, no la deuda.
 // Valor de una serie de puntos {meses,pendiente} en un mes dado (interpolación lineal entre puntos).
 function inmuebleValorEn(pts,meses){
+  if(pts.exacto) return pts.exacto(meses);
   for(var i=1;i<pts.length;i++){
     if(pts[i].meses>=meses){
       var a=pts[i-1],b=pts[i];
@@ -426,9 +439,9 @@ function inmuebleHitosRefi(refi,mesesHastaRefi,rEst,rBanco,ptsEst,ptsBanco){
 }
 
 function inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rNew,cfgNew,tieneAhorroParalelo){
-  var paso=3,puntos=[];
   var totalMeses=inmuebleMesesDesdeHoy(rNew,mesesHastaRefi);
-  for(var t=0;t<=totalMeses;t+=paso){
+  function pend(t){
+    if(t>=totalMeses) return 0;
     var pendiente;
     if(t<=mesesHastaRefi){
       var tCredito=Math.min(t,rem.mesesRestantes);
@@ -443,9 +456,10 @@ function inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rNew,cfgNew,tieneAhorroP
       var tq=t-mesesHastaRefi;
       pendiente=(rNew.saldos&&tq>0)?(tq>rNew.saldos.length?0:rNew.saldos[tq-1]):balanceTrasMeses(rNew.capitalPrestamo,cfgNew.interesPrestamo,rNew.cuotaPrestamo,tq);
     }
-    puntos.push({meses:t,pendiente:Math.max(0,pendiente)});
+    return Math.max(0,pendiente);
   }
-  if(puntos.length===0||puntos[puntos.length-1].meses<totalMeses) puntos.push({meses:totalMeses,pendiente:0});
+  var puntos=inmuebleCurvaPuntos(pend,totalMeses,[mesesHastaRefi,rem.mesesRestantes]);
+  puntos.exacto=pend;
   return puntos;
 }
 
@@ -708,4 +722,4 @@ function inmuebleToggleCurvaTipo(inm,r){
 }
 function inmuebleSetCurvaModo(inm,modo){ inm.curvaModo=(modo==='bauspar'||modo==='plazo')?modo:'banco'; inm.curvaOff=[]; }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, tilgungsbeitragParaPlazo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, tilgungsbeitragParaPlazo, inmuebleCurvaPuntos, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }

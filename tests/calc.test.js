@@ -593,6 +593,70 @@ test('cambiar precio o interés recalcula el crédito derivado en la siguiente c
   assert.strictEqual(rf.importeOriginal, 400000); assert.strictEqual(rf.interesOriginal, 3);
 });
 
+console.log('\nHitos: cada cifra contra una simulación mes a mes');
+// Simulaciones independientes (bucle mes a mes, sin usar curvas ni interpolación) de lo que queda por pagar en el mes m.
+function simPrestamo(cap, rate, pay, n) { let b = cap; for (let i = 0; i < n; i++) { b = b * (1 + rate / 1200) - pay; if (b < 0) b = 0; } return b; }
+function simAhorroAcum(cuota, sonder, rate, n) { let b = 0; for (let i = 1; i <= n; i++) { b = b * (1 + rate / 1200) + cuota; if (sonder > 0 && i % 12 === 0) b += sonder; } return b; }
+test('Comprar: las cifras de cada hito (Bausparvertrag y banco) coinciden con una simulación independiente, también en meses sueltos', () => {
+  let casos = 0;
+  for (let i = 0; i < 300; i++) {
+    const precio = ri(80000, 900000);
+    const est = { pct: ri(10, 100), anios: rr(3.6, 12), interesAhorro: rr(0, 0.5), interesPrestamo: rr(0.8, 4), tilgungsbeitragPerMille: rr(4, 10), comision: 1.6, sondertilgung: 0, sonderAhorro: Math.random() < 0.3 ? ri(0, 4000) : 0, pagoAhorro: Math.random() < 0.3 ? ri(300, 3000) : 0 };
+    const bank = { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: rr(1.5, 6), tilgungInicial: rr(1, 4), comision: 0, zinsbindung: ri(5, 25), sondertilgung: 0, recargoST: 0, pagoPre: Math.random() < 0.3 ? ri(500, 3000) : 0 };
+    const rEst = engine.calcInmuebleOption(precio, est), rk = engine.calcInmuebleOption(precio, bank);
+    if (rEst.noAmortiza || rk.noAmortiza) continue;
+    const pe = engine.inmuebleCurvaSaldo(precio, rEst, est), pb = engine.inmuebleCurvaSaldo(precio, rk, bank);
+    const rows = engine.inmuebleHitosComprar(precio, rEst, rk, pe, pb, Math.round(bank.zinsbindung * 12));
+    rows.forEach(r => {
+      const m = r.m;
+      const esperadoBanco = m >= rk.mesesTotal ? 0 : simPrestamo(precio, bank.interesPrestamo, rk.cuotaPrestamo, m);
+      let esperadoBaus;
+      if (m >= rEst.mesesTotal) esperadoBaus = 0;
+      else if (rEst.mesesAhorro > 0 && m <= rEst.mesesAhorro) esperadoBaus = precio - Math.min(simAhorroAcum(rEst.cuotaAhorro, rEst.sonderAhorro, est.interesAhorro, m), rEst.objetivoAhorro);
+      else esperadoBaus = simPrestamo(rEst.capitalPrestamo, est.interesPrestamo, rEst.cuotaPrestamo, m - rEst.mesesAhorro);
+      near(r.banco, esperadoBanco, 0.5, 'banco en el hito "' + r.n + '" (mes ' + m + ')');
+      near(r.baus, esperadoBaus, 0.5, 'Bausparvertrag en el hito "' + r.n + '" (mes ' + m + ')');
+    });
+    casos++;
+  }
+  assert.ok(casos > 100, 'casos comprobados: ' + casos);
+});
+test('la asignación del Bausparvertrag deja exactamente precio − ahorro objetivo, aunque caiga entre dos puntos de la rejilla de 3 meses', () => {
+  const cfg = { pct: 40, anios: 3.6, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 5.4539, comision: 1.6 };
+  const r = engine.calcInmuebleOption(100000, cfg);
+  assert.strictEqual(r.mesesAhorro, 43);
+  const pts = engine.inmuebleCurvaSaldo(100000, r, cfg);
+  near(engine.inmuebleValorEn(pts, 43), 60000, 0.01, 'pendiente al asignar');
+  assert.ok(pts.some(p => p.meses === 43), 'la rejilla incluye el mes de la asignación');
+  assert.strictEqual(pts[pts.length - 1].meses, r.mesesTotal);
+});
+test('Refinanciar: las cifras de cada hito coinciden con una simulación independiente (crédito actual, ahorro en paralelo y préstamo nuevo)', () => {
+  let casos = 0;
+  for (let i = 0; i < 300; i++) {
+    const refi = { importeOriginal: ri(100000, 500000), interesOriginal: rr(1, 6), plazoOriginal: ri(15, 35), fechaInicio: engine.isoDateYearsAgo(ri(1, 12)), fechaRefi: engine.isoDateYearsAgo(-ri(1, 10)), saldoHoy: 0,
+      banco: { interesPrestamo: rr(1.5, 6), tilgungInicial: rr(1, 4), comision: 0, zinsbindung: ri(5, 20), sondertilgung: 0, recargoST: 0, topeST: 0, pagoPre: 0 },
+      a: { pct: ri(10, 100), interesAhorro: rr(0, 0.5), interesPrestamo: rr(0.8, 4), tilgungsbeitragPerMille: rr(4, 10), comision: 1.6, sondertilgung: 0, topeST: 0, sonderAhorro: 0, pagoAhorro: 0, pagoPrestamo: 0 } };
+    const rem = engine.calcRefiRemaining(refi), fr = engine.fechaRefiEfectiva(refi), espera = engine.mesesEntreFechas(engine.todayISO(), fr), saldo = engine.saldoEnFecha(refi, fr);
+    if (!(espera > 0) || !(saldo > 1000)) continue;
+    const rBanco = engine.calcInmuebleOption(saldo, { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: refi.banco.interesPrestamo, tilgungInicial: refi.banco.tilgungInicial, comision: 0, zinsbindung: refi.banco.zinsbindung });
+    const rEst = engine.calcInmuebleOption(saldo, Object.assign({ sinMinimoAhorro: true, anios: espera / 12, ahorroPorTiempo: true }, refi.a));
+    if (rBanco.noAmortiza || rEst.noAmortiza) continue;
+    const pb = engine.inmuebleCurvaSaldoRefi(rem, refi, espera, rBanco, refi.banco, false), pe = engine.inmuebleCurvaSaldoRefi(rem, refi, espera, rEst, refi.a, true);
+    const rows = engine.inmuebleHitosRefi(refi, espera, rEst, rBanco, pe, pb);
+    const finEst = engine.inmuebleMesesDesdeHoy(rEst, espera), finBanco = engine.inmuebleMesesDesdeHoy(rBanco, espera);
+    const credito = t => simPrestamo(rem.saldoPendiente, refi.interesOriginal, rem.cuotaOriginal, Math.min(t, rem.mesesRestantes));
+    rows.forEach(r => {
+      const m = r.m;
+      const eb = m >= finBanco ? 0 : (m <= espera ? credito(m) : simPrestamo(rBanco.capitalPrestamo, refi.banco.interesPrestamo, rBanco.cuotaPrestamo, m - espera));
+      const ee = m >= finEst ? 0 : (m <= espera ? credito(m) - Math.min(simAhorroAcum(rEst.cuotaAhorro, rEst.sonderAhorro, refi.a.interesAhorro, m), rEst.objetivoAhorro) : simPrestamo(rEst.capitalPrestamo, refi.a.interesPrestamo, rEst.cuotaPrestamo, m - espera));
+      near(r.banco, eb, 0.5, 'banco en "' + r.n + '" (mes ' + m + ')');
+      near(r.baus, Math.max(0, ee), 0.5, 'Badenia en "' + r.n + '" (mes ' + m + ')');
+    });
+    casos++;
+  }
+  assert.ok(casos > 50, 'casos comprobados: ' + casos);
+});
+
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');
 gaps.forEach(g => console.log('  · ' + g));
 process.exit(failed ? 1 : 0);
