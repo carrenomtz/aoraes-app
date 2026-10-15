@@ -270,6 +270,7 @@ var SHELL_I18N_TABLE={
   'Agresiva · {0} €/mes':['Aggressive · {0} €/month','Aggressiv · {0} €/Monat'],
   'Pasiva · {0} años':['Passive · {0} years','Passiv · {0} Jahre'],
   'Agresiva · {0} años':['Aggressive · {0} years','Aggressiv · {0} Jahre'],
+  'Préstamo a {0} años':['Loan over {0} years','Darlehen über {0} Jahre'], 'Préstamo a {0} año':['Loan over {0} year','Darlehen über {0} Jahr'],
   'Banco a':['Bank at','Bank mit'], 'Cuota {0} €/mes':['Payment {0} €/month','Rate {0} €/Monat'],
   'Líneas de banco en la gráfica (tipos en %, separados por espacios; vacío = ninguna)':['Bank lines in the chart (rates in %, separated by spaces; empty = none)','Bank-Linien im Diagramm (Zinssätze in %, durch Leerzeichen getrennt; leer = keine)'],
   'Cuánto queda por pagar en cada hito':['How much is left to pay at each milestone','Wie viel in jedem Meilenstein noch zu zahlen ist'], 'Hito':['Milestone','Meilenstein'],

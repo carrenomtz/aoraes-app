@@ -275,6 +275,16 @@ test('plazo del Bauspar: salen 2 líneas alrededor del plazo actual (×0,5 / ×1
   const corto = engine.calcInmuebleOption(200000, Object.assign({}, cfg, { tilgungsbeitragPerMille: engine.tilgungsbeitragParaPlazo(200000, r0.capitalPrestamo, cfg.interesPrestamo, 5) }));
   assert.ok(corto.cuotaPrestamo > r0.cuotaPrestamo, 'menos años = cuota mayor');
 });
+test('las líneas del banco no bajan de la cuota que lo paga en 35 años (nada de 70 años)', () => {
+  const cap = 200000, i = 3.5, minC = Math.ceil(engine.annuityQuota(cap, i, 420) / 10) * 10;
+  const base = engine.annuityQuota(cap, i, 360);                                  // cuota a 30 años
+  const l = engine.inmuebleCuotasBancoRealistas([Math.round(base * 0.8 / 10) * 10, Math.round(base * 1.25 / 10) * 10], cap, i, base);
+  assert.strictEqual(l[0], minC, 'la pasiva se sube al mínimo de 35 años');
+  assert.strictEqual(l[1], Math.round(base * 1.25 / 10) * 10, 'la agresiva queda como estaba');
+  const r = engine.calcInmuebleOption(cap, { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: i, tilgungInicial: 2, comision: 0, zinsbindung: 10, pagoPre: l[0] });
+  assert.ok(r.mesesPrestamo <= 420, 'la pasiva termina en 35 años o menos, y salen ' + r.mesesPrestamo + ' meses');
+  assert.deepStrictEqual(engine.inmuebleCuotasBancoRealistas([minC, minC - 50, minC + 1000], cap, i, minC + 1000), [minC], 'sin duplicados y sin repetir la línea principal');
+});
 test('banco: pagar más al mes termina antes (pagoPre); una cuota que no cubre el interés no amortiza', () => {
   const base = { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: 4, tilgungInicial: 2, comision: 0, zinsbindung: 10 };
   const r0 = engine.calcInmuebleOption(300000, base);

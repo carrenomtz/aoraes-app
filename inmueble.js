@@ -282,7 +282,7 @@ function inmuebleCurvaSVG(precio,ptsEst,ptsBanco,mesesAhorroEst,mesesZinsbindung
       // Con los años la etiqueta es larga: si la línea cae cerca del eje, se escribe hacia la derecha para no tapar las cifras del eje.
       '<text x="'+(zx<padL+60?(+zx+5):zx)+'" y="'+(padT+9)+'" font-size="9" font-weight="700" fill="var(--navy)" text-anchor="'+(zx<padL+60?'start':'middle')+'" stroke="var(--surface)" stroke-width="3" paint-order="stroke" stroke-linejoin="round">Asignación ('+inmuebleAnios(extra.zuteilung)+')</text>';
     // La etiqueta de la Zinsbindung baja una fila si cae pegada a la de la Zuteilung.
-    if(marcaZins && Math.abs(px(mesesZinsbindung)-px(extra.zuteilung))<100) marcaZins=marcaZins.replace('y="'+(padT+9).toFixed(1)+'"','y="'+(padT+21).toFixed(1)+'"');
+    if(marcaZins && Math.abs(px(mesesZinsbindung)-px(extra.zuteilung))<(px(extra.zuteilung)<padL+60?155:100)) marcaZins=marcaZins.replace('y="'+(padT+9).toFixed(1)+'"','y="'+(padT+21).toFixed(1)+'"');
   }
   var escLineas=escAct.map(function(e){
     var fin=e.pts[e.pts.length-1];
@@ -305,7 +305,7 @@ function inmuebleCurvaChips(escen,modo){
     return '<button type="button" class="inm-modo'+(m[0]===modo?' on':'')+'" data-curva-modo="'+m[0]+'" aria-pressed="'+(m[0]===modo?'true':'false')+'">'+m[1]+'</button>';
   }).join('')+'</span>';
   return '<div class="inm-curve-chips" role="group" aria-label="Otras cuotas mensuales">'+sel+(escen.length?'<span>Otras opciones</span>':'')+escen.map(function(e){
-    return '<button type="button" class="inm-chip'+(e.activo?'':' off')+'" data-curva-tipo="'+e.r+'" aria-pressed="'+(e.activo?'true':'false')+'" style="--c:'+e.color+'"'+(e.cuota>0?' title="Cuota '+eur(e.cuota)+'/mes"':(e.meses>0?' title="Duración total: '+inmuebleAniosUnos(e.meses)+'"':''))+'><i></i>'+e.etq+' · '+(modo==='plazo'?e.r+' años':eur(e.r)+'/mes')+'</button>';
+    return '<button type="button" class="inm-chip'+(e.activo?'':' off')+'" data-curva-tipo="'+e.r+'" aria-pressed="'+(e.activo?'true':'false')+'" style="--c:'+e.color+'"'+(e.cuota>0?' title="Préstamo a '+e.r+' años"':(e.meses>0?' title="Duración total: '+inmuebleAniosUnos(e.meses)+'"':''))+'><i></i>'+e.etq+' · '+eur(modo==='plazo'?e.cuota:e.r)+'/mes</button>';
   }).join('')+'</div>';
 }
 // Cuadro de hitos: en cada fecha, lo que QUEDA POR PAGAR con el banco y con el Bausparvertrag (las mismas cifras que las líneas de la gráfica).
@@ -453,7 +453,9 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
   var ptsEst=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rEst,estCfg,true);
   var modoR=inmuebleCurvaModo(inm), escen=[];
   var baseR=(modoR==='plazo')?rEst.mesesPrestamo/12:(modoR==='bauspar')?rEst.cuotaAhorro:rBanco.cuotaPrestamo;
-  inmuebleCurvaCuotas(inm,baseR).forEach(function(c){
+  var listaR=inmuebleCurvaCuotas(inm,baseR);
+  if(modoR==='banco') listaR=inmuebleCuotasBancoRealistas(listaR,rBanco.capitalPrestamo,(refi.banco.interesPrestamo||0)+inmuebleRecargoST(refi.banco),baseR);
+  listaR.forEach(function(c){
     var rrE, ptsE;
     if(modoR!=='banco'){
       var cfgA=(modoR==='plazo')?Object.assign({},estCfg,{tilgungsbeitragPerMille:tilgungsbeitragParaPlazo(saldoAtRefi,rEst.capitalPrestamo,estCfg.interesPrestamo,c)}):Object.assign({},estCfg,{pagoAhorro:c});
@@ -465,7 +467,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
       ptsE=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rrE,cfgE,false);
     }
     if(rrE.noAmortiza) return;
-    escen.push({r:c,etq:(modoR==='plazo'?(c<baseR):(c>baseR))?'Agresiva':'Pasiva',lab:(modoR==='plazo')?(c+' años'):eur(c),cuota:(modoR==='plazo')?rrE.cuotaPrestamo:0,color:INM_CURVA_COLORES[escen.length],activo:(((inm&&inm.curvaOff)||[]).indexOf(c)<0),meses:inmuebleMesesDesdeHoy(rrE,mesesHastaRefi),pts:ptsE});
+    escen.push({r:c,etq:(modoR==='plazo'?(c<baseR):(c>baseR))?'Agresiva':'Pasiva',lab:eur((modoR==='plazo')?rrE.cuotaPrestamo:c),cuota:(modoR==='plazo')?rrE.cuotaPrestamo:0,color:INM_CURVA_COLORES[escen.length],activo:(((inm&&inm.curvaOff)||[]).indexOf(c)<0),meses:inmuebleMesesDesdeHoy(rrE,mesesHastaRefi),pts:ptsE});
   });
   var curvaHead='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
     '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>Refinanciar con banco · '+eur(rBanco.cuotaPrestamo)+'/mes</span></div></div>'+inmuebleCurvaChips(escen,modoR)+
@@ -524,11 +526,13 @@ function inmuebleResultsHTML(precio,inm,asParts){
   var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg), ptsBanco=inmuebleCurvaSaldo(precio,rk,cfgBanco);
   var modoC=inmuebleCurvaModo(inm), escen=[];
   var baseC=(modoC==='plazo')?rEst.mesesPrestamo/12:(modoC==='bauspar')?rEst.cuotaAhorro:rk.cuotaPrestamo;
-  inmuebleCurvaCuotas(inm,baseC).forEach(function(c){
+  var listaC=inmuebleCurvaCuotas(inm,baseC);
+  if(modoC==='banco') listaC=inmuebleCuotasBancoRealistas(listaC,rk.capitalPrestamo,(cfgBanco.interesPrestamo||0)+inmuebleRecargoST(cfgBanco),baseC);
+  listaC.forEach(function(c){
     var cfgE=(modoC==='plazo')?Object.assign({},estCfg,{tilgungsbeitragPerMille:tilgungsbeitragParaPlazo(precio,rEst.capitalPrestamo,estCfg.interesPrestamo,c)}):(modoC==='bauspar')?Object.assign({},estCfg,{pagoAhorro:c}):Object.assign({},cfgBanco,{pagoPre:c});
     var rrE=calcInmuebleOption(precio,cfgE);
     if(rrE.noAmortiza||(modoC!=='banco'&&rrE.mesesAhorro===rEst.mesesAhorro&&rrE.mesesPrestamo===rEst.mesesPrestamo&&rrE.cuotaAhorro===rEst.cuotaAhorro&&rrE.cuotaPrestamo===rEst.cuotaPrestamo)) return;
-    escen.push({r:c,etq:(modoC==='plazo'?(c<baseC):(c>baseC))?'Agresiva':'Pasiva',lab:(modoC==='plazo')?(c+' años'):eur(c),cuota:(modoC==='plazo')?rrE.cuotaPrestamo:0,color:INM_CURVA_COLORES[escen.length],activo:((inm.curvaOff||[]).indexOf(c)<0),meses:inmuebleMesesDesdeHoy(rrE,0),pts:inmuebleCurvaSaldo(precio,rrE,cfgE)});
+    escen.push({r:c,etq:(modoC==='plazo'?(c<baseC):(c>baseC))?'Agresiva':'Pasiva',lab:eur((modoC==='plazo')?rrE.cuotaPrestamo:c),cuota:(modoC==='plazo')?rrE.cuotaPrestamo:0,color:INM_CURVA_COLORES[escen.length],activo:((inm.curvaOff||[]).indexOf(c)<0),meses:inmuebleMesesDesdeHoy(rrE,0),pts:inmuebleCurvaSaldo(precio,rrE,cfgE)});
   });
   var curvaHead='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
     '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>'+esc(bancoTitle)+' · '+eur(rk.cuotaPrestamo)+'/mes</span></div></div>'+inmuebleCurvaChips(escen,modoC)+
