@@ -288,7 +288,9 @@ test('la ficha da el margen mensual: ingresos netos menos gastos sin el alquiler
 test('cuota sugerida = lo que sobra sin pasar del límite de cuota (a 10 €); sin margen = 0; sin ficha = null', () => {
   const rec = { data: { fields: { 'inc:salarioNeto_A': '3200', 'exp:super': '1000' } } };
   const inm = engine.normalizeInmueble(rec);
-  assert.deepStrictEqual(engine.inmuebleCuotaSugerida(inm), { libre: 2200, tope: 1120 });
+  assert.deepStrictEqual(engine.inmuebleCuotaSugerida(inm), { libre: 2200, tope: 1120, restar: 0 });
+  assert.strictEqual(engine.inmuebleCuotaSugerida(inm, 500).tope, 620, 'se descuenta la cuota que ya se paga al banco');
+  assert.strictEqual(engine.inmuebleCuotaSugerida(inm, 5000).tope, 0);
   inm.ratioMax = 80; assert.strictEqual(engine.inmuebleCuotaSugerida(inm).tope, 2200);
   const sin = engine.normalizeInmueble({ data: { fields: { 'inc:salarioNeto_A': '1000', 'exp:super': '1200' } } });
   assert.strictEqual(engine.inmuebleCuotaSugerida(sin).tope, 0);
@@ -523,6 +525,56 @@ test('un ingreso ya escrito a mano, o una ficha sin esos datos, se quedan como e
   assert.strictEqual(inm.precio, engine.defaultInmueble().precio);
   assert.strictEqual(inm.ingresoNeto, 0);
   assert.strictEqual(engine.normalizeInmueble({}).ingresoNeto, 0);
+});
+
+console.log('\nComprar y refinanciar');
+test('el crédito de la compra se deriva del importe a financiar y del banco; al refinanciar sigue la fecha de inicio + Zinsbindung', () => {
+  const rec = { data: { fields: {} }, inmueble: engine.defaultInmueble() };
+  rec.inmueble.precio = 300000; rec.inmueble.gastosPct = 10; rec.inmueble.capitalPropio = 50000;
+  rec.inmueble.modo = 'refi'; rec.inmueble.refi.compraNueva = true;
+  rec.inmueble.banco.interesPrestamo = 4; rec.inmueble.banco.tilgungInicial = 2; rec.inmueble.banco.zinsbindung = 10;
+  const inm = engine.normalizeInmueble(rec), rf = inm.refi;
+  assert.strictEqual(rf.importeOriginal, 280000);
+  assert.strictEqual(rf.interesOriginal, 4);
+  near(rf.cuotaActual, 280000 * (4 + 2) / 1200, 0.01, 'cuota = capital × (interés + Tilgung) / 12');
+  assert.strictEqual(rf.saldoHoy, 0);
+  const rem = engine.calcRefiRemaining(rf);
+  near(rem.saldoPendiente, 280000, 0.5, 'hoy se debe todo el importe');
+  assert.strictEqual(rf.fechaRefi.slice(0, 7), engine.inmuebleFechaRefiYM(inm));
+});
+test('refinanciar con banco mantiene la cuota que ya se paga, salvo que se cambie el plazo o el pago', () => {
+  const rec = { inmueble: engine.defaultInmueble() }; rec.inmueble.modo = 'refi'; rec.inmueble.refi.compraNueva = true;
+  let rf = engine.normalizeInmueble(rec).refi;
+  const saldo = engine.saldoEnFecha(rf, rf.fechaRefi);
+  const r = engine.calcInmuebleOption(saldo, Object.assign({ pct: 0, anios: 0, interesAhorro: 0 }, rf.banco));
+  near(r.cuotaPrestamo, rf.cuotaActual, rf.cuotaActual * 0.002, 'misma cuota tras refinanciar');
+  rec.inmueble.refi.mantenerCuota = false; rec.inmueble.refi.banco.tilgungInicial = 2;
+  rf = engine.normalizeInmueble(rec).refi;
+  assert.strictEqual(rf.banco.tilgungInicial, 2, 'ya no se recalcula');
+});
+test('al volver a Refinanciar se recuperan los datos del crédito que había antes', () => {
+  const rec = { inmueble: engine.defaultInmueble() }; rec.inmueble.modo = 'refi';
+  rec.inmueble.refi.importeOriginal = 123456; rec.inmueble.refi.interesOriginal = 2.5; rec.inmueble.refi.banco.tilgungInicial = 3;
+  engine.normalizeInmueble(rec);
+  rec.inmueble.refi.compraNueva = true;
+  assert.notStrictEqual(engine.normalizeInmueble(rec).refi.importeOriginal, 123456);
+  rec.inmueble.refi.compraNueva = false;
+  const rf = engine.normalizeInmueble(rec).refi;
+  assert.strictEqual(rf.importeOriginal, 123456); assert.strictEqual(rf.interesOriginal, 2.5); assert.strictEqual(rf.banco.tilgungInicial, 3);
+  assert.strictEqual(rf.antes, undefined);
+});
+test('si no es compra nueva, el crédito actual escrito a mano no se toca', () => {
+  const rec = { inmueble: engine.defaultInmueble() }; rec.inmueble.modo = 'refi';
+  rec.inmueble.refi.importeOriginal = 123456; rec.inmueble.refi.interesOriginal = 2.5;
+  const rf = engine.normalizeInmueble(rec).refi;
+  assert.strictEqual(rf.importeOriginal, 123456); assert.strictEqual(rf.interesOriginal, 2.5);
+});
+test('cambiar precio o interés recalcula el crédito derivado en la siguiente carga', () => {
+  const rec = { inmueble: engine.defaultInmueble() }; rec.inmueble.modo = 'refi'; rec.inmueble.refi.compraNueva = true;
+  engine.normalizeInmueble(rec);
+  rec.inmueble.precio = 400000; rec.inmueble.banco.interesPrestamo = 3;
+  const rf = engine.normalizeInmueble(rec).refi;
+  assert.strictEqual(rf.importeOriginal, 400000); assert.strictEqual(rf.interesOriginal, 3);
 });
 
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');

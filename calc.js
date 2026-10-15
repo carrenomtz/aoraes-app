@@ -305,7 +305,7 @@ function defaultInmueble(){
     b:{pct:50,anios:5,interesAhorro:0.05,interesPrestamo:0.95,plazoPrestamo:10,comision:1.6},
     banco:{pct:0,anios:0,interesAhorro:0,interesPrestamo:3.5,tilgungInicial:2,comision:0,zinsbindung:10},
     refi:{
-      importeOriginal:200000,interesOriginal:3.0,plazoOriginal:25,fechaInicio:isoDateYearsAgo(5),fechaRefi:isoDateYearsAgo(-5),
+      importeOriginal:200000,interesOriginal:3.0,plazoOriginal:25,fechaInicio:isoDateYearsAgo(5),fechaRefi:isoDateYearsAgo(-5),compraNueva:false,
       banco:{interesPrestamo:3.5,tilgungInicial:2,comision:0,zinsbindung:10},
       a:{pct:40,interesAhorro:0.05,interesPrestamo:1.75,plazoPrestamo:10,comision:1.6},
       b:{pct:50,interesAhorro:0.05,interesPrestamo:0.95,plazoPrestamo:10,comision:1.6}
@@ -553,14 +553,41 @@ function inmuebleAplicarDatosCliente(rec,inm){
   });
 }
 // Cuota mensual orientativa que cabría según la ficha: lo que sobra al mes, sin pasar del límite de cuota (% del ingreso
-// neto). tope = 0 si no sobra nada. null si la ficha no tiene ingresos y gastos.
-function inmuebleCuotaSugerida(inm){
+// neto), menos lo que ya se paga al banco a la vez (restar: en Refinanciar y en Comprar y refinanciar el ahorro corre en paralelo a la
+// cuota del crédito). tope = 0 si no cabe nada. null si la ficha no tiene ingresos y gastos.
+function inmuebleCuotaSugerida(inm,restar){
   var fl=inm&&inm.flujo; if(!fl) return null;
-  if(!(fl.libre>0)) return { libre:fl.libre, tope:0 };
-  var lim=(inm.ratioMax||35)/100*(inm.ingresoNeto>0?inm.ingresoNeto:fl.ingresoTotal);
-  return { libre:fl.libre, tope:Math.floor(Math.min(fl.libre,lim)/10)*10 };
+  if(!(fl.libre>0)) return { libre:fl.libre, tope:0, restar:0 };
+  var lim=(inm.ratioMax||35)/100*(inm.ingresoNeto>0?inm.ingresoNeto:fl.ingresoTotal), ya=Math.max(0,restar||0);
+  return { libre:fl.libre, tope:Math.max(0,Math.floor((Math.min(fl.libre,lim)-ya)/10)*10), restar:ya };
 }
 
+// "Comprar y refinanciar": se compra ya con una hipoteca bancaria y a la vez se ahorra en un Bausparvertrag, que al terminar
+// el tipo fijo sustituye lo que queda de la hipoteca. Es el modo Refinanciar (inm.modo 'refi') con inm.refi.compraNueva = true:
+// el "crédito actual" no se escribe, se DERIVA de la compra (importe a financiar, tipo, cuota y Zinsbindung del banco de
+// Comprar) y se recalcula en cada carga, así que nada de esto es editable por separado. Fecha de refinanciación = mes de
+// inicio + Zinsbindung (la misma que muestra Comprar).
+function inmuebleSyncCompraRefi(inm){
+  var rf=inm.refi; if(!rf) return;
+  // Al volver a Refinanciar se devuelven los datos del crédito que había antes de derivarlos de la compra.
+  if(!rf.compraNueva){ if(rf.antes){ Object.assign(rf,rf.antes.rf); if(rf.banco) Object.assign(rf.banco,rf.antes.banco); delete rf.antes; } return; }
+  if(!rf.antes){
+    var b0=rf.banco||{};
+    rf.antes={ rf:{importeOriginal:rf.importeOriginal,interesOriginal:rf.interesOriginal,plazoOriginal:rf.plazoOriginal,fechaInicio:rf.fechaInicio,fechaRefi:rf.fechaRefi,cuotaActual:rf.cuotaActual||0,saldoHoy:rf.saldoHoy||0},
+      banco:{tilgungInicial:b0.tilgungInicial,plazoObjetivo:b0.plazoObjetivo,pagoPre:b0.pagoPre} };
+  }
+  var fin=inmuebleFin(inm), b=inm.banco;
+  rf.importeOriginal=fin; rf.interesOriginal=b.interesPrestamo||0; rf.plazoOriginal=Math.max(1,bancoPlazoActual(b)||1);
+  rf.cuotaActual=fin>0?calcInmuebleOption(fin,Object.assign({},b,{sondertilgung:0,recargoST:0})).cuotaPrestamo:0; rf.saldoHoy=0;
+  rf.fechaInicio=todayISO(); rf.fechaRefi=inmuebleFechaRefiYM(inm)+'-01';
+  // Por defecto, refinanciar con banco mantiene la cuota que ya se paga (si no, la Tilgung se reinicia al 2 % y el banco "tarda" más
+  // solo por el reinicio, no por el tipo). Se desactiva (rf.mantenerCuota=false) cuando el asesor cambia el plazo o el pago de esa tarjeta.
+  if(rf.mantenerCuota!==false&&rf.banco){
+    var saldoR=saldoEnFecha(rf,rf.fechaRefi);
+    delete rf.banco.plazoObjetivo; rf.banco.pagoPre=0;
+    rf.banco.tilgungInicial=Math.min(35,Math.max(0,Math.round((rf.cuotaActual*1200/Math.max(saldoR,1)-(rf.banco.interesPrestamo||0))*100)/100));
+  }
+}
 function normalizeInmueble(rec){
   var def=defaultInmueble();
   // Un registro mal formado (inmueble o un sub-objeto que no es objeto) vuelve al valor por defecto en vez de romper la herramienta.
@@ -593,6 +620,7 @@ function normalizeInmueble(rec){
   // certeza de tipo — 10 es el ejemplo que el propio Lernskript usa como plazo típico fijado.
   if(inm.banco.zinsbindung==null) inm.banco.zinsbindung=def.banco.zinsbindung;
   if(inm.refi.banco.zinsbindung==null) inm.refi.banco.zinsbindung=def.refi.banco.zinsbindung;
+  inmuebleSyncCompraRefi(inm);
   // Valores guardados fuera de límites (p. ej. un interés negativo tecleado antes de existir el recorte) se reponen al límite más cercano.
   ['precio','ingresoNeto','capitalPropio','gastosPct','pagoIgual'].forEach(function(k){ if(typeof inm[k]==='number') inm[k]=inmuebleLimitar(k,inm[k]).v; });
   [inm.a,inm.b,inm.banco,inm.refi,inm.refi.a,inm.refi.b,inm.refi.banco].forEach(function(cfg){
@@ -673,4 +701,4 @@ function inmuebleToggleCurvaTipo(inm,r){
 }
 function inmuebleSetCurvaModo(inm,modo){ inm.curvaModo=(modo==='bauspar')?'bauspar':'banco'; inm.curvaOff=[]; }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }
