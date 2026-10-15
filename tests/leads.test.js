@@ -5,9 +5,11 @@ const assert = require('assert');
 const L = require(process.env.LEADS || path.join(__dirname, '..', 'leads.js'));
 
 let passed = 0, failed = 0;
+const pending = [];
 function test(name, fn) {
-  try { fn(); passed++; console.log('  ok   ' + name); }
-  catch (e) { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); }
+  const ok = () => { passed++; console.log('  ok   ' + name); };
+  const ko = (e) => { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); };
+  try { const r = fn(); if (r && typeof r.then === 'function') pending.push(r.then(ok, ko)); else ok(); } catch (e) { ko(e); }
 }
 
 const TODAY = '2026-10-15';
@@ -203,5 +205,32 @@ test('leadsSummary: sin datos no revienta', () => {
   assert.deepStrictEqual(e.groups, []);
 });
 
-console.log('\n' + passed + ' ok, ' + failed + ' fallos');
-process.exit(failed ? 1 : 0);
+// ---- Lista de supresión ----
+test('leadSuppressionKeys: correo en minúsculas y teléfono solo con dígitos (sin "+" ni "00")', () => {
+  assert.deepStrictEqual(L.leadSuppressionKeys({ email: ' Ana@Test.COM ', phone: '+34 600-000 001' }).map(k => k.key), ['e:ana@test.com', 'p:34600000001']);
+  assert.deepStrictEqual(L.leadSuppressionKeys({ phone: '0034 600 000 001' }).map(k => k.key), ['p:34600000001']);
+});
+
+test('leadSuppressionKeys: ignora correos y teléfonos inválidos o demasiado cortos', () => {
+  assert.deepStrictEqual(L.leadSuppressionKeys({ email: 'sin-arroba', phone: '123' }), []);
+  assert.deepStrictEqual(L.leadSuppressionKeys({}), []);
+  assert.deepStrictEqual(L.leadSuppressionKeys(null), []);
+});
+
+test('leadSuppressionIds: huella SHA-256 de 64 caracteres, estable y sin el dato en claro', async () => {
+  const a = await L.leadSuppressionIds({ email: 'Ana@Test.com', phone: '+49 151 000' + '0001' });
+  const b = await L.leadSuppressionIds({ email: 'ana@test.com ', phone: '0049 151 0000001' });
+  assert.strictEqual(a.length, 2);
+  assert.deepStrictEqual(a, b, 'mismo contacto escrito distinto -> mismas huellas');
+  a.forEach(x => { assert.ok(/^[0-9a-f]{64}$/.test(x.id)); assert.ok(!x.id.includes('ana')); });
+  assert.deepStrictEqual(a.map(x => x.kind), ['email', 'phone']);
+  const other = await L.leadSuppressionIds({ email: 'otra@test.com' });
+  assert.notStrictEqual(other[0].id, a[0].id);
+  // SHA-256("e:ana@test.com") calculado de forma independiente
+  assert.strictEqual(a[0].id, require('crypto').createHash('sha256').update('e:ana@test.com').digest('hex'));
+});
+
+Promise.all(pending).then(() => {
+  console.log('\n' + passed + ' ok, ' + failed + ' fallos');
+  process.exit(failed ? 1 : 0);
+});

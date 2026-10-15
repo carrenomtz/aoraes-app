@@ -217,6 +217,22 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Lista de supresión: quien pidió no ser contactado. El id del documento es la huella SHA-256 (64 caracteres hexadecimales) del correo
+    // o del teléfono normalizado y el documento no guarda ningún dato personal: solo el tipo, cuándo y quién lo registró. Así, borrar un
+    // contacto o reimportar el mismo Excel no lo reactiva. Un asesor aprobado solo puede AÑADIR entradas (no leer, no modificar, no borrar);
+    // el admin lee y borra. Las entradas no se modifican nunca (update: false), así que se conserva la fecha original.
+    match /suppressions/{id} {
+      allow read, delete: if isAdmin();
+      allow create: if (isAdmin() || isAdvisor())
+        && id.size() == 64
+        && request.resource.data.keys().hasOnly(['kind', 'at', 'by'])
+        && request.resource.data.kind in ['email', 'phone']
+        && request.resource.data.at is string
+        && request.resource.data.at.size() <= 40
+        && request.resource.data.by == request.auth.uid;
+      allow update: if false;
+    }
+
     match /clientProfiles/{uid} {
       allow get: if isOwner(uid) || isAdmin();
       allow list: if isAdmin();

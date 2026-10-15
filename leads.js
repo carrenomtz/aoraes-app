@@ -137,6 +137,31 @@ function leadsSummary(rows, todayStr, statusLabels){
   };
 }
 
+/* ---------- Lista de supresión ---------- */
+// Guarda solo huellas SHA-256 (nunca el correo ni el teléfono en claro) de quien pidió no ser contactado, para que borrar un contacto o volver
+// a importar el mismo Excel no lo "reactive" por accidente. El correo es la clave fiable; el teléfono solo casa si viene en el mismo formato
+// (se comparan los dígitos, sin "+", espacios ni "00" inicial).
+function leadSuppressionKeys(lead){
+  var keys = [];
+  var email = String((lead && lead.email) || '').trim().toLowerCase();
+  if(email.indexOf('@') > 0) keys.push({ kind: 'email', key: 'e:' + email });
+  var digits = String((lead && lead.phone) || '').replace(/\D/g, '').replace(/^00/, '');
+  if(digits.length >= 7) keys.push({ kind: 'phone', key: 'p:' + digits });
+  return keys;
+}
+function leadSha256Hex(text){
+  var enc = new TextEncoder().encode(text);
+  return crypto.subtle.digest('SHA-256', enc).then(function(buf){
+    return Array.prototype.map.call(new Uint8Array(buf), function(b){ return ('0' + b.toString(16)).slice(-2); }).join('');
+  });
+}
+// Promise de [{id, kind}] con el id de documento (hash de 64 caracteres) de cada clave del contacto.
+function leadSuppressionIds(lead){
+  return Promise.all(leadSuppressionKeys(lead).map(function(k){
+    return leadSha256Hex(k.key).then(function(h){ return { id: h, kind: k.kind }; });
+  }));
+}
+
 /* ---------- Copia de seguridad ---------- */
 function leadTsToIso(v){
   if(!v) return '';
@@ -176,5 +201,5 @@ function leadsToCsv(rows){
 }
 
 if(typeof module !== 'undefined' && module.exports){
-  module.exports = { LEAD_HISTORY_MAX: LEAD_HISTORY_MAX, LEAD_STALE_DAYS: LEAD_STALE_DAYS, leadIsOpen: leadIsOpen, leadTouchMs: leadTouchMs, leadIsStale: leadIsStale, leadsSummary: leadsSummary, leadHistoryAppend: leadHistoryAppend, leadHistoryNeedsTrim: leadHistoryNeedsTrim, leadActionState: leadActionState, leadMatchesView: leadMatchesView, leadMergeMeta: leadMergeMeta, leadHistoryText: leadHistoryText, leadTsToIso: leadTsToIso, leadExportRow: leadExportRow, leadsToCsv: leadsToCsv, leadCsvCell: leadCsvCell, LEAD_CSV_COLUMNS: LEAD_CSV_COLUMNS };
+  module.exports = { leadSuppressionKeys: leadSuppressionKeys, leadSha256Hex: leadSha256Hex, leadSuppressionIds: leadSuppressionIds, LEAD_HISTORY_MAX: LEAD_HISTORY_MAX, LEAD_STALE_DAYS: LEAD_STALE_DAYS, leadIsOpen: leadIsOpen, leadTouchMs: leadTouchMs, leadIsStale: leadIsStale, leadsSummary: leadsSummary, leadHistoryAppend: leadHistoryAppend, leadHistoryNeedsTrim: leadHistoryNeedsTrim, leadActionState: leadActionState, leadMatchesView: leadMatchesView, leadMergeMeta: leadMergeMeta, leadHistoryText: leadHistoryText, leadTsToIso: leadTsToIso, leadExportRow: leadExportRow, leadsToCsv: leadsToCsv, leadCsvCell: leadCsvCell, LEAD_CSV_COLUMNS: LEAD_CSV_COLUMNS };
 }

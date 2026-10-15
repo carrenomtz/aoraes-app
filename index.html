@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./app.css?v=6418878f">
+<link rel="stylesheet" href="./app.css?v=45b5cd77">
 </head>
 <body>
   <div class="auth-gate" id="auth-gate">
@@ -363,7 +363,7 @@
        el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
   <script src="./i18n.js?v=76ca1307"></script>
 <script src="./util.js?v=3e8fcffb"></script>
-<script src="./leads.js?v=c3458b20"></script>
+<script src="./leads.js?v=28d53483"></script>
 <script src="./calc.js?v=d665f4c4"></script>
 <script src="./inmueble.js?v=b1067d59"></script>
 <script src="./afa.js?v=8c8d2660"></script>
@@ -520,6 +520,41 @@
             rows.push(leadExportRow(Object.assign({}, d.data(), {id:d.id}), 'asesor', owner, labels[owner]||owner));
           });
           return rows;
+        });
+      },
+      isAdminUser: function(){ return (currentProfile&&currentProfile.role==='admin')||currentUid===ADMIN_UID; },
+      // ---- Lista de supresión: solo huellas SHA-256 de correo/teléfono (ver leads.js), nunca el dato en claro ----
+      // Sirve para que borrar un contacto "No contactar" o reimportar el mismo Excel no lo reactive. Un asesor solo puede AÑADIR (las reglas no
+      // le dejan leer ni borrar); el admin lee, añade lo que falta y borra. Devuelve cuántas huellas nuevas se escribieron. El admin propaga los
+      // errores (así un borrado masivo no sigue adelante si no se pudo registrar); el asesor los ignora (no puede saber si ya existía).
+      listSuppressionIds: function(){
+        return getDocs(collection(db,'suppressions')).then(function(snap){ var set={}; snap.forEach(function(d){ set[d.id]=1; }); return set; });
+      },
+      addSuppressions: function(leads){
+        var by=currentUid, at=new Date().toISOString(), isAdm=window.AORAES_CLOUD.isAdminUser();
+        if(!by||!leads||!leads.length) return Promise.resolve(0);
+        return Promise.all(leads.map(function(l){ return leadSuppressionIds(l); })).then(function(lists){
+          var seen={}, items=[]; lists.forEach(function(list){ list.forEach(function(x){ if(!seen[x.id]){ seen[x.id]=1; items.push(x); } }); });
+          if(!items.length) return 0;
+          return (isAdm ? window.AORAES_CLOUD.listSuppressionIds() : Promise.resolve({})).then(function(existing){
+            var todo=items.filter(function(x){ return !existing[x.id]; });
+            var chunks=[]; for(var i=0;i<todo.length;i+=25) chunks.push(todo.slice(i,i+25));
+            var written=0;
+            return chunks.reduce(function(p,chunk){
+              return p.then(function(){
+                return Promise.all(chunk.map(function(x){
+                  var w=setDoc(doc(db,'suppressions',x.id), {kind:x.kind, at:at, by:by});
+                  return isAdm ? w.then(function(){ written++; }) : w.then(function(){ written++; }, function(){});
+                }));
+              });
+            }, Promise.resolve()).then(function(){ return written; });
+          });
+        });
+      },
+      removeSuppressions: function(leads){
+        return Promise.all((leads||[]).map(function(l){ return leadSuppressionIds(l); })).then(function(lists){
+          var ids=[]; lists.forEach(function(list){ list.forEach(function(x){ if(ids.indexOf(x.id)<0) ids.push(x.id); }); });
+          return Promise.all(ids.map(function(id){ return deleteDoc(doc(db,'suppressions',id)); })).then(function(){ return ids.length; });
         });
       },
       deleteLead: function(leadId){
@@ -684,15 +719,15 @@
       // seleccionar miles de filas a mano.
       clearPool: function(){
         return getDocs(leadsPoolCol()).then(function(snap){
-          var ids=[]; snap.forEach(function(d){ ids.push(d.id); });
+          var ids=[], dnc=[]; snap.forEach(function(d){ ids.push(d.id); var x=d.data(); if(x.doNotContact) dnc.push(x); });
           var chunks=[]; for(var i=0;i<ids.length;i+=450) chunks.push(ids.slice(i,i+450));
-          return chunks.reduce(function(p,chunk){
+          return window.AORAES_CLOUD.addSuppressions(dnc).then(function(){ return chunks.reduce(function(p,chunk){
             return p.then(function(){
               var b=writeBatch(db);
               chunk.forEach(function(id){ b.delete(doc(leadsPoolCol(),id)); });
               return b.commit();
             });
-          }, Promise.resolve()).then(function(){ return ids.length; });
+          }, Promise.resolve()); }).then(function(){ return ids.length; });
         });
       },
       // Une varios contactos de la bolsa (normalmente con el mismo teléfono repetido) en uno solo:
@@ -709,7 +744,10 @@
       deleteAdvisorAccount: function(uid){
         return Promise.all([
           getDocs(collection(db,'users',uid,'clients')).then(function(snap){ return Promise.all(snap.docs.map(function(d){ return deleteDoc(d.ref); })); }),
-          getDocs(collection(db,'users',uid,'leads')).then(function(snap){ return Promise.all(snap.docs.map(function(d){ return deleteDoc(d.ref); })); })
+          getDocs(collection(db,'users',uid,'leads')).then(function(snap){
+            var dnc=snap.docs.map(function(d){ return d.data(); }).filter(function(x){ return x.doNotContact; });
+            return window.AORAES_CLOUD.addSuppressions(dnc).then(function(){ return Promise.all(snap.docs.map(function(d){ return deleteDoc(d.ref); })); });
+          })
         ]).then(function(){
           return deleteDoc(profileDoc(uid));
         }).catch(function(e){ console.error('AORAES cloud: fallo al borrar la cuenta del asesor',e); throw e; });
@@ -2065,7 +2103,8 @@
       var ids=Object.keys(_poolSelected).filter(function(id){ return _poolSelected[id]; }); if(!ids.length) return;
       if(!confirm('¿Eliminar '+ids.length+' contacto'+(ids.length===1?'':'s')+' de la bolsa? No se puede deshacer.')) return;
       this.disabled=true;
-      window.AORAES_CLOUD.deletePoolLeads(ids).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al eliminar de la bolsa',e); alert('No se pudo eliminar. Revisa la consola.'); }).finally(function(){ document.getElementById('pool-bulk-delete').disabled=false; });
+      var dncToKeep=_pool.filter(function(l){ return l.doNotContact && ids.indexOf(l.id)>=0; });
+      window.AORAES_CLOUD.addSuppressions(dncToKeep).then(function(){ return window.AORAES_CLOUD.deletePoolLeads(ids); }).then(function(){ renderAsesores(); }).catch(function(e){ console.error('AORAES: fallo al eliminar de la bolsa',e); alert('No se pudo eliminar. Revisa la consola.'); }).finally(function(){ document.getElementById('pool-bulk-delete').disabled=false; });
     });
     // Vacía la bolsa entera — pensado para deshacer un import con columnas mal mapeadas (p.ej.
     // "Teléfono" emparejado por error con la columna de profesión) sin seleccionar fila por fila.
@@ -2398,6 +2437,11 @@
       if(r.leadNo) lead.leadNo=r.leadNo;
       lead.source=_impFileName||'Importación Excel';
       lead.history=[{at:now, by:(window.AORAES_CLOUD&&window.AORAES_CLOUD.uid)||'', type:'import', note:_impFileName}];
+      // Coincide con la lista de supresión: se importa (no se pierde el registro) pero ya marcado "No contactar".
+      if(r._suppressed){
+        lead.doNotContact=true; lead.dncReason='En la lista de supresión'; lead.dncAt=now;
+        lead.history.push({at:now, by:lead.history[0].by, type:'dnc', to:true, note:'Coincide con la lista de supresión'});
+      }
       return { lead:lead, adv:adv };
     }
     function renderImportPreview(){
@@ -2436,20 +2480,23 @@
         (previewRows.length<merged.length?' Vista previa de los primeros 5.':'');
       document.getElementById('import-confirm').disabled=!merged.length;
     }
-    document.getElementById('import-confirm').addEventListener('click', function(){
-      // Reutiliza lo ya calculado si esto es un reintento (mismo mapeo, sin cambios desde el último
-      // clic) — importLeads()/updateExistingLeadsBulk() suben por lotes, y si un lote falla a medias,
-      // reintentar con ids nuevos para TODO volvía a insertar como duplicado lo que ya se había
-      // subido bien. Con lo mismo, reintentar solo repite las escrituras ya hechas (sin efecto) y
-      // esta vez sí sube lo que faltaba.
-      if(!_impBuiltCache){
-        var res=computeMergedRows(), merged=res.merged;
+    // Lee la lista de supresión y marca las filas nuevas que coinciden; si no se puede leer, NO se importa nada (mejor parar que importar
+    // como normal a alguien que pidió no ser contactado). Reutiliza lo ya calculado en un reintento (mismos ids, sin duplicar).
+    function prepareImportCache(){
+      var res=computeMergedRows(), merged=res.merged;
+      var newRows=merged.filter(function(r){ return !r._existingMatch; });
+      var existingRows=merged.filter(function(r){ return r._existingMatch; });
+      var checked=newRows.length
+        ? Promise.all([window.AORAES_CLOUD.listSuppressionIds(), Promise.all(newRows.map(function(r){ return leadSuppressionIds(r); }))]).then(function(x){
+            newRows.forEach(function(r,i){ r._suppressed=x[1][i].some(function(k){ return x[0][k.id]; }); });
+          }).catch(function(e){ e._prep=true; throw e; })
+        : Promise.resolve();
+      return checked.then(function(){
         var now=new Date().toISOString();
-        var byAdvisor={}, pool=[], updates=[];
-        var newRows=merged.filter(function(r){ return !r._existingMatch; });
-        var existingRows=merged.filter(function(r){ return r._existingMatch; });
+        var byAdvisor={}, pool=[], updates=[], suppressedCount=0;
         newRows.forEach(function(r,i){
           var built=buildLeadFromMerged(r,i,now);
+          if(r._suppressed) suppressedCount++;
           if(built.adv){ built.lead.assignedAt=now; (byAdvisor[built.adv.uid]=byAdvisor[built.adv.uid]||[]).push(built.lead); }
           else pool.push(built.lead);
         });
@@ -2457,24 +2504,35 @@
           var meta=r._existingMatch, patch=buildUpdatePatch(r,meta);
           updates.push({ownerUid:meta.ownerUid, targetId:meta.id, patch:patch});
         });
-        _impBuiltCache={byAdvisor:byAdvisor, pool:pool, updates:updates, updatedCount:existingRows.length};
-      }
-      var cache=_impBuiltCache;
+        _impBuiltCache={byAdvisor:byAdvisor, pool:pool, updates:updates, updatedCount:existingRows.length, suppressedCount:suppressedCount};
+      });
+    }
+    document.getElementById('import-confirm').addEventListener('click', function(){
+      // Reutiliza lo ya calculado si esto es un reintento (mismo mapeo, sin cambios desde el último
+      // clic) — importLeads()/updateExistingLeadsBulk() suben por lotes, y si un lote falla a medias,
+      // reintentar con ids nuevos para TODO volvía a insertar como duplicado lo que ya se había
+      // subido bien. Con lo mismo, reintentar solo repite las escrituras ya hechas (sin efecto) y
+      // esta vez sí sube lo que faltaba.
       var btn=this; btn.disabled=true; btn.textContent='Importando…';
-      Promise.all([
-        window.AORAES_CLOUD.importLeads(cache.byAdvisor, cache.pool),
-        window.AORAES_CLOUD.updateExistingLeadsBulk(cache.updates)
-      ]).then(function(){
+      var cache=null;
+      (_impBuiltCache ? Promise.resolve() : prepareImportCache()).then(function(){
+        cache=_impBuiltCache;
+        return Promise.all([
+          window.AORAES_CLOUD.importLeads(cache.byAdvisor, cache.pool),
+          window.AORAES_CLOUD.updateExistingLeadsBulk(cache.updates)
+        ]);
+      }).then(function(){
         _impBuiltCache=null;
         document.getElementById('import-step-map').hidden=true;
         document.getElementById('import-step-result').hidden=false;
         var assignedCount=Object.keys(cache.byAdvisor).reduce(function(s,uid){ return s+cache.byAdvisor[uid].length; },0);
         document.getElementById('import-result-msg').textContent=
           'Listo: '+assignedCount+' contacto'+(assignedCount===1?'':'s')+' asignado'+(assignedCount===1?'':'s')+' directamente a su asesor, '+cache.pool.length+' en la bolsa sin asignar'+
-          (cache.updatedCount?('. '+(cache.updatedCount===1?'1 contacto que ya existía se actualizó':cache.updatedCount+' contactos que ya existían se actualizaron')+' (mismo número, sin tocar su estado ni notas).'):'.');
+          (cache.updatedCount?('. '+(cache.updatedCount===1?'1 contacto que ya existía se actualizó':cache.updatedCount+' contactos que ya existían se actualizaron')+' (mismo número, sin tocar su estado ni notas).'):'.')+
+          (cache.suppressedCount?(' '+(cache.suppressedCount===1?'1 contacto coincidía':cache.suppressedCount+' contactos coincidían')+' con la lista de supresión y se importó marcado como "No contactar".'):'');
       }).catch(function(e){
         console.error('AORAES: fallo al importar',e);
-        alert('Algo falló al guardar en la nube. Revisa la consola e inténtalo de nuevo.');
+        alert(e&&e._prep ? 'No se pudo comprobar la lista de supresión, así que no se importó nada. Inténtalo de nuevo.' : 'Algo falló al guardar en la nube. Revisa la consola e inténtalo de nuevo.');
       }).finally(function(){ btn.disabled=false; btn.textContent='Importar'; });
     });
     document.getElementById('import-done').addEventListener('click', function(){
@@ -2829,7 +2887,7 @@
       }
       if(src!==(l.source||'')){ patch.source=src; entries.push({type:'source', from:l.source||'', to:src}); }
       if(dncOn!==!!l.doNotContact){
-        if(!dncOn && !confirm('¿Quitar la marca "No contactar"? Hazlo solo si la persona ha vuelto a dar permiso.')) return;
+        if(!dncOn && !confirm('¿Quitar la marca "No contactar"? '+(window.AORAES_CLOUD.isAdminUser()?'También se quita de la lista de supresión. ':'La lista de supresión la gestiona el administrador. ')+'Hazlo solo si la persona ha vuelto a dar permiso.')) return;
         patch.doNotContact=dncOn; patch.dncAt=dncOn?new Date().toISOString():''; patch.dncReason=dncOn?dncReason:'';
         entries.push({type:'dnc', to:dncOn, note:dncOn?dncReason:''});
       } else if(dncOn && dncReason!==(l.dncReason||'')){
@@ -2840,6 +2898,9 @@
       window.AORAES_CLOUD.patchLead(l, patch, entries, _fichaScope==='pool').then(function(){
         Object.assign(l, patch);
         entries.forEach(function(e){ noteLocalHistory(l, e); });
+        // Lista de supresión: la marca sobrevive a borrar el contacto o reimportar el mismo Excel. No bloquea el guardado si falla.
+        if(patch.doNotContact===true) window.AORAES_CLOUD.addSuppressions([l]).catch(function(e){ console.error('AORAES: fallo al registrar en la lista de supresión',e); });
+        if(patch.doNotContact===false && window.AORAES_CLOUD.isAdminUser()) window.AORAES_CLOUD.removeSuppressions([l]).catch(function(e){ console.error('AORAES: fallo al quitar de la lista de supresión',e); });
         closeFicha(); rerenderLeadTables();
       }).catch(function(e){
         console.error('AORAES: fallo al guardar la ficha',e);
@@ -2891,6 +2952,7 @@
     /* ---------- Resumen del equipo (admin): todo sale de los contactos reales, sin cifras decorativas ----------
        Reutiliza la lectura de la copia de seguridad (exportLeads) y la lógica de leads.js (leadsSummary), así que las definiciones son
        las mismas que las de las vistas rápidas de Contactos. Se calcula al abrir la pestaña o al pulsar Recalcular, no en cada pantalla. */
+    var _resumenRows=[];
     function rsNum(n, uid, view){
       return n ? '<button type="button" class="rs-num" data-rs-go="'+esc(uid)+'" data-rs-view="'+view+'" title="Ver estos contactos">'+n+'</button>' : '<span class="rs-zero">0</span>';
     }
@@ -2921,11 +2983,29 @@
         body.innerHTML=cards+
           '<div class="pool-table-wrap"><table class="pool-table rs-table"><thead>'+head+'</thead><tbody>'+(trs||'<tr><td colspan="7" class="ase-empty" style="border:0">Todavía no hay contactos.</td></tr>')+'</tbody></table></div>'+
           '<div class="rs-lists"><div><h3 class="ficha-h">Por estado</h3><ul>'+li(sum.byStatus)+'</ul></div><div><h3 class="ficha-h">Por origen</h3><ul>'+li(sum.bySource)+'</ul></div></div>';
+        _resumenRows=rows;
+        body.innerHTML+='<div class="rs-sup"><h3 class="ficha-h">Lista de supresión</h3>'+
+          '<p class="cock-note" style="margin:0 0 8px">Guarda solo huellas cifradas (SHA-256) del correo y del teléfono de quien está marcado "No contactar", no los datos en claro. Así, borrar un contacto o reimportar el mismo Excel no lo reactiva: al importar, quien coincida entra ya marcado.</p>'+
+          '<div class="rs-sup-row"><span id="rs-sup-count">Entradas: …</span><button type="button" class="cont-backup-btn" id="rs-sup-sync">Registrar los marcados que falten</button><span class="rs-stamp" id="rs-sup-msg"></span></div></div>';
+        window.AORAES_CLOUD.listSuppressionIds().then(function(set){ var el=document.getElementById('rs-sup-count'); if(el) el.textContent='Entradas: '+Object.keys(set).length; }).catch(function(){ var el=document.getElementById('rs-sup-count'); if(el) el.textContent='Entradas: no se pudieron leer'; });
         stamp.textContent='Calculado '+new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+' con '+t.total+' contactos.';
       }).catch(function(e){ console.error('AORAES: fallo al calcular el resumen',e); body.innerHTML='<div class="cock-empty">No se pudo calcular. Revisa la consola.</div>'; });
     }
+    function renderSupCount(){
+      window.AORAES_CLOUD.listSuppressionIds().then(function(set){ var el=document.getElementById('rs-sup-count'); if(el) el.textContent='Entradas: '+Object.keys(set).length; }).catch(function(){});
+    }
     document.getElementById('resumen-refresh').addEventListener('click', renderResumen);
     document.getElementById('resumen-body').addEventListener('click', function(e){
+      var sync=e.target.closest('#rs-sup-sync');
+      if(sync){
+        var dnc=_resumenRows.filter(function(l){ return l.doNotContact; });
+        sync.disabled=true; document.getElementById('rs-sup-msg').textContent='Registrando…';
+        window.AORAES_CLOUD.addSuppressions(dnc).then(function(n){
+          document.getElementById('rs-sup-msg').textContent=dnc.length+' contacto'+(dnc.length===1?'':'s')+' marcado'+(dnc.length===1?'':'s')+' · '+n+' huella'+(n===1?'':'s')+' nueva'+(n===1?'':'s')+' registrada'+(n===1?'':'s')+'.';
+          renderSupCount();
+        }).catch(function(err){ console.error('AORAES: fallo al registrar en la lista de supresión',err); document.getElementById('rs-sup-msg').textContent='No se pudo registrar. Revisa la consola.'; }).finally(function(){ sync.disabled=false; });
+        return;
+      }
       var b=e.target.closest('[data-rs-go]'); if(!b) return;
       var go=b.getAttribute('data-rs-go'), view=b.getAttribute('data-rs-view')||'';
       if(go==='pool'){ showAdminTab('pool'); renderPool(); return; }
