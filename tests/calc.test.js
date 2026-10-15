@@ -296,7 +296,7 @@ console.log('Margen mensual y cuota sugerida');
 test('la ficha da el margen mensual: ingresos netos menos gastos sin el alquiler/hipoteca; con gastos totales no se puede separar', () => {
   const rec = { data: { expMode: 'cat', fields: { 'inc:salarioNeto_A': '3000', 'inc:alquiler_A': '400', 'exp:alquilerHipoteca': '900', 'exp:super': '500', 'exp:ocio': '300' } } };
   const d = engine.inmuebleDatosCliente(rec);
-  assert.deepStrictEqual(d.flujo, { ingresoTotal: 3400, gastos: 800, libre: 2600 });
+  assert.deepStrictEqual(d.flujo, { ingresoTotal: 3400, gastos: 800, libre: 2600, gastosTotales: 1700, libreHoy: 1700, liquido: 0 });
   const rt = { data: { expMode: 'total', fields: { 'inc:salarioNeto_A': '3000', 'exptotal:': '2200' } } };
   assert.strictEqual(engine.inmuebleDatosCliente(rt).flujo.libre, 800);
   assert.strictEqual(engine.inmuebleDatosCliente({ data: { fields: { 'inc:salarioNeto_A': '3000' } } }).flujo, null);
@@ -668,6 +668,35 @@ test('menos del 10 % rojo, de 10 % a menos de 15 % amarillo, 15 % o más verde; 
   assert.strictEqual(n(200000, 80000), 'verde');
   assert.strictEqual(n(0, 50000), '');
   near(engine.inmuebleCapitalNivel({ precio: 250000, capitalPropio: 20000 }).pct, 8, 1e-9);
+});
+
+console.log('\nPropuesta según la ficha: capital propio y cuándo empezar');
+const fichaCapital = { data: { expMode: 'cat', fields: { 'inc:salarioNeto_A': '3000', 'inc:salarioNeto_B': '1500', 'exp:alquilerHipoteca': '900', 'exp:super': '600', 'exp:ocio': '300', 'sit:ahorroLiquido_A': '20000', 'sit:ahorroLiquido_B': '5000', 'sit:tagesgeldSaldo': '12000', 'sit:precioViviendaObjetivo': '300000' } } };
+test('capital propio propuesto = ahorro líquido (cuenta + Tagesgeld) menos 6 meses de gastos totales, a múltiplos de 100 €', () => {
+  const d = engine.inmuebleDatosCliente(fichaCapital);
+  assert.strictEqual(d.flujo.liquido, 37000);
+  assert.strictEqual(d.flujo.gastosTotales, 1800);
+  assert.strictEqual(d.capital, 26200, '37.000 − 6 × 1.800 = 26.200');
+  const inm = engine.normalizeInmueble(JSON.parse(JSON.stringify(fichaCapital)));
+  assert.strictEqual(inm.capitalPropio, 26200); assert.strictEqual(inm.precio, 300000);
+});
+test('el capital propio a mano no se pisa; con menos ahorro que la reserva se propone 0', () => {
+  const rec = JSON.parse(JSON.stringify(fichaCapital));
+  engine.normalizeInmueble(rec); rec.inmueble.capitalPropio = 50000; rec.data.fields['sit:ahorroLiquido_A'] = '30000';
+  assert.strictEqual(engine.normalizeInmueble(rec).capitalPropio, 50000);
+  const pobre = JSON.parse(JSON.stringify(fichaCapital)); pobre.data.fields['sit:ahorroLiquido_A'] = '1000'; pobre.data.fields['sit:ahorroLiquido_B'] = '0'; pobre.data.fields['sit:tagesgeldSaldo'] = '0';
+  assert.strictEqual(engine.inmuebleDatosCliente(pobre).capital, 0);
+});
+test('cuándo empezar: meses para reunir el 10 % y el 20 % del precio ahorrando lo que sobra cada mes (con el alquiler aún pagado)', () => {
+  const inm = engine.normalizeInmueble(JSON.parse(JSON.stringify(fichaCapital)));      // capital 26.200 · sobra 4.500 − 1.800 = 2.700/mes
+  const c = engine.inmuebleCuandoComprar(inm);
+  assert.strictEqual(c.ahorroMes, 2700);
+  assert.deepStrictEqual(c.metas.map(m => [m.pct, m.meta, m.faltan, m.meses]), [[10, 30000, 3800, 2], [20, 60000, 33800, 13]]);
+  inm.capitalPropio = 70000;
+  assert.deepStrictEqual(engine.inmuebleCuandoComprar(inm).metas.map(m => m.meses), [0, 0]);
+  const sinMargen = engine.normalizeInmueble({ data: { fields: { 'inc:salarioNeto_A': '1000', 'exp:super': '1500' } } });
+  assert.strictEqual(engine.inmuebleCuandoComprar(sinMargen).metas[1].meses, null);
+  assert.strictEqual(engine.inmuebleCuandoComprar(engine.normalizeInmueble({})), null);
 });
 
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');

@@ -548,19 +548,27 @@ function inmuebleDatosCliente(rec){
   var gastos=0, vivienda=0;
   if(rec&&rec.data&&rec.data.expMode==='total') gastos=n('exptotal:');
   else Object.keys(f).forEach(function(k){ if(k.indexOf('exp:')===0){ var v=n(k); gastos+=v; if(k==='exp:alquilerHipoteca') vivienda+=v; } });
-  var flujo=(total>0&&gastos>0)?{ ingresoTotal:Math.round(total), gastos:Math.round(gastos-vivienda), libre:Math.round(total-(gastos-vivienda)) }:null;
-  return { ingreso:Math.round(ingreso), precio:n('sit:precioViviendaObjetivo'), flujo:flujo };
+  // Ahorro de libre disposición (cuenta + Tagesgeld, igual que el "corto plazo" de Análisis financiero): por persona A+B si hay,
+  // y si no, el total de la ficha. No cuenta ETF ni el saldo de Bausparverträge ya existentes.
+  function personas(k){ var ab=n('sit:'+k+'_A')+n('sit:'+k+'_B'); return ab>0?ab:n('sit:'+k); }
+  var liquido=personas('ahorroLiquido')+personas('tagesgeldSaldo');
+  var flujo=(total>0&&gastos>0)?{ ingresoTotal:Math.round(total), gastos:Math.round(gastos-vivienda), libre:Math.round(total-(gastos-vivienda)),
+    gastosTotales:Math.round(gastos), libreHoy:Math.round(total-gastos), liquido:Math.round(liquido) }:null;
+  // Capital propio que se propone: el ahorro líquido menos 6 meses de gastos totales como reserva de emergencia (el máximo que
+  // pide Análisis financiero), a múltiplos de 100 €.
+  var capital=flujo?Math.max(0,Math.floor((liquido-6*gastos)/100)*100):0;
+  return { ingreso:Math.round(ingreso), precio:n('sit:precioViviendaObjetivo'), capital:capital, flujo:flujo };
 }
-// Rellena precio e ingreso desde la ficha mientras el asesor no los haya cambiado a mano: inm.desdeCliente guarda lo
-// último traído, y un campo se actualiza solo si sigue vacío (ingreso 0, precio = el de ejemplo) o igual a ese valor.
+// Rellena precio, ingreso y capital propio desde la ficha mientras el asesor no los haya cambiado a mano: inm.desdeCliente guarda lo
+// último traído, y un campo se actualiza solo si sigue vacío (ingreso o capital 0, precio = el de ejemplo) o igual a ese valor.
 // inm.flujo (margen mensual) es un dato derivado: se recalcula en cada carga y se borra si la ficha ya no lo permite.
 function inmuebleAplicarDatosCliente(rec,inm){
   var d=inmuebleDatosCliente(rec);
   if(d.flujo) inm.flujo=d.flujo; else delete inm.flujo;
-  if(!(d.ingreso>0||d.precio>0)) return;
+  if(!(d.ingreso>0||d.precio>0||d.capital>0)) return;
   if(!inm.desdeCliente||typeof inm.desdeCliente!=='object') inm.desdeCliente={};
-  var vacio={ ingreso:function(v){ return !(v>0); }, precio:function(v){ return v===defaultInmueble().precio; } };
-  [['ingreso','ingresoNeto'],['precio','precio']].forEach(function(c){
+  var vacio={ ingreso:function(v){ return !(v>0); }, capital:function(v){ return !(v>0); }, precio:function(v){ return v===defaultInmueble().precio; } };
+  [['ingreso','ingresoNeto'],['precio','precio'],['capital','capitalPropio']].forEach(function(c){
     var v=d[c[0]], cur=inm[c[1]], prev=inm.desdeCliente[c[0]];
     if(!(v>0)||cur===v) { if(v>0) inm.desdeCliente[c[0]]=v; return; }
     if(cur===prev||(prev==null&&vacio[c[0]](cur))){ inm[c[1]]=v; inm.desdeCliente[c[0]]=v; }
@@ -573,6 +581,19 @@ function inmuebleCapitalNivel(inm){
   if(!(precio>0)) return { pct:0, nivel:'' };
   var pct=cap/precio*100;
   return { pct:pct, nivel:(pct<10)?'rojo':(pct<15?'amarillo':'verde') };
+}
+// "Cuándo sería sano empezar": con el capital propio indicado y lo que el cliente puede ahorrar cada mes (ingresos menos TODOS los
+// gastos, incluido el alquiler, que se sigue pagando mientras se ahorra), cuánto tarda en reunir el 10 % del precio (cubre los
+// gastos de compra) y el 20 % (gastos + un 10 % de entrada). Sin interés ni cambios de precio. null si la ficha no tiene ingresos y gastos.
+function inmuebleCuandoComprar(inm){
+  var fl=inm&&inm.flujo; if(!fl) return null;
+  var precio=Math.max(0,inm.precio||0), cap=Math.max(0,inm.capitalPropio||0), ahorroMes=Math.max(0,fl.libreHoy||0);
+  var metas=[10,20].map(function(pct){
+    var meta=precio*pct/100, faltan=Math.max(0,meta-cap);
+    return { pct:pct, meta:Math.round(meta), faltan:Math.round(faltan), meses:(faltan<=0)?0:(ahorroMes>0?Math.ceil(faltan/ahorroMes):null) };
+  });
+  return { liquido:fl.liquido||0, disp6:Math.max(0,Math.floor(((fl.liquido||0)-6*fl.gastosTotales)/100)*100), disp3:Math.max(0,Math.floor(((fl.liquido||0)-3*fl.gastosTotales)/100)*100),
+    ahorroMes:ahorroMes, metas:metas };
 }
 // Cuota mensual orientativa que cabría según la ficha: lo que sobra al mes, sin pasar del límite de cuota (% del ingreso
 // neto), menos lo que ya se paga al banco a la vez (restar: en Refinanciar y en Comprar y refinanciar el ahorro corre en paralelo a la
@@ -730,4 +751,4 @@ function inmuebleToggleCurvaTipo(inm,r){
 }
 function inmuebleSetCurvaModo(inm,modo){ inm.curvaModo=(modo==='bauspar'||modo==='plazo')?modo:'banco'; inm.curvaOff=[]; }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCapitalNivel, tilgungsbeitragParaPlazo, inmuebleCurvaPuntos, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCuandoComprar, inmuebleCapitalNivel, tilgungsbeitragParaPlazo, inmuebleCurvaPuntos, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }

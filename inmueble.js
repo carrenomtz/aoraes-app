@@ -553,6 +553,30 @@ function inmuebleSugerenciaHTML(inm){
     '<button type="button" class="inm-sug-btn" data-inm-usar-cuota="1">Usar esta cuota de ahorro</button>'+
     '<p class="inm-curve-note"><span>No cuenta el alquiler o la hipoteca actual, que dejaría de pagarse.</span> <span>Es una referencia, no una recomendación firme.</span></p></div>';
 }
+// "Cuándo sería sano empezar": tarjeta con el ahorro disponible según la ficha, lo que puede ahorrar al mes y cuánto tarda en
+// reunir el 10 % (gastos de compra) y el 20 % (gastos + entrada). Solo en pantalla y presentación (no cabe en el informe A4).
+function inmuebleMesAnioHoy(meses){ var d=new Date(); d.setMonth(d.getMonth()+meses); return ('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
+function inmuebleCuandoHTML(inm){
+  if(_inmInforme||(inm.modo==='refi'&&!inm.refi.compraNueva)) return '';
+  var c=inmuebleCuandoComprar(inm); if(!c||!(inm.precio>0)) return '';
+  function cuando(m){
+    if(m.meses===0) return '<b>Ya lo tiene</b>';
+    if(m.meses==null) return '<b>No sobra margen cada mes</b>';
+    return '<b>'+(m.meses<24?(m.meses===1?'1 mes':m.meses+' meses'):inmuebleAniosUnos(m.meses))+'</b> <small>'+inmuebleMesAnioHoy(m.meses)+'</small>';
+  }
+  var m10=c.metas[0], m20=c.metas[1], frase;
+  if(m20.meses===0) frase='Con el capital indicado ya podría empezar.';
+  else if(m20.meses==null) frase='Con los ingresos y gastos de la ficha no queda margen para ahorrar: conviene revisarlo antes de comprar.';
+  else frase='Lo más sano sería empezar cuando reúna el '+m20.pct+' %: hacia <b>'+inmuebleMesAnioHoy(m20.meses)+'</b>.';
+  return '<div class="inm-curve-card inm-cuando"><div class="inm-curve-head"><h5>Cuándo sería sano empezar</h5></div>'+
+    '<div class="inm-res-line"><span>Ahorro disponible para la compra</span><b>'+eur(c.disp6)+'</b></div>'+
+    '<p class="inm-curve-note"><span>Descontando seis meses de gastos como reserva; con tres meses serían '+eur(c.disp3)+'.</span></p>'+
+    '<div class="inm-res-line"><span>Cada mes puede ahorrar</span><b>'+eur(c.ahorroMes)+'/mes</b></div>'+
+    '<div class="inm-res-line"><span>Para reunir el '+m10.pct+' % del precio (gastos de compra)</span>'+cuando(m10)+'</div>'+
+    '<div class="inm-res-line"><span>Para reunir el '+m20.pct+' % del precio (gastos y entrada)</span>'+cuando(m20)+'</div>'+
+    '<div class="inm-headline-lite">'+frase+'</div>'+
+    '<p class="inm-curve-note"><span>Orientativo: supone que ahorra cada mes todo lo que le sobra, sin contar intereses, y que el precio no cambia.</span> <span>Los gastos de compra (notario, impuestos, registro y comisión) rondan el 10 % del precio.</span></p></div>';
+}
 function inmuebleCapacidadHTML(inm,fin,filas){
   var d=inmuebleCapacidadDatos(inm,fin,filas); if(!d) return '';
   var rows=d.filas.map(function(f){ return '<tr><td>'+f.label+'</td><td>'+eur(f.cuota)+'</td><td>'+Math.round(f.pct)+' %</td><td class="cap-'+f.cls+'">'+f.estado+'</td></tr>'; }).join('');
@@ -563,7 +587,7 @@ function inmuebleCapacidadHTML(inm,fin,filas){
     (fin>0?'<div class="inm-res-line cap-extra"><span>Importe a financiar</span><b>'+eur(fin)+(d.finSuperaOrientativo?' · por encima':'')+'</b></div>':'')+
     '<table class="inm-tabla inm-cap-tabla"><thead><tr><th>Cuota mensual</th><th>€/mes</th><th>Del ingreso</th><th>Estado</th></tr></thead><tbody>'+rows+'</tbody></table>'+
     inmuebleSugerenciaHTML(inm)+
-    '<p class="inm-curve-note"><span>Regla orientativa: la vivienda no debería pasar del 30–35 % del ingreso neto del hogar, y además de la cuota hay seguros, Grundsteuer y otros gastos.</span> <span>No sustituye el análisis de solvencia del banco.</span></p></div>';
+    '<p class="inm-curve-note"><span>Regla orientativa: la vivienda no debería pasar del 30–35 % del ingreso neto del hogar, y además de la cuota hay seguros, Grundsteuer y otros gastos.</span> <span>No sustituye el análisis de solvencia del banco.</span></p></div>'+inmuebleCuandoHTML(inm);
 }
 
 function inmuebleFinLine(inm){
