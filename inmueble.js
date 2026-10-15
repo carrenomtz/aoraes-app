@@ -443,7 +443,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
       (r.recargoSuperaAhorro?'<div class="inm-res-warn"><span>El recargo cuesta más de lo que ahorra el pago extra.</span></div>':'')+
       (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff inm-detalle"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
       '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(costeAbs)+'</b></div>'+
-      '<div class="inm-res-line save inm-detalle"><span>'+(ahorroVs>=0?'Menos intereses y comisiones que seguir igual':'Más intereses y comisiones que seguir igual')+'</span><b>'+eur(Math.abs(ahorroVs))+'</b></div>'+
+      '<div class="inm-res-line save inm-detalle"><span>'+(ahorroVs>=0?'Menos intereses y comisiones que seguir igual':'Más intereses y comisiones que seguir igual')+'</span><b'+(ahorroVs>=0?' class="inm-ahorro"':'')+'>'+eur(Math.abs(ahorroVs))+'</b></div>'+
       inmuebleTimeRow(r,maxMeses,isBanco,mesesHastaRefi)+
       inmuebleCertRow(r,refi.banco.zinsbindung,isBanco)+
     '</div>';
@@ -514,7 +514,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
       (r.recargoSuperaAhorro?'<div class="inm-res-warn"><span>El recargo cuesta más de lo que ahorra el pago extra.</span></div>':'')+
       (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff inm-detalle"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
       '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(r.costeTotal)+'</b></div>'+
-      (!isBanco?'<div class="inm-res-line save inm-detalle"><span>'+(dif>=0?'Menos intereses y comisiones que el banco':'Más intereses y comisiones que el banco')+'</span><b>'+eur(Math.abs(dif))+'</b></div>':'')+
+      (!isBanco?'<div class="inm-res-line save inm-detalle"><span>'+(dif>=0?'Menos intereses y comisiones que el banco':'Más intereses y comisiones que el banco')+'</span><b'+(dif>=0?' class="inm-ahorro"':'')+'>'+eur(Math.abs(dif))+'</b></div>':'')+
       inmuebleTimeRow(r,maxMeses,isBanco)+
       inmuebleCertRow(r,inm.banco.zinsbindung,isBanco)+
       '</div>';

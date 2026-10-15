@@ -670,6 +670,7 @@
   .inm-res-line.total{border-bottom:0; padding-top:9px; margin-top:2px; border-top:1px solid var(--line)}
   .inm-res-line.total b{color:var(--navy); font-size:14px}
   .inm-res-line.save{border-bottom:0}
+  .inm-res-line b.inm-ahorro{color:#2e7d4f}
   .inm-res-line.inm-eff b{color:var(--gold-text,#7d611c)}
   .inm-eff-hint{color:var(--faint); font-weight:400}
   /* Detalle de las tarjetas de resultados: solo en modo avanzado y en el informe; la pantalla simple y la presentación enseñan lo esencial. */
