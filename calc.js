@@ -740,12 +740,12 @@ function inmuebleCurvaCuotas(inm,base){
   var out=[]; l.forEach(function(x){ x=Number(x); if(!isNaN(x)&&x>0&&x<=tope&&out.indexOf(x)<0) out.push(x); });
   return out.slice(0,INM_CURVA_MAX);
 }
-// Un banco no financia a cualquier plazo: las líneas de otras cuotas del BANCO no bajan de la cuota que lo paga en 35 años
-// (lo habitual en Alemania es 25–35 años; no hay una regla fija, pero una cuota que tarda 70 años no es una opción real).
-// Las cuotas por debajo de ese mínimo se suben a él; se quitan los duplicados y lo que coincide con la línea principal (base).
-var BANCO_PLAZO_MAX_ANIOS=35;
+// Las líneas de otras cuotas del BANCO no bajan de la cuota con la Tilgung mínima real: en Alemania no hay un plazo máximo legal, el
+// límite práctico es que casi ningún banco concede menos de un 1 % de Tilgung inicial (lo normal es 2 % o más). Cuota mínima =
+// capital × (interés + 1 %) / 12. Las cuotas por debajo se suben a ella; se quitan duplicados y lo que coincide con la línea principal (base).
+var BANCO_TILGUNG_MIN_PCT=1;
 function inmuebleCuotasBancoRealistas(lista,capital,interesPct,base){
-  var minC=Math.ceil(annuityQuota(capital,interesPct,BANCO_PLAZO_MAX_ANIOS*12)/10)*10, out=[];
+  var minC=Math.ceil(capital*((interesPct||0)+BANCO_TILGUNG_MIN_PCT)/1200/10)*10, out=[];
   (lista||[]).forEach(function(c){
     var v=Math.max(c,minC);
     if(Math.abs(v-base)<1||out.indexOf(v)>=0) return;
