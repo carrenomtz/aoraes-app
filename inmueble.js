@@ -695,7 +695,8 @@ function inmuebleFaqHTML(){
 var _inmInforme=false;
 function inmuebleAnios(meses){
   if(_inmInforme) return fmtAnos(meses);
-  var m=meses/12, r=(m>=5)?Math.round(m):Math.round(m*2)/2;
+  // A partir de 5 años, años enteros; entre medio año y 5, un decimal (así 43 meses salen como 3,6 años y no como 3,5); por debajo, medios años.
+  var m=meses/12, r=(m>=5)?Math.round(m):(m>=0.5?Math.round(m*10)/10:Math.round(m*2)/2);
   if(r<=0) return 'menos de medio año';
   return String(r).replace('.',',')+(r===1?' año':' años');
 }
