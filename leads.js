@@ -22,11 +22,36 @@ function leadActionState(dateStr, todayStr){
   return dateStr === todayStr ? 'today' : 'future';
 }
 
+// "Abierto" = todavía hay algo que trabajar: ni convertido, ni descartado, ni marcado como no contactar.
+function leadIsOpen(l){
+  var st = l.status || 'nuevo';
+  return !l.doNotContact && st !== 'convertido' && st !== 'no_interesa';
+}
+// Última vez que se tocó el contacto (ms): lastContactAt (Timestamp, ISO o fecha YYYY-MM-DD) y, si no se puede leer, la fecha de importación.
+// null si no hay ninguna fecha utilizable.
+function leadTouchMs(l){
+  var cands = [l.lastContactAt, l.importedAt];
+  for(var i = 0; i < cands.length; i++){
+    var v = cands[i]; if(!v) continue;
+    var t = (typeof v === 'object' && typeof v.toDate === 'function') ? v.toDate().getTime() : new Date(v).getTime();
+    if(!isNaN(t)) return t;
+  }
+  return null;
+}
+var LEAD_STALE_DAYS = 14;
+// Sin tocar desde hace más de LEAD_STALE_DAYS días (o sin ninguna fecha). todayStr = día local YYYY-MM-DD.
+function leadIsStale(l, todayStr, days){
+  var t = leadTouchMs(l);
+  if(t === null) return true;
+  var cutoff = new Date(todayStr + 'T00:00:00').getTime() - (days || LEAD_STALE_DAYS) * 86400000;
+  return t < cutoff;
+}
+
 // Vistas rápidas del filtro de Contactos. Un contacto marcado "no contactar" nunca aparece como tarea pendiente: la vista "No contactar"
 // es la única que lo lista. Los ya convertidos o descartados tampoco necesitan siguiente acción.
 function leadMatchesView(l, view, todayStr){
-  var st = l.status || 'nuevo';
-  var open = !l.doNotContact && st !== 'convertido' && st !== 'no_interesa';
+  var open = leadIsOpen(l);
+  if(view === 'sin_tocar') return open && leadIsStale(l, todayStr);
   if(view === 'hoy'){ var a = leadActionState(l.nextActionAt, todayStr); return open && (a === 'overdue' || a === 'today'); }
   if(view === 'sin_accion') return open && !l.nextActionAt;
   if(view === 'no_contactar') return !!l.doNotContact;
@@ -76,6 +101,42 @@ function leadHistoryText(e, ctx){
   }
 }
 
+/* ---------- Resumen del equipo (panel Admin) ---------- */
+// rows = filas de la copia de seguridad (leadExportRow: _scope 'bolsa'|'asesor', _ownerUid, _ownerLabel, ...). Todo se calcula con los datos
+// reales; nada decorativo. Un grupo por asesor y uno para la bolsa sin asignar.
+function leadsSummary(rows, todayStr, statusLabels){
+  var groups = {}, order = [], totals = { total: 0, open: 0, vencidas: 0, hoy: 0, sinAccion: 0, sinTocar: 0, noContactar: 0 };
+  var bySource = {}, byStatus = {};
+  rows.forEach(function(l){
+    var key = l._scope === 'bolsa' ? 'pool' : (l._ownerUid || '?');
+    var g = groups[key];
+    if(!g){ g = groups[key] = { key: key, label: key === 'pool' ? 'Sin asignar (bolsa)' : (l._ownerLabel || key), total: 0, open: 0, vencidas: 0, hoy: 0, sinAccion: 0, sinTocar: 0, noContactar: 0 }; order.push(key); }
+    var open = leadIsOpen(l), act = leadActionState(l.nextActionAt, todayStr);
+    [g, totals].forEach(function(t){
+      t.total++;
+      if(l.doNotContact) t.noContactar++;
+      if(open){
+        t.open++;
+        if(act === 'overdue') t.vencidas++;
+        if(act === 'today') t.hoy++;
+        if(!l.nextActionAt) t.sinAccion++;
+        if(leadIsStale(l, todayStr)) t.sinTocar++;
+      }
+    });
+    var src = (l.source || '').trim() || 'Sin origen'; bySource[src] = (bySource[src] || 0) + 1;
+    var st = l.status || 'nuevo'; byStatus[st] = (byStatus[st] || 0) + 1;
+  });
+  var list = order.map(function(k){ return groups[k]; });
+  list.sort(function(a, b){ return a.key === 'pool' ? -1 : b.key === 'pool' ? 1 : b.open - a.open || a.label.localeCompare(b.label); });
+  var sortCounts = function(o, labelOf){ return Object.keys(o).map(function(k){ return { key: k, label: labelOf ? labelOf(k) : k, count: o[k] }; }).sort(function(a, b){ return b.count - a.count || a.label.localeCompare(b.label); }); };
+  return {
+    totals: totals,
+    groups: list,
+    bySource: sortCounts(bySource),
+    byStatus: sortCounts(byStatus, function(k){ return (statusLabels && statusLabels[k]) || k; })
+  };
+}
+
 /* ---------- Copia de seguridad ---------- */
 function leadTsToIso(v){
   if(!v) return '';
@@ -115,5 +176,5 @@ function leadsToCsv(rows){
 }
 
 if(typeof module !== 'undefined' && module.exports){
-  module.exports = { LEAD_HISTORY_MAX: LEAD_HISTORY_MAX, leadHistoryAppend: leadHistoryAppend, leadHistoryNeedsTrim: leadHistoryNeedsTrim, leadActionState: leadActionState, leadMatchesView: leadMatchesView, leadMergeMeta: leadMergeMeta, leadHistoryText: leadHistoryText, leadTsToIso: leadTsToIso, leadExportRow: leadExportRow, leadsToCsv: leadsToCsv, leadCsvCell: leadCsvCell, LEAD_CSV_COLUMNS: LEAD_CSV_COLUMNS };
+  module.exports = { LEAD_HISTORY_MAX: LEAD_HISTORY_MAX, LEAD_STALE_DAYS: LEAD_STALE_DAYS, leadIsOpen: leadIsOpen, leadTouchMs: leadTouchMs, leadIsStale: leadIsStale, leadsSummary: leadsSummary, leadHistoryAppend: leadHistoryAppend, leadHistoryNeedsTrim: leadHistoryNeedsTrim, leadActionState: leadActionState, leadMatchesView: leadMatchesView, leadMergeMeta: leadMergeMeta, leadHistoryText: leadHistoryText, leadTsToIso: leadTsToIso, leadExportRow: leadExportRow, leadsToCsv: leadsToCsv, leadCsvCell: leadCsvCell, LEAD_CSV_COLUMNS: LEAD_CSV_COLUMNS };
 }

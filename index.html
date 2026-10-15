@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./app.css?v=16ebffa2">
+<link rel="stylesheet" href="./app.css?v=6418878f">
 </head>
 <body>
   <div class="auth-gate" id="auth-gate">
@@ -235,10 +235,16 @@
       <nav class="admin-tabs" id="admin-tabs">
         <button type="button" data-admin-tab="asesores" class="active">Asesores</button>
         <button type="button" data-admin-tab="pool">Bolsa sin asignar <span class="admin-tab-badge" id="admin-pool-badge" hidden>0</span></button>
+        <button type="button" data-admin-tab="resumen">Resumen del equipo</button>
       </nav>
       <div id="admin-tab-asesores">
         <p class="cock-note" style="margin:0 0 18px">"Restringir acceso" nunca borra la cartera de un asesor — solo le quita su propio acceso. Tú sigues viendo y editando sus clientes en "Ver cartera", y puedes devolverle el acceso cuando quieras con "Aprobar". Solo "Borrar cuenta" (⋮) elimina datos, y pide confirmarlo escribiendo el correo.</p>
         <div id="asesores-list"></div>
+      </div>
+      <div id="admin-tab-resumen" hidden>
+        <p class="cock-note" style="margin:0 0 14px">Cifras calculadas ahora mismo con todos los contactos (bolsa y asesores). "Abiertos" = ni convertidos, ni "no interesa", ni "no contactar". Pulsa un número para ver esos contactos.</p>
+        <div style="margin-bottom:14px"><button type="button" class="cont-backup-btn" id="resumen-refresh">↻ Recalcular</button> <span class="rs-stamp" id="resumen-stamp" data-no-i18n></span></div>
+        <div id="resumen-body" data-no-i18n></div>
       </div>
       <div id="admin-tab-pool" hidden>
         <p class="cock-note" style="margin:0 0 18px">Contactos importados desde Excel que no se pudieron asignar solos (sin columna de asesor, o el nombre no coincidía con ninguna cuenta). Los que comparten teléfono se marcan en <span style="color:#6b4a00;font-weight:700">ámbar</span> — pulsa el número para seleccionarlos y unirlos en uno solo.</p>
@@ -357,7 +363,7 @@
        el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
   <script src="./i18n.js?v=76ca1307"></script>
 <script src="./util.js?v=3e8fcffb"></script>
-<script src="./leads.js?v=72b716c7"></script>
+<script src="./leads.js?v=c3458b20"></script>
 <script src="./calc.js?v=d665f4c4"></script>
 <script src="./inmueble.js?v=b1067d59"></script>
 <script src="./afa.js?v=8c8d2660"></script>
@@ -1804,7 +1810,7 @@
       window.AORAES_CLOUD.countPool().then(function(n){ badge.textContent=n; badge.hidden=!n; }).catch(function(e){ console.error('AORAES: fallo al contar la bolsa',e); });
     }
     /* ---------- Pestañas del panel Admin: Asesores / Bolsa sin asignar ---------- */
-    var ADMIN_TABS=['asesores','pool'];
+    var ADMIN_TABS=['asesores','pool','resumen'];
     function showAdminTab(tab){
       ADMIN_TABS.forEach(function(t){ var el=document.getElementById('admin-tab-'+t); if(el) el.hidden=(t!==tab); });
       document.querySelectorAll('#admin-tabs [data-admin-tab]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-admin-tab')===tab); });
@@ -1814,6 +1820,7 @@
       var tab=b.getAttribute('data-admin-tab');
       showAdminTab(tab);
       if(tab==='pool') renderPool();
+      if(tab==='resumen') renderResumen();
     });
     function filterAndRenderPool(){
       var listEl=document.getElementById('pool-list'); if(!listEl) return;
@@ -2761,7 +2768,7 @@
       return '<button type="button" class="lead-ficha-btn" data-ficha="'+esc(l.id)+'" data-ficha-scope="'+scope+'" title="Siguiente acción, origen, no contactar e historial">📋 Ficha</button>'+chip;
     }
     var _contView='';
-    var CONT_VIEWS=[['hoy','Para hoy o vencidas'],['sin_accion','Sin siguiente acción'],['no_contactar','No contactar']];
+    var CONT_VIEWS=[['hoy','Para hoy o vencidas'],['sin_accion','Sin siguiente acción'],['sin_tocar','Sin tocar +14 días'],['no_contactar','No contactar']];
     function renderContChips(){
       var el=document.getElementById('cont-chips'); if(!el) return;
       var today=leadTodayStr();
@@ -2879,6 +2886,53 @@
     }
     [['cont-export-json','json'],['cont-export-csv','csv'],['pool-export-json','json'],['pool-export-csv','csv']].forEach(function(p){
       document.getElementById(p[0]).addEventListener('click', function(){ exportLeadsCopy(p[1], this); });
+    });
+
+    /* ---------- Resumen del equipo (admin): todo sale de los contactos reales, sin cifras decorativas ----------
+       Reutiliza la lectura de la copia de seguridad (exportLeads) y la lógica de leads.js (leadsSummary), así que las definiciones son
+       las mismas que las de las vistas rápidas de Contactos. Se calcula al abrir la pestaña o al pulsar Recalcular, no en cada pantalla. */
+    function rsNum(n, uid, view){
+      return n ? '<button type="button" class="rs-num" data-rs-go="'+esc(uid)+'" data-rs-view="'+view+'" title="Ver estos contactos">'+n+'</button>' : '<span class="rs-zero">0</span>';
+    }
+    function renderResumen(){
+      var body=document.getElementById('resumen-body'), stamp=document.getElementById('resumen-stamp');
+      if(!window.AORAES_CLOUD||!window.AORAES_CLOUD.exportLeads){ body.innerHTML='<div class="cock-empty">La nube no está lista todavía.</div>'; return; }
+      body.innerHTML='<div class="cock-empty">Calculando…</div>'; stamp.textContent='';
+      window.AORAES_CLOUD.exportLeads().then(function(rows){
+        var sum=leadsSummary(rows, leadTodayStr(), CONT_STATUS_LABEL), t=sum.totals, me=window.AORAES_CLOUD.uid;
+        var pool=sum.groups.filter(function(g){ return g.key==='pool'; })[0];
+        var card=function(label, n, extra){ return '<div class="rs-card'+(extra||'')+'"><span class="rs-card-n">'+n+'</span><span class="rs-card-l">'+label+'</span></div>'; };
+        var cards='<div class="rs-cards">'+
+          card('Contactos en total', t.total)+
+          (pool&&pool.total?'<button type="button" class="rs-card rs-card-btn" data-rs-go="pool" data-rs-view=""><span class="rs-card-n">'+pool.total+'</span><span class="rs-card-l">Sin asignar</span></button>':card('Sin asignar',0))+
+          card('Abiertos', t.open)+
+          card('Para hoy o vencidas', t.vencidas+t.hoy, t.vencidas?' rs-warn':'')+
+          card('Sin siguiente acción', t.sinAccion)+
+          card('Sin tocar +'+LEAD_STALE_DAYS+' días', t.sinTocar)+
+          card('No contactar', t.noContactar)+
+        '</div>';
+        var head='<tr><th>Asesor</th><th>Contactos</th><th>Abiertos</th><th>Hoy o vencidas</th><th>Sin siguiente acción</th><th>Sin tocar</th><th>No contactar</th></tr>';
+        var trs=sum.groups.map(function(g){
+          var go=g.key==='pool'?'pool':g.key;
+          var cell=function(n, view){ return '<td>'+rsNum(n, go, view)+'</td>'; };
+          return '<tr><td><b>'+esc(g.key===me?g.label+' (tú)':g.label)+'</b></td>'+cell(g.total,'')+cell(g.open,'')+cell(g.vencidas+g.hoy,'hoy')+cell(g.sinAccion,'sin_accion')+cell(g.sinTocar,'sin_tocar')+cell(g.noContactar,'no_contactar')+'</tr>';
+        }).join('');
+        var li=function(a){ return a.slice(0,8).map(function(x){ return '<li><span>'+esc(x.label)+'</span><b>'+x.count+'</b></li>'; }).join(''); };
+        body.innerHTML=cards+
+          '<div class="pool-table-wrap"><table class="pool-table rs-table"><thead>'+head+'</thead><tbody>'+(trs||'<tr><td colspan="7" class="ase-empty" style="border:0">Todavía no hay contactos.</td></tr>')+'</tbody></table></div>'+
+          '<div class="rs-lists"><div><h3 class="ficha-h">Por estado</h3><ul>'+li(sum.byStatus)+'</ul></div><div><h3 class="ficha-h">Por origen</h3><ul>'+li(sum.bySource)+'</ul></div></div>';
+        stamp.textContent='Calculado '+new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+' con '+t.total+' contactos.';
+      }).catch(function(e){ console.error('AORAES: fallo al calcular el resumen',e); body.innerHTML='<div class="cock-empty">No se pudo calcular. Revisa la consola.</div>'; });
+    }
+    document.getElementById('resumen-refresh').addEventListener('click', renderResumen);
+    document.getElementById('resumen-body').addEventListener('click', function(e){
+      var b=e.target.closest('[data-rs-go]'); if(!b) return;
+      var go=b.getAttribute('data-rs-go'), view=b.getAttribute('data-rs-view')||'';
+      if(go==='pool'){ showAdminTab('pool'); renderPool(); return; }
+      _contView=view;
+      var row=b.closest('tr'), label=row?row.querySelector('b').textContent.replace(/ \(tú\)$/,''):'';
+      if(go===window.AORAES_CLOUD.uid) window.AORAES_CLOUD.viewMyOwn(); else window.AORAES_CLOUD.viewAsAdvisor(go, label);
+      setActive(null); show('contactos');
     });
 
     function convertLeadToClient(lead){

@@ -132,5 +132,76 @@ test('leadsToCsv: cabecera, comillas, saltos de línea y fórmulas neutralizadas
   assert.strictEqual(lines.length, 3);
 });
 
+// ---- Resumen del equipo y vista "sin tocar" ----
+const iso = (daysAgo) => new Date(new Date(TODAY + 'T12:00:00').getTime() - daysAgo * 86400000).toISOString();
+
+test('leadIsStale: más de 14 días sin tocar, usa importedAt si no hay último contacto y sin fechas cuenta como sin tocar', () => {
+  assert.ok(!L.leadIsStale({ lastContactAt: iso(3) }, TODAY));
+  assert.ok(L.leadIsStale({ lastContactAt: iso(30) }, TODAY));
+  assert.ok(!L.leadIsStale({ importedAt: iso(2) }, TODAY), 'recién importado no está estancado');
+  assert.ok(L.leadIsStale({ importedAt: iso(40) }, TODAY));
+  assert.ok(L.leadIsStale({}, TODAY));
+  assert.ok(!L.leadIsStale({ lastContactAt: { toDate: () => new Date(iso(1)) } }, TODAY), 'acepta Timestamp');
+  assert.ok(!L.leadIsStale({ lastContactAt: 'texto raro', importedAt: iso(1) }, TODAY), 'fecha ilegible: cae a importedAt');
+  assert.ok(L.leadIsStale({ lastContactAt: iso(10) }, TODAY, 7), 'umbral configurable');
+});
+
+test('leadMatchesView "sin_tocar": solo abiertos', () => {
+  assert.ok(L.leadMatchesView({ status: 'contactado', lastContactAt: iso(30) }, 'sin_tocar', TODAY));
+  assert.ok(!L.leadMatchesView({ status: 'convertido', lastContactAt: iso(30) }, 'sin_tocar', TODAY));
+  assert.ok(!L.leadMatchesView({ status: 'nuevo', doNotContact: true, lastContactAt: iso(30) }, 'sin_tocar', TODAY));
+  assert.ok(!L.leadMatchesView({ status: 'nuevo', lastContactAt: iso(2) }, 'sin_tocar', TODAY));
+});
+
+const R = (o) => Object.assign({ _scope: 'asesor', _ownerUid: 'u1', _ownerLabel: 'Ana', status: 'nuevo', importedAt: iso(1) }, o);
+const ROWS = [
+  R({ id: 1 }),                                                              // abierto, sin acción
+  R({ id: 2, nextActionAt: '2026-10-10', nextAction: 'Llamar' }),             // vencida
+  R({ id: 3, nextActionAt: TODAY }),                                          // hoy
+  R({ id: 4, status: 'convertido' }),                                         // cerrado: no cuenta como abierto
+  R({ id: 5, doNotContact: true, nextActionAt: '2026-10-01' }),               // no contactar: nunca tarea
+  R({ id: 6, importedAt: iso(60), source: 'Excel A' }),                       // sin tocar
+  R({ id: 7, _ownerUid: 'u2', _ownerLabel: 'Beto', status: 'contactado', source: 'Excel A', nextActionAt: '2026-11-01', lastContactAt: iso(2) }),
+  R({ id: 8, _scope: 'bolsa', _ownerUid: '', _ownerLabel: 'Sin asignar', importedAt: iso(1) }),
+];
+const SUM = L.leadsSummary(ROWS, TODAY, { nuevo: 'Nuevo', contactado: 'Contactado', convertido: 'Convertido' });
+
+test('leadsSummary: totales coinciden con la suma de grupos y con los datos', () => {
+  assert.strictEqual(SUM.totals.total, ROWS.length);
+  assert.strictEqual(SUM.groups.reduce((a, g) => a + g.total, 0), ROWS.length);
+  ['open', 'vencidas', 'hoy', 'sinAccion', 'sinTocar', 'noContactar'].forEach(k =>
+    assert.strictEqual(SUM.groups.reduce((a, g) => a + g[k], 0), SUM.totals[k], 'suma de ' + k));
+});
+
+test('leadsSummary: definiciones (abierto, vencida, hoy, sin acción, sin tocar, no contactar)', () => {
+  const ana = SUM.groups.find(g => g.key === 'u1');
+  assert.strictEqual(ana.total, 6);
+  assert.strictEqual(ana.open, 4, 'ids 1,2,3,6: ni convertido ni no contactar');
+  assert.strictEqual(ana.vencidas, 1, 'el no contactar con fecha vencida NO cuenta');
+  assert.strictEqual(ana.hoy, 1);
+  assert.strictEqual(ana.sinAccion, 2, 'ids 1 y 6');
+  assert.strictEqual(ana.sinTocar, 1, 'id 6');
+  assert.strictEqual(ana.noContactar, 1);
+});
+
+test('leadsSummary: la bolsa va primero, el resto por contactos abiertos', () => {
+  assert.strictEqual(SUM.groups[0].key, 'pool');
+  assert.strictEqual(SUM.groups[0].label, 'Sin asignar (bolsa)');
+  assert.deepStrictEqual(SUM.groups.map(g => g.key), ['pool', 'u1', 'u2']);
+});
+
+test('leadsSummary: orígenes y estados con etiqueta', () => {
+  assert.deepStrictEqual(SUM.bySource.find(x => x.key === 'Excel A').count, 2);
+  assert.strictEqual(SUM.bySource.find(x => x.key === 'Sin origen').count, 6);
+  assert.strictEqual(SUM.byStatus.find(x => x.key === 'convertido').label, 'Convertido');
+  assert.strictEqual(SUM.byStatus.reduce((a, x) => a + x.count, 0), ROWS.length);
+});
+
+test('leadsSummary: sin datos no revienta', () => {
+  const e = L.leadsSummary([], TODAY, {});
+  assert.strictEqual(e.totals.total, 0);
+  assert.deepStrictEqual(e.groups, []);
+});
+
 console.log('\n' + passed + ' ok, ' + failed + ' fallos');
 process.exit(failed ? 1 : 0);
