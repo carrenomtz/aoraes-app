@@ -523,6 +523,27 @@ function inmuebleLimitar(campo,valor){
   return {v:r,recortado:(r!==v)};
 }
 
+// Datos de la ficha del cliente que el Proyecto inmobiliario puede traer solo: neto mensual del hogar (trabajo por
+// cuenta ajena + propia, Persona A y B, como los guarda analisis.html en rec.data.fields) y el precio de la vivienda
+// objetivo (S.7). Sin ficha o sin esos datos devuelve ceros y no se toca nada.
+function inmuebleDatosCliente(rec){
+  var f=(rec&&rec.data&&rec.data.fields)||{}, n=function(k){ var v=parseFloat(f[k]); return v>0?v:0; };
+  var ingreso=0; ['salarioNeto','autonomoNeto'].forEach(function(k){ ingreso+=n('inc:'+k+'_A')+n('inc:'+k+'_B'); });
+  return { ingreso:Math.round(ingreso), precio:n('sit:precioViviendaObjetivo') };
+}
+// Rellena precio e ingreso desde la ficha mientras el asesor no los haya cambiado a mano: inm.desdeCliente guarda lo
+// último traído, y un campo se actualiza solo si sigue vacío (ingreso 0, precio = el de ejemplo) o igual a ese valor.
+function inmuebleAplicarDatosCliente(rec,inm){
+  var d=inmuebleDatosCliente(rec); if(!(d.ingreso>0||d.precio>0)) return;
+  if(!inm.desdeCliente||typeof inm.desdeCliente!=='object') inm.desdeCliente={};
+  var vacio={ ingreso:function(v){ return !(v>0); }, precio:function(v){ return v===defaultInmueble().precio; } };
+  [['ingreso','ingresoNeto'],['precio','precio']].forEach(function(c){
+    var v=d[c[0]], cur=inm[c[1]], prev=inm.desdeCliente[c[0]];
+    if(!(v>0)||cur===v) { if(v>0) inm.desdeCliente[c[0]]=v; return; }
+    if(cur===prev||(prev==null&&vacio[c[0]](cur))){ inm[c[1]]=v; inm.desdeCliente[c[0]]=v; }
+  });
+}
+
 function normalizeInmueble(rec){
   var def=defaultInmueble();
   // Un registro mal formado (inmueble o un sub-objeto que no es objeto) vuelve al valor por defecto en vez de romper la herramienta.
@@ -539,6 +560,7 @@ function normalizeInmueble(rec){
   if(inm.gastosPct==null||isNaN(inm.gastosPct)) inm.gastosPct=0;
   if(inm.capitalPropio==null||isNaN(inm.capitalPropio)) inm.capitalPropio=0;
   if(inm.ingresoNeto==null||isNaN(inm.ingresoNeto)) inm.ingresoNeto=0;
+  inmuebleAplicarDatosCliente(rec,inm);
   if(!Array.isArray(inm.curvaOff)) inm.curvaOff=[];
   if(inm.ratioMax==null||isNaN(inm.ratioMax)||inm.ratioMax<=0) inm.ratioMax=35;
   if(!inm.refi) inm.refi=def.refi;
@@ -628,4 +650,4 @@ function inmuebleToggleCurvaTipo(inm,r){
   var off=(inm.curvaOff||[]).slice(), i=off.indexOf(r); if(i>=0) off.splice(i,1); else off.push(r); inm.curvaOff=off;
 }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaTipos, inmuebleParseCurvaTipos, inmuebleToggleCurvaTipo, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente }; }

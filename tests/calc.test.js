@@ -455,6 +455,33 @@ test('saldo e interés restante de un crédito existente igual que el calendario
   near(rem.interesRestante, loop(rem.saldoPendiente, 3, cuota, 0).interes, 1, 'interés restante');
 });
 
+console.log('\nDatos de la ficha del cliente');
+test('el Proyecto inmobiliario trae el neto del hogar y el precio objetivo de la ficha', () => {
+  const rec = { data: { fields: { 'inc:salarioNeto_A': '2000', 'inc:salarioNeto_B': '1200', 'inc:autonomoNeto_B': '300', 'inc:alquiler_A': '500', 'sit:precioViviendaObjetivo': '350000' } } };
+  const inm = engine.normalizeInmueble(rec);
+  assert.strictEqual(inm.ingresoNeto, 3500);
+  assert.strictEqual(inm.precio, 350000);
+});
+test('lo que el asesor cambia a mano no se pisa, y un cambio posterior en la ficha sí se sigue', () => {
+  const rec = { data: { fields: { 'inc:salarioNeto_A': '3000', 'sit:precioViviendaObjetivo': '300000' } } };
+  engine.normalizeInmueble(rec);
+  rec.inmueble.precio = 420000;                                   // el asesor lo cambia a mano
+  rec.data.fields['sit:precioViviendaObjetivo'] = '310000';      // la ficha cambia
+  rec.data.fields['inc:salarioNeto_A'] = '3200';
+  const inm = engine.normalizeInmueble(rec);
+  assert.strictEqual(inm.precio, 420000);
+  assert.strictEqual(inm.ingresoNeto, 3200);
+});
+test('un ingreso ya escrito a mano, o una ficha sin esos datos, se quedan como están', () => {
+  const r1 = { inmueble: Object.assign(engine.defaultInmueble(), { ingresoNeto: 2500 }), data: { fields: { 'inc:salarioNeto_A': '4000' } } };
+  assert.strictEqual(engine.normalizeInmueble(r1).ingresoNeto, 2500);
+  const r2 = { data: { fields: {} } };
+  const inm = engine.normalizeInmueble(r2);
+  assert.strictEqual(inm.precio, engine.defaultInmueble().precio);
+  assert.strictEqual(inm.ingresoNeto, 0);
+  assert.strictEqual(engine.normalizeInmueble({}).ingresoNeto, 0);
+});
+
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');
 gaps.forEach(g => console.log('  · ' + g));
 process.exit(failed ? 1 : 0);
