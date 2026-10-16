@@ -9,6 +9,16 @@
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>DBBV — Preparación de examen</title>
 
+    <!-- Estudio solo vive dentro del panel (asesores.aoraes.de/estudio/). La
+         dirección antigua independiente reenvía allí, también para quien la
+         tenga instalada como PWA (su service worker sirve esta página aunque
+         la red redirija). localhost queda fuera para poder desarrollar. -->
+    <script>
+      if (!/^(asesores\.aoraes\.de|localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+        location.replace('https://asesores.aoraes.de/#estudio')
+      }
+    </script>
+
     <!-- Instalación como app en iOS (Safari: Compartir → Añadir a pantalla de inicio) -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
