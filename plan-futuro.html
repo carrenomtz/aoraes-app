@@ -148,6 +148,91 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .foot{background:var(--midnight);color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.72rem;font-family:var(--mono);line-height:1.7}
 .foot b{color:var(--gold);opacity:.8}
 .lang-switch button.active{background:var(--gold,#c9a961);color:#14213d}
+/* los botones ES/EN/DE llevan color:inherit en línea y heredaban el texto oscuro sobre la barra oscura */
+.nav .lang-switch button:not(.active){color:rgba(255,255,255,.85)!important}
+.nav .lang-switch button.active{background:var(--gold)!important;color:#14213d!important}
+
+/* ===== Fase 1: modo asesor, ajustes, pre-chequeo de salud y recomendador ===== */
+.adv-switch{display:inline-flex;align-items:center;gap:.5rem;background:transparent;border:1px solid rgba(201,169,97,.45);color:rgba(255,255,255,.78);border-radius:9px;padding:.32rem .7rem;font:600 .72rem var(--sans);cursor:pointer;transition:all .15s}
+.adv-switch:hover{border-color:var(--gold)}
+.adv-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)}
+body.adv .adv-switch{background:var(--gold);color:var(--midnight);border-color:var(--gold)}
+body.adv .adv-dot{background:var(--midnight)}
+body.adv::before{content:"";position:fixed;top:0;left:0;right:0;height:3px;background:var(--gold);z-index:60}
+.adv-only{display:none}
+body.adv .adv-only{display:block}
+
+.hero-more{margin-top:.5rem;border-top:1px solid rgba(255,255,255,.14);padding-top:1rem}
+.hero-more>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:.6rem;font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.hero-more>summary::-webkit-details-marker{display:none}
+.hero-more>summary::after{content:"+";font-size:1.05rem;line-height:.9}
+.hero-more[open]>summary::after{content:"−"}
+.hero-more-body{padding-top:1.1rem}
+.ctrl-group{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);margin:1.3rem 0 .8rem;padding-top:1rem;border-top:1px dashed rgba(255,255,255,.14)}
+.hero-select{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);border-radius:6px;color:#fff;font:500 .84rem var(--sans);padding:.48rem .55rem}
+.hero-select:focus{outline:none;border-color:var(--gold)}
+.hero-select option{color:#14213d}
+.hero-covers{font-size:.8rem;color:rgba(255,255,255,.62);margin-top:1rem;line-height:1.55}
+.hero-covers b{color:var(--gold-light);font-weight:500}
+.hero-adv-detail{margin-top:1rem;padding:.8rem .95rem;border-radius:10px;background:rgba(201,169,97,.1);border:1px dashed rgba(201,169,97,.55);font-size:.74rem;line-height:1.65;color:rgba(255,255,255,.85)}
+.hero-adv-detail .src{color:rgba(255,255,255,.5)}
+
+.hc-privacy{display:flex;gap:.75rem;align-items:flex-start;background:var(--sage-soft);border:1px solid #cfe0d3;border-radius:12px;padding:.85rem 1rem;font-size:.84rem;line-height:1.5;color:#2f4d38;margin-bottom:1.5rem}
+.hc-privacy svg{width:18px;height:18px;flex:0 0 auto;margin-top:.12rem}
+.hc-privacy button{margin-left:auto;flex:0 0 auto;background:#fff;border:1px solid #cfe0d3;border-radius:8px;padding:.32rem .7rem;font:600 .74rem var(--sans);color:#2f4d38;cursor:pointer}
+.hc-privacy button:hover{border-color:var(--sage)}
+@media(max-width:560px){.hc-privacy{flex-wrap:wrap}.hc-privacy button{margin-left:0}}
+.hc-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:1.5rem;align-items:start}
+@media(max-width:900px){.hc-layout{grid-template-columns:1fr}}
+.q-card{background:var(--white);border:1px solid var(--mist);border-radius:16px;padding:1.4rem 1.5rem;box-shadow:var(--shadow);margin-bottom:1rem}
+.q-title{font-family:var(--serif);font-size:1.05rem;font-weight:600;color:var(--navy);margin-bottom:.3rem}
+.q-hint{font-size:.8rem;color:var(--slate);line-height:1.55;margin-bottom:.9rem}
+.q-sub{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);margin:1.1rem 0 .55rem}
+.q-sub:first-child{margin-top:0}
+.q-select{width:100%;border:1px solid var(--mist);border-radius:10px;padding:.6rem .7rem;font:500 .86rem var(--sans);color:var(--ink);background:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem}
+.chip{border:1px solid var(--mist);background:#fff;border-radius:999px;padding:.45rem .85rem;font:500 .8rem/1.35 var(--sans);color:var(--ink);cursor:pointer;text-align:left;transition:all .15s}
+.chip:hover{border-color:var(--gold)}
+.chip[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--mist);border-radius:10px;overflow:hidden}
+.seg button{border:none;background:#fff;padding:.5rem .95rem;font:500 .82rem var(--sans);color:var(--ink);cursor:pointer;border-right:1px solid var(--mist)}
+.seg button:last-child{border-right:none}
+.seg button:hover{background:var(--cream)}
+.seg button[aria-pressed=true]{background:var(--navy);color:#fff}
+.hc-res{background:var(--white);border:1px solid var(--mist);border-radius:16px;padding:1.4rem 1.5rem;box-shadow:var(--shadow-lg);position:sticky;top:78px}
+@media(max-width:900px){.hc-res{position:static}}
+.sem-row{display:flex;gap:.8rem;padding:.85rem 0;border-bottom:1px solid var(--cream)}
+.sem-dot{width:13px;height:13px;border-radius:50%;margin-top:.3rem;flex:0 0 auto}
+.sem-ok{background:var(--sage)}.sem-warn{background:#d9a441}.sem-risk{background:var(--clay)}.sem-no{background:#9aa0ab}
+.sem-name{font-weight:700;font-size:.9rem;color:var(--navy)}
+.sem-st{font-size:.76rem;font-weight:700;margin:.1rem 0 .2rem}
+.sem-t-ok{color:var(--sage)}.sem-t-warn{color:#a8741a}.sem-t-risk{color:var(--clay)}.sem-t-no{color:#6b7280}
+.sem-why{font-size:.8rem;color:var(--slate);line-height:1.5}
+.advice{margin-top:1.1rem;background:var(--cream);border-radius:12px;padding:1rem 1.1rem}
+.advice-t{font-family:var(--serif);font-weight:600;color:var(--navy);margin-bottom:.4rem}
+.advice p{font-size:.84rem;line-height:1.55;color:var(--ink);margin-top:.5rem}
+.adv-notes{margin-top:1rem;padding:.9rem 1rem;border:1px dashed var(--gold);border-radius:12px;background:#fbf8ef;font-size:.78rem;line-height:1.55;color:var(--ink)}
+.adv-notes ul{margin:.3rem 0 .6rem 1.1rem}
+.adv-notes i{color:var(--slate)}
+
+.rq-row{padding:.9rem 0;border-bottom:1px solid var(--cream);display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center}
+.rq-row:first-child{padding-top:0}
+.rq-q{flex:1 1 320px;font-size:.9rem;font-weight:500;color:var(--navy);line-height:1.45}
+.rq-age{display:inline-flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--slate)}
+.rq-age input{width:4.2em;border:1px solid var(--mist);border-radius:8px;padding:.35rem .5rem;font:500 .85rem var(--mono);text-align:right}
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1rem;margin-top:1.25rem}
+.rec-card{background:var(--white);border:1px solid var(--mist);border-radius:16px;padding:1.3rem 1.3rem 1.2rem;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:.55rem}
+.rec-card.rec-rec{border-color:var(--navy);box-shadow:var(--shadow-lg)}
+.rec-card.rec-na,.rec-card.rec-skip{opacity:.82}
+.rec-badge{align-self:flex-start;font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;padding:.25rem .6rem;border-radius:999px}
+.rb-rec{background:var(--navy);color:var(--gold-light)}.rb-opt{background:var(--cream);color:var(--navy)}.rb-skip{background:#efeadd;color:var(--slate)}.rb-na{background:#eceef2;color:#7b8190}
+.rec-title{font-family:var(--serif);font-size:1.1rem;font-weight:600;color:var(--navy)}
+.rec-card ul{margin:0 0 0 1.05rem;display:flex;flex-direction:column;gap:.45rem;font-size:.82rem;line-height:1.55;color:var(--slate)}
+.rec-cost{margin-top:.3rem;padding:.45rem .6rem;border-radius:8px;background:#fbf8ef;border:1px dashed var(--gold);font-family:var(--mono);font-size:.68rem;color:var(--gold-deep)}
+.rec-foot{display:flex;flex-wrap:wrap;gap:.8rem 1.2rem;align-items:center;margin-top:1.4rem}
+.btn-apply{background:var(--navy);color:#fff;border:none;border-radius:10px;padding:.75rem 1.3rem;font:700 .86rem var(--sans);cursor:pointer;transition:background .15s}
+.btn-apply:hover{background:var(--midnight)}
+.rec-applied{font-size:.82rem;color:var(--sage);font-weight:600}
 </style>
 </head>
 <body>
@@ -156,7 +241,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
   <div class="nav-logo">AORAES</div>
   <div class="nav-sep"></div>
   <div class="nav-tag">Plan Futuro</div>
-  <div class="nav-right"><div class="nav-client">Preparado para <b id="nav-client">tu cliente</b></div>
+  <div class="nav-right"><button type="button" class="adv-switch" id="adv-switch" aria-pressed="false"><span class="adv-dot"></span><span id="adv-switch-label">Modo asesor</span></button><div class="nav-client">Preparado para <b id="nav-client">tu cliente</b></div>
     <div class="lang-switch" style="display:inline-flex;align-items:center;border:1px solid rgba(201,169,97,.45);border-radius:9px;overflow:hidden;margin-left:12px">
       <button type="button" data-lang="es" style="border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;color:inherit;padding:6px 11px;cursor:pointer">ES</button>
       <button type="button" data-lang="en" style="border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;color:inherit;padding:6px 11px;cursor:pointer">EN</button>
@@ -192,6 +277,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
         <div class="ctrl-label"><span class="lbl">Proyectar para el año</span></div>
         <input type="number" class="val-input" id="v-targetyear" min="2020" max="2100" step="1" style="width:100%;text-align:center;font-size:1.05rem;padding:.55rem">
       </div>
+      <div id="hero-adv"></div>
     </div>
 
     <div class="result">
@@ -201,6 +287,8 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
       <div class="result-warn" id="r-warn" role="status"></div>
       <div class="result-divider"></div>
       <div class="hero-breakdown" id="hero-breakdown"></div>
+      <div class="hero-covers" id="hero-covers"></div>
+      <div class="adv-only hero-adv-detail" id="hero-adv-detail"></div>
       <div class="hero-disclaimer">Escenarios ilustrativos de evolución media anual, no una garantía de rentabilidad futura. La cifra es el valor estimado del plan a esa edad, no necesariamente un importe disponible en efectivo sin condiciones. No incluye el coste de coberturas opcionales, que se pagan dentro de la misma cuota. Cálculo orientativo; no constituye asesoramiento fiscal ni una promesa de resultado.</div>
       <div class="fase2-teaser" id="fase2-toggle">
         <div>
@@ -226,6 +314,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
       <div class="ec-label">De tu bolsillo</div>
       <div class="ec-value"><span id="e-contributed">0</span><span class="cur"> €</span></div>
       <div class="ec-note" id="e-monthly-note">Desde 75 € al mes, durante 16 años</div>
+      <div class="ec-note" id="e-cov-note"></div>
     </div>
     <div class="effort-arrow">
       <div class="mult" id="e-mult">×0</div>
@@ -248,11 +337,15 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
   </div>
 </section>
 
+<section class="section" id="hc-root"></section>
+
+<section class="section" id="rec-root"></section>
+
 <section class="section" style="padding-block:1.4rem">
   <details class="more" id="prot-details">
     <summary>
       <div>
-        <div class="more-eyebrow">02 · Si a ti te pasara algo</div>
+        <div class="more-eyebrow">04 · Si a ti te pasara algo</div>
         <div class="more-summary-txt">El plan de tu hijo/a puede seguir construyéndose, pase lo que pase contigo</div>
       </div>
       <svg class="more-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
@@ -280,7 +373,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
   <details class="more" id="bu-details">
     <summary>
       <div>
-        <div class="more-eyebrow">03 · El derecho a protegerse más adelante</div>
+        <div class="more-eyebrow">05 · El derecho a protegerse más adelante</div>
         <div class="more-summary-txt">Puedes reservarle hoy a tu hijo/a el derecho a ampliar su propia protección</div>
       </div>
       <svg class="more-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
@@ -304,7 +397,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
   <div>
     <div class="note-title">Con total transparencia</div>
-    <div class="note-body" id="note-body">Los cálculos de esta pantalla son estimaciones orientativas del valor del plan con interés compuesto, no una garantía de rentabilidad ni de disponibilidad inmediata en efectivo. Suponen que toda la cuota, salvo el coste de entrada, se destina al ahorro: si añades coberturas opcionales (protección de quien paga, opción de incapacidad laboral u otras), su coste se paga dentro de la misma cuota y el capital resultante sería menor. Las condiciones exactas, incluidas las de disposición del capital, se detallan en la documentación contractual.</div>
+    <div class="note-body" id="note-body">Los cálculos de esta pantalla son estimaciones orientativas del valor del plan con interés compuesto, no una garantía de rentabilidad ni de disponibilidad inmediata en efectivo. Incluyen un ajuste prudente por los costes del contrato, calibrado con las ilustraciones oficiales del producto, y descuentan de la cuota el coste de las coberturas que elijas (protección de quien paga, invalidez del niño/a, cobertura laboral futura): lo que se destina a protegerse no se ahorra. Las condiciones exactas, incluidas las de disposición del capital, se detallan en la documentación contractual.</div>
   </div>
 </div>
 
@@ -313,8 +406,8 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 <footer class="foot">AORAES · Departamento Español · Plan Futuro para hijos<br><b>Cálculo orientativo, sin validez contractual.</b></footer>
 
 <script>
-window.I18N_DE_FUT = {"Tu hijo/a":"Ihr Kind","Edad actual":"Aktuelles Alter","Aportación mensual":"Monatlicher Beitrag","Escenario de evolución anual media":"Szenario der durchschnittlichen jährlichen Entwicklung","Conservador · 4 %":"Konservativ · 4 %","Equilibrado · 6 %":"Ausgewogen · 6 %","Dinámico · 8 %":"Dynamisch · 8 %","Proyectar para el año":"Projizieren für das Jahr","EN":"IM JAHR","TU HIJO/A PODRÍA TENER":"IHR KIND KÖNNTE HABEN","tendrá {0} años ese año":"wird in diesem Jahr {0} Jahre alt","Así se construye esta protección":"So entsteht dieser Schutz","Ahorro · si a ti te pasara algo · el derecho a protegerse más adelante":"Sparen · falls Ihnen etwas zustößt · das Recht auf späteren Schutz","01 · Así crece el capital":"01 · So wächst das Kapital","Pones poco, se acumula mucho":"Sie zahlen wenig ein, es wird viel","Tu aportación mensual, con el interés compuesto, se convierte con los años en un capital muy superior a lo que efectivamente pones de tu bolsillo.":"Ihr monatlicher Beitrag verwandelt sich mit dem Zinseszins über die Jahre in ein deutlich höheres Kapital, als Sie tatsächlich einzahlen.","De tu bolsillo":"Aus Ihrer Tasche","Capital estimado":"Geschätztes Kapital","Aportado":"Eingezahlt","02 · Si a ti te pasara algo":"02 · Falls Ihnen etwas zustößt","Si no puedes seguir trabajando":"Wenn Sie nicht mehr arbeiten können","Si faltas":"Falls Sie fehlen","10º cumpleaños":"10. Geburtstag","Cambio de tipo de colegio":"Wechsel der Schulform","Inicio de Bachillerato / Sekundarstufe 2":"Beginn der Sekundarstufe II","Inicio de formación profesional o universidad":"Beginn einer Ausbildung oder eines Studiums","Primer empleo":"Erste berufliche Tätigkeit","30º cumpleaños":"30. Geburtstag","Con total transparencia":"Mit voller Transparenz","AORAES · Departamento Español · Plan Futuro para hijos":"AORAES · Spanische Abteilung · Zukunftsplan für Kinder","Cálculo orientativo, sin validez contractual.":"Orientierende Berechnung, ohne vertragliche Gültigkeit.","Preparado para":"Erstellt für","tu cliente":"Ihr Kunde","{0} años":"{0} Jahre","Aportado:":"Eingezahlt:","Crecimiento estimado:":"Geschätztes Wachstum:","Escenario:":"Szenario:","{0} % anual":"{0} % jährlich","Horizonte:":"Zeithorizont:","Un crecimiento de {0} €":"Ein Wachstum von {0} €","{0} € al mes, durante {1} años":"{0} € pro Monat, über {1} Jahre","años":"Jahre","Aportación extra inicial (opcional, desde {0} €)":"Sonderzahlung zu Beginn (optional, ab {0} €)","Aportación extra inicial:":"Sonderzahlung zu Beginn:","El plan de tu hijo/a puede seguir construyéndose, pase lo que pase contigo":"Der Plan Ihres Kindes kann weiterwachsen, was auch immer mit Ihnen geschieht","El objetivo de tu hijo/a no debería depender de que a ti te siga yendo bien. Por eso el plan permite añadir, desde el principio, protección para quien paga.":"Das Ziel Ihres Kindes sollte nicht davon abhängen, dass es Ihnen weiterhin gut geht. Deshalb lässt sich der Plan von Anfang an um einen Schutz für die zahlende Person ergänzen.","Si incluyes esta cobertura y quedas incapacitado para trabajar, dejamos de cobrarte la aportación — pero el plan sigue recibiendo el dinero cada mes, exactamente como si tú siguieras pagando.":"Wenn Sie diese Absicherung einschließen und berufsunfähig werden, erheben wir keinen Beitrag mehr von Ihnen — der Plan erhält aber weiterhin jeden Monat das Geld, genau als würden Sie weiter einzahlen.","Si falleces, ocurre lo mismo: el plan sigue financiado, como máximo hasta que tu hijo/a cumpla {0} años, sin que nadie tenga que aportar nada más de su bolsillo.":"Falls Sie versterben, passiert dasselbe: Der Plan bleibt höchstens bis zum {0}. Geburtstag Ihres Kindes finanziert, ohne dass jemand weiter aus eigener Tasche einzahlen muss.","Es una cobertura opcional que se añade al plan y tiene su propio coste dentro de la misma cuota mensual: una parte de la cuota se destina a ella y no al ahorro. Lo que se contrata y su coste exacto se detallan en la propuesta.":"Es ist eine optionale Absicherung, die dem Plan hinzugefügt wird und eigene Kosten innerhalb desselben Monatsbeitrags hat: Ein Teil des Beitrags fließt in sie statt in das Sparen. Was abgeschlossen wird und was es genau kostet, steht im Angebot.","03 · El derecho a protegerse más adelante":"03 · Das Recht auf späteren Schutz","Puedes reservarle hoy a tu hijo/a el derecho a ampliar su propia protección":"Heute können Sie Ihrem Kind das Recht sichern, seinen eigenen Schutz zu erweitern","Si incluyes la opción de incapacidad laboral (BU-Option), este plan le reserva a tu hijo/a el derecho a contratar más adelante su propia cobertura de incapacidad sin una nueva evaluación de salud — para que un problema de salud futuro no le cierre esa puerta. Al contratarla se responden preguntas de salud sobre tu hijo/a, y el derecho se pierde si antes llega a quedar inválido/a.":"Wenn Sie die Berufsunfähigkeits-Option (BU-Option) einschließen, sichert dieser Plan Ihrem Kind das Recht, später eine eigene Berufsunfähigkeitsabsicherung ohne erneute Gesundheitsprüfung abzuschließen — damit ein zukünftiges Gesundheitsproblem diese Tür nicht verschließt. Beim Abschluss werden Gesundheitsfragen zu Ihrem Kind beantwortet, und das Recht erlischt, wenn es vorher invalide wird.","La opción tiene un coste propio dentro de la cuota mensual; el coste real de la cobertura de incapacidad se calcula el día que se ejerce, según la edad y el importe elegido entonces.":"Die Option hat eigene Kosten innerhalb des Monatsbeitrags; die tatsächlichen Kosten der Berufsunfähigkeitsabsicherung werden am Tag der Ausübung berechnet, je nach Alter und dann gewähltem Betrag.","Escenarios ilustrativos de evolución media anual, no una garantía de rentabilidad futura. La cifra es el valor estimado del plan a esa edad, no necesariamente un importe disponible en efectivo sin condiciones. No incluye el coste de coberturas opcionales, que se pagan dentro de la misma cuota. Cálculo orientativo; no constituye asesoramiento fiscal ni una promesa de resultado.":"Illustrative Szenarien einer durchschnittlichen jährlichen Entwicklung, keine Garantie künftiger Rendite. Der Betrag ist der geschätzte Wert des Plans in diesem Alter, nicht zwangsläufig ein ohne Bedingungen verfügbarer Bargeldbetrag. Nicht enthalten sind die Kosten optionaler Absicherungen, die im selben Monatsbeitrag bezahlt werden. Orientierende Berechnung; keine Steuerberatung und kein Ergebnisversprechen.","Los cálculos de esta pantalla son estimaciones orientativas del valor del plan con interés compuesto, no una garantía de rentabilidad ni de disponibilidad inmediata en efectivo. Suponen que toda la cuota, salvo el coste de entrada, se destina al ahorro: si añades coberturas opcionales (protección de quien paga, opción de incapacidad laboral u otras), su coste se paga dentro de la misma cuota y el capital resultante sería menor. Las condiciones exactas, incluidas las de disposición del capital, se detallan en la documentación contractual.":"Die Berechnungen auf diesem Bildschirm sind orientierende Schätzungen des Planwerts mit Zinseszins, keine Renditegarantie und keine Garantie für die sofortige Verfügbarkeit in bar. Sie gehen davon aus, dass der gesamte Beitrag, abgesehen von den Abschlusskosten, in das Sparen fließt: Wenn Sie optionale Absicherungen hinzufügen (Schutz für die zahlende Person, die Berufsunfähigkeits-Option oder andere), werden deren Kosten im selben Beitrag bezahlt, und das daraus entstehende Kapital wäre niedriger. Die genauen Bedingungen, einschließlich der Verfügung über das Kapital, sind in den Vertragsunterlagen festgelegt.","Con estos datos el plan no se podría contratar: la duración mínima es de {0} años.":"Mit diesen Angaben wäre kein Abschluss möglich: Die Mindestlaufzeit beträgt {0} Jahre.","Con estos datos el plan no se podría contratar: la suma de aportaciones debe ser de al menos {0} €.":"Mit diesen Angaben wäre kein Abschluss möglich: Die Beitragssumme muss mindestens {0} € betragen."};
-window.I18N_EN_FUT = {"Tu hijo/a":"Your child","Edad actual":"Current age","Aportación mensual":"Monthly contribution","Escenario de evolución anual media":"Average annual growth scenario","Conservador · 4 %":"Conservative · 4 %","Equilibrado · 6 %":"Balanced · 6 %","Dinámico · 8 %":"Dynamic · 8 %","Proyectar para el año":"Project for the year","EN":"IN","TU HIJO/A PODRÍA TENER":"YOUR CHILD COULD HAVE","tendrá {0} años ese año":"will be {0} years old that year","Así se construye esta protección":"Here’s how this protection is built","Ahorro · si a ti te pasara algo · el derecho a protegerse más adelante":"Savings · if something happened to you · the right to get covered later","01 · Así crece el capital":"01 · How the capital grows","Pones poco, se acumula mucho":"You put in little, it adds up to a lot","Tu aportación mensual, con el interés compuesto, se convierte con los años en un capital muy superior a lo que efectivamente pones de tu bolsillo.":"Your monthly contribution, with compound interest, grows over the years into a capital far greater than what you actually put in out of pocket.","De tu bolsillo":"Out of your pocket","Capital estimado":"Estimated capital","Aportado":"Contributed","02 · Si a ti te pasara algo":"02 · If something happened to you","Si no puedes seguir trabajando":"If you can no longer work","Si faltas":"If you’re no longer there","10º cumpleaños":"10th birthday","Cambio de tipo de colegio":"Change of school type","Inicio de Bachillerato / Sekundarstufe 2":"Start of upper-secondary school / Sekundarstufe 2","Inicio de formación profesional o universidad":"Start of vocational training or university","Primer empleo":"First job","30º cumpleaños":"30th birthday","Con total transparencia":"With full transparency","AORAES · Departamento Español · Plan Futuro para hijos":"AORAES · Spanish Department · Future Plan for children","Cálculo orientativo, sin validez contractual.":"Indicative calculation, not contractually binding.","Preparado para":"Prepared for","tu cliente":"your client","{0} años":"{0} years","Aportado:":"Contributed:","Crecimiento estimado:":"Estimated growth:","Escenario:":"Scenario:","{0} % anual":"{0} % annual","Horizonte:":"Time horizon:","Un crecimiento de {0} €":"A growth of {0} €","{0} € al mes, durante {1} años":"{0} € per month, for {1} years","años":"years","Aportación extra inicial (opcional, desde {0} €)":"Extra initial contribution (optional, from {0} €)","Aportación extra inicial:":"Initial extra contribution:","El plan de tu hijo/a puede seguir construyéndose, pase lo que pase contigo":"Your child’s plan can keep building, whatever happens to you","El objetivo de tu hijo/a no debería depender de que a ti te siga yendo bien. Por eso el plan permite añadir, desde el principio, protección para quien paga.":"Your child’s goal shouldn’t depend on things continuing to go well for you. That’s why the plan lets you add protection for whoever pays, right from the start.","Si incluyes esta cobertura y quedas incapacitado para trabajar, dejamos de cobrarte la aportación — pero el plan sigue recibiendo el dinero cada mes, exactamente como si tú siguieras pagando.":"If you include this cover and become unable to work, we stop charging you the contribution — but the plan keeps receiving the money every month, exactly as if you were still paying.","Si falleces, ocurre lo mismo: el plan sigue financiado, como máximo hasta que tu hijo/a cumpla {0} años, sin que nadie tenga que aportar nada más de su bolsillo.":"If you pass away, the same thing happens: the plan stays funded, at most until your child turns {0}, with no one having to contribute anything more out of pocket.","Es una cobertura opcional que se añade al plan y tiene su propio coste dentro de la misma cuota mensual: una parte de la cuota se destina a ella y no al ahorro. Lo que se contrata y su coste exacto se detallan en la propuesta.":"It is an optional cover added to the plan, with its own cost inside the same monthly payment: part of the payment goes to it rather than to savings. What is taken out and its exact cost are set out in the proposal.","03 · El derecho a protegerse más adelante":"03 · The right to get covered later","Puedes reservarle hoy a tu hijo/a el derecho a ampliar su propia protección":"Today you can secure your child’s right to extend their own coverage","Si incluyes la opción de incapacidad laboral (BU-Option), este plan le reserva a tu hijo/a el derecho a contratar más adelante su propia cobertura de incapacidad sin una nueva evaluación de salud — para que un problema de salud futuro no le cierre esa puerta. Al contratarla se responden preguntas de salud sobre tu hijo/a, y el derecho se pierde si antes llega a quedar inválido/a.":"If you include the disability option (BU-Option), this plan secures your child’s right to take out their own disability cover later on without a new health assessment — so a future health issue doesn’t close that door. Health questions about your child are answered when it is taken out, and the right is lost if they become disabled before using it.","La opción tiene un coste propio dentro de la cuota mensual; el coste real de la cobertura de incapacidad se calcula el día que se ejerce, según la edad y el importe elegido entonces.":"The option has its own cost inside the monthly payment; the actual cost of the disability cover is calculated on the day it’s exercised, based on the age and amount chosen at that time.","Escenarios ilustrativos de evolución media anual, no una garantía de rentabilidad futura. La cifra es el valor estimado del plan a esa edad, no necesariamente un importe disponible en efectivo sin condiciones. No incluye el coste de coberturas opcionales, que se pagan dentro de la misma cuota. Cálculo orientativo; no constituye asesoramiento fiscal ni una promesa de resultado.":"Illustrative scenarios of average annual growth, not a guarantee of future returns. The figure is the plan’s estimated value at that age, not necessarily an amount available in cash without conditions. It does not include the cost of optional covers, which are paid within the same monthly payment. Indicative calculation; it does not constitute tax advice or a promise of results.","Los cálculos de esta pantalla son estimaciones orientativas del valor del plan con interés compuesto, no una garantía de rentabilidad ni de disponibilidad inmediata en efectivo. Suponen que toda la cuota, salvo el coste de entrada, se destina al ahorro: si añades coberturas opcionales (protección de quien paga, opción de incapacidad laboral u otras), su coste se paga dentro de la misma cuota y el capital resultante sería menor. Las condiciones exactas, incluidas las de disposición del capital, se detallan en la documentación contractual.":"The calculations on this screen are indicative estimates of the plan’s value with compound interest, not a guarantee of returns or of immediate cash availability. They assume the whole payment, apart from the entry cost, goes to savings: if you add optional covers (protection for whoever pays, the disability option or others), their cost is paid within the same payment and the resulting capital would be lower. The exact conditions, including access to the capital, are set out in the contract documentation.","Con estos datos el plan no se podría contratar: la duración mínima es de {0} años.":"With these inputs the plan could not be taken out: the minimum term is {0} years.","Con estos datos el plan no se podría contratar: la suma de aportaciones debe ser de al menos {0} €.":"With these inputs the plan could not be taken out: total contributions must be at least {0} €."};
+window.I18N_DE_FUT = {"Tu hijo/a":"Ihr Kind","Edad actual":"Aktuelles Alter","Aportación mensual":"Monatlicher Beitrag","Escenario de evolución anual media":"Szenario der durchschnittlichen jährlichen Entwicklung","Conservador · 4 %":"Konservativ · 4 %","Equilibrado · 6 %":"Ausgewogen · 6 %","Dinámico · 8 %":"Dynamisch · 8 %","Proyectar para el año":"Projizieren für das Jahr","EN":"IM JAHR","TU HIJO/A PODRÍA TENER":"IHR KIND KÖNNTE HABEN","tendrá {0} años ese año":"wird in diesem Jahr {0} Jahre alt","Así se construye esta protección":"So entsteht dieser Schutz","Ahorro · si a ti te pasara algo · el derecho a protegerse más adelante":"Sparen · falls Ihnen etwas zustößt · das Recht auf späteren Schutz","01 · Así crece el capital":"01 · So wächst das Kapital","Pones poco, se acumula mucho":"Sie zahlen wenig ein, es wird viel","Tu aportación mensual, con el interés compuesto, se convierte con los años en un capital muy superior a lo que efectivamente pones de tu bolsillo.":"Ihr monatlicher Beitrag verwandelt sich mit dem Zinseszins über die Jahre in ein deutlich höheres Kapital, als Sie tatsächlich einzahlen.","De tu bolsillo":"Aus Ihrer Tasche","Capital estimado":"Geschätztes Kapital","Aportado":"Eingezahlt","Si no puedes seguir trabajando":"Wenn Sie nicht mehr arbeiten können","Si faltas":"Falls Sie fehlen","10º cumpleaños":"10. Geburtstag","Cambio de tipo de colegio":"Wechsel der Schulform","Inicio de Bachillerato / Sekundarstufe 2":"Beginn der Sekundarstufe II","Inicio de formación profesional o universidad":"Beginn einer Ausbildung oder eines Studiums","Primer empleo":"Erste berufliche Tätigkeit","30º cumpleaños":"30. Geburtstag","Con total transparencia":"Mit voller Transparenz","AORAES · Departamento Español · Plan Futuro para hijos":"AORAES · Spanische Abteilung · Zukunftsplan für Kinder","Cálculo orientativo, sin validez contractual.":"Orientierende Berechnung, ohne vertragliche Gültigkeit.","Preparado para":"Erstellt für","tu cliente":"Ihr Kunde","{0} años":"{0} Jahre","Aportado:":"Eingezahlt:","Crecimiento estimado:":"Geschätztes Wachstum:","Escenario:":"Szenario:","{0} % anual":"{0} % jährlich","Horizonte:":"Zeithorizont:","Un crecimiento de {0} €":"Ein Wachstum von {0} €","{0} € al mes, durante {1} años":"{0} € pro Monat, über {1} Jahre","años":"Jahre","Aportación extra inicial (opcional, desde {0} €)":"Sonderzahlung zu Beginn (optional, ab {0} €)","Aportación extra inicial:":"Sonderzahlung zu Beginn:","El plan de tu hijo/a puede seguir construyéndose, pase lo que pase contigo":"Der Plan Ihres Kindes kann weiterwachsen, was auch immer mit Ihnen geschieht","El objetivo de tu hijo/a no debería depender de que a ti te siga yendo bien. Por eso el plan permite añadir, desde el principio, protección para quien paga.":"Das Ziel Ihres Kindes sollte nicht davon abhängen, dass es Ihnen weiterhin gut geht. Deshalb lässt sich der Plan von Anfang an um einen Schutz für die zahlende Person ergänzen.","Si incluyes esta cobertura y quedas incapacitado para trabajar, dejamos de cobrarte la aportación — pero el plan sigue recibiendo el dinero cada mes, exactamente como si tú siguieras pagando.":"Wenn Sie diese Absicherung einschließen und berufsunfähig werden, erheben wir keinen Beitrag mehr von Ihnen — der Plan erhält aber weiterhin jeden Monat das Geld, genau als würden Sie weiter einzahlen.","Si falleces, ocurre lo mismo: el plan sigue financiado, como máximo hasta que tu hijo/a cumpla {0} años, sin que nadie tenga que aportar nada más de su bolsillo.":"Falls Sie versterben, passiert dasselbe: Der Plan bleibt höchstens bis zum {0}. Geburtstag Ihres Kindes finanziert, ohne dass jemand weiter aus eigener Tasche einzahlen muss.","Es una cobertura opcional que se añade al plan y tiene su propio coste dentro de la misma cuota mensual: una parte de la cuota se destina a ella y no al ahorro. Lo que se contrata y su coste exacto se detallan en la propuesta.":"Es ist eine optionale Absicherung, die dem Plan hinzugefügt wird und eigene Kosten innerhalb desselben Monatsbeitrags hat: Ein Teil des Beitrags fließt in sie statt in das Sparen. Was abgeschlossen wird und was es genau kostet, steht im Angebot.","Puedes reservarle hoy a tu hijo/a el derecho a ampliar su propia protección":"Heute können Sie Ihrem Kind das Recht sichern, seinen eigenen Schutz zu erweitern","Si incluyes la opción de incapacidad laboral (BU-Option), este plan le reserva a tu hijo/a el derecho a contratar más adelante su propia cobertura de incapacidad sin una nueva evaluación de salud — para que un problema de salud futuro no le cierre esa puerta. Al contratarla se responden preguntas de salud sobre tu hijo/a, y el derecho se pierde si antes llega a quedar inválido/a.":"Wenn Sie die Berufsunfähigkeits-Option (BU-Option) einschließen, sichert dieser Plan Ihrem Kind das Recht, später eine eigene Berufsunfähigkeitsabsicherung ohne erneute Gesundheitsprüfung abzuschließen — damit ein zukünftiges Gesundheitsproblem diese Tür nicht verschließt. Beim Abschluss werden Gesundheitsfragen zu Ihrem Kind beantwortet, und das Recht erlischt, wenn es vorher invalide wird.","La opción tiene un coste propio dentro de la cuota mensual; el coste real de la cobertura de incapacidad se calcula el día que se ejerce, según la edad y el importe elegido entonces.":"Die Option hat eigene Kosten innerhalb des Monatsbeitrags; die tatsächlichen Kosten der Berufsunfähigkeitsabsicherung werden am Tag der Ausübung berechnet, je nach Alter und dann gewähltem Betrag.","Escenarios ilustrativos de evolución media anual, no una garantía de rentabilidad futura. La cifra es el valor estimado del plan a esa edad, no necesariamente un importe disponible en efectivo sin condiciones. No incluye el coste de coberturas opcionales, que se pagan dentro de la misma cuota. Cálculo orientativo; no constituye asesoramiento fiscal ni una promesa de resultado.":"Illustrative Szenarien einer durchschnittlichen jährlichen Entwicklung, keine Garantie künftiger Rendite. Der Betrag ist der geschätzte Wert des Plans in diesem Alter, nicht zwangsläufig ein ohne Bedingungen verfügbarer Bargeldbetrag. Nicht enthalten sind die Kosten optionaler Absicherungen, die im selben Monatsbeitrag bezahlt werden. Orientierende Berechnung; keine Steuerberatung und kein Ergebnisversprechen.","Con estos datos el plan no se podría contratar: la duración mínima es de {0} años.":"Mit diesen Angaben wäre kein Abschluss möglich: Die Mindestlaufzeit beträgt {0} Jahre.","Con estos datos el plan no se podría contratar: la suma de aportaciones debe ser de al menos {0} €.":"Mit diesen Angaben wäre kein Abschluss möglich: Die Beitragssumme muss mindestens {0} € betragen.","04 · Si a ti te pasara algo":"04 · Falls Ihnen etwas zustößt","05 · El derecho a protegerse más adelante":"05 · Das Recht auf späteren Schutz","Los cálculos de esta pantalla son estimaciones orientativas del valor del plan con interés compuesto, no una garantía de rentabilidad ni de disponibilidad inmediata en efectivo. Incluyen un ajuste prudente por los costes del contrato, calibrado con las ilustraciones oficiales del producto, y descuentan de la cuota el coste de las coberturas que elijas (protección de quien paga, invalidez del niño/a, cobertura laboral futura): lo que se destina a protegerse no se ahorra. Las condiciones exactas, incluidas las de disposición del capital, se detallan en la documentación contractual.":"Die Berechnungen auf diesem Bildschirm sind orientierende Schätzungen des Planwerts mit Zinseszins, keine Renditegarantie und keine Garantie für die sofortige Verfügbarkeit in bar. Sie enthalten einen vorsichtigen Abschlag für Vertragskosten, geeicht an den offiziellen Beispielen des Produkts, und ziehen vom Beitrag die Kosten der gewählten Absicherungen ab (Schutz der zahlenden Person, Kinderinvalidität, künftige Arbeitskraftabsicherung): Was in den Schutz fließt, wird nicht gespart. Die genauen Bedingungen, einschließlich der Verfügung über das Kapital, sind in den Vertragsunterlagen festgelegt.","Una pérdida de {0} €":"Ein Verlust von {0} €"};
+window.I18N_EN_FUT = {"Tu hijo/a":"Your child","Edad actual":"Current age","Aportación mensual":"Monthly contribution","Escenario de evolución anual media":"Average annual growth scenario","Conservador · 4 %":"Conservative · 4 %","Equilibrado · 6 %":"Balanced · 6 %","Dinámico · 8 %":"Dynamic · 8 %","Proyectar para el año":"Project for the year","EN":"IN","TU HIJO/A PODRÍA TENER":"YOUR CHILD COULD HAVE","tendrá {0} años ese año":"will be {0} years old that year","Así se construye esta protección":"Here’s how this protection is built","Ahorro · si a ti te pasara algo · el derecho a protegerse más adelante":"Savings · if something happened to you · the right to get covered later","01 · Así crece el capital":"01 · How the capital grows","Pones poco, se acumula mucho":"You put in little, it adds up to a lot","Tu aportación mensual, con el interés compuesto, se convierte con los años en un capital muy superior a lo que efectivamente pones de tu bolsillo.":"Your monthly contribution, with compound interest, grows over the years into a capital far greater than what you actually put in out of pocket.","De tu bolsillo":"Out of your pocket","Capital estimado":"Estimated capital","Aportado":"Contributed","Si no puedes seguir trabajando":"If you can no longer work","Si faltas":"If you’re no longer there","10º cumpleaños":"10th birthday","Cambio de tipo de colegio":"Change of school type","Inicio de Bachillerato / Sekundarstufe 2":"Start of upper-secondary school / Sekundarstufe 2","Inicio de formación profesional o universidad":"Start of vocational training or university","Primer empleo":"First job","30º cumpleaños":"30th birthday","Con total transparencia":"With full transparency","AORAES · Departamento Español · Plan Futuro para hijos":"AORAES · Spanish Department · Future Plan for children","Cálculo orientativo, sin validez contractual.":"Indicative calculation, not contractually binding.","Preparado para":"Prepared for","tu cliente":"your client","{0} años":"{0} years","Aportado:":"Contributed:","Crecimiento estimado:":"Estimated growth:","Escenario:":"Scenario:","{0} % anual":"{0} % annual","Horizonte:":"Time horizon:","Un crecimiento de {0} €":"A growth of {0} €","{0} € al mes, durante {1} años":"{0} € per month, for {1} years","años":"years","Aportación extra inicial (opcional, desde {0} €)":"Extra initial contribution (optional, from {0} €)","Aportación extra inicial:":"Initial extra contribution:","El plan de tu hijo/a puede seguir construyéndose, pase lo que pase contigo":"Your child’s plan can keep building, whatever happens to you","El objetivo de tu hijo/a no debería depender de que a ti te siga yendo bien. Por eso el plan permite añadir, desde el principio, protección para quien paga.":"Your child’s goal shouldn’t depend on things continuing to go well for you. That’s why the plan lets you add protection for whoever pays, right from the start.","Si incluyes esta cobertura y quedas incapacitado para trabajar, dejamos de cobrarte la aportación — pero el plan sigue recibiendo el dinero cada mes, exactamente como si tú siguieras pagando.":"If you include this cover and become unable to work, we stop charging you the contribution — but the plan keeps receiving the money every month, exactly as if you were still paying.","Si falleces, ocurre lo mismo: el plan sigue financiado, como máximo hasta que tu hijo/a cumpla {0} años, sin que nadie tenga que aportar nada más de su bolsillo.":"If you pass away, the same thing happens: the plan stays funded, at most until your child turns {0}, with no one having to contribute anything more out of pocket.","Es una cobertura opcional que se añade al plan y tiene su propio coste dentro de la misma cuota mensual: una parte de la cuota se destina a ella y no al ahorro. Lo que se contrata y su coste exacto se detallan en la propuesta.":"It is an optional cover added to the plan, with its own cost inside the same monthly payment: part of the payment goes to it rather than to savings. What is taken out and its exact cost are set out in the proposal.","Puedes reservarle hoy a tu hijo/a el derecho a ampliar su propia protección":"Today you can secure your child’s right to extend their own coverage","Si incluyes la opción de incapacidad laboral (BU-Option), este plan le reserva a tu hijo/a el derecho a contratar más adelante su propia cobertura de incapacidad sin una nueva evaluación de salud — para que un problema de salud futuro no le cierre esa puerta. Al contratarla se responden preguntas de salud sobre tu hijo/a, y el derecho se pierde si antes llega a quedar inválido/a.":"If you include the disability option (BU-Option), this plan secures your child’s right to take out their own disability cover later on without a new health assessment — so a future health issue doesn’t close that door. Health questions about your child are answered when it is taken out, and the right is lost if they become disabled before using it.","La opción tiene un coste propio dentro de la cuota mensual; el coste real de la cobertura de incapacidad se calcula el día que se ejerce, según la edad y el importe elegido entonces.":"The option has its own cost inside the monthly payment; the actual cost of the disability cover is calculated on the day it’s exercised, based on the age and amount chosen at that time.","Escenarios ilustrativos de evolución media anual, no una garantía de rentabilidad futura. La cifra es el valor estimado del plan a esa edad, no necesariamente un importe disponible en efectivo sin condiciones. No incluye el coste de coberturas opcionales, que se pagan dentro de la misma cuota. Cálculo orientativo; no constituye asesoramiento fiscal ni una promesa de resultado.":"Illustrative scenarios of average annual growth, not a guarantee of future returns. The figure is the plan’s estimated value at that age, not necessarily an amount available in cash without conditions. It does not include the cost of optional covers, which are paid within the same monthly payment. Indicative calculation; it does not constitute tax advice or a promise of results.","Con estos datos el plan no se podría contratar: la duración mínima es de {0} años.":"With these inputs the plan could not be taken out: the minimum term is {0} years.","Con estos datos el plan no se podría contratar: la suma de aportaciones debe ser de al menos {0} €.":"With these inputs the plan could not be taken out: total contributions must be at least {0} €.","04 · Si a ti te pasara algo":"04 · If something happened to you","05 · El derecho a protegerse más adelante":"05 · The right to get covered later","Los cálculos de esta pantalla son estimaciones orientativas del valor del plan con interés compuesto, no una garantía de rentabilidad ni de disponibilidad inmediata en efectivo. Incluyen un ajuste prudente por los costes del contrato, calibrado con las ilustraciones oficiales del producto, y descuentan de la cuota el coste de las coberturas que elijas (protección de quien paga, invalidez del niño/a, cobertura laboral futura): lo que se destina a protegerse no se ahorra. Las condiciones exactas, incluidas las de disposición del capital, se detallan en la documentación contractual.":"The calculations on this screen are indicative estimates of the plan’s value with compound interest, not a guarantee of returns or of immediate cash availability. They include a prudent adjustment for contract costs, calibrated with the product’s official illustrations, and deduct from the payment the cost of the covers you choose (protection for whoever pays, child’s disability, future work-ability cover): what goes to protection is not saved. The exact conditions, including access to the capital, are set out in the contract documentation.","Una pérdida de {0} €":"A loss of {0} €"};
 (function(){
   var MAP_DE=window.I18N_DE_FUT, MAP_EN=window.I18N_EN_FUT;
   var REV_DE=(function(){var r={};for(var k in MAP_DE){if(!(MAP_DE[k] in r))r[MAP_DE[k]]=k;}return r;})();
@@ -364,41 +457,91 @@ window.I18N_EN_FUT = {"Tu hijo/a":"Your child","Edad actual":"Current age","Apor
 <script>
 const THIS_YEAR=new Date().getFullYear();
 const MIN_YEARS=2, MIN_SUM=2500;
-const S={childAge:2,monthly:75,ret:6,capital0:0,targetYear:THIS_YEAR+16};
+const S={childAge:2,monthly:75,ret:6,capital0:0,targetYear:THIS_YEAR+16,dyn:0,extraYear:0,payerAge:35};
 const $=id=>document.getElementById(id);
 const eur=n=>new Intl.NumberFormat('de-DE',{maximumFractionDigits:0}).format(Math.round(n));
 const eurc=n=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
 
-// Interés compuesto mensual con aportación fija. Sin fiscalidad, pero sí con el coste real de
-// entrada (Abschlusskosten): el Basisinformationsblatt del producto real (Mein Zukunftsplan VAN25)
-// descuenta un 2,5 % de cada aportación antes de invertirla. Ese coste solo se cobra durante los
-// primeros 5 años del contrato (Höchstzillmersatz, §4 DeckRV) — a partir del año 6, la aportación
-// entra íntegra. "Aportado" sigue mostrando lo que el cliente realmente paga (bruto); solo el
-// capital que compone es el neto de ese coste.
-function fvGeneric(capital0,monthly,ratePct,years){
-  const r=ratePct/100/12;
-  const ALPHA=0.025;
-  const ZILLMER_MONTHS=60;
-  let c=capital0||0, contributed=0;
-  const totalMonths=Math.round(years*12);
-  for(let m=0;m<totalMonths;m++){
-    const netMonthly=(m<ZILLMER_MONTHS)?monthly*(1-ALPHA):monthly;
-    c=c*(1+r)+netMonthly; contributed+=monthly;
+// ===== Fase 1 · Modelo: coberturas dentro de la cuota, ajuste por costes calibrado, cuota creciente y extras =====
+// Fuente de las cifras: material de Generali sobre "Mein Zukunftsplan" (FAQ 09/2025 y formación 03/2026). Las
+// tablas de coste son "solo para uso interno" y orientativas (Zahlbeitrag 2026): por eso solo se muestran en modo
+// asesor. Hay que confirmarlas siempre en el programa de oferta.
+const C={vs:'none',kiz:0,bu:'none',buRent:500};   // coberturas elegidas
+const KIZ500=[[0.25,12.22],[3,11.65],[6,11.04],[10,10.53],[12,9.97],[15,9.24],[18,9.80]];  // 500 €/mes de renta de invalidez, por edad de entrada
+const BUO500=[[0.25,4.32],[3,4.99],[6,5.94],[10,8.26],[12,11.27],[15,16.74],[18,22.04]];   // 500 €/mes de BU-Option
+const SBU500={grund:32.98,haupt:36.34,real:29.19,gym:29.19,sek2:22.16};                    // 500 €/mes de Schüler-BU según colegio
+// Coste del Versorgerschutz como parte de la cuota. Con la tabla anterior, el ejemplo oficial de Oskar
+// (invalidez 1.000 + BU-Option 1.000 + Versorgerschutz = 34,47 €/mes) deja ≈1,4 € para el Versorgerschutz sobre
+// ≈33 €: un 4 %, para un pagador de 30 años. Solo fallecimiento es una estimación propia (no hay dato oficial).
+const VS_PCT={none:0,death:0.015,both:0.042};
+// Ajuste prudente por costes del contrato: el valor oficial queda por debajo de un cálculo teórico con el 2,5 % de
+// coste de entrada. Calibrado con las ilustraciones oficiales al 6 % (50 €/mes hasta los 67: niño de 1, 6 y 12
+// años = 486.391 / 349.005 / 233.626 €; y 51,45 €/mes durante 18 años con Versorgerschutz = 17.373 €). Con esta
+// tabla el modelo reproduce los cuatro valores con un error de ±3 %.
+const HAIRCUT=[[0,0.09],[55,0.09],[61,0.063],[66,0.039]];   // [años de plazo, recorte]
+
+function interp(tab,x){
+  if(x<=tab[0][0])return tab[0][1];
+  for(let i=1;i<tab.length;i++){
+    if(x<=tab[i][0]){const a=tab[i-1],b=tab[i];return a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0]);}
   }
-  return {capital:Math.max(0,c),contributed};
+  return tab[tab.length-1][1];
+}
+const haircut=years=>interp(HAIRCUT,years);
+
+// Coste mensual inicial (importes a la edad de entrada) de las coberturas del niño/a. Se calcula con la edad actual.
+function childCovers(){
+  const a=S.childAge, age=Math.max(a,0.25), k=C.buRent/500;
+  const kiz=(C.kiz&&a<=18)?interp(KIZ500,age)*C.kiz/500:0;
+  let bu=0;
+  if(C.bu==='option'&&a<=18)bu=interp(BUO500,age)*k;
+  else if(C.bu==='school'&&a>=10&&a<=18)bu=(SBU500[HC.school]||SBU500.real)*k;
+  return {kiz,bu};
+}
+// Meses (desde hoy) que dura el Versorgerschutz: hasta los 30 años del niño/a o los 70 (fallecimiento) / 67
+// (incapacidad) de quien paga, lo que ocurra antes.
+function vsMonths(){
+  const lim=C.vs==='both'?67:70;
+  return Math.max(0,Math.min((30-S.childAge)*12,(lim-S.payerAge)*12));
+}
+// Simulación mensual. Las coberturas salen de la misma cuota; el resto se invierte (con el 2,5 % de coste de
+// entrada los 5 primeros años). Después se aplica el ajuste prudente por costes.
+function simulate(years){
+  const n=Math.round(years*12), r=S.ret/100/12, g=S.dyn/100, cv=childCovers(), vsEnd=vsMonths();
+  const vsPct=VS_PCT[C.vs]||0, ALPHA=0.025, ZM=60;
+  let c=S.capital0||0, contributed=0, extraPaid=S.capital0||0, invested=0, riskTotal=0;
+  for(let k=0;k<n;k++){
+    const f=Math.pow(1+g,Math.floor(k/12)), M=S.monthly*f, ageK=S.childAge+k/12;
+    let risk=0;
+    if(ageK<30||C.bu==='school'){ risk+=cv.bu*f; }
+    if(ageK<30||C.bu!=='option'){ risk+=cv.kiz*f; }
+    if(k<vsEnd)risk+=vsPct*M;
+    const inv=Math.max(0,M-risk);
+    c=c*(1+r)+inv*(k<ZM?1-ALPHA:1);
+    contributed+=M; invested+=inv; riskTotal+=M-inv;
+    if(S.extraYear>0&&k%12===11){c+=S.extraYear;extraPaid+=S.extraYear;}
+  }
+  const h=haircut(years);
+  return {capital:Math.max(0,c*(1-h)),raw:c,h,contributed,extraPaid,invested,riskTotal};
+}
+// Desglose de la primera cuota (para el modo asesor y los avisos).
+function firstMonth(){
+  const cv=childCovers(), vs=(vsMonths()>0?(VS_PCT[C.vs]||0):0)*S.monthly;
+  const risk=cv.kiz+cv.bu+vs;
+  return {kiz:cv.kiz,bu:cv.bu,vs,risk,saving:Math.max(0,S.monthly-risk),over:risk>S.monthly};
 }
 // El horizonte se define por año de calendario, no por edad — es lo que se pregunta en una
 // conversación real ("¿cuánto habría en 2038?"), no un hito predefinido.
 function calcPlan(){
   const years=Math.max(0,S.targetYear-THIS_YEAR);
   const ageAtTarget=S.childAge+years;
-  const d=fvGeneric(S.capital0,S.monthly,S.ret,years);
+  const d=simulate(years);
   // En horizontes cortos con rentabilidad baja, el coste Zillmer de los primeros 5 años puede superar
   // lo que ese periodo llega a rendir: el crecimiento real es negativo. Forzarlo a 0€ lo escondía y
   // dejaba la pantalla contradiciéndose a sí misma (el capital final ya se mostraba por debajo de lo
   // aportado, pero "crecimiento" decía 0€ en vez de la pérdida real).
-  const growth=d.capital-d.contributed-(S.capital0||0);
-  return {years,ageAtTarget,capital:d.capital,contributed:d.contributed,growth};
+  const growth=d.capital-d.invested-d.extraPaid;
+  return {years,ageAtTarget,capital:d.capital,raw:d.raw,h:d.h,contributed:d.contributed,extraPaid:d.extraPaid,riskTotal:d.riskTotal,growth};
 }
 
 function countUp(el,to,dur=900){
@@ -425,8 +568,8 @@ function renderChart(years){
   const labels=[],cap=[],aport=[];
   for(let y=0;y<=years;y++){
     labels.push(y===0?'Hoy':(y===years?'Objetivo':(S.childAge+y)));
-    const d=fvGeneric(S.capital0,S.monthly,S.ret,y);
-    cap.push(Math.round(d.capital)); aport.push(Math.round(d.contributed));
+    const d=simulate(y);
+    cap.push(Math.round(d.capital)); aport.push(Math.round(d.contributed+d.extraPaid));
   }
   const ctx=canvas.getContext('2d');
   const grad=ctx.createLinearGradient(0,0,0,300);
@@ -459,12 +602,15 @@ function render(){
   // Mínimos del producto (Mein Zukunftsplan, tarifa VAN25): duración de 2 años como mínimo y una suma
   // de aportaciones de al menos 2.500 €. Por debajo, el plan no se podría contratar.
   const warn=p.years<MIN_YEARS?'Con estos datos el plan no se podría contratar: la duración mínima es de '+MIN_YEARS+' años.'
-    :(S.monthly*12*p.years<MIN_SUM?'Con estos datos el plan no se podría contratar: la suma de aportaciones debe ser de al menos 2.500 €.':'');
+    :(S.monthly*12*p.years<MIN_SUM?'Con estos datos el plan no se podría contratar: la suma de aportaciones debe ser de al menos 2.500 €.'
+      :(firstMonth().over?tx(X.overWarn):''));
   $('r-warn').textContent=warn; $('r-warn').classList.toggle('show',!!warn);
 
   var rows=[];
   if(S.capital0>0) rows.push('<div>Aportación extra inicial: <b>'+eurc(S.capital0)+'</b></div>');
   rows.push('<div>Aportado: <b>'+eurc(p.contributed)+'</b></div>');
+  if(S.extraYear>0)rows.push('<div>'+tx(X.rowExtra)+' <b>'+eurc(S.extraYear)+'</b></div>');
+  if(S.dyn>0)rows.push('<div>'+tx(X.rowDyn)+' <b>'+S.dyn+' %</b></div>');
   rows.push('<div>Crecimiento estimado: <b>'+eurc(p.growth)+'</b></div>');
   rows.push('<div>Escenario: <b>'+S.ret+' % anual</b></div>');
   rows.push('<div>Horizonte: <b>'+p.years+' años</b></div>');
@@ -475,14 +621,18 @@ function render(){
   // capital por su cuenta se atribuye por error al esfuerzo mensual, e infla el multiplicador. La
   // sección "Aportado" del resumen (hero-breakdown, más arriba) ya muestra el capital inicial por
   // separado, así que p.contributed sigue sin tocarse ahí para no duplicarlo.
-  const pocketTotal=p.contributed+(S.capital0||0);
+  const pocketTotal=p.contributed+p.extraPaid;
   countUp($('e-contributed'),pocketTotal);
   countUp($('e-final'),p.capital);
   $('e-monthly-note').textContent=S.monthly+' € al mes, durante '+p.years+' años';
-  $('e-mult').textContent='×'+(pocketTotal>0?(p.capital/pocketTotal).toFixed(1):'0');
-  $('e-gain-note').textContent='Un crecimiento de '+eurc(p.growth);
+  $('e-cov-note').textContent=p.riskTotal>0?tx(X.noteCovers):'';
+  // con coberturas, parte de lo que se paga no se ahorra: si el capital queda por debajo de lo pagado, un "×0,6" parecería un error
+  const mult=pocketTotal>0?p.capital/pocketTotal:0;
+  $('e-mult').textContent=mult>=1?'×'+mult.toFixed(1):'—';
+  $('e-gain-note').textContent=p.growth<0?'Una pérdida de '+eurc(-p.growth):'Un crecimiento de '+eurc(p.growth);
 
   renderChart(p.years);
+  renderCovers(p); syncHeroAdv(); updateHealth(); updateRec();
 }
 
 function bindRange(id,key,after){$(id).addEventListener('input',e=>{
@@ -533,6 +683,434 @@ $('fase2-toggle').addEventListener('click',()=>{
   $('fase2-toggle').classList.toggle('open');
   $('fase2-wrap').classList.toggle('open');
 });
+
+// ===== Fase 1 · Textos (ES / EN / DE). Los módulos nuevos se pintan desde aquí, no desde el traductor del DOM. =====
+const LNG=()=>{const l=document.documentElement.lang;return (l==='de'||l==='en')?l:'es';};
+const tx=o=>o[LNG()]||o.es;
+const X={
+  adv:{es:'Modo asesor',en:'Advisor mode',de:'Beratermodus'},
+  advOn:{es:'Modo asesor activo',en:'Advisor mode on',de:'Beratermodus aktiv'},
+  moreTitle:{es:'Ajustes: coberturas, cuota creciente y extras',en:'Settings: covers, rising payment and extras',de:'Einstellungen: Absicherungen, steigender Beitrag, Extras'},
+  no:{es:'No',en:'No',de:'Nein'},
+  perYear:{es:'cada año',en:'per year',de:'pro Jahr'},
+  yrs:{es:'años',en:'years',de:'Jahre'},
+  dynLbl:{es:'Subida anual de la cuota',en:'Yearly increase of the payment',de:'Jährliche Beitragserhöhung'},
+  extraLbl:{es:'Aportación extra cada año (opcional, desde 500 €)',en:'Extra contribution each year (optional, from 500 €)',de:'Sonderzahlung pro Jahr (optional, ab 500 €)'},
+  covHead:{es:'Coberturas (salen de la misma cuota)',en:'Covers (paid from the same payment)',de:'Absicherungen (aus demselben Beitrag)'},
+  vsLbl:{es:'Protección de quien paga',en:'Protection for whoever pays',de:'Schutz der zahlenden Person'},
+  vsNone:{es:'Sin protección',en:'No protection',de:'Ohne Schutz'},
+  vsDeath:{es:'Si fallece',en:'If they die',de:'Bei Tod'},
+  vsBoth:{es:'Si fallece o queda incapacitado',en:'If they die or become unable to work',de:'Bei Tod oder Berufsunfähigkeit'},
+  payerAge:{es:'Edad de quien paga',en:'Age of whoever pays',de:'Alter der zahlenden Person'},
+  kizLbl:{es:'Invalidez del niño/a (renta al mes)',en:'Child’s disability (monthly pension)',de:'Kinderinvalidität (Rente pro Monat)'},
+  buLbl:{es:'Cobertura laboral futura',en:'Future work-ability cover',de:'Künftige Arbeitskraftabsicherung'},
+  buNone:{es:'Ninguna',en:'None',de:'Keine'},
+  buOpt:{es:'BU-Option (derecho a contratarla después)',en:'BU option (right to take it out later)',de:'BU-Option (Recht auf späteren Abschluss)'},
+  buSchool:{es:'Schüler-BU (de 10 a 18 años)',en:'Schüler-BU (ages 10 to 18)',de:'Schüler-BU (10 bis 18 Jahre)'},
+  buRent:{es:'Renta al mes de la cobertura laboral',en:'Monthly pension of the work-ability cover',de:'Monatsrente der Arbeitskraftabsicherung'},
+  nVsBoth:{es:'protección de quien paga (fallecimiento e incapacidad)',en:'protection for whoever pays (death and disability)',de:'Schutz der zahlenden Person (Tod und Berufsunfähigkeit)'},
+  nVsDeath:{es:'protección de quien paga (fallecimiento)',en:'protection for whoever pays (death)',de:'Schutz der zahlenden Person (Tod)'},
+  nKiz:{es:'invalidez del niño/a',en:'child’s disability cover',de:'Kinderinvalidität'},
+  nBuo:{es:'BU-Option',en:'BU option',de:'BU-Option'},
+  nSbu:{es:'Schüler-BU',en:'Schüler-BU',de:'Schüler-BU'},
+  incl:{es:'Incluye:',en:'Includes:',de:'Enthält:'},
+  inclNote:{es:'Una parte de la cuota se destina a ellas y el resto al ahorro, por eso el capital es menor.',en:'Part of the payment goes to them and the rest to savings, so the capital is lower.',de:'Ein Teil des Beitrags fließt in sie, der Rest in das Sparen, daher ist das Kapital geringer.'},
+  overWarn:{es:'Las coberturas elegidas absorben toda la cuota: no quedaría nada para ahorrar.',en:'The chosen covers absorb the whole payment: nothing would be left to save.',de:'Die gewählten Absicherungen verbrauchen den ganzen Beitrag: Zum Sparen bliebe nichts übrig.'},
+  rowExtra:{es:'Aportaciones extra al año:',en:'Extra contributions per year:',de:'Sonderzahlungen pro Jahr:'},
+  rowDyn:{es:'Subida anual de la cuota:',en:'Yearly increase of the payment:',de:'Jährliche Beitragserhöhung:'},
+  // --- modo asesor ---
+  advDetail:{es:'Detalle para el asesor',en:'Advisor detail',de:'Detail für den Berater'},
+  advSplit:{es:'Cuota',en:'Payment',de:'Beitrag'},
+  advSave:{es:'a ahorro',en:'to savings',de:'in das Sparen'},
+  advCov:{es:'a coberturas',en:'to covers',de:'in Absicherungen'},
+  advKiz:{es:'invalidez',en:'disability',de:'Invalidität'},
+  advBu:{es:'laboral',en:'work-ability',de:'Arbeitskraft'},
+  advVs:{es:'protección de quien paga',en:'payer protection',de:'Schutz der zahlenden Person'},
+  noteCovers:{es:'Incluye coberturas',en:'Includes covers',de:'Inklusive Absicherungen'},
+  advRiskTot:{es:'Destinado a coberturas en todo el plazo:',en:'Spent on covers over the whole term:',de:'Für Absicherungen über die gesamte Laufzeit:'},
+  advHair:{es:'Ajuste por costes del contrato',en:'Adjustment for contract costs',de:'Abschlag für Vertragskosten'},
+  advRaw:{es:'valor sin ajuste',en:'value before adjustment',de:'Wert vor Abschlag'},
+  advSrc:{es:'Costes: tablas internas de Generali (2026), orientativas. El ajuste está calibrado con las ilustraciones oficiales al 6 %. Confirma siempre en el programa de oferta.',en:'Costs: Generali internal tables (2026), indicative. The adjustment is calibrated with the official 6 % illustrations. Always confirm in the quotation program.',de:'Kosten: interne Tabellen der Generali (2026), Richtwerte. Der Abschlag ist an den offiziellen 6-%-Beispielen geeicht. Immer im Angebotsprogramm bestätigen.'},
+  advSwitchHint:{es:'Muestra cifras de coste y notas internas. Apágalo antes de enseñar la pantalla al cliente.',en:'Shows cost figures and internal notes. Switch it off before showing the screen to the client.',de:'Zeigt Kostenzahlen und interne Hinweise. Vor dem Zeigen an den Kunden ausschalten.'},
+  // --- pre-chequeo de salud ---
+  hcEy:{es:'02 · Antes de elegir',en:'02 · Before choosing',de:'02 · Vor der Auswahl'},
+  hcTitle:{es:'Qué puede asegurarse hoy',en:'What can be insured today',de:'Was sich heute absichern lässt'},
+  hcLede:{es:'La salud de un niño es lo que más pesa al contratar protección: hoy puede ser fácil y mañana, con un diagnóstico, ya no. Estas preguntas ayudan a ver qué se puede pedir ahora y con qué reservas.',en:'A child’s health weighs most when taking out protection: it may be easy today and, after a diagnosis, no longer tomorrow. These questions help to see what can be applied for now and with which reservations.',de:'Die Gesundheit eines Kindes wiegt beim Abschluss am meisten: Heute kann es einfach sein, morgen nach einer Diagnose nicht mehr. Diese Fragen zeigen, was sich jetzt beantragen lässt und mit welchen Vorbehalten.'},
+  hcPrivacy:{es:'Nada de lo que marques aquí se guarda: ni en el navegador ni en un servidor. Se borra al recargar o cerrar la pantalla. No escribas nombres.',en:'Nothing you tick here is saved, neither in the browser nor on a server. It is erased when you reload or close the screen. Do not type names.',de:'Nichts, was Sie hier ankreuzen, wird gespeichert, weder im Browser noch auf einem Server. Es verschwindet beim Neuladen oder Schließen. Bitte keine Namen eingeben.'},
+  hcClear:{es:'Borrar respuestas',en:'Clear answers',de:'Antworten löschen'},
+  g1:{es:'Revisiones pediátricas (cartilla amarilla)',en:'Paediatric check-ups (yellow booklet)',de:'Kinder-Vorsorgeuntersuchungen (gelbes Heft)'},
+  g1h:{es:'Hasta los 7 años la aseguradora pide copia de la cartilla con las revisiones U1 a U4 hechas, y la U4 (a los 3–4 meses) sin hallazgos. A partir de los 8 años no se exige.',en:'Up to age 7 the insurer asks for a copy of the booklet showing check-ups U1 to U4 done, and U4 (at 3–4 months) without findings. From age 8 it is not required.',de:'Bis zum 7. Lebensjahr verlangt der Versicherer eine Kopie des Hefts mit den Untersuchungen U1 bis U4, und die U4 (mit 3–4 Monaten) ohne Auffälligkeiten. Ab 8 Jahren ist das nicht nötig.'},
+  g1na:{es:'A esta edad no se exige la cartilla. Aun así, conviene tenerla a mano.',en:'At this age the booklet is not required. It is still handy to have it.',de:'In diesem Alter wird das Heft nicht verlangt. Trotzdem ist es gut, es zur Hand zu haben.'},
+  uQ:{es:'¿Están hechas U1 a U4 y la U4 salió sin hallazgos?',en:'Are U1 to U4 done and was U4 without findings?',de:'Sind U1 bis U4 erfolgt und war die U4 unauffällig?'},
+  yes:{es:'Sí',en:'Yes',de:'Ja'}, nop:{es:'No',en:'No',de:'Nein'}, dk:{es:'No sé',en:'Don’t know',de:'Weiß nicht'},
+  g2:{es:'Colegio',en:'School',de:'Schule'},
+  g2h:{es:'Solo cuenta para la Schüler-BU (cobertura laboral de 10 a 18 años): el tipo de colegio cambia la cuota, y las escuelas especiales y la formación profesional no entran.',en:'Only matters for the Schüler-BU (work-ability cover for ages 10 to 18): the type of school changes the price, and special-needs and vocational schools are not eligible.',de:'Zählt nur für die Schüler-BU (Arbeitskraftabsicherung von 10 bis 18 Jahren): Die Schulform ändert den Beitrag, Förderschulen und Berufsschulen sind ausgeschlossen.'},
+  schoolPick:{es:'Elegir…',en:'Choose…',de:'Auswählen…'},
+  sch:{
+    none:{es:'Aún no va al colegio',en:'Not in school yet',de:'Noch nicht in der Schule'},
+    grund:{es:'Grundschule (primaria)',en:'Grundschule (primary)',de:'Grundschule'},
+    haupt:{es:'Hauptschule',en:'Hauptschule',de:'Hauptschule'},
+    real:{es:'Realschule',en:'Realschule',de:'Realschule'},
+    gym:{es:'Gymnasium (5.º a 10.º)',en:'Gymnasium (grades 5–10)',de:'Gymnasium (Klasse 5–10)'},
+    sek2:{es:'Gymnasium, etapa superior (desde 11.º)',en:'Gymnasium, upper level (from grade 11)',de:'Gymnasiale Oberstufe (ab Klasse 11)'},
+    foerder:{es:'Escuela especial o de apoyo (Förder-/Sonderschule)',en:'Special-needs school (Förder-/Sonderschule)',de:'Förder- oder Sonderschule'},
+    berufs:{es:'Formación profesional (Berufsschule)',en:'Vocational school (Berufsschule)',de:'Berufsschule'}
+  },
+  g3:{es:'Salud del niño/a',en:'The child’s health',de:'Gesundheit des Kindes'},
+  g3h:{es:'Marca lo que corresponda. Si dudas, márcalo: es mejor saberlo antes de solicitar que descubrirlo después.',en:'Tick what applies. If in doubt, tick it: it is better to know before applying than to find out afterwards.',de:'Kreuzen Sie an, was zutrifft. Im Zweifel ankreuzen: Besser vor dem Antrag wissen als danach erfahren.'},
+  gBirth:{es:'Al nacer',en:'At birth',de:'Bei der Geburt'},
+  gDx:{es:'Diagnósticos y tratamientos (últimos 5 años)',en:'Diagnoses and treatments (last 5 years)',de:'Diagnosen und Behandlungen (letzte 5 Jahre)'},
+  gNow:{es:'Ahora mismo',en:'Right now',de:'Aktuell'},
+  resTitle:{es:'Qué se puede pedir hoy',en:'What can be applied for today',de:'Was sich heute beantragen lässt'},
+  resNote:{es:'Orientación general. La decisión final es siempre de la aseguradora.',en:'General guidance. The final decision always lies with the insurer.',de:'Allgemeine Orientierung. Die endgültige Entscheidung trifft immer der Versicherer.'},
+  cBuo:{es:'BU-Option (fijar la salud de hoy)',en:'BU option (lock in today’s health)',de:'BU-Option (heutigen Gesundheitszustand sichern)'},
+  cKiz:{es:'Invalidez del niño/a',en:'Child’s disability cover',de:'Kinderinvalidität'},
+  cSbu:{es:'Schüler-BU (BU completa desde los 10 años)',en:'Schüler-BU (full BU from age 10)',de:'Schüler-BU (volle BU ab 10 Jahren)'},
+  cVs:{es:'Protección de quien paga',en:'Protection for whoever pays',de:'Schutz der zahlenden Person'},
+  lvl:{
+    ok:{es:'Asegurable en principio',en:'Insurable in principle',de:'Grundsätzlich versicherbar'},
+    warn:{es:'Con reservas: posible exclusión o recargo',en:'With reservations: possible exclusion or surcharge',de:'Mit Vorbehalt: Ausschluss oder Zuschlag möglich'},
+    risk:{es:'Riesgo alto de rechazo',en:'High risk of rejection',de:'Hohes Ablehnungsrisiko'},
+    no:{es:'No disponible ahora',en:'Not available now',de:'Aktuell nicht möglich'}
+  },
+  why:{
+    ok:{
+      buo:{es:'Fija el estado de salud de hoy para contratar más adelante la cobertura laboral sin nuevas preguntas de salud.',en:'Locks in today’s health so the work-ability cover can be taken out later without new health questions.',de:'Sichert den heutigen Gesundheitszustand, damit die Arbeitskraftabsicherung später ohne neue Gesundheitsfragen abgeschlossen werden kann.'},
+      kiz:{es:'Paga una renta si hay invalidez permanente: escolar hasta los 15 años, laboral después.',en:'Pays a pension in case of permanent disability: school-related up to age 15, work-related after that.',de:'Zahlt eine Rente bei dauerhafter Invalidität: bis 15 Jahre schulbezogen, danach erwerbsbezogen.'},
+      sbu:{es:'Cobertura laboral completa desde ahora, con una cuota baja que el niño/a puede conservar.',en:'Full work-ability cover from now on, with a low payment the child can keep.',de:'Volle Arbeitskraftabsicherung ab sofort, mit niedrigem Beitrag, den das Kind behalten kann.'},
+      vs:{es:'No depende de la salud del niño/a. Para quien paga se hacen preguntas de salud simplificadas.',en:'It does not depend on the child’s health. Simplified health questions apply to whoever pays.',de:'Hängt nicht von der Gesundheit des Kindes ab. Für die zahlende Person gelten vereinfachte Gesundheitsfragen.'}
+    },
+    warn:{es:'Puede haber una exclusión (por ejemplo, de una dolencia concreta) o un recargo en la cuota.',en:'There may be an exclusion (for example of a specific condition) or a surcharge on the payment.',de:'Möglich sind ein Ausschluss (zum Beispiel einer bestimmten Erkrankung) oder ein Beitragszuschlag.'},
+    risk:{es:'Es probable un rechazo. Consulta el caso antes de enviar la solicitud.',en:'A rejection is likely. Discuss the case before sending the application.',de:'Eine Ablehnung ist wahrscheinlich. Fall vor dem Antrag klären.'},
+    no_age:{es:'Solo se puede contratar hasta los 18 años.',en:'Can only be taken out up to age 18.',de:'Nur bis zum 18. Lebensjahr abschließbar.'},
+    no_u:{es:'Falta la cartilla o la U4 tuvo hallazgos: sin eso no se acepta hasta los 7 años.',en:'The booklet is missing or U4 had findings: without it this is not accepted up to age 7.',de:'Das Heft fehlt oder die U4 war auffällig: Ohne das wird es bis zum 7. Lebensjahr nicht angenommen.'},
+    no_now:{es:'Con pruebas en curso, discapacidad reconocida o una prestación pedida, ahora no es posible. Mejor esperar al resultado.',en:'With tests under way, a recognised disability or a claim made, it is not possible now. Better to wait for the outcome.',de:'Bei laufenden Untersuchungen, anerkannter Behinderung oder beantragter Leistung ist es jetzt nicht möglich. Besser das Ergebnis abwarten.'},
+    no_young:{es:'Disponible desde los 9 años y 6 meses.',en:'Available from age 9 years and 6 months.',de:'Ab 9 Jahren und 6 Monaten möglich.'},
+    no_school:{es:'Las escuelas especiales y la formación profesional no entran en la Schüler-BU.',en:'Special-needs and vocational schools are not eligible for the Schüler-BU.',de:'Förderschulen und Berufsschulen sind für die Schüler-BU ausgeschlossen.'}
+  },
+  advNotes:{es:'Notas internas (solo asesor)',en:'Internal notes (advisor only)',de:'Interne Hinweise (nur Berater)'},
+  srcDoc:{es:'material Generali',en:'Generali material',de:'Generali-Material'},
+  srcOwn:{es:'criterio orientativo, validar',en:'indicative judgement, validate',de:'Richtwert, prüfen'},
+  eff:{ex:{es:'suele acabar en exclusión',en:'tends to end in an exclusion',de:'endet meist in einem Ausschluss'},re:{es:'suele acabar en rechazo',en:'tends to end in a rejection',de:'endet meist in einer Ablehnung'},wa:{es:'puede dar exclusión o recargo',en:'may lead to exclusion or surcharge',de:'kann Ausschluss oder Zuschlag bedeuten'},st:{es:'bloquea la solicitud ahora',en:'blocks the application now',de:'blockiert den Antrag aktuell'}},
+  advVu:{es:'Antes de solicitar, consulta el caso con Vertriebsunterstützung de Generali (VU-Leben.de@generali.com). Si se ha pedido o cobrado una prestación, el derecho a la BU-Option se pierde.',en:'Before applying, discuss the case with Generali Vertriebsunterstützung (VU-Leben.de@generali.com). If a benefit has been claimed or paid, the right to the BU option is lost.',de:'Vor dem Antrag den Fall mit der Vertriebsunterstützung der Generali klären (VU-Leben.de@generali.com). Wurde eine Leistung beantragt oder erbracht, erlischt das Recht auf die BU-Option.'},
+  advTitle:{es:'Lo que haría un asesor',en:'What an advisor would do',de:'Was ein Berater tun würde'},
+  adv_ok:{es:'Es el mejor momento para fijar la salud: contratar la cobertura laboral futura mientras no hay nada que declarar.',en:'This is the best moment to lock in health: take out the future work-ability cover while there is nothing to declare.',de:'Jetzt ist der beste Zeitpunkt, die Gesundheit zu sichern: die künftige Arbeitskraftabsicherung abschließen, solange nichts anzugeben ist.'},
+  adv_warn:{es:'Merece la pena pedirlo igualmente: una exclusión concreta suele ser mejor que quedarse sin nada. Compara el coste con lo que se protege.',en:'It is still worth applying: a specific exclusion is usually better than nothing. Compare the cost with what is protected.',de:'Ein Antrag lohnt sich trotzdem: Ein konkreter Ausschluss ist meist besser als nichts. Kosten mit dem Schutz vergleichen.'},
+  adv_risk:{es:'No envíes la solicitud a ciegas. Primero consulta el caso. Mientras tanto, el ahorro con protección de quien paga sigue siendo posible, y desde los 15 años puede valorarse una cobertura de capacidades básicas.',en:'Do not send the application blindly. Discuss the case first. Meanwhile, saving with protection for whoever pays remains possible, and from age 15 a basic-abilities cover can be considered.',de:'Den Antrag nicht blind abschicken. Zuerst den Fall klären. Das Sparen mit Schutz der zahlenden Person bleibt möglich, und ab 15 Jahren kann eine Grundfähigkeitsabsicherung geprüft werden.'},
+  adv_no:{es:'Hoy no hay cobertura de riesgo posible para el niño/a. El ahorro con protección de quien paga sí puede contratarse; el resto, cuando cambie la situación.',en:'No risk cover is possible for the child today. Saving with protection for whoever pays can still be taken out; the rest when the situation changes.',de:'Heute ist keine Risikoabsicherung für das Kind möglich. Das Sparen mit Schutz der zahlenden Person ist weiter möglich, der Rest, sobald sich die Lage ändert.'},
+  adv_age0:{es:'Con menos de 3 meses: hoy solo ahorro y protección de quien paga. La invalidez y la BU-Option entran después de la U4.',en:'Under 3 months: only savings and protection for whoever pays today. Disability cover and the BU option come after U4.',de:'Unter 3 Monaten: heute nur Sparen und Schutz der zahlenden Person. Invaliditätsschutz und BU-Option folgen nach der U4.'},
+  adv_u:{es:'Antes de nada, comprueba la cartilla: sin U1 a U4 hechas y la U4 sin hallazgos no se aceptan estas coberturas.',en:'First of all, check the booklet: without U1 to U4 done and U4 without findings these covers are not accepted.',de:'Zuerst das Heft prüfen: Ohne erfolgte U1 bis U4 und eine unauffällige U4 werden diese Absicherungen nicht angenommen.'},
+  adv_truth:{es:'Responde siempre con total veracidad: si se oculta algo, la aseguradora puede negarse a pagar cuando llegue el momento.',en:'Always answer fully and truthfully: if something is concealed, the insurer may refuse to pay when the time comes.',de:'Immer vollständig und wahrheitsgemäß antworten: Wird etwas verschwiegen, kann der Versicherer im Leistungsfall die Zahlung verweigern.'},
+  // --- recomendador ---
+  recEy:{es:'03 · Tu combinación',en:'03 · Your combination',de:'03 · Ihre Kombination'},
+  recTitle:{es:'Qué cobertura tiene sentido',en:'Which cover makes sense',de:'Welche Absicherung sinnvoll ist'},
+  recLede:{es:'Seis preguntas rápidas. La respuesta no es «todo»: es lo que encaja con tu situación y tu presupuesto, y por qué.',en:'Six quick questions. The answer is not “everything”: it is what fits your situation and budget, and why.',de:'Sechs kurze Fragen. Die Antwort ist nicht „alles“: Es ist, was zu Ihrer Situation und Ihrem Budget passt, und warum.'},
+  qIncome:{es:'Si el niño/a enfermara gravemente, ¿algún progenitor tendría que reducir o dejar de trabajar?',en:'If the child became seriously ill, would a parent have to cut down or stop working?',de:'Wenn das Kind schwer erkrankte, müsste ein Elternteil weniger oder gar nicht mehr arbeiten?'},
+  qBuffer:{es:'¿Hay ahorros para cubrir de 6 a 12 meses con menos ingresos?',en:'Are there savings to cover 6 to 12 months with less income?',de:'Gibt es Ersparnisse, um 6 bis 12 Monate mit weniger Einkommen zu überbrücken?'},
+  qBudget:{es:'¿Cuánto se puede destinar a protecciones, además del ahorro?',en:'How much can go to protection, on top of savings?',de:'Wie viel kann zusätzlich zum Sparen für Absicherungen eingesetzt werden?'},
+  qPayer:{es:'¿Quién paga el plan?',en:'Who pays for the plan?',de:'Wer zahlt den Plan?'},
+  qEmployed:{es:'¿Quien paga vive de su trabajo?',en:'Does whoever pays live from their work?',de:'Lebt die zahlende Person von ihrer Arbeit?'},
+  qWork:{es:'Para la cobertura laboral futura, ¿se prefiere fijarla ya o decidir más adelante?',en:'For the future work-ability cover, is it preferred to fix it now or decide later?',de:'Soll die künftige Arbeitskraftabsicherung schon jetzt festgelegt oder später entschieden werden?'},
+  oYes:{es:'Sí',en:'Yes',de:'Ja'}, oMaybe:{es:'Quizá',en:'Maybe',de:'Vielleicht'}, oNo:{es:'No',en:'No',de:'Nein'},
+  oLow:{es:'Lo mínimo',en:'The minimum',de:'Das Minimum'}, oMid:{es:'Algo',en:'Some',de:'Etwas'}, oHigh:{es:'Sin problema',en:'No problem',de:'Kein Problem'},
+  oParents:{es:'Los padres',en:'The parents',de:'Die Eltern'}, oGrand:{es:'Los abuelos',en:'The grandparents',de:'Die Großeltern'}, oOther:{es:'Padrinos u otros',en:'Godparents or others',de:'Paten oder andere'},
+  oNow:{es:'Fijarla ya',en:'Fix it now',de:'Jetzt festlegen'}, oLater:{es:'Decidir más adelante',en:'Decide later',de:'Später entscheiden'},
+  recNote:{es:'Responde para afinar la recomendación. Mientras tanto se usan supuestos neutros.',en:'Answer to sharpen the recommendation. Neutral assumptions are used meanwhile.',de:'Antworten Sie, um die Empfehlung zu schärfen. Bis dahin gelten neutrale Annahmen.'},
+  rTitle:{vs:{es:'Protección de quien paga',en:'Protection for whoever pays',de:'Schutz der zahlenden Person'},buo:{es:'BU-Option',en:'BU option',de:'BU-Option'},sbu:{es:'Schüler-BU',en:'Schüler-BU',de:'Schüler-BU'},kiz:{es:'Invalidez del niño/a',en:'Child’s disability cover',de:'Kinderinvalidität'}},
+  badge:{rec:{es:'Recomendado',en:'Recommended',de:'Empfohlen'},opt:{es:'Opcional',en:'Optional',de:'Optional'},skip:{es:'No prioritario',en:'Not a priority',de:'Nicht vorrangig'},na:{es:'No disponible',en:'Not available',de:'Nicht möglich'}},
+  rVs1:{es:'Si quien paga falta o no puede trabajar, el plan sigue pagándose solo. Suele costar muy poco frente al resto.',en:'If whoever pays dies or cannot work, the plan keeps being paid on its own. It usually costs very little compared with the rest.',de:'Fällt die zahlende Person aus oder kann nicht arbeiten, wird der Plan von selbst weiterbezahlt. Meist sehr günstig im Vergleich zum Rest.'},
+  rVsGap:{es:'Con esa edad, la protección por fallecimiento acabaría cuando el niño/a cumpla {0} años y la de incapacidad cuando cumpla {1}: queda un hueco hasta los 30. Se puede acortar la duración del pago para que no quede ninguno.',en:'At that age, protection on death would end when the child turns {0} and on disability when the child turns {1}: a gap remains until age 30. The payment term can be shortened so that none is left.',de:'In diesem Alter würde der Schutz bei Tod enden, wenn das Kind {0} wird, und bei Berufsunfähigkeit, wenn es {1} wird: Bis 30 bleibt eine Lücke. Die Beitragszahlungsdauer lässt sich verkürzen, damit keine bleibt.'},
+  rVsNoBu:{es:'Si quien paga no vive de su trabajo, la parte de incapacidad aporta poco: basta con la de fallecimiento.',en:'If whoever pays does not live from work, the disability part adds little: death cover is enough.',de:'Lebt die zahlende Person nicht von der Arbeit, bringt der Teil für Berufsunfähigkeit wenig: Der Todesfallschutz genügt.'},
+  rVsGrand:{es:'Si pagan los abuelos, se puede proteger a un progenitor en su lugar (como «Versorger»).',en:'If the grandparents pay, a parent can be protected instead (as “Versorger”).',de:'Zahlen die Großeltern, kann stattdessen ein Elternteil abgesichert werden (als „Versorger“).'},
+  rVsOld:{es:'La protección por fallecimiento termina a los 70 años de quien paga: con esa edad ya no se puede contratar. Se puede proteger a otro adulto como «Versorger».',en:'Death protection ends at age 70 of whoever pays: at that age it can no longer be taken out. Another adult can be protected as “Versorger”.',de:'Der Todesfallschutz endet mit 70 Jahren der zahlenden Person: In diesem Alter ist er nicht mehr abschließbar. Eine andere erwachsene Person kann als „Versorger“ abgesichert werden.'},
+  rBuo1:{es:'Fija la salud de hoy: mañana un asma o un diagnóstico puede cerrar la puerta.',en:'Locks in today’s health: tomorrow an asthma or a diagnosis could close the door.',de:'Sichert die heutige Gesundheit: Morgen kann ein Asthma oder eine Diagnose die Tür schließen.'},
+  rBuo2:{es:'Es un derecho a contratar después, no una renta inmediata. La cuota de esa cobertura se calcula entonces, según la edad y la profesión.',en:'It is a right to take cover out later, not an immediate pension. The price of that cover is calculated then, based on age and occupation.',de:'Es ist ein Recht auf späteren Abschluss, keine sofortige Rente. Der Beitrag wird dann nach Alter und Beruf berechnet.'},
+  rBuo3:{es:'Se ejerce una sola vez, dentro de los 6 meses siguientes a un hito (10 años, cambio de colegio, etapa superior, formación, primer empleo) y como mucho a los 30 años.',en:'It can be used once, within 6 months of a milestone (age 10, change of school, upper level, training, first job) and at the latest at age 30.',de:'Es kann einmal genutzt werden, innerhalb von 6 Monaten nach einem Anlass (10. Geburtstag, Schulwechsel, Oberstufe, Ausbildung, erster Beruf) und spätestens mit 30.'},
+  rBuoNo:{es:'No se combina con la Schüler-BU: hay que elegir una de las dos.',en:'It cannot be combined with the Schüler-BU: one of the two must be chosen.',de:'Nicht mit der Schüler-BU kombinierbar: Es muss eines von beiden gewählt werden.'},
+  rSbu1:{es:'BU completa desde los 10 años, con cuota baja durante toda la vida laboral. Si luego elige una profesión de riesgo, la cuota no sube.',en:'Full BU from age 10, with a low payment throughout working life. If a risky occupation is chosen later, the payment does not go up.',de:'Volle BU ab 10 Jahren mit niedrigem Beitrag das ganze Berufsleben. Wird später ein Risikoberuf gewählt, steigt der Beitrag nicht.'},
+  rSbu2:{es:'La cuota se revisa a la baja en los cambios de colegio, al empezar formación o primer empleo.',en:'The payment is reviewed downwards at school changes, at the start of training or a first job.',de:'Der Beitrag wird bei Schulwechsel, Ausbildungsbeginn oder erstem Beruf nach unten geprüft.'},
+  rSbu3:{es:'Es un compromiso largo: se paga desde ya durante décadas, y las preguntas de salud son las de un adulto. La renta máxima es algo menor que en la BU-Option.',en:'It is a long commitment: paid from now for decades, and the health questions are those of an adult. The maximum pension is somewhat lower than with the BU option.',de:'Eine lange Bindung: Der Beitrag läuft ab jetzt über Jahrzehnte, und die Gesundheitsfragen sind die eines Erwachsenen. Die Maximalrente ist etwas niedriger als bei der BU-Option.'},
+  rSbuOpt:{es:'Alternativa si se prefiere tener la cobertura completa ya, en lugar de un derecho para más adelante.',en:'Alternative if full cover is preferred right away, instead of a right for later.',de:'Alternative, wenn man gleich den vollen Schutz statt eines Rechts für später möchte.'},
+  rKiz1:{es:'Paga una renta si hay invalidez permanente: hasta los 15 años por no poder ir al colegio, después por no poder trabajar o necesitar cuidados.',en:'Pays a pension in case of permanent disability: up to age 15 for being unable to attend school, afterwards for being unable to work or needing care.',de:'Zahlt eine Rente bei dauerhafter Invalidität: bis 15 Jahre bei Schulunfähigkeit, danach bei Erwerbsunfähigkeit oder Pflegebedürftigkeit.'},
+  rKizYes:{es:'Tiene sentido sobre todo porque un progenitor dejaría de trabajar o no hay colchón de ahorros.',en:'It makes sense above all because a parent would stop working or there is no savings buffer.',de:'Sinnvoll vor allem, weil ein Elternteil nicht mehr arbeiten würde oder es keinen Sparpuffer gibt.'},
+  rKizOpt:{es:'Menos urgente si ya hay colchón de ahorros: es un riesgo poco frecuente, pero muy costoso cuando ocurre.',en:'Less urgent if there is already a savings buffer: it is a rare risk, but very costly when it happens.',de:'Weniger dringend, wenn schon ein Sparpuffer da ist: ein seltenes, aber sehr teures Risiko.'},
+  rKizSkip:{es:'Con presupuesto justo y sin pérdida de ingresos prevista, puede esperar; la BU-Option y la protección de quien paga van antes.',en:'With a tight budget and no expected loss of income it can wait; the BU option and protection for whoever pays come first.',de:'Bei knappem Budget und ohne erwarteten Einkommensverlust kann es warten; BU-Option und Schutz der zahlenden Person gehen vor.'},
+  rKiz2:{es:'No cubre enfermedades pasajeras (menos de 6 meses). Si se combina con la BU-Option, termina a los 30 años.',en:'It does not cover passing illnesses (under 6 months). If combined with the BU option, it ends at age 30.',de:'Kurze Erkrankungen (unter 6 Monaten) sind nicht gedeckt. In Kombination mit der BU-Option endet sie mit 30.'},
+  rRisk:{es:'Según el pre-chequeo hay riesgo alto de rechazo: consulta el caso antes de solicitar.',en:'According to the pre-check there is a high risk of rejection: discuss the case before applying.',de:'Laut Vorab-Check besteht ein hohes Ablehnungsrisiko: Fall vor dem Antrag klären.'},
+  rWarn:{es:'Según el pre-chequeo puede haber exclusión o recargo.',en:'According to the pre-check there may be an exclusion or surcharge.',de:'Laut Vorab-Check sind Ausschluss oder Zuschlag möglich.'},
+  rApply:{es:'Usar esta combinación en el cálculo',en:'Use this combination in the calculation',de:'Diese Kombination in der Berechnung verwenden'},
+  rApplied:{es:'Combinación aplicada en el cálculo de arriba.',en:'Combination applied in the calculation above.',de:'Kombination in der Berechnung oben übernommen.'},
+  rNone:{es:'Con estas respuestas no se recomienda ninguna cobertura adicional ahora: solo el ahorro.',en:'With these answers no additional cover is recommended now: just the savings.',de:'Mit diesen Antworten wird jetzt keine zusätzliche Absicherung empfohlen: nur das Sparen.'},
+  per500:{es:'al mes por 500 € de renta',en:'per month per 500 € of pension',de:'pro Monat je 500 € Rente'},
+  vsCost:{es:'≈ 4 % de la cuota (ejemplo oficial, pagador de unos 30 años; sube con la edad)',en:'≈ 4 % of the payment (official example, payer about 30; rises with age)',de:'≈ 4 % des Beitrags (offizielles Beispiel, Zahler etwa 30; steigt mit dem Alter)'}
+};
+
+// ===== Fase 1 · Interfaz: modo asesor, ajustes del cálculo, pre-chequeo de salud y recomendador =====
+// Los datos de salud viven solo en estas variables (memoria de la pestaña): no se escriben en localStorage,
+// ni en la URL, ni se envían a ningún servidor. Recargar la página los borra.
+const HC={uOk:null,school:'',flags:{}};
+const RC={income:null,buffer:null,budget:null,payer:'parents',employed:null,work:null};
+let ADV=false;   // modo asesor: siempre empieza apagado, para no enseñar costes al cliente por descuido
+const eurc2=n=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n);
+
+function setAdv(on){
+  ADV=!!on; document.body.classList.toggle('adv',ADV);
+  const b=$('adv-switch'); if(b){b.setAttribute('aria-pressed',ADV?'true':'false');$('adv-switch-label').textContent=ADV?tx(X.advOn):tx(X.adv);}
+  render();
+}
+
+// ---------- Ajustes del cálculo (en el panel de la izquierda) ----------
+const selOpts=(list,cur)=>list.map(([v,l])=>`<option value="${v}"${String(v)===String(cur)?' selected':''}>${l}</option>`).join('');
+function buildHeroAdv(){
+  const root=$('hero-adv'); if(!root)return;
+  const wasOpen=!!root.querySelector('details[open]');
+  root.innerHTML=`<details class="hero-more"${wasOpen?' open':''}><summary>${tx(X.moreTitle)}</summary><div class="hero-more-body">
+    <div class="ctrl"><div class="ctrl-label"><span class="lbl">${tx(X.dynLbl)}</span></div>
+      <select class="hero-select" id="c-dyn">${selOpts([[0,tx(X.no)],[3,'3 % '+tx(X.perYear)],[5,'5 % '+tx(X.perYear)],[6,'6 % '+tx(X.perYear)],[10,'10 % '+tx(X.perYear)]],S.dyn)}</select></div>
+    <div class="ctrl"><div class="ctrl-label"><span class="lbl">${tx(X.extraLbl)}</span><span class="val-wrap"><input type="number" class="val-input" id="c-extra" min="0" max="10000" step="500" value="${S.extraYear}"><span class="val-unit">€</span></span></div></div>
+    <div class="ctrl-group">${tx(X.covHead)}</div>
+    <div class="ctrl"><div class="ctrl-label"><span class="lbl">${tx(X.vsLbl)}</span></div>
+      <select class="hero-select" id="c-vs">${selOpts([['none',tx(X.vsNone)],['death',tx(X.vsDeath)],['both',tx(X.vsBoth)]],C.vs)}</select></div>
+    <div class="ctrl" id="c-payer-wrap"><div class="ctrl-label"><span class="lbl">${tx(X.payerAge)}</span><span class="val-wrap"><input type="number" class="val-input" id="c-payer" min="18" max="80" step="1" value="${S.payerAge}"><span class="val-unit">${tx(X.yrs)}</span></span></div></div>
+    <div class="ctrl"><div class="ctrl-label"><span class="lbl">${tx(X.kizLbl)}</span></div>
+      <select class="hero-select" id="c-kiz">${selOpts([[0,tx(X.no)],[500,'500 €'],[1000,'1.000 €'],[1500,'1.500 €'],[2000,'2.000 €']],C.kiz)}</select></div>
+    <div class="ctrl"><div class="ctrl-label"><span class="lbl">${tx(X.buLbl)}</span></div>
+      <select class="hero-select" id="c-bu">${selOpts([['none',tx(X.buNone)],['option',tx(X.buOpt)],['school',tx(X.buSchool)]],C.bu)}</select></div>
+    <div class="ctrl" id="c-burent-wrap"><div class="ctrl-label"><span class="lbl">${tx(X.buRent)}</span></div>
+      <select class="hero-select" id="c-burent">${selOpts([[500,'500 €'],[1000,'1.000 €'],[1500,'1.500 €']],C.buRent)}</select></div>
+  </div></details>`;
+  syncHeroAdv();
+}
+// Mantiene los controles coherentes con la edad: la Schüler-BU solo existe de 10 a 18 años y todo lo del niño/a hasta los 18.
+function syncHeroAdv(){
+  const bu=$('c-bu'); if(!bu)return;
+  const a=S.childAge, okS=a>=10&&a<=18;
+  if(C.bu==='school'&&!okS)C.bu='none';
+  if(C.bu==='option'&&a>18)C.bu='none';
+  if(C.kiz&&a>18)C.kiz=0;
+  bu.querySelector('option[value="school"]').disabled=!okS;
+  bu.querySelector('option[value="option"]').disabled=a>18;
+  $('c-kiz').disabled=a>18;
+  bu.value=C.bu; $('c-kiz').value=String(C.kiz);
+  if($('c-vs').value!==C.vs)$('c-vs').value=C.vs;
+  if(document.activeElement!==$('c-payer'))$('c-payer').value=S.payerAge;
+  $('c-payer-wrap').hidden=C.vs==='none';
+  $('c-burent-wrap').hidden=C.bu==='none';
+}
+$('hero-adv').addEventListener('change',e=>{
+  const t=e.target, num=()=>{const v=parseFloat(t.value);return isNaN(v)?null:v;};
+  if(t.id==='c-dyn')S.dyn=+t.value;
+  else if(t.id==='c-extra'){let v=num();if(v===null||v<0)v=0;if(v>0&&v<500)v=500;v=Math.min(10000,v);S.extraYear=v;t.value=v;}
+  else if(t.id==='c-vs')C.vs=t.value;
+  else if(t.id==='c-payer'){let v=num();if(v===null)v=S.payerAge;S.payerAge=Math.min(80,Math.max(18,Math.round(v)));t.value=S.payerAge;}
+  else if(t.id==='c-kiz')C.kiz=+t.value;
+  else if(t.id==='c-bu')C.bu=t.value;
+  else if(t.id==='c-burent')C.buRent=+t.value;
+  else return;
+  syncHeroAdv(); render();
+});
+
+// ---------- Resultado: coberturas incluidas y detalle para el asesor ----------
+function renderCovers(p){
+  const names=[];
+  if(C.vs==='both')names.push(tx(X.nVsBoth)); else if(C.vs==='death')names.push(tx(X.nVsDeath));
+  if(C.kiz)names.push(tx(X.nKiz));
+  if(C.bu==='option')names.push(tx(X.nBuo)); else if(C.bu==='school')names.push(tx(X.nSbu));
+  $('hero-covers').innerHTML=names.length?`${tx(X.incl)} <b>${names.join(', ')}</b>. ${tx(X.inclNote)}`:'';
+  const fm=firstMonth(), pct=(p.h*100).toFixed(1).replace('.',',');
+  const parts=[];
+  if(fm.kiz)parts.push(`${tx(X.advKiz)} ${eurc2(fm.kiz)}`);
+  if(fm.bu)parts.push(`${tx(X.advBu)} ${eurc2(fm.bu)}`);
+  if(fm.vs)parts.push(`${tx(X.advVs)} ${eurc2(fm.vs)}`);
+  $('hero-adv-detail').innerHTML=`<b>${tx(X.advDetail)}</b><br>${tx(X.advSplit)} ${eurc2(S.monthly)} = ${eurc2(fm.saving)} ${tx(X.advSave)} + ${eurc2(fm.risk)} ${tx(X.advCov)}`
+    +(parts.length?` (${parts.join(' · ')})`:'')
+    +(p.riskTotal>0?`<br>${tx(X.advRiskTot)} ${eurc(p.riskTotal)}`:'')
+    +`<br>${tx(X.advHair)}: −${pct} % · ${tx(X.advRaw)} ${eurc(p.raw)}<br><span class="src">${tx(X.advSrc)}</span>`;
+  return fm;
+}
+
+// ---------- Pre-chequeo de salud ----------
+// sev: 1 = reservas (exclusión o recargo), 2 = riesgo alto de rechazo, 3 = bloquea la solicitud ahora.
+// src 'doc' = lo dice el material de Generali (diapositiva interna sobre BU/BU-Option); 'own' = criterio orientativo.
+const FLAGS=[
+  {id:'prem',g:'birth',sev:1,src:'own',ef:'wa',es:'Prematuro (antes de la semana 37) o con bajo peso al nacer',en:'Premature (before week 37) or low birth weight',de:'Frühgeboren (vor der 37. Woche) oder mit niedrigem Geburtsgewicht'},
+  {id:'neo',g:'birth',sev:1,src:'own',ef:'wa',es:'Complicaciones al nacer o ingreso en neonatología',en:'Complications at birth or neonatal ward stay',de:'Komplikationen bei der Geburt oder Aufenthalt auf der Neugeborenenstation'},
+  {id:'asth',g:'dx',sev:1,src:'doc',ef:'ex',es:'Asma o bronquitis obstructiva repetida',en:'Asthma or repeated obstructive bronchitis',de:'Asthma oder wiederholte obstruktive Bronchitis'},
+  {id:'atop',g:'dx',sev:1,src:'doc',ef:'ex',es:'Neurodermitis o alergias importantes',en:'Atopic dermatitis or significant allergies',de:'Neurodermitis oder bedeutende Allergien'},
+  {id:'wt',g:'dx',sev:1,src:'own',ef:'wa',es:'Sobrepeso marcado',en:'Marked overweight',de:'Deutliches Übergewicht'},
+  {id:'adhd',g:'dx',sev:2,src:'doc',ef:'re',es:'TDAH (déficit de atención / hiperactividad)',en:'ADHD',de:'ADHS'},
+  {id:'diab',g:'dx',sev:2,src:'doc',ef:'re',es:'Diabetes',en:'Diabetes',de:'Diabetes'},
+  {id:'epi',g:'dx',sev:2,src:'own',ef:'re',es:'Epilepsia o convulsiones',en:'Epilepsy or seizures',de:'Epilepsie oder Krampfanfälle'},
+  {id:'heart',g:'dx',sev:2,src:'own',ef:'re',es:'Enfermedad del corazón',en:'Heart condition',de:'Herzerkrankung'},
+  {id:'dev',g:'dx',sev:1,src:'own',ef:'wa',es:'Retraso del desarrollo, del lenguaje o del aprendizaje (logopedia, ergoterapia, apoyo escolar)',en:'Developmental, speech or learning delay (speech therapy, occupational therapy, school support)',de:'Entwicklungs-, Sprach- oder Lernverzögerung (Logopädie, Ergotherapie, Förderung)'},
+  {id:'psy',g:'dx',sev:2,src:'own',ef:'re',es:'Tratamiento psicológico o psiquiátrico (ansiedad, depresión, trastorno alimentario…)',en:'Psychological or psychiatric treatment (anxiety, depression, eating disorder…)',de:'Psychologische oder psychiatrische Behandlung (Angst, Depression, Essstörung …)'},
+  {id:'surg',g:'dx',sev:1,src:'own',ef:'wa',es:'Operación u hospitalización',en:'Surgery or hospital stay',de:'Operation oder Krankenhausaufenthalt'},
+  {id:'med',g:'dx',sev:1,src:'own',ef:'wa',es:'Medicación habitual',en:'Regular medication',de:'Regelmäßige Medikamente'},
+  {id:'pend',g:'now',sev:3,src:'own',ef:'st',es:'Pruebas o diagnóstico en curso',en:'Tests or diagnosis in progress',de:'Untersuchungen oder Diagnose laufen'},
+  {id:'dis',g:'now',sev:3,src:'doc',ef:'st',es:'Grado de discapacidad o Pflegegrad reconocido, o prestación pedida a un seguro',en:'Recognised disability degree or care grade (Pflegegrad), or a benefit claimed from an insurer',de:'Anerkannter Behinderungsgrad oder Pflegegrad, oder Leistung bei einer Versicherung beantragt'}
+];
+const SEV_LVL=['ok','warn','risk','no'];
+function assess(){
+  const a=S.childAge, fl=FLAGS.filter(f=>HC.flags[f.id]), sev=Math.max(0,...fl.map(f=>f.sev));
+  const base=SEV_LVL[Math.min(sev,3)];
+  const uFail=a<=7&&HC.uOk==='no';
+  const child=()=>a>18?{lvl:'no',r:'no_age'}:uFail?{lvl:'no',r:'no_u'}:sev>=3?{lvl:'no',r:'no_now'}:{lvl:base,r:base};
+  const out={buo:child(),kiz:child()};
+  out.sbu=a>18?{lvl:'no',r:'no_age'}:a<10?{lvl:'no',r:'no_young'}:(HC.school==='foerder'||HC.school==='berufs')?{lvl:'no',r:'no_school'}
+    :sev>=3?{lvl:'no',r:'no_now'}:{lvl:base,r:base};
+  out.vs={lvl:'ok',r:'ok'};
+  return {out,fl,sev};
+}
+const whyText=(id,a)=>a.r==='ok'?tx(X.why.ok[id]):tx(X.why[a.r]);
+
+function buildHealth(){
+  const root=$('hc-root'); if(!root)return;
+  const chips=g=>FLAGS.filter(f=>f.g===g).map(f=>`<button type="button" class="chip" data-flag="${f.id}" aria-pressed="false">${tx(f)}</button>`).join('');
+  const seg=(id,opts)=>`<div class="seg" data-seg="${id}">${opts.map(([v,l])=>`<button type="button" data-v="${v}" aria-pressed="false">${l}</button>`).join('')}</div>`;
+  const sch=Object.keys(X.sch).map(k=>`<option value="${k}">${tx(X.sch[k])}</option>`).join('');
+  root.innerHTML=`<div class="section-head"><div class="section-eyebrow">${tx(X.hcEy)}</div><h2 class="section-title">${tx(X.hcTitle)}</h2><p class="section-lede">${tx(X.hcLede)}</p></div>
+  <div class="hc-privacy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>${tx(X.hcPrivacy)}</span><button type="button" id="hc-clear">${tx(X.hcClear)}</button></div>
+  <div class="hc-layout"><div>
+    <div class="q-card"><div class="q-title">${tx(X.g1)}</div><div class="q-hint" id="hc-u-hint"></div>
+      <div id="hc-u-q"><div class="q-sub">${tx(X.uQ)}</div>${seg('uOk',[['yes',tx(X.yes)],['no',tx(X.nop)],['dk',tx(X.dk)]])}</div></div>
+    <div class="q-card"><div class="q-title">${tx(X.g2)}</div><div class="q-hint">${tx(X.g2h)}</div>
+      <select class="q-select" id="hc-school"><option value="">${tx(X.schoolPick)}</option>${sch}</select></div>
+    <div class="q-card"><div class="q-title">${tx(X.g3)}</div><div class="q-hint">${tx(X.g3h)}</div>
+      <div class="q-sub">${tx(X.gBirth)}</div><div class="chips">${chips('birth')}</div>
+      <div class="q-sub">${tx(X.gDx)}</div><div class="chips">${chips('dx')}</div>
+      <div class="q-sub">${tx(X.gNow)}</div><div class="chips">${chips('now')}</div></div>
+  </div>
+  <aside class="hc-res" aria-live="polite"><div class="q-title">${tx(X.resTitle)}</div><div class="q-hint">${tx(X.resNote)}</div><div id="hc-res-body"></div></aside></div>`;
+  updateHealth();
+}
+function updateHealth(){
+  const root=$('hc-root'); if(!root||!$('hc-res-body'))return;
+  root.querySelectorAll('[data-flag]').forEach(b=>b.setAttribute('aria-pressed',HC.flags[b.dataset.flag]?'true':'false'));
+  root.querySelectorAll('[data-seg="uOk"] button').forEach(b=>b.setAttribute('aria-pressed',HC.uOk===b.dataset.v?'true':'false'));
+  $('hc-school').value=HC.school;
+  const a=S.childAge, needU=a<=7;
+  $('hc-u-q').hidden=!needU; $('hc-u-hint').textContent=needU?tx(X.g1h):tx(X.g1na);
+  const {out,fl}=assess();
+  const rows=[['buo',X.cBuo],['kiz',X.cKiz],['sbu',X.cSbu],['vs',X.cVs]].map(([id,nm])=>{
+    const r=out[id];
+    return `<div class="sem-row"><span class="sem-dot sem-${r.lvl}"></span><div><div class="sem-name">${tx(nm)}</div><div class="sem-st sem-t-${r.lvl}">${tx(X.lvl[r.lvl])}</div><div class="sem-why">${whyText(id,r)}</div></div></div>`;}).join('');
+  // consejo general según el estado de la cobertura infantil
+  const lv=out.buo.lvl, advice=[];
+  if(a===0)advice.push(tx(X.adv_age0));
+  if(needU&&HC.uOk!=='yes'&&lv!=='no')advice.push(tx(X.adv_u));
+  advice.push(tx(X['adv_'+lv]));
+  if(lv!=='no')advice.push(tx(X.adv_truth));
+  const notes=fl.length?`<div class="adv-only adv-notes"><div class="q-sub">${tx(X.advNotes)}</div><ul>${fl.map(f=>`<li>${tx(f)} — ${tx(X.eff[f.ef])} <i>(${tx(f.src==='doc'?X.srcDoc:X.srcOwn)})</i></li>`).join('')}</ul><p>${tx(X.advVu)}</p></div>`:'';
+  $('hc-res-body').innerHTML=`${rows}<div class="advice"><div class="advice-t">${tx(X.advTitle)}</div>${advice.map(t=>`<p>${t}</p>`).join('')}</div>${notes}`;
+}
+$('hc-root').addEventListener('click',e=>{
+  const chip=e.target.closest('[data-flag]'), sg=e.target.closest('[data-seg] button'), clr=e.target.closest('#hc-clear');
+  if(chip){const id=chip.dataset.flag;if(HC.flags[id])delete HC.flags[id];else HC.flags[id]=true;}
+  else if(sg){HC.uOk=HC.uOk===sg.dataset.v?null:sg.dataset.v;}
+  else if(clr){HC.uOk=null;HC.school='';HC.flags={};}
+  else return;
+  updateHealth(); updateRec(); render();
+});
+$('hc-root').addEventListener('change',e=>{if(e.target.id==='hc-school'){HC.school=e.target.value;updateHealth();updateRec();render();}});
+
+// ---------- Recomendador ----------
+function recommend(){
+  const a=S.childAge, as=assess().out, R=RC, pa=S.payerAge;
+  const need=R.income==='yes'||(R.income==='maybe'&&R.buffer==='no');
+  const T=(k)=>tx(X[k]);
+  const cards={};
+  // Protección de quien paga
+  const endD=Math.floor(a+(70-pa)), endB=Math.max(0,Math.floor(a+(67-pa)));
+  if(pa>=70)cards.vs={st:'na',why:[T('rVsOld')]};
+  else{
+    const why=[T('rVs1')];
+    if(Math.min(endD,endB)<30)why.push(T('rVsGap').replace('{0}',Math.max(0,endD)).replace('{1}',endB));
+    if(R.employed==='no')why.push(T('rVsNoBu'));
+    if(R.payer==='grand')why.push(T('rVsGrand'));
+    cards.vs={st:pa>=62?'opt':'rec',why};
+  }
+  // Cobertura laboral futura
+  const optOk=as.buo.lvl!=='no', schOk=as.sbu.lvl!=='no', wantNow=R.work==='now';
+  const riskNote=l=>l==='risk'?[T('rRisk')]:l==='warn'?[T('rWarn')]:[];
+  if(!optOk&&!schOk){
+    cards.buo={st:'na',why:[tx(X.why[as.buo.r])]};
+    cards.sbu={st:'na',why:[tx(X.why[as.sbu.r])]};
+  }else if(a>=10&&wantNow&&schOk){
+    cards.sbu={st:'rec',why:[T('rSbu1'),T('rSbu2'),T('rSbu3'),...riskNote(as.sbu.lvl)]};
+    cards.buo={st:'skip',why:[T('rBuoNo')]};
+  }else{
+    cards.buo=optOk?{st:'rec',why:[T('rBuo1'),T('rBuo2'),T('rBuo3'),...riskNote(as.buo.lvl)]}:{st:'na',why:[tx(X.why[as.buo.r])]};
+    cards.sbu=schOk?{st:'opt',why:[T('rSbuOpt'),T('rSbu1'),T('rSbu3')]}:{st:'na',why:[tx(X.why[as.sbu.r])]};
+  }
+  // Invalidez del niño/a
+  if(as.kiz.lvl==='no')cards.kiz={st:'na',why:[tx(X.why[as.kiz.r])]};
+  else{
+    let st=need?'rec':'opt';
+    if(R.budget==='low'&&R.income!=='yes')st='skip';
+    const why=[T('rKiz1'),need?T('rKizYes'):(st==='skip'?T('rKizSkip'):T('rKizOpt')),T('rKiz2'),...riskNote(as.kiz.lvl)];
+    cards.kiz={st,why};
+  }
+  return cards;
+}
+function buildRec(){
+  const root=$('rec-root'); if(!root)return;
+  const seg=(id,opts)=>`<div class="seg" data-rseg="${id}">${opts.map(([v,l])=>`<button type="button" data-v="${v}" aria-pressed="false">${l}</button>`).join('')}</div>`;
+  const yn=[['yes',tx(X.oYes)],['maybe',tx(X.oMaybe)],['no',tx(X.oNo)]];
+  root.innerHTML=`<div class="section-head"><div class="section-eyebrow">${tx(X.recEy)}</div><h2 class="section-title">${tx(X.recTitle)}</h2><p class="section-lede">${tx(X.recLede)}</p></div>
+  <div class="q-card rq">
+    <div class="rq-row"><div class="rq-q">${tx(X.qIncome)}</div>${seg('income',yn)}</div>
+    <div class="rq-row"><div class="rq-q">${tx(X.qBuffer)}</div>${seg('buffer',[['yes',tx(X.oYes)],['no',tx(X.oNo)]])}</div>
+    <div class="rq-row"><div class="rq-q">${tx(X.qBudget)}</div>${seg('budget',[['low',tx(X.oLow)],['mid',tx(X.oMid)],['high',tx(X.oHigh)]])}</div>
+    <div class="rq-row"><div class="rq-q">${tx(X.qPayer)}</div>${seg('payer',[['parents',tx(X.oParents)],['grand',tx(X.oGrand)],['other',tx(X.oOther)]])}
+      <label class="rq-age">${tx(X.payerAge)} <input type="number" id="r-payer" min="18" max="80" step="1" value="${S.payerAge}"></label></div>
+    <div class="rq-row"><div class="rq-q">${tx(X.qEmployed)}</div>${seg('employed',[['yes',tx(X.oYes)],['no',tx(X.oNo)]])}</div>
+    <div class="rq-row"><div class="rq-q">${tx(X.qWork)}</div>${seg('work',[['now',tx(X.oNow)],['later',tx(X.oLater)]])}</div>
+    <p class="q-hint" id="rec-note"></p>
+  </div>
+  <div class="rec-grid" id="rec-cards"></div>
+  <div class="rec-foot"><button type="button" class="btn-apply" id="rec-apply">${tx(X.rApply)}</button><span id="rec-applied" class="rec-applied" role="status"></span></div>`;
+  updateRec();
+}
+function updateRec(){
+  const root=$('rec-root'); if(!root||!$('rec-cards'))return;
+  root.querySelectorAll('[data-rseg]').forEach(s=>s.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',RC[s.dataset.rseg]===b.dataset.v?'true':'false')));
+  if(document.activeElement!==$('r-payer'))$('r-payer').value=S.payerAge;
+  const answered=['income','buffer','budget','employed','work'].filter(k=>RC[k]).length;
+  $('rec-note').textContent=answered<5?tx(X.recNote):'';
+  const rec=recommend(), a=S.childAge;
+  const cost={kiz:eurc2(interp(KIZ500,Math.max(a,0.25))),buo:eurc2(interp(BUO500,Math.max(a,0.25))),sbu:eurc2(SBU500[HC.school]||SBU500.real)};
+  $('rec-cards').innerHTML=['vs','buo','sbu','kiz'].map(id=>{
+    const c=rec[id], priced=id==='vs'?tx(X.vsCost):`≈ ${cost[id]} ${tx(X.per500)}`;
+    return `<div class="rec-card rec-${c.st}"><span class="rec-badge rb-${c.st}">${tx(X.badge[c.st])}</span><div class="rec-title">${tx(X.rTitle[id])}</div>
+      <ul>${c.why.map(w=>`<li>${w}</li>`).join('')}</ul>${c.st==='na'?'':`<div class="adv-only rec-cost">${priced}</div>`}</div>`;}).join('');
+  root._rec=rec;
+}
+$('rec-root').addEventListener('click',e=>{
+  const sg=e.target.closest('[data-rseg] button'), ap=e.target.closest('#rec-apply');
+  if(sg){const k=sg.parentElement.dataset.rseg;RC[k]=RC[k]===sg.dataset.v?null:sg.dataset.v;updateRec();return;}
+  if(ap){
+    const r=$('rec-root')._rec||recommend();
+    C.vs=r.vs.st==='rec'?(RC.employed==='no'?'death':'both'):'none';
+    C.kiz=r.kiz.st==='rec'?500:0;
+    C.bu=r.buo.st==='rec'?'option':(r.sbu.st==='rec'?'school':'none'); C.buRent=500;
+    syncHeroAdv(); render();
+    $('rec-applied').textContent=Object.values(r).some(c=>c.st==='rec')?tx(X.rApplied):tx(X.rNone);
+  }
+});
+$('rec-root').addEventListener('change',e=>{
+  if(e.target.id==='r-payer'){const v=parseFloat(e.target.value);if(!isNaN(v)){S.payerAge=Math.min(80,Math.max(18,Math.round(v)));}e.target.value=S.payerAge;syncHeroAdv();updateRec();render();}
+});
+
+// ---------- Idioma: estos módulos se repintan al cambiar ES / EN / DE ----------
+function buildAll(){
+  buildHeroAdv(); buildHealth(); buildRec();
+  const b=$('adv-switch'); if(b){b.title=tx(X.advSwitchHint);$('adv-switch-label').textContent=ADV?tx(X.advOn):tx(X.adv);}
+}
+const _applyLang=window.applyLang;
+window.applyLang=function(l){_applyLang(l);buildAll();render();};
+$('adv-switch').addEventListener('click',()=>setAdv(!ADV));
+
+buildAll();
 
 // El año objetivo no puede quedar por debajo de la duración mínima del contrato (2 años): antes, con un año
 // pasado el plan devolvía solo el capital inicial y un gráfico de 1 año que no correspondía a nada.
