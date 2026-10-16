@@ -119,6 +119,7 @@
       <nav class="switch" id="switch">
         <button type="button" data-go="home" class="active">Inicio</button>
         <button type="button" data-go="contactos" id="nav-contactos">Contactos</button>
+        <button type="button" data-go="estudio" id="nav-estudio">Estudio</button>
         <div class="switch-more-wrap">
           <button type="button" class="switch-more" id="switch-more" aria-haspopup="true" aria-expanded="false">Herramientas <span class="sm-caret" aria-hidden="true">▾</span></button>
           <div class="switch-more-menu" id="switch-more-menu" hidden>
@@ -1450,7 +1451,7 @@
       }catch(e){ return false; }
     }
 
-    var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, ninos:{url:'./plan-futuro.html',el:null,ready:false}, vsp:{url:'./vsp.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false} };
+    var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, ninos:{url:'./plan-futuro.html',el:null,ready:false}, vsp:{url:'./vsp.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false}, estudio:{url:'./estudio/index.html',el:null,ready:false} };
     var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames'), asesoresScr=document.getElementById('asesores'), contactosScr=document.getElementById('contactos');
     var stage=document.getElementById('frame-stage'), sw=document.getElementById('switch'), banner=document.getElementById('bridge-banner');
     var insEl=document.getElementById('cock-insights'), listEl=document.getElementById('cock-list');
@@ -1475,7 +1476,7 @@
     function ensureFrame(view){
       if(MOD[view].el) return MOD[view].el;
       var f=document.createElement('iframe'); f.src=MOD[view].url;
-      f.title=(view==='analisis')?'Análisis financiero y CRM':(view==='jubilacion'?'Comparador de jubilación':(view==='ninos'?'Plan Futuro':(view==='vsp'?'Seguros patrimoniales':'Preguntas médicas')));
+      f.title=(view==='analisis')?'Análisis financiero y CRM':(view==='jubilacion'?'Comparador de jubilación':(view==='ninos'?'Plan Futuro':(view==='vsp'?'Seguros patrimoniales':(view==='estudio'?'Estudio DBBV':'Preguntas médicas'))));
       f.addEventListener('load',function(){
         MOD[view].ready=true;
         if(view==='analisis'){ if(pendingOpen){ var o=pendingOpen; pendingOpen=null; try{o();}catch(e){} } if(pendingSummary){ var s=pendingSummary; pendingSummary=null; try{s();}catch(e){} } }

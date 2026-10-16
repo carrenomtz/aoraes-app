@@ -65,7 +65,7 @@ var SHELL_I18N_TABLE={
   'Buscar por nombre, etiqueta o asesor…':['Search by name, tag or advisor…','Suche nach Name, Tag oder Berater…'], 'Filtrar por estado':['Filter by status','Nach Status filtern'],
   'Todos los estados':['All statuses','Alle Status'], 'Ordenar clientes':['Sort clients','Kunden sortieren'], 'Orden: más recientes':['Sort: most recent','Sortierung: neueste'],
   'Orden: próxima revisión':['Sort: next review','Sortierung: nächste Überprüfung'], 'Orden: puntuación':['Sort: score','Sortierung: Bewertung'],
-  'Orden: nombre (A–Z)':['Sort: name (A–Z)','Sortierung: Name (A–Z)'], 'Herramientas':['Tools','Werkzeuge'], 'Abrir Análisis & CRM':['Open Analysis & CRM','Analyse & CRM öffnen'],
+  'Orden: nombre (A–Z)':['Sort: name (A–Z)','Sortierung: Name (A–Z)'], 'Herramientas':['Tools','Werkzeuge'], 'Estudio':['Study','Lernen'], 'Abrir Análisis & CRM':['Open Analysis & CRM','Analyse & CRM öffnen'],
   'Abrir Comparador de jubilación':['Open Retirement Comparator','Renten-Vergleich öffnen'], 'Abrir Preguntas médicas':['Open Medical Questions','Gesundheitsfragen öffnen'],
   'Abre un cliente para ver su recorrido y la propuesta consolidada. Los datos se guardan en este dispositivo desde el módulo de Análisis.':['Open a client to see their journey and consolidated proposal. Data is saved on this device from the Analysis module.','Öffne einen Kunden, um seinen Verlauf und den konsolidierten Vorschlag zu sehen. Die Daten werden über das Analyse-Modul auf diesem Gerät gespeichert.'],
   'cliente':['client','Kunde'], 'clientes':['clients','Kunden'], 'en cartera':['in portfolio','in Kartei'], 'revisión':['review','Überprüfung'], 'revisiónes':['reviews','Überprüfungen'],

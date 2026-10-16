@@ -183,6 +183,18 @@ service cloud.firestore {
         allow delete: if canAccessAdvisorData(uid);
       }
 
+      // Progreso de estudio de la pestaña "Estudio" del panel (app React en /estudio/, un único documento
+      // "main" por usuario: temas, flashcards, intentos de examen…). Solo el propio asesor (o el admin, en su
+      // propia cuenta) lo lee y escribe; el admin además puede LEER el de cualquiera (panel Equipo de Estudio,
+      // solo lectura). Los clientes de la web (rol 'client') y las cuentas pendientes no tienen acceso.
+      match /progress/{docId} {
+        allow read: if (isOwner(uid) && (isAdvisor() || isAdmin())) || isAdmin();
+        allow create, update: if isOwner(uid) && (isAdvisor() || isAdmin())
+          && docId == 'main'
+          && request.resource.data.keys().size() <= 30;
+        allow delete: if isOwner(uid) && (isAdvisor() || isAdmin()) && docId == 'main';
+      }
+
       // Bolsa fría por asesor (contactos importados de Excel, todavía sin análisis): mismo criterio
       // que /clients — cada asesor solo ve/edita la suya, el admin ve/edita cualquiera (necesario
       // para "Importar Excel" y la asignación en bloque, que escriben en la subcolección del asesor
