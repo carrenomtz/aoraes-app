@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-Cltr0gcK.js";var t=e();function n({className:e=``,...n}){return(0,t.jsx)(`div`,{className:`card ${e}`,...n})}function r({className:e=``,...n}){return(0,t.jsx)(`div`,{className:`p-5 pb-3 ${e}`,...n})}function i({className:e=``,...n}){return(0,t.jsx)(`div`,{className:`p-5 pt-0 first:pt-5 ${e}`,...n})}export{i as n,r,n as t};
