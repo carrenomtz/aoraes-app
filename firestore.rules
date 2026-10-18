@@ -135,6 +135,8 @@ service cloud.firestore {
         && (
           (request.resource.data.role == 'client' && request.resource.data.status == 'active')
           || (request.resource.data.role == 'advisor' && request.resource.data.status == 'pending')
+          // Primer alta del admin principal (el código cliente la escribe como admin/approved); solo por UID.
+          || (isPrimaryAdmin() && request.resource.data.role == 'admin' && request.resource.data.status == 'approved')
         );
 
       allow update: if (isAdmin()
@@ -160,7 +162,12 @@ service cloud.firestore {
           && request.resource.data.profession.size() <= 100
           && request.resource.data.source is string
           && request.resource.data.source.size() <= 200);
-      allow delete: if false;
+      // Borrar la cuenta de un asesor desde el panel (deleteAdvisorAccount) acaba con deleteDoc(users/{uid}); antes
+      // esta regla era `if false` y el borrado fallaba a medias. Solo el admin, nunca su propio perfil ni el del admin
+      // principal. El progreso de Estudio NO se puede borrar desde aquí (decisión ya probada: el admin no borra el de otro).
+      allow delete: if isAdmin()
+        && request.auth.uid != uid
+        && uid != 'DMDXyvqfaeQiXfb3pYmoX95vNR82';
 
       match /savedArticles/{articleId} {
         allow get, list: if isOwner(uid) || isAdmin();
@@ -191,7 +198,11 @@ service cloud.firestore {
         allow read: if (isOwner(uid) && (isAdvisor() || isAdmin())) || isAdmin();
         allow create, update: if isOwner(uid) && (isAdvisor() || isAdmin())
           && docId == 'main'
-          && request.resource.data.keys().size() <= 30;
+          // Forma real que escribe Estudio (ProgressContext): { state, updatedAt }. Los límites de tamaño dentro de
+          // `state` no se pueden expresar en reglas; los acota el cliente (histórico de intentos) y Firestore (1 MiB).
+          && request.resource.data.keys().hasOnly(['state', 'updatedAt'])
+          && request.resource.data.state is map
+          && request.resource.data.updatedAt is number;
         allow delete: if isOwner(uid) && (isAdvisor() || isAdmin()) && docId == 'main';
       }
 
