@@ -1,0 +1,1 @@
+var e=`asesores-aoraes-practice-session:v1`;function t(t){return t?`${e}:${t}`:e}function n(e){try{let n=localStorage.getItem(t(e));if(!n)return null;let r=JSON.parse(n);return Array.isArray(r.questionIds)?r:null}catch{return null}}function r(e,n){try{localStorage.setItem(t(n),JSON.stringify(e))}catch{}}function i(e){localStorage.removeItem(t(e))}export{n,r,i as t};
