@@ -1476,7 +1476,7 @@
     function ensureFrame(view){
       if(MOD[view].el) return MOD[view].el;
       var f=document.createElement('iframe'); f.src=MOD[view].url;
-      f.title=(view==='analisis')?'Análisis financiero y CRM':(view==='jubilacion'?'Comparador de jubilación':(view==='ninos'?'Plan Futuro':(view==='vsp'?'Seguros patrimoniales':(view==='estudio'?'Estudio DBBV':'Preguntas médicas'))));
+      f.title=(view==='analisis')?'Análisis financiero y CRM':(view==='jubilacion'?'Comparador de jubilación':(view==='ninos'?'Plan Futuro':(view==='vsp'?'Seguros patrimoniales':(view==='estudio'?'Estudio de examen':'Preguntas médicas'))));
       f.addEventListener('load',function(){
         MOD[view].ready=true;
         if(view==='analisis'){ if(pendingOpen){ var o=pendingOpen; pendingOpen=null; try{o();}catch(e){} } if(pendingSummary){ var s=pendingSummary; pendingSummary=null; try{s();}catch(e){} } }

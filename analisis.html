@@ -5199,7 +5199,7 @@ window.I18N_DE = {"Las rentas estimadas son importes del año de jubilación. En
   }
   var dashType=PRIV_TYPE; // pestaña activa: los dos tipos nunca se mezclan en la misma lista (§2)
   function renderDashboardInner(){
-    var arr=loadClients().filter(function(c){ return recType(c)===dashType; });
+    var arr=loadClients().filter(function(c){ return !c._generic && recType(c)===dashType; });
     var q=($('#dash-search').value||'').toLowerCase().trim();
     var fStatus=($('#dash-filter-status')||{}).value||'';
     var sortBy=($('#dash-sort')||{}).value||'saved';
@@ -5296,7 +5296,7 @@ window.I18N_DE = {"Las rentas estimadas son importes del año de jubilación. En
 
   /* ---------- export / import ---------- */
   function exportData(){
-    var arr=loadClients();
+    var arr=loadClients().filter(function(c){ return !c._generic; }); // el cliente-fantasma de las calculadoras no es un cliente real
     var blob=new Blob([JSON.stringify(arr,null,2)],{type:'application/json'});
     var url=URL.createObjectURL(blob), a=document.createElement('a');
     a.href=url; a.download='aoraes_clientes_'+new Date().toISOString().slice(0,10)+'.json';
@@ -6322,7 +6322,7 @@ window.I18N_DE = {"Las rentas estimadas son importes del año de jubilación. En
         return true;
       }catch(e){ console.error('AORAES: aoraesNewClientFromLead falló',e); return false; }
     };
-    window.aoraesListClients=function(){ try{ return loadClients(); }catch(e){ return []; } };
+    window.aoraesListClients=function(){ try{ return loadClients().filter(function(c){ return !c._generic; }); }catch(e){ return []; } };
     window.__aoraesSuggestRetirement=function(){
       try{
         var r=compute();
