@@ -17,7 +17,7 @@
 <link rel="preload" href="fonts/Fraunces-opsz-wght-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/Manrope-wght-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="./app.css?v=89fff36d">
+<link rel="stylesheet" href="./app.css?v=64d0fb22">
 </head>
 <body>
   <div class="auth-gate" id="auth-gate">
@@ -362,7 +362,7 @@
        preguntas-medicas.html cuando corran embebidos) puedan guardar/leer sin conocer Firebase
        directamente. El apiKey de este bloque NO es secreto — Firebase lo diseña para vivir en
        el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
-  <script src="./i18n.js?v=e639d7c9"></script>
+  <script src="./i18n.js?v=7e2ca240"></script>
 <script src="./util.js?v=3e8fcffb"></script>
 <script src="./leads.js?v=28d53483"></script>
 <script src="./calc.js?v=d665f4c4"></script>
@@ -3084,11 +3084,42 @@
       var total=_pendingAdvisors.length+unseenClients;
       if(total>0){ notifBadge.hidden=false; notifBadge.textContent=total>99?'99+':String(total); } else notifBadge.hidden=true;
     }
+    var NOTIF_REQ_PREVIEW=5, _notifAll=false, _advisorList=[];
+    function tsMs(v){ return v ? (v.toMillis ? v.toMillis() : new Date(v).getTime()) : 0; }
+    // Solicitudes que el admin puede resolver: las pendientes (en vivo, del listener) más las rechazadas
+    // o cualquier otra no aprobada que traiga listAdvisors al abrir la campana — así también se pueden
+    // aceptar personas antiguas. Primero las pendientes, luego las más recientes.
+    function notifRequests(){
+      var byUid={}, live={};
+      _pendingAdvisors.forEach(function(p){ live[p.uid]=1; });
+      _advisorList.forEach(function(p){ if(p.status!=='approved' && (p.status!=='pending' || live[p.uid])) byUid[p.uid]=p; });
+      _pendingAdvisors.forEach(function(p){ byUid[p.uid]=p; });
+      return Object.keys(byUid).map(function(k){ return byUid[k]; }).sort(function(a,b){
+        var pa=a.status==='pending'?1:0, pb=b.status==='pending'?1:0;
+        return pb-pa || tsMs(b.createdAt)-tsMs(a.createdAt);
+      });
+    }
+    function notifReqRow(p){
+      var ms=tsMs(p.createdAt), when=ms?relTime(new Date(ms).toISOString()):'';
+      var name=p.fullName||p.email||p.uid, sub=(p.fullName&&p.email)?'<div class="notif-row-meta">'+esc(p.email)+'</div>':'';
+      var state=p.status==='rechazado'?'Rechazada':'Pendiente de aprobación';
+      return '<div class="notif-row notif-req"><div class="notif-row-body"><div class="notif-row-title">'+esc(name)+'</div>'+sub+
+        '<div class="notif-row-meta"><span>'+state+'</span>'+(when?'<span> · '+esc(when)+'</span>':'')+'</div></div>'+
+        '<button type="button" class="notif-row-act" data-notif-approve="'+esc(p.uid)+'">Aprobar</button></div>';
+    }
+    function refreshNotifAdvisors(){
+      if(!(window.AORAES_CLOUD&&window.AORAES_CLOUD.listAdvisors)) return;
+      window.AORAES_CLOUD.listAdvisors().then(function(list){
+        _advisorList=list; _advisorEmailByUid={}; list.forEach(function(p){ _advisorEmailByUid[p.uid]=p.email||p.uid; });
+        renderNotifPanel();
+      });
+    }
     function renderNotifPanel(){
       var pendEl=document.getElementById('notif-pending'), cliEl=document.getElementById('notif-clients');
-      pendEl.innerHTML = _pendingAdvisors.length ? _pendingAdvisors.map(function(p){
-        return '<div class="notif-row"><div class="notif-row-body"><div class="notif-row-title">'+esc(p.email||p.uid)+'</div><div class="notif-row-meta">Pendiente de aprobación</div></div><button type="button" class="notif-row-act" data-notif-approve="'+esc(p.uid)+'">Aprobar</button></div>';
-      }).join('') : '<div class="notif-empty">No hay solicitudes pendientes.</div>';
+      var reqs=notifRequests(), shown=_notifAll?reqs:reqs.slice(0,NOTIF_REQ_PREVIEW);
+      pendEl.innerHTML = reqs.length ? shown.map(notifReqRow).join('') +
+        (reqs.length>NOTIF_REQ_PREVIEW ? '<button type="button" class="notif-more" data-notif-toggle-all="1">'+(_notifAll?'Ver menos':'Ver todas')+'<span class="notif-more-n">'+reqs.length+'</span></button>' : '')
+        : '<div class="notif-empty">No hay solicitudes pendientes.</div>';
       cliEl.innerHTML = _recentClients.length ? _recentClients.slice(0,10).map(function(c){
         var advEmail=_advisorEmailByUid[c.ownerUid]||c.ownerUid||'';
         var when=c.createdAt?relTime(c.createdAt):'';
@@ -3103,17 +3134,18 @@
       if(!wasOpen){
         setNotifSeenAt(new Date().toISOString());
         updateNotifBadge();
-        if(window.AORAES_CLOUD&&window.AORAES_CLOUD.listAdvisors){
-          window.AORAES_CLOUD.listAdvisors().then(function(list){
-            _advisorEmailByUid={}; list.forEach(function(p){ _advisorEmailByUid[p.uid]=p.email||p.uid; });
-            renderNotifPanel();
-          });
-        } else renderNotifPanel();
+        _notifAll=false;
+        if(window.AORAES_CLOUD&&window.AORAES_CLOUD.listAdvisors) refreshNotifAdvisors();
+        else renderNotifPanel();
       }
     });
     notifPanel.addEventListener('click', function(e){
       var approveBtn=e.target.closest('[data-notif-approve]');
-      if(approveBtn){ window.AORAES_CLOUD.approveAdvisor(approveBtn.getAttribute('data-notif-approve')); return; }
+      if(approveBtn){ window.AORAES_CLOUD.approveAdvisor(approveBtn.getAttribute('data-notif-approve')).then(refreshNotifAdvisors); return; }
+      if(e.target.closest('[data-notif-toggle-all]')){
+        // se repinta el propio botón: sin esto el clic llega al listener de document ya desconectado y cierra la campana
+        e.stopPropagation(); _notifAll=!_notifAll; renderNotifPanel(); return;
+      }
       var row=e.target.closest('[data-notif-client-uid]');
       if(row){
         window.AORAES_CLOUD.viewAsAdvisor(row.getAttribute('data-notif-client-uid'), row.getAttribute('data-notif-client-email'));

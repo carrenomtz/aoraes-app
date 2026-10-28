@@ -115,6 +115,11 @@
   .notif-row-meta{font-size:11px; color:var(--muted); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .notif-row-act{font-family:inherit; font-size:11.5px; font-weight:700; color:#4f7358; background:#eaf2ec; border:1px solid #cfe3d4; border-radius:7px; padding:6px 10px; cursor:pointer; flex:0 0 auto}
   .notif-row-act:hover{background:#dcebe0}
+  .notif-req{cursor:default}
+  .notif-more{display:block; width:100%; margin-top:4px; padding:8px; background:none; border:none; border-top:1px solid var(--line-soft); font:inherit; font-size:12px; font-weight:700; color:var(--navy-2); cursor:pointer; text-align:center}
+  .notif-more:hover{color:var(--navy)}
+  .notif-more-n{margin-left:6px; font-weight:500; color:var(--faint)}
+  .notif-more-n::before{content:'('} .notif-more-n::after{content:')'}
   .lang-switch-top{display:flex; gap:3px; flex:0 0 auto}
   .lang-switch-top button{
     font-size:17px; line-height:1; opacity:.55; background:none; border:1px solid transparent;

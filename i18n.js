@@ -101,6 +101,7 @@ var SHELL_I18N_TABLE={
   'El correo no coincide — no se borró nada.':['The email doesn\'t match — nothing was deleted.','Die E-Mail stimmt nicht überein — es wurde nichts gelöscht.'],
   'No se pudo borrar. Revisa la consola.':['Couldn\'t delete. Check the console.','Löschen fehlgeschlagen. Konsole prüfen.'], 'Solicitudes de acceso':['Access requests','Zugriffsanfragen'],
   'Clientes nuevos':['New clients','Neue Kunden'], 'Pendiente de aprobación':['Pending approval','Genehmigung ausstehend'], 'Aprobar':['Approve','Genehmigen'],
+  'Rechazada':['Rejected','Abgelehnt'], 'Ver todas':['View all','Alle anzeigen'], 'Ver menos':['View less','Weniger anzeigen'],
   'No hay solicitudes pendientes.':['No pending requests.','Keine ausstehenden Anfragen.'], 'Sin actividad reciente.':['No recent activity.','Keine kürzliche Aktivität.'],
   'Abrir menú':['Open menu','Menü öffnen'], 'Simulación genérica, sin cliente':['Generic simulation, no client','Allgemeine Simulation, ohne Kunde'],
   'Estás en modo genérico — no se guarda en ningún cliente.':['You\'re in generic mode — this isn\'t saved to any client.','Du bist im allgemeinen Modus — wird bei keinem Kunden gespeichert.'],
