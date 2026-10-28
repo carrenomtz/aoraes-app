@@ -362,7 +362,7 @@
        preguntas-medicas.html cuando corran embebidos) puedan guardar/leer sin conocer Firebase
        directamente. El apiKey de este bloque NO es secreto — Firebase lo diseña para vivir en
        el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
-  <script src="./i18n.js?v=e54b9f83"></script>
+  <script src="./i18n.js?v=e639d7c9"></script>
 <script src="./util.js?v=3e8fcffb"></script>
 <script src="./leads.js?v=28d53483"></script>
 <script src="./calc.js?v=d665f4c4"></script>
@@ -862,7 +862,16 @@
             startPendingAdvisorsWatch(); startRecentClientsWatch();
           } else { stopPendingAdvisorsWatch(); stopRecentClientsWatch(); }
         }, function(err){ console.error('AORAES cloud: fallo al escuchar el perfil', err); });
-      }).catch(function(e){ console.error('AORAES cloud: fallo al preparar el perfil', e); });
+      }).catch(function(e){
+        console.error('AORAES cloud: fallo al preparar el perfil', e);
+        // La cuenta de acceso existe pero el perfil no se pudo leer/guardar: sin esto el asesor entraba a un
+        // panel vacío y el admin no lo veía en la lista. Al volver a entrar se reintenta el alta.
+        var pe=document.getElementById('pending-gate'), pm=document.getElementById('pending-msg');
+        if(pe && pm){
+          pm.innerHTML='<p><b>No se pudo completar tu alta.</b></p><p>Tu cuenta de acceso existe, pero no se pudo guardar tu perfil. Cierra sesión y vuelve a entrar con el mismo correo y contraseña; si sigue igual, avisa al responsable del equipo.</p><p class="auth-err-code">['+((e&&e.code)||'sin código')+']</p>';
+          pe.hidden=false;
+        }
+      });
     }
 
     var gateEl, statusEl;
@@ -911,6 +920,8 @@
       document.getElementById('auth-phone-label').hidden = !isSignup;
       document.getElementById('auth-phone').required = isSignup;
       document.getElementById('auth-forgot').hidden = isSignup;
+      // Al crear cuenta el gestor de contraseñas debe proponer una nueva, no rellenar la guardada.
+      document.getElementById('auth-pass').autocomplete = isSignup ? 'new-password' : 'current-password';
       document.getElementById('auth-ok').hidden = true;
       if(!isSignup){ document.getElementById('auth-pass2').value = ''; document.getElementById('auth-name').value = ''; document.getElementById('auth-phone').value = ''; }
     });
@@ -955,7 +966,10 @@
         else { known = false; msg='No se pudo continuar. Revisa el correo y la contraseña.'; console.error('AORAES: fallo de acceso sin mensaje propio', err); }
         errEl.textContent = msg;
         // Un fallo imprevisto muestra su código: sin él ni el asesor ni el soporte pueden saber qué pasó.
-        if(!known && code){ var c=document.createElement('span'); c.className='auth-err-code'; c.textContent=' ['+code+']'; errEl.appendChild(c); }
+        if(!known){
+          var detail = code || ((err && (err.name||'')) + (err && err.message ? ': '+String(err.message).slice(0,120) : '')) || 'sin detalle';
+          var c=document.createElement('span'); c.className='auth-err-code'; c.textContent=' ['+detail+']'; errEl.appendChild(c);
+        }
         errEl.hidden = false;
       }).finally(function(){ btn.disabled = false; });
     });
@@ -978,6 +992,15 @@
         // el correo mal escrito sí se avisa: es un fallo del propio usuario, no filtra nada
         if(err && err.code==='auth/invalid-email'){
           errEl.textContent = 'Correo no válido.'; errEl.hidden = false; okEl.hidden = true;
+          return 'shown';
+        }
+        // Estos dos no dicen nada de la cuenta, y callarlos dejaba al asesor esperando un correo que nunca salió.
+        if(err && err.code==='auth/network-request-failed'){
+          errEl.textContent = 'Sin conexión con el servidor. Revisa tu internet o desactiva el bloqueador de anuncios y vuelve a intentarlo.'; errEl.hidden = false; okEl.hidden = true;
+          return 'shown';
+        }
+        if(err && err.code==='auth/too-many-requests'){
+          errEl.textContent = 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.'; errEl.hidden = false; okEl.hidden = true;
           return 'shown';
         }
         console.error('AORAES: fallo al enviar el correo de recuperación', err);
