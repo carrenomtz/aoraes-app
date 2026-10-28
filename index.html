@@ -362,7 +362,7 @@
        preguntas-medicas.html cuando corran embebidos) puedan guardar/leer sin conocer Firebase
        directamente. El apiKey de este bloque NO es secreto — Firebase lo diseña para vivir en
        el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
-  <script src="./i18n.js?v=76ca1307"></script>
+  <script src="./i18n.js?v=e54b9f83"></script>
 <script src="./util.js?v=3e8fcffb"></script>
 <script src="./leads.js?v=28d53483"></script>
 <script src="./calc.js?v=d665f4c4"></script>
@@ -941,13 +941,22 @@
       btn.disabled = true;
       var action = isSignup ? createUserWithEmailAndPassword : signInWithEmailAndPassword;
       action(auth, email, pass).catch(function(err){
-        var msg = 'No se pudo continuar. Revisa el correo y la contraseña.';
-        if(err.code==='auth/email-already-in-use') msg='Ese correo ya tiene una cuenta — inicia sesión en vez de crear una nueva.';
-        else if(err.code==='auth/invalid-email') msg='Correo no válido.';
-        else if(err.code==='auth/weak-password') msg='La contraseña necesita al menos 6 caracteres.';
-        else if(err.code==='auth/wrong-password'||err.code==='auth/invalid-credential') msg='Contraseña incorrecta.';
-        else if(err.code==='auth/user-not-found') msg='No hay cuenta con ese correo — crea una nueva.';
-        errEl.textContent = msg; errEl.hidden = false;
+        var code = (err && err.code) || '', known = true, msg;
+        if(code==='auth/email-already-in-use') msg='Ese correo ya tiene una cuenta — inicia sesión en vez de crear una nueva.';
+        else if(code==='auth/invalid-email') msg='Correo no válido.';
+        else if(code==='auth/weak-password'||code==='auth/password-does-not-meet-requirements') msg='La contraseña necesita al menos 6 caracteres.';
+        // Con la protección contra enumeración de correos de Firebase, un correo sin cuenta también
+        // llega como invalid-credential: por eso el texto no dice cuál de los dos falló.
+        else if(code==='auth/wrong-password'||code==='auth/invalid-credential') msg='Correo o contraseña incorrectos.';
+        else if(code==='auth/user-not-found') msg='No hay cuenta con ese correo — crea una nueva.';
+        else if(code==='auth/network-request-failed') msg='Sin conexión con el servidor. Revisa tu internet o desactiva el bloqueador de anuncios y vuelve a intentarlo.';
+        else if(code==='auth/too-many-requests') msg='Demasiados intentos. Espera unos minutos e inténtalo de nuevo, o usa «¿Olvidaste tu contraseña?».';
+        else if(code==='auth/operation-not-allowed'||code==='auth/admin-restricted-operation') msg='El registro de nuevas cuentas no está disponible ahora. Avisa al administrador.';
+        else { known = false; msg='No se pudo continuar. Revisa el correo y la contraseña.'; console.error('AORAES: fallo de acceso sin mensaje propio', err); }
+        errEl.textContent = msg;
+        // Un fallo imprevisto muestra su código: sin él ni el asesor ni el soporte pueden saber qué pasó.
+        if(!known && code){ var c=document.createElement('span'); c.className='auth-err-code'; c.textContent=' ['+code+']'; errEl.appendChild(c); }
+        errEl.hidden = false;
       }).finally(function(){ btn.disabled = false; });
     });
     // Recuperar contraseña: Firebase envía el enlace por correo. A propósito NO se distingue entre
