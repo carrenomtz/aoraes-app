@@ -13,6 +13,7 @@ on:
       - 'i18n.js'
       - 'util.js'
       - 'leads.js'
+      - 'idle.js'
       - 'tests/**'
   pull_request:
     paths:
@@ -22,6 +23,7 @@ on:
       - 'i18n.js'
       - 'util.js'
       - 'leads.js'
+      - 'idle.js'
       - 'tests/**'
 
 jobs:
@@ -34,3 +36,4 @@ jobs:
           node-version: 20
       - run: node tests/calc.test.js
       - run: node tests/leads.test.js
+      - run: node tests/idle.test.js

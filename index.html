@@ -17,7 +17,7 @@
 <link rel="preload" href="fonts/Fraunces-opsz-wght-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/Manrope-wght-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="./app.css?v=64d0fb22">
+<link rel="stylesheet" href="./app.css?v=8148246e">
 </head>
 <body>
   <div class="auth-gate" id="auth-gate">
@@ -72,6 +72,19 @@
         <p>El responsable del equipo debe aprobar tu acceso antes de que puedas ver tu cartera. Esta pantalla se actualizará sola en cuanto te aprueben — no hace falta que recargues.</p>
       </div>
       <button type="button" class="auth-toggle" id="pending-signout" style="margin-top:18px">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="auth-gate" id="idle-gate" role="alertdialog" aria-labelledby="idle-title" hidden>
+    <div class="auth-box">
+      <img class="auth-logo" src="./logo-icon-gold.png" alt="" aria-hidden="true">
+      <h1 id="idle-title">¿Sigues ahí?</h1>
+      <div class="pending-msg">
+        <p>Por seguridad, cerraremos tu sesión en <b id="idle-sec">60</b> segundos si no haces nada.</p>
+        <p>Lo que estés editando se guarda antes de cerrar.</p>
+      </div>
+      <button type="button" id="idle-stay" style="margin-top:18px">Seguir conectado</button>
+      <button type="button" class="auth-toggle" id="idle-out" style="margin-top:12px">Cerrar sesión ahora</button>
     </div>
   </div>
 
@@ -362,12 +375,13 @@
        preguntas-medicas.html cuando corran embebidos) puedan guardar/leer sin conocer Firebase
        directamente. El apiKey de este bloque NO es secreto — Firebase lo diseña para vivir en
        el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
-  <script src="./i18n.js?v=7e2ca240"></script>
+  <script src="./i18n.js?v=b7e596a3"></script>
 <script src="./util.js?v=3e8fcffb"></script>
 <script src="./leads.js?v=28d53483"></script>
 <script src="./calc.js?v=d665f4c4"></script>
 <script src="./inmueble.js?v=b1067d59"></script>
 <script src="./afa.js?v=8c8d2660"></script>
+<script src="./idle.js?v=8c7edecd"></script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail }
@@ -1013,6 +1027,60 @@
     document.getElementById('signout-btn').addEventListener('click', function(){ signOut(auth); });
     document.getElementById('pending-signout').addEventListener('click', function(){ signOut(auth); });
     document.getElementById('cp-signout').addEventListener('click', function(){ signOut(auth); });
+
+    // ---- Cierre de sesión por inactividad ----
+    // Un portátil o una tablet con la sesión abierta enseña la cartera de clientes a quien lo coja. Tras 30 minutos sin tocar
+    // nada (ni en el panel ni dentro de ninguna herramienta) sale un aviso de 60 segundos y, si nadie responde, se guarda lo
+    // pendiente y se cierra la sesión, que además borra del navegador los datos de clientes. La lógica está en idle.js.
+    (function(){
+      var guard = createIdleGuard({ idleMs: 30*60*1000, warnMs: 60*1000 });
+      var gate = document.getElementById('idle-gate'), secEl = document.getElementById('idle-sec'), closing = false;
+      var EVENTS = ['pointerdown','keydown','scroll','wheel','touchstart'];
+      var lastMove = 0;
+      function touch(){ guard.touch(); }
+      function move(){ var n = Date.now(); if(n - lastMove > 5000){ lastMove = n; guard.touch(); } }
+      EVENTS.forEach(function(ev){ document.addEventListener(ev, touch, {capture:true, passive:true}); });
+      document.addEventListener('mousemove', move, {passive:true});
+      // Lo que se hace dentro de las herramientas (iframes del mismo origen) también cuenta como actividad.
+      function watchFrame(f){
+        try{
+          var d = f.contentWindow && f.contentWindow.document;
+          if(!d || d.__aoraesIdleWatched) return;
+          d.__aoraesIdleWatched = true;
+          EVENTS.forEach(function(ev){ d.addEventListener(ev, touch, {capture:true, passive:true}); });
+          d.addEventListener('mousemove', move, {passive:true});
+        }catch(e){}
+      }
+      document.addEventListener('load', function(e){ if(e.target && e.target.tagName === 'IFRAME') watchFrame(e.target); }, true);
+      document.querySelectorAll('iframe').forEach(watchFrame);
+      // Pide a cada herramienta que guarde lo que tenga a medias (analisis.html expone __aoraesFlush).
+      function flushFrames(){
+        document.querySelectorAll('iframe').forEach(function(f){
+          try{ var w = f.contentWindow; if(w && typeof w.__aoraesFlush === 'function') w.__aoraesFlush(); }catch(e){}
+        });
+      }
+      function leave(){
+        if(closing) return;
+        closing = true; gate.hidden = true;
+        flushFrames();
+        // margen para que el guardado en la nube termine antes de perder la sesión
+        setTimeout(function(){
+          signOut(auth).then(function(){
+            var ok = document.getElementById('auth-ok');
+            if(ok){ ok.textContent = 'Por seguridad cerramos tu sesión tras 30 minutos de inactividad.'; ok.hidden = false; }
+          }).finally(function(){ closing = false; });
+        }, 1500);
+      }
+      document.getElementById('idle-stay').addEventListener('click', function(e){ e.preventDefault(); guard.stay(); gate.hidden = true; });
+      document.getElementById('idle-out').addEventListener('click', function(){ leave(); });
+      setInterval(function(){
+        if(closing) return;
+        var r = guard.tick(!!currentUid);
+        if(r.state === 'warn'){ gate.hidden = false; secEl.textContent = r.left; }
+        else if(r.state === 'expired'){ leave(); }
+        else if(!gate.hidden){ gate.hidden = true; }
+      }, 1000);
+    })();
     document.getElementById('complete-profile-form').addEventListener('submit', function(e){
       e.preventDefault();
       var name = document.getElementById('cp-name').value.trim();

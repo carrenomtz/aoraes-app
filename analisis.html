@@ -4650,9 +4650,12 @@ window.I18N_DE = {"Flujo libre al mes":"Freier Cashflow pro Monat","Lo que queda
       var fEl=$('#f-sit-renteInfoFecha-A'); if(fEl && !fEl.value) fEl.value=meta['f-sit-renteInfoFecha'];
     }
     syncHeaderDOB(); // Persona A (S.11) is now the single source of truth for the birth date used in the Rentenlücke
-    state.goals=(data.goals||[]).slice();
-    state.goalPriority=(data.goalPriority||[]).slice();
-    state.tri=data.tri?{rent:data.tri.rent||0,flex:data.tri.flex||0,seg:data.tri.seg||0}:{rent:2,flex:1,seg:2};
+    // Solo claves de objetivo conocidas y números en el triángulo: una ficha importada o de otra cuenta no debe poder
+    // meter texto propio en el HTML que se construye a partir de estos valores.
+    state.goals=(Array.isArray(data.goals)?data.goals:[]).filter(function(k){return typeof k==='string' && !!goalByKey(k);});
+    state.goalPriority=(Array.isArray(data.goalPriority)?data.goalPriority:[]).filter(function(k){return typeof k==='string' && !!goalByKey(k);});
+    var triN=function(v){ var n=parseFloat(v); return isFinite(n)?n:0; };
+    state.tri=data.tri?{rent:triN(data.tri.rent),flex:triN(data.tri.flex),seg:triN(data.tri.seg)}:{rent:2,flex:1,seg:2};
     state.expMode=(data.expMode==='total')?'total':'cat';
     function validMethod(v){ return (v==='rapida'||v==='oficial'||v==='mas_tarde')?v:''; }
     state.pensionMethod_A=validMethod(data.pensionMethod_A);
@@ -4819,7 +4822,9 @@ window.I18N_DE = {"Flujo libre al mes":"Freier Cashflow pro Monat","Lo que queda
   function defaultCRM(){return {status:'prospecto',review:'',tags:'',notes:'',email:'',phone:'',
     nextAction:'',nextActionDue:'',meetingDate:'',pendingDocs:''};}
   function reviewState(iso){
-    if(!iso) return {cls:'',txt:''};
+    // Solo fechas AAAA-MM-DD: fmtDate() devuelve el texto tal cual si no lo es, y este resultado se pinta como HTML
+    // en la lista de clientes, así que un valor manipulado (importado o de otra cuenta) no debe llegar hasta ahí.
+    if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(String(iso))) return {cls:'',txt:''};
     var today=new Date(); today.setHours(0,0,0,0);
     var d=new Date(iso+'T00:00:00'); var diff=Math.round((d-today)/86400000);
     if(diff<0) return {cls:'overdue',txt:'Vencida'};
@@ -5394,8 +5399,8 @@ window.I18N_DE = {"Flujo libre al mes":"Freier Cashflow pro Monat","Lo que queda
         var docsChip=cm.pendingDocs?('<span class="cli-review">Docs: '+esc(cm.pendingDocs)+'</span>'):'';
         var tagHTML=tags.length?('<span class="cli-tags">'+tags.map(function(t){return '<span class="cli-tag">'+esc(t)+'</span>';}).join('')+'</span>'):'';
         return '<div class="cli-row">'+
-          '<div class="cli-click" data-open="'+c.id+'" title="'+pickL('Abrir análisis de ','Open analysis of ')+esc(c.name)+'">'+
-            '<div class="cli-score" style="background:'+col+'">'+(c.score!=null?c.score:'—')+'</div>'+
+          '<div class="cli-click" data-open="'+esc(c.id)+'" title="'+pickL('Abrir análisis de ','Open analysis of ')+esc(c.name)+'">'+
+            '<div class="cli-score" style="background:'+col+'">'+(isFinite(parseFloat(c.score))?Math.round(parseFloat(c.score)):'—')+'</div>'+
             '<div class="cli-main">'+
               '<div class="cli-name-row"><b>'+esc(c.name)+'</b><span class="cli-status" style="background:'+st.c+'1f;color:'+st.c+';border-color:'+st.c+'55">'+st.l+'</span></div>'+
               '<span class="cli-meta">'+esc(line2)+'</span>'+
@@ -5403,10 +5408,10 @@ window.I18N_DE = {"Flujo libre al mes":"Freier Cashflow pro Monat","Lo que queda
             '</div>'+
           '</div>'+
           '<div class="cli-actions">'+
-            '<button class="cli-btn" data-open="'+c.id+'">Abrir</button>'+
-            '<button class="cli-btn" data-ficha="'+c.id+'">Ficha</button>'+
-            '<button class="cli-btn" data-pdf="'+c.id+'">PDF</button>'+
-            '<button class="cli-btn del" data-del="'+c.id+'">Eliminar</button>'+
+            '<button class="cli-btn" data-open="'+esc(c.id)+'">Abrir</button>'+
+            '<button class="cli-btn" data-ficha="'+esc(c.id)+'">Ficha</button>'+
+            '<button class="cli-btn" data-pdf="'+esc(c.id)+'">PDF</button>'+
+            '<button class="cli-btn del" data-del="'+esc(c.id)+'">Eliminar</button>'+
           '</div></div>';
   }
   function esc(s){return String(s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
@@ -5419,19 +5424,52 @@ window.I18N_DE = {"Flujo libre al mes":"Freier Cashflow pro Monat","Lo que queda
     a.href=url; a.download='aoraes_clientes_'+new Date().toISOString().slice(0,10)+'.json';
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   }
+  // Una copia importada es un archivo ajeno: solo entran fichas con forma esperada. El id debe ser un identificador
+  // simple, los textos se fuerzan a cadena con límite, las fechas deben ser AAAA-MM-DD y las puntuaciones números.
+  // Se sube a la nube con el resto de la cartera, así que lo que entra aquí lo acaba viendo también el administrador.
+  function sanitizeImported(c){
+    if(!c || typeof c!=='object' || Array.isArray(c)) return null;
+    var id=typeof c.id==='string'?c.id:(typeof c.id==='number'?String(c.id):'');
+    if(!/^[A-Za-z0-9_.:\-]{1,80}$/.test(id)) return null;
+    var str=function(v,max){ return (v==null?'':String(v)).slice(0,max); };
+    var iso=function(v){ var t=new Date(v); return isNaN(t.getTime())?new Date().toISOString():t.toISOString(); };
+    var day=function(v){ return /^\d{4}-\d{2}-\d{2}$/.test(String(v||''))?String(v):''; };
+    var num=function(v){ var n=parseFloat(v); return isFinite(n)?n:null; };
+    var out={};
+    for(var k in c){ if(Object.prototype.hasOwnProperty.call(c,k)) out[k]=c[k]; } // se conservan los demás campos tal cual
+    out.id=id;
+    out.name=str(c.name,200); out.advisor=str(c.advisor,200); out.date=day(c.date);
+    out.savedAt=iso(c.savedAt); out.createdAt=iso(c.createdAt||c.savedAt);
+    out.score=num(c.score); out.flow=num(c.flow);
+    out.analysis_type=(c.analysis_type===EMP_TYPE)?EMP_TYPE:PRIV_TYPE;
+    var cm=(c.crm&&typeof c.crm==='object')?c.crm:{}, d=defaultCRM();
+    out.crm={
+      status:(typeof cm.status==='string' && Object.prototype.hasOwnProperty.call(CRM_STATUS,cm.status))?cm.status:d.status,
+      review:day(cm.review), nextActionDue:day(cm.nextActionDue), meetingDate:day(cm.meetingDate),
+      tags:str(cm.tags,500), notes:str(cm.notes,10000), email:str(cm.email,200), phone:str(cm.phone,60),
+      nextAction:str(cm.nextAction,500), pendingDocs:str(cm.pendingDocs,500)
+    };
+    if(typeof c.data!=='object' || c.data===null) out.data={};
+    return out;
+  }
   function importData(file){
     var reader=new FileReader();
     reader.onload=function(){
       try{
         var imported=JSON.parse(reader.result);
         if(!Array.isArray(imported))throw 0;
-        var arr=loadClients(), byId={}, newIds=[];
+        var arr=loadClients(), byId={}, newIds=[], skipped=0;
         arr.forEach(function(c){byId[c.id]=true;});
-        imported.forEach(function(c){if(c&&c.id&&!byId[c.id]){arr.push(c);byId[c.id]=true;newIds.push(c.id);}});
+        imported.forEach(function(raw){
+          var c=sanitizeImported(raw);
+          if(!c){ skipped++; return; }
+          if(!byId[c.id]){arr.push(c);byId[c.id]=true;newIds.push(c.id);}
+        });
         arr.sort(function(a,b){return new Date(b.savedAt)-new Date(a.savedAt);});
         persistClients(arr);
         if(newIds.length) mirrorClients(newIds);
         renderDashboard();
+        if(skipped) $('#dash-note').textContent=skipped+' ficha(s) del archivo se omitieron por tener un formato no válido.';
       }catch(e){
         $('#dash-note').textContent='No se pudo leer el archivo. Debe ser una copia exportada (.json).';
       }
@@ -5506,6 +5544,8 @@ window.I18N_DE = {"Flujo libre al mes":"Freier Cashflow pro Monat","Lo que queda
   // guardado silencioso de siempre, solo que disparado por "te estás yendo" en vez de por el reloj.
   document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') autosaveTick(); });
   window.addEventListener('pagehide',autosaveTick);
+  // El panel lo llama antes de cerrar la sesión por inactividad, para no perder lo que se esté editando.
+  window.__aoraesFlush=function(){ try{ autosaveTick(); }catch(e){} };
 
   /* ---------- Aviso visible de "sin guardar" + botón Guardar flotante ----------
      El autoguardado de arriba es silencioso y solo se entera de lo que se escribe en un campo: un cambio
