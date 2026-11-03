@@ -916,3 +916,46 @@
   .bb-undo:hover{background:var(--navy-deep); box-shadow:0 8px 20px rgba(20,33,61,.24)}
   .bb-close{flex:0 0 auto; background:transparent; border:0; color:var(--muted); font-size:15px; cursor:pointer; padding:4px 6px; line-height:1; border-radius:5px}
   .bb-close:hover{color:var(--ink)}
+
+  /* ---------- movimiento sutil: entradas, pulsación y foco ----------
+     Solo CSS y solo con movimiento permitido. Duraciones de 120-240 ms con la misma
+     curva --ease; nada rebota ni llama la atención, solo suaviza los cambios de estado. */
+  @media (prefers-reduced-motion:no-preference){
+    @keyframes pop-in{from{opacity:0; transform:translateY(-4px) scale(.98)} to{opacity:1; transform:none}}
+    @keyframes fade-in{from{opacity:0} to{opacity:1}}
+    @keyframes modal-in{from{opacity:0; transform:translateY(8px) scale(.985)} to{opacity:1; transform:none}}
+    @keyframes bar-in{from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:none}}
+    @keyframes badge-in{from{transform:scale(.6); opacity:0} to{transform:none; opacity:1}}
+
+    /* menús y paneles desplegables */
+    .notif-panel:not([hidden]), .ase-menu:not([hidden]), .switch-more-menu:not([hidden]){animation:pop-in .16s var(--ease) both; transform-origin:top right}
+    .switch-more-menu:not([hidden]){transform-origin:top left}
+    @media(max-width:1120px){.switch-more-menu:not([hidden]){animation:none}}
+
+    /* ventanas modales y pantalla de acceso */
+    .imp-overlay:not([hidden]){animation:fade-in .18s var(--ease) both}
+    .imp-overlay:not([hidden]) .imp-box{animation:modal-in .24s var(--ease) both}
+    .auth-gate:not([hidden]) .auth-box{animation:modal-in .3s var(--ease) both}
+
+    /* banda de puente y aviso de notificaciones */
+    #bridge-banner:not([hidden]){animation:bar-in .22s var(--ease) both}
+    .notif-badge:not([hidden]){animation:badge-in .2s var(--ease) both}
+
+    /* pulsación: los botones se hunden un píxel, igual que ya hacen .cli-act y .cock-new */
+    .ws-cta:active, #auth-submit:active, #cp-submit:active, #idle-stay:active,
+    .bb-save:not(:disabled):active, .bb-undo:active, .ct-link:active, .cs-action:active,
+    .ci-qbtn:active, .inm-quick button:active, .ase-menu-btn:active, .notif-bell:active{transform:translateY(1px)}
+    .cli:active{transform:translateY(0); box-shadow:var(--sh-2)}
+
+    /* transiciones que faltaban: hover y foco sin saltos */
+    .ase-menu-btn, .ase-menu button, .switch-more-menu button, .notif-row, .notif-row-act, .notif-more,
+    .imp-x, .signout-btn, .cont-chip, .cont-backup-btn, .lead-ficha-btn, .ficha-quick button, .rs-card-btn{
+      transition:background .14s var(--ease), border-color .14s var(--ease), color .14s var(--ease), transform .12s var(--ease)
+    }
+    .pool-table tbody tr, .pool-table tbody td{transition:background .14s var(--ease)}
+    .admin-tabs button{transition:color .16s var(--ease), border-color .16s var(--ease)}
+    .auth-box input, .cont-field-input{transition:border-color .16s var(--ease), box-shadow .16s var(--ease), background .16s var(--ease)}
+    .auth-box input:focus{box-shadow:0 0 0 3px var(--gold-tint)}
+    .cont-field-input:focus{box-shadow:0 0 0 2px var(--gold-tint)}
+    a{transition:color .14s var(--ease)}
+  }
