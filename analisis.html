@@ -301,9 +301,11 @@
   .salary-range-btn{font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 12px;border:1px solid var(--line);border-radius:20px;background:var(--paper);color:var(--muted);cursor:pointer}
   .salary-range-btn.active{background:var(--navy);color:var(--gold-soft);border-color:var(--navy)}
   .pension-pending-note{font-size:13px;color:var(--muted);background:var(--ivory);border:1px dashed var(--line);border-radius:10px;padding:10px 13px;margin-top:10px}
-  details.pension-advanced{margin-top:10px}
-  details.pension-advanced>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--muted);padding:6px 0}
-  details.pension-advanced>summary:hover{color:var(--navy)}
+  details.pension-advanced,details.debt-split{margin-top:10px}
+  details.pension-advanced>summary,details.debt-split>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--muted);padding:6px 0}
+  details.pension-advanced>summary:hover,details.debt-split>summary:hover{color:var(--navy)}
+  details.debt-split .income-dual{margin-top:8px}
+  .debt-note{font-size:11.5px;color:var(--muted);margin:8px 0 0}
   .goal-intro b{color:var(--ink)}
   .goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media(max-width:560px){.goal-grid{grid-template-columns:1fr}}
@@ -1278,6 +1280,7 @@
         <div id="expense-body"></div>
         <div class="cat-label">Deuda total</div>
         <div class="row"><label for="f-sit-deudaTotal">Deuda total pendiente (saldo, no la cuota mensual)</label><span class="euro"><input id="f-sit-deudaTotal" type="number" min="0" data-sit="deudaTotal" placeholder="0"></span></div>
+        <details class="debt-split" id="debt-split"><summary>Desglosar por persona (opcional)</summary><p class="debt-note">Si rellena Persona A y B, la tarjeta, las cuotas y la deuda pendiente de arriba se calculan como la suma de ambas. Las cuentas por pagar solo se muestran: no cambian la puntuación.</p><div class="income-dual"><div class="pcol"><div class="pcol-head">Persona A</div><div class="row"><label for="f-debt-tarjeta-A">Tarjeta de crédito (pago mínimo al mes)</label><span class="euro"><input id="f-debt-tarjeta-A" type="number" min="0" placeholder="0" data-debt="tarjeta_A"></span></div><div class="row"><label for="f-debt-prestamos-A">Cuotas de préstamos (al mes)</label><span class="euro"><input id="f-debt-prestamos-A" type="number" min="0" placeholder="0" data-debt="prestamos_A"></span></div><div class="row"><label for="f-debt-saldo-A">Deuda pendiente (saldo)</label><span class="euro"><input id="f-debt-saldo-A" type="number" min="0" placeholder="0" data-debt="saldo_A"></span></div><div class="row"><label for="f-debt-porpagar-A">Cuentas por pagar (facturas, atrasos)</label><span class="euro"><input id="f-debt-porpagar-A" type="number" min="0" placeholder="0" data-debt="porpagar_A"></span></div></div><div class="pcol pcol-b"><div class="pcol-head">Persona B <span class="pcol-hint">(si aplica)</span></div><div class="row"><label for="f-debt-tarjeta-B">Tarjeta de crédito (pago mínimo al mes)</label><span class="euro"><input id="f-debt-tarjeta-B" type="number" min="0" placeholder="0" data-debt="tarjeta_B"></span></div><div class="row"><label for="f-debt-prestamos-B">Cuotas de préstamos (al mes)</label><span class="euro"><input id="f-debt-prestamos-B" type="number" min="0" placeholder="0" data-debt="prestamos_B"></span></div><div class="row"><label for="f-debt-saldo-B">Deuda pendiente (saldo)</label><span class="euro"><input id="f-debt-saldo-B" type="number" min="0" placeholder="0" data-debt="saldo_B"></span></div><div class="row"><label for="f-debt-porpagar-B">Cuentas por pagar (facturas, atrasos)</label><span class="euro"><input id="f-debt-porpagar-B" type="number" min="0" placeholder="0" data-debt="porpagar_B"></span></div></div></div><p class="debt-note" id="debt-porpagar-total" hidden></p></details>
         <div class="exp-total-bar">
           <div class="etb-item">
             <span class="etb-lab">Gastos totales / mes</span>
@@ -2946,7 +2949,7 @@ window.I18N_DE = {"Antes de comprometerte a largo plazo: ¿y si te vas de Aleman
   // llegaba a atenuarse. Solo cuentan los campos que el asesor ha rellenado de verdad.
   function personBInPlay(){
     var any=false;
-    document.querySelectorAll('[data-inc$="_B"],[data-gross$="_B"],[data-pers$="_B"]').forEach(function(e){
+    document.querySelectorAll('[data-inc$="_B"],[data-gross$="_B"],[data-pers$="_B"],[data-debt$="_B"]').forEach(function(e){
       if(any) return;
       if(e.tagName==='SELECT') return;              // su valor por defecto no prueba nada
       if(e.type==='checkbox'){ if(e.checked) any=true; }
@@ -4708,7 +4711,7 @@ window.I18N_DE = {"Antes de comprometerte a largo plazo: ¿y si te vas de Aleman
   // children rows) are intentionally NOT in this list — dynamic-count rows are collected/restored
   // via their own getContractRows()/renderContractSection() and getChildrenData()/renderChildrenList().
   var PERSIST_ATTRS=['data-gross','data-inc','data-exp','data-exptotal','data-sit','data-ins','data-insrev','data-insna',
-    'data-pers','data-prop'];
+    'data-pers','data-prop','data-debt'];
   var PERSIST_SEL=PERSIST_ATTRS.map(function(a){return 'input['+a+'],select['+a+'],textarea['+a+']';}).join(',');
   function keyOf(e){
     for(var i=0;i<PERSIST_ATTRS.length;i++){if(e.hasAttribute(PERSIST_ATTRS[i]))return PERSIST_ATTRS[i].slice(5)+':'+e.getAttribute(PERSIST_ATTRS[i]);}
@@ -4801,7 +4804,7 @@ window.I18N_DE = {"Antes de comprometerte a largo plazo: ¿y si te vas de Aleman
     applyPensionMethod(state.pensionMethod_A,'A');
     applyPensionMethod(state.pensionMethod_B,'B');
     syncRendJubButtons();
-    renderGoals(); renderTriCtl(); updatePersonBDim(); refreshPersonaLabels(); render();
+    renderGoals(); renderTriCtl(); updatePersonBDim(); syncDebtSplit(); refreshPersonaLabels(); render();
   }
   // ---- dynamic children data cards (Sí/No gate + add/remove, no fixed count) ----
   function getChildrenData(){
@@ -4886,7 +4889,7 @@ window.I18N_DE = {"Antes de comprometerte a largo plazo: ¿y si te vas de Aleman
     // un cliente nuevo no debe heredar la vía de pensión del cliente anterior
     applyPensionMethod('','A'); applyPensionMethod('','B');
     syncRendJubButtons();
-    renderGoals(); renderTriCtl(); updatePersonBDim(); render();
+    renderGoals(); renderTriCtl(); updatePersonBDim(); syncDebtSplit(); render();
   }
 
   /* ---------- CRM (record-level relationship data) ---------- */
@@ -5527,6 +5530,29 @@ window.I18N_DE = {"Antes de comprometerte a largo plazo: ¿y si te vas de Aleman
   }
   function esc(s){return String(s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
 
+  // Desglose de deudas por persona: si A o B tienen datos, los tres totales del hogar (tarjeta, cuotas, saldo) pasan a ser A+B
+  // y se bloquean como el campo calculado de provisionAnual; si el desglose está vacío, siguen siendo editables como siempre.
+  // "Cuentas por pagar" solo se muestra: no entra en compute() ni en el score.
+  var DEBT_TARGETS={tarjeta:'[data-exp="tarjeta"]',prestamos:'[data-exp="prestamos"]',saldo:'[data-sit="deudaTotal"]'};
+  function syncDebtSplit(){
+    function val(k,l){var e=document.querySelector('[data-debt="'+k+'_'+l+'"]'); return e?(e.value||'').trim():'';}
+    Object.keys(DEBT_TARGETS).forEach(function(k){
+      var tgt=document.querySelector(DEBT_TARGETS[k]); if(!tgt) return;
+      var a=val(k,'A'), b=val(k,'B'), used=(a!==''||b!=='');
+      if(used){
+        var sum=(parseFloat(a)||0)+(parseFloat(b)||0);
+        tgt.value=sum>0?String(Math.round(sum*100)/100):'';
+        tgt.setAttribute('data-from-split','1');
+      }else if(tgt.getAttribute('data-from-split')){   // el desglose se vació: no dejar una suma antigua como si fuera un dato escrito
+        tgt.value=''; tgt.removeAttribute('data-from-split');
+      }
+      tgt.readOnly=used; tgt.classList.toggle('calc-ro',used);
+    });
+    var pp=(parseFloat(val('porpagar','A'))||0)+(parseFloat(val('porpagar','B'))||0), note=document.getElementById('debt-porpagar-total');
+    if(note){ note.hidden=!(pp>0); note.textContent=pp>0?('Cuentas por pagar (A + B): '+eur.format(Math.round(pp))+' · informativo, no entra en el cálculo.'):''; }
+    var box=document.getElementById('debt-split');
+    if(box && Array.prototype.some.call(document.querySelectorAll('[data-debt]'),function(e){return (e.value||'').trim()!=='';})) box.open=true;
+  }
   function syncProvisionAnual(){
     var a=document.querySelector('[data-sit="pagosAnualesTotal"]'), m=document.querySelector('[data-exp="provisionAnual"]');
     if(!a||!m) return;
@@ -5609,8 +5635,9 @@ window.I18N_DE = {"Antes de comprometerte a largo plazo: ¿y si te vas de Aleman
       if(row7 && t.matches('.cr-aportacion')) updateFreqVisibility(row7);
       recalcS7(); did=true;
     }
-    if(t.matches('[data-inc$="_B"],[data-gross$="_B"],[data-pers$="_B"]')||(t.matches('[data-contract]')&&/:persona$/.test(t.getAttribute('data-contract')||''))) updatePersonBDim();
+    if(t.matches('[data-inc$="_B"],[data-gross$="_B"],[data-pers$="_B"],[data-debt$="_B"]')||(t.matches('[data-contract]')&&/:persona$/.test(t.getAttribute('data-contract')||''))) updatePersonBDim();
     if(t.matches('[data-sit="pagosAnualesTotal"]')){ syncProvisionAnual(); did=true; }
+    if(t.matches('[data-debt]')){ syncDebtSplit(); did=true; }
     if(t.matches('[data-pers="nombre_A"],[data-pers="nombre_B"]')){ refreshPersonaLabels(); maybeAutofillClienteName(); }
     if(t.id==='m_cliente'){ syncNombreAFromCliente(); updateClientHeading(); did=true; }
     if(t.matches('[data-pers="fechaNacimiento_A"]')){ syncHeaderDOB(); did=true; }
@@ -6531,6 +6558,7 @@ window.I18N_DE = {"Antes de comprometerte a largo plazo: ¿y si te vas de Aleman
   renderChildrenYN('no');
   recalcAllContracts();
   updatePersonBDim();
+  syncDebtSplit();
   refreshPersonaLabels();
   syncHeaderDOB();
   injectCardIcons();
