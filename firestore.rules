@@ -571,5 +571,71 @@ service cloud.firestore {
       allow get, list: if isAdmin();
       allow create, update, delete: if false;
     }
+
+    // ===== Centro del Asesor: biblioteca de productos (costes y condiciones por versión contractual) =====
+    // Lectura: asesores aprobados y admin. Escritura: solo admin. Estas fichas pueden contener tarifas que NO deben ser públicas, por eso
+    // viven aquí y no en ficheros del repositorio. Una ficha es UNA versión de UN producto (id del documento = productoId + '_' + versión).
+    // Nunca se borra: una versión obsoleta se marca como tal. La forma completa de cada coste la valida el código (productos.js);
+    // aquí se acota el tamaño y se impide marcar como «verificado» algo ilustrativo o sin fuente.
+    function validProductoVersion() {
+      return request.resource.data.keys().hasOnly([
+          'productoId', 'familia', 'proveedor', 'nombre', 'version', 'estado', 'ilustrativo',
+          'vigenteDesde', 'vigenteHasta', 'fuente', 'costes', 'notas', 'verificadoPor', 'verificadoEn',
+          'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.productoId is string
+        && request.resource.data.productoId.size() >= 2
+        && request.resource.data.productoId.size() <= 60
+        && request.resource.data.familia in ['VA', 'VAESP', 'BASISRENTE', 'BAUSPAR', 'OTRO']
+        && request.resource.data.proveedor is string
+        && request.resource.data.proveedor.size() >= 1
+        && request.resource.data.proveedor.size() <= 80
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() >= 1
+        && request.resource.data.nombre.size() <= 120
+        && request.resource.data.version is string
+        && request.resource.data.version.size() >= 1
+        && request.resource.data.version.size() <= 30
+        && request.resource.data.estado in ['borrador', 'pendiente_revision', 'verificado', 'obsoleto']
+        && request.resource.data.ilustrativo is bool
+        && request.resource.data.vigenteDesde is string
+        && request.resource.data.vigenteDesde.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && (request.resource.data.vigenteHasta == null
+          || (request.resource.data.vigenteHasta is string
+            && request.resource.data.vigenteHasta.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+        && request.resource.data.fuente is map
+        && request.resource.data.costes is list
+        && request.resource.data.costes.size() <= 60
+        && request.resource.data.notas is string
+        && request.resource.data.notas.size() <= 3000
+        && request.resource.data.verificadoPor is string
+        && request.resource.data.verificadoPor.size() <= 128
+        && request.resource.data.verificadoEn is string
+        && request.resource.data.verificadoEn.size() <= 40
+        && request.resource.data.updatedAt == request.time
+        && (request.resource.data.estado != 'verificado'
+          || (request.resource.data.ilustrativo == false
+            && request.resource.data.verificadoPor.size() > 0
+            && request.resource.data.verificadoEn.size() > 0));
+    }
+
+    match /productosVersiones/{versionId} {
+      allow get, list: if isAdmin() || isAdvisor();
+      // Nace siempre como borrador o pendiente de revisión: la verificación es un paso posterior y dejado en el historial.
+      allow create: if isAdmin() && validProductoVersion()
+        && request.resource.data.estado in ['borrador', 'pendiente_revision']
+        && request.resource.data.createdAt == request.time;
+      // Una versión obsoleta no se toca. Una verificada solo puede pasar a obsoleta, sin cambiar su contenido.
+      allow update: if isAdmin() && validProductoVersion()
+        && resource.data.estado != 'obsoleto'
+        && request.resource.data.productoId == resource.data.productoId
+        && request.resource.data.version == resource.data.version
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (resource.data.estado != 'verificado'
+          || (request.resource.data.estado == 'obsoleto'
+            && request.resource.data.costes == resource.data.costes
+            && request.resource.data.fuente == resource.data.fuente));
+      allow delete: if false;
+    }
   }
 }

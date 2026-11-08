@@ -20,6 +20,8 @@ on:
       - 'util.js'
       - 'leads.js'
       - 'idle.js'
+      - 'productos.js'
+      - 'firestore.rules'
       - 'tests/**'
   pull_request:
     paths:
@@ -36,6 +38,8 @@ on:
       - 'util.js'
       - 'leads.js'
       - 'idle.js'
+      - 'productos.js'
+      - 'firestore.rules'
       - 'tests/**'
 
 jobs:
@@ -52,3 +56,4 @@ jobs:
       - run: node tests/versiones.test.js
       - run: node tests/fiscal.test.js
       - run: node tests/plan-futuro.test.js
+      - run: node tests/productos.test.js
