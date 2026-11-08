@@ -501,6 +501,10 @@ function inmuebleResultsHTML(precio,inm,asParts){
   var bancoTitle=igual?'Banco directo · mismo pago mensual':'Banco directo';
   var maxMeses=Math.max(inmuebleMesesDesdeHoy(rEst,0),inmuebleMesesDesdeHoy(rk,0),1);
   var dif=rk.costeTotal-rEst.costeTotal;
+  // Comprar HOY con Bausparvertrag exige prefinanciar durante el ahorro (hipótesis: tipo del banco, solo intereses): el banco desembolsa
+  // el día 0 y el Bausparvertrag no. Sin ese coste, la comparación favorece al Bausparvertrag de forma artificial.
+  var puente=(rEst.mesesAhorro>0&&rEst.cuotaAhorro>0)?inmuebleCostePuente(precio,inm.banco.interesPrestamo,rEst.mesesAhorro):0;
+  var difPuente=rk.costeTotal-(rEst.costeTotal+puente);
   var marcaMeses=Math.round((inm.banco.marcaAnios==null?10:Math.max(0,inm.banco.marcaAnios))*12);
   function row(title,r,isBanco){
     return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
@@ -518,7 +522,14 @@ function inmuebleResultsHTML(precio,inm,asParts){
       (r.recargoSuperaAhorro?'<div class="inm-res-warn"><span>El recargo cuesta más de lo que ahorra el pago extra.</span></div>':'')+
       (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff inm-detalle"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
       '<div class="inm-res-line total"><span>Coste total</span><b>'+eur(r.costeTotal)+'</b></div>'+
-      (!isBanco?'<div class="inm-res-line save inm-detalle"><span>'+(dif>=0?'Menos intereses y comisiones que el banco':'Más intereses y comisiones que el banco')+'</span><b'+(dif>=0?' class="inm-ahorro"':'')+'>'+eur(Math.abs(dif))+'</b></div>':'')+
+      (!isBanco&&puente>0?'<div class="inm-res-line inm-detalle"><span>Si compras hoy: intereses del puente hasta la asignación*</span><b>'+eur(puente)+'</b></div><div class="inm-res-line total inm-detalle"><span>Coste total si compras hoy</span><b>'+eur(r.costeTotal+puente)+'</b></div>':'')+
+      // La comparación en euros solo se publica cuando ambos lados pagan lo mismo al mes (ORDEN 8.5 de la especificación): con pagos
+      // distintos el banco queda en su cuota mínima a 30 años y la diferencia es un artefacto, no un ahorro.
+      (!isBanco?(igual
+        ?'<div class="inm-res-line save inm-detalle"><span>'+(puente>0?(dif>=0?'Menos intereses y comisiones que el banco (comprando al asignarse el contrato)':'Más intereses y comisiones que el banco (comprando al asignarse el contrato)'):(dif>=0?'Menos intereses y comisiones que el banco':'Más intereses y comisiones que el banco'))+'</span><b'+(dif>=0?' class="inm-ahorro"':'')+'>'+eur(Math.abs(dif))+'</b></div>'+
+          (puente>0?'<div class="inm-res-line save inm-detalle"><span>'+(difPuente>=0?'Menos intereses y comisiones que el banco si compras hoy':'Más intereses y comisiones que el banco si compras hoy')+'</span><b'+(difPuente>=0?' class="inm-ahorro"':'')+'>'+eur(Math.abs(difPuente))+'</b></div>':'')
+        :'<div class="inm-res-line inm-eff-hint"><span>Comparación en euros no disponible: los pagos mensuales de ambas opciones son distintos. Pulsa «Mismo pago mensual» para compararlas en igualdad.</span></div>'):'')+
+      (!isBanco&&puente>0?'<div class="inm-res-line inm-eff-hint inm-detalle"><span>* Hipótesis: para comprar hoy, un banco adelanta la financiación al tipo del banco, solo intereses, hasta la asignación del contrato. La fecha de asignación es una estimación, no está garantizada.</span></div>':'')+
       inmuebleTimeRow(r,maxMeses,isBanco)+
       inmuebleCertRow(r,inm.banco.zinsbindung,isBanco)+
       '</div>';

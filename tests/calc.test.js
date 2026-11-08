@@ -710,6 +710,37 @@ test('cuándo empezar: meses para reunir el 10 % y el 20 % del precio ahorrando 
   assert.strictEqual(engine.inmuebleCuandoComprar(engine.normalizeInmueble({})), null);
 });
 
+console.log('\nCaso de regresión: captura del comparador Bausparvertrag vs. banco (precio 200.000 + gastos 20.000 − capital 40.000 = 180.000)');
+// Cifras históricas de la captura. No se ajustan las fórmulas para reproducirlas: se documenta de dónde sale cada número y qué faltaba.
+const CAP = { precio: 180000, bau: { pct: 40, anios: 3.6, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 5.4, comision: 1.6, pagoPrestamo: 982 },
+  banco: { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: 4.2, tilgungInicial: 1.67, comision: 0, zinsbindung: 10 } };
+test('captura: el motor reproduce las cifras mostradas (aritmética correcta)', () => {
+  const b = engine.calcInmuebleOption(CAP.precio, CAP.bau), k = engine.calcInmuebleOption(CAP.precio, CAP.banco);
+  near(b.cuotaAhorro, 1740, 1); near(b.cuotaPrestamo, 982, 1); near(b.interesTotalPrestamo, 9804, 10); near(b.costeTotal, 192618, 10);
+  near(k.cuotaPrestamo, 881, 1); near(k.interesTotalPrestamo, 136786, 5); near(k.costeTotal, 316786, 5); near(k.restschuldZinsbindung, 142722, 5);
+});
+test('captura: el «coste total» del Bausparvertrag incluye el ahorro propio, no solo intereses y comisiones', () => {
+  const b = engine.calcInmuebleOption(CAP.precio, CAP.bau);
+  near(b.costeTotal - CAP.precio, b.interesTotalPrestamo + b.comision - 0, 80, 'intereses+comisión'); // ~12,7 mil sobre 180 mil
+  near(b.objetivoAhorro, 72000, 1);
+});
+test('puente hasta la asignación: intereses solo-intereses al tipo del banco durante el ahorro', () => {
+  const b = engine.calcInmuebleOption(CAP.precio, CAP.bau);
+  assert.strictEqual(b.mesesAhorro, 43);
+  near(engine.inmuebleCostePuente(CAP.precio, 4.2, b.mesesAhorro), 180000 * 0.042 / 12 * 43, 0.01);
+  assert.strictEqual(engine.inmuebleCostePuente(CAP.precio, 4.2, 0), 0);
+  assert.strictEqual(engine.inmuebleCostePuente(0, 4.2, 43), 0);
+});
+test('captura: con el MISMO pago mensual y el puente, la diferencia con el banco es de miles, no de 124.168 €', () => {
+  const b = engine.calcInmuebleOption(CAP.precio, CAP.bau);
+  const igual = engine.calcInmuebleOption(CAP.precio, Object.assign({}, CAP.banco, { tilgungInicial: 2, pagoPre: b.cuotaAhorro }));
+  near(igual.mesesPrestamo / 12, 10.8, 0.1); near(igual.interesTotalPrestamo, 43874, 20);
+  const conPuente = b.costeTotal + engine.inmuebleCostePuente(CAP.precio, 4.2, b.mesesAhorro);
+  const diferencia = igual.costeTotal - conPuente;
+  assert(Math.abs(diferencia) < 10000, 'la diferencia honesta debe ser pequeña: ' + Math.round(diferencia));
+  assert(316786 - 192618 > 100000); // la cifra antigua que se publicaba
+});
+
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');
 gaps.forEach(g => console.log('  · ' + g));
 process.exit(failed ? 1 : 0);
