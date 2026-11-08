@@ -580,11 +580,70 @@ function inmuebleNecesidadFondos(inm){
 // Cuándo quiere comprar (ORDEN 1.4): condiciona las rutas. 'ahora' y '12m' exigen disponer del dinero pronto, así que un Bausparvertrag con
 // fase de ahorro necesita una financiación puente; 'esperar' es la compra futura (se ahorra antes de comprar, sin puente).
 var INM_CUANDO=['ahora','12m','esperar'];
+// ---------------- Fase 2 de docs/especificacion-calculadora-badenia.md: capacidad de pago sostenible ----------------
+// Campos opcionales del proyecto (todos en €/mes salvo %): ingresoVariable (la parte del ingreso neto que no es fija) y variableRecPct (qué
+// % de esa parte se reconoce, 50 por defecto: no se asume que lo variable esté garantizado), reservaMensual (imprevistos), presupuestoDeseado
+// (lo máximo que el cliente quiere dedicar a la vivienda; 0 = sin tope) y los costes de propietario (mantenimientoPct es % anual del precio,
+// 1 por defecto como ESTIMACIÓN; hausgeld, segurosProp, energiaProp y otrosProp, a 0 hasta que el asesor los conozca).
+var INM_PROPIETARIO=[['mantenimiento','Mantenimiento y reparaciones'],['hausgeld','Gastos de comunidad (Hausgeld)'],['seguros','Seguros y tributos recurrentes'],
+  ['energia','Energía y suministros'],['otros','Otros costes recurrentes de la vivienda']];
+function inmuebleIngresosReconocidos(inm){
+  var base=(inm.ingresoNeto>0)?inm.ingresoNeto:((inm.flujo&&inm.flujo.ingresoTotal)||0);
+  var variable=Math.min(base,Math.max(0,inm.ingresoVariable||0)), rec=Math.max(0,Math.min(100,(inm.variableRecPct==null?50:inm.variableRecPct)))/100;
+  return inmuebleRedondea2(Math.max(0,base-variable*(1-rec)));
+}
+// Costes mensuales de ser propietario, por separado de la cuota (ORDEN 2.3). El mantenimiento es una estimación (% anual del precio).
+function inmuebleCostesPropietario(inm){
+  var precio=Math.max(0,inm.precio||0), mp=(inm.mantenimientoPct==null)?1:Math.max(0,inm.mantenimientoPct);
+  var imp={mantenimiento:precio*mp/100/12,hausgeld:inm.hausgeld,seguros:inm.segurosProp,energia:inm.energiaProp,otros:inm.otrosProp};
+  var partidas=INM_PROPIETARIO.map(function(x){ return {k:x[0],label:x[1],importe:inmuebleRedondea2(Math.max(0,imp[x[0]]||0)),estimado:(x[0]==='mantenimiento')}; });
+  return {partidas:partidas,total:inmuebleRedondea2(partidas.reduce(function(a,x){ return a+x.importe; },0))};
+}
+// Cuota máxima del modelo (ORDEN 2.2): el menor de tres límites. No es una aprobación crediticia ni sustituye el análisis de solvencia del banco.
+//   limite_por_ingresos = ingresos reconocidos · % límite
+//   presupuesto_residual = ingresos reconocidos − gastos del hogar − reserva mensual − costes de propietario   (solo con ficha: hacen falta los gastos)
+//   presupuesto_deseado = lo que el cliente quiere dedicar (opcional)
+// Los gastos de la ficha ya incluyen préstamos y tarjetas (obligaciones existentes) y no incluyen el alquiler actual, que dejaría de pagarse.
+// Nota respecto a la especificación: aquí el presupuesto residual también descuenta los costes de propietario, porque lo que queda para la
+// cuota es lo que sobra DESPUÉS de pagarlos; así la cuota máxima no los da por gratis.
+function inmuebleCuotaMaxModelo(inm){
+  var ing=inmuebleIngresosReconocidos(inm); if(!(ing>0)) return null;
+  var prop=inmuebleCostesPropietario(inm), reserva=Math.max(0,inm.reservaMensual||0), lim=(inm.ratioMax||35)/100;
+  var porIngresos=inmuebleRedondea2(ing*lim);
+  var gastos=(inm.flujo&&inm.flujo.gastos!=null)?inm.flujo.gastos:null;
+  var residual=(gastos==null)?null:inmuebleRedondea2(ing-gastos-reserva-prop.total);
+  var deseado=(inm.presupuestoDeseado>0)?inm.presupuestoDeseado:null;
+  var cand=[['ingresos',porIngresos]]; if(residual!=null) cand.push(['residual',Math.max(0,residual)]); if(deseado!=null) cand.push(['deseado',deseado]);
+  var min=cand.reduce(function(a,c){ return c[1]<a[1]?c:a; },cand[0]);
+  return {ingresosReconocidos:ing,limitePct:inm.ratioMax||35,limitePorIngresos:porIngresos,presupuestoResidual:residual,presupuestoDeseado:deseado,
+    gastosHogar:gastos,reservaMensual:reserva,costesPropietario:prop,cuotaMax:Math.floor(min[1]*100)/100,limitante:min[0]};
+}
+// Alternativas cuando la cuota del banco supera la cuota máxima (ORDEN 2.4): cambios limitados y explicables, cada uno con su efecto ya
+// calculado. Solo para la vía del banco (la cuota es una fórmula cerrada). null si no hace falta o no hay datos.
+function inmuebleAlternativas(inm){
+  var cm=inmuebleCuotaMaxModelo(inm), fin=inmuebleFin(inm); if(!cm||!(fin>0)) return null;
+  var b=inm.banco||{}, r=b.interesPrestamo||0, t=(b.tilgungInicial==null)?2:b.tilgungInicial;
+  var cuota=fin*(r+t)/1200; if(cuota<=cm.cuotaMax+0.005) return {cabe:true,cuota:inmuebleRedondea2(cuota),cuotaMax:cm.cuotaMax,opciones:[]};
+  var finMax=cm.cuotaMax*1200/(r+t), extra=inmuebleRedondea2(fin-finMax), op=[];
+  op.push({k:'capital',capitalExtra:extra,financiacionMax:inmuebleRedondea2(finMax)});
+  // Precio objetivo que encaja: se busca por bisección con la misma fórmula de financiación (incluye gastos en % o desglosados).
+  var lo=0, hi=Math.max(0,inm.precio||0);
+  for(var i=0;i<60;i++){ var mid=(lo+hi)/2, c=Object.assign({},inm,{precio:mid}); if(inmuebleFin(c)>finMax) hi=mid; else lo=mid; }
+  op.push({k:'precio',precioObjetivo:Math.floor(lo/100)*100,diferencia:Math.round((inm.precio||0)-Math.floor(lo/100)*100)});
+  // Amortización inicial mínima habitual (1 %): baja la cuota, pero queda más deuda al terminar el tipo fijo.
+  var cuotaMin=fin*(r+BANCO_TILGUNG_MIN_PCT)/1200, zm=Math.round((b.zinsbindung||10)*12);
+  op.push({k:'tilgung',tilgung:BANCO_TILGUNG_MIN_PCT,cuota:inmuebleRedondea2(cuotaMin),cabe:cuotaMin<=cm.cuotaMax+0.005,
+    restschuld:inmuebleRedondea2(balanceTrasMeses(fin,r,cuotaMin,zm))});
+  var ahorroMes=(inm.flujo&&inm.flujo.libreHoy>0)?inm.flujo.libreHoy:0;
+  op.push({k:'fecha',meses:(ahorroMes>0)?Math.ceil(extra/ahorroMes):null,ahorroMes:ahorroMes});
+  return {cabe:false,cuota:inmuebleRedondea2(cuota),cuotaMax:cm.cuotaMax,limitante:cm.limitante,opciones:op};
+}
 function inmuebleCuando(inm){ return (inm&&INM_CUANDO.indexOf(inm.cuando)>=0)?inm.cuando:'ahora'; }
 function inmuebleRequierePuente(inm){ return inmuebleCuando(inm)!=='esperar'; }
 
 // Límites de los campos numéricos: solo evitan valores absurdos (negativos, miles de millones…); no son recomendaciones.
 var INM_LIMITES={
+  ingresoVariable:[0,1e6], variableRecPct:[0,100], reservaMensual:[0,1e5], presupuestoDeseado:[0,1e5], mantenimientoPct:[0,5], hausgeld:[0,1e5], segurosProp:[0,1e5], energiaProp:[0,1e5], otrosProp:[0,1e5],
   precio:[0,1e8], ingresoNeto:[0,1e6], capitalPropio:[0,1e8], gastosPct:[0,30], pagoIgual:[0,1e6], reserva:[0,1e8], comprometido:[0,1e8], ayudas:[0,1e8],
   interesPrestamo:[0,20], interesAhorro:[0,20], interesOriginal:[0,20], recargoST:[0,5], comision:[0,10],
   zinsbindung:[0,40], plazoOriginal:[0,60], pct:[0,100], anios:[0,40], marcaAnios:[0,40], topeST:[0,100],
@@ -712,6 +771,9 @@ function normalizeInmueble(rec){
   if(inm.ingresoNeto==null||isNaN(inm.ingresoNeto)) inm.ingresoNeto=0;
   ['reserva','comprometido','ayudas'].forEach(function(k){ if(inm[k]==null||isNaN(inm[k])) inm[k]=0; });
   if(INM_CUANDO.indexOf(inm.cuando)<0) inm.cuando='ahora';
+  ['ingresoVariable','reservaMensual','presupuestoDeseado','hausgeld','segurosProp','energiaProp','otrosProp'].forEach(function(k){ if(inm[k]==null||isNaN(inm[k])) inm[k]=0; });
+  if(inm.variableRecPct==null||isNaN(inm.variableRecPct)) inm.variableRecPct=50;
+  if(inm.mantenimientoPct==null||isNaN(inm.mantenimientoPct)) inm.mantenimientoPct=1;
   if(inm.gastos!=null&&(typeof inm.gastos!=='object'||Array.isArray(inm.gastos))) delete inm.gastos;
   inmuebleAplicarDatosCliente(rec,inm);
   if(!Array.isArray(inm.curvaOff)) inm.curvaOff=[];
@@ -731,7 +793,7 @@ function normalizeInmueble(rec){
   if(inm.refi.banco.zinsbindung==null) inm.refi.banco.zinsbindung=def.refi.banco.zinsbindung;
   inmuebleSyncCompraRefi(inm);
   // Valores guardados fuera de límites (p. ej. un interés negativo tecleado antes de existir el recorte) se reponen al límite más cercano.
-  ['precio','ingresoNeto','capitalPropio','gastosPct','pagoIgual','reserva','comprometido','ayudas'].forEach(function(k){ if(typeof inm[k]==='number') inm[k]=inmuebleLimitar(k,inm[k]).v; });
+  ['precio','ingresoNeto','capitalPropio','gastosPct','pagoIgual','reserva','comprometido','ayudas','ingresoVariable','variableRecPct','reservaMensual','presupuestoDeseado','mantenimientoPct','hausgeld','segurosProp','energiaProp','otrosProp'].forEach(function(k){ if(typeof inm[k]==='number') inm[k]=inmuebleLimitar(k,inm[k]).v; });
   [inm.a,inm.b,inm.banco,inm.refi,inm.refi.a,inm.refi.b,inm.refi.banco].forEach(function(cfg){
     if(!cfg||typeof cfg!=='object') return;
     Object.keys(INM_LIMITES).forEach(function(k){ if(typeof cfg[k]==='number') cfg[k]=inmuebleLimitar(k,cfg[k]).v; });
@@ -830,4 +892,4 @@ function inmuebleToggleCurvaTipo(inm,r){
 }
 function inmuebleSetCurvaModo(inm,modo){ inm.curvaModo=(modo==='bauspar'||modo==='plazo')?modo:'banco'; inm.curvaOff=[]; }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleNecesidadFondos, inmuebleGastosTotal, inmuebleGastosPartidas, inmuebleGastosTipicos, inmuebleCapitalUtilizable, inmuebleCuando, inmuebleRequierePuente, INM_BUNDESLAENDER, INM_PARTIDAS, inmuebleCostePuente, inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCuandoComprar, inmuebleCuotasBancoRealistas, inmuebleCapitalNivel, tilgungsbeitragParaPlazo, inmuebleCurvaPuntos, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleIngresosReconocidos, inmuebleCostesPropietario, inmuebleCuotaMaxModelo, inmuebleAlternativas, INM_PROPIETARIO, inmuebleNecesidadFondos, inmuebleGastosTotal, inmuebleGastosPartidas, inmuebleGastosTipicos, inmuebleCapitalUtilizable, inmuebleCuando, inmuebleRequierePuente, INM_BUNDESLAENDER, INM_PARTIDAS, inmuebleCostePuente, inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCuandoComprar, inmuebleCuotasBancoRealistas, inmuebleCapitalNivel, tilgungsbeitragParaPlazo, inmuebleCurvaPuntos, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }

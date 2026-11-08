@@ -789,6 +789,73 @@ test('un proyecto guardado antes de estos campos se carga igual: mismos importes
   const otra = engine.normalizeInmueble({ inmueble: JSON.parse(JSON.stringify(inm)) }); assert.deepStrictEqual(otra, inm); // idempotente
 });
 
+console.log('\nCapacidad de pago sostenible (Fase 2 de la especificación: ORDEN 2.1, 2.2, 2.3, 2.4)');
+const base2 = (o) => engine.normalizeInmueble({ inmueble: Object.assign({ modo: 'compra', precio: 200000, gastosPct: 10, capitalPropio: 40000 }, o) });
+test('ingresos reconocidos: lo variable solo cuenta en el % indicado (50 % por defecto)', () => {
+  assert.strictEqual(engine.inmuebleIngresosReconocidos(base2({ ingresoNeto: 4000 })), 4000);
+  assert.strictEqual(engine.inmuebleIngresosReconocidos(base2({ ingresoNeto: 4000, ingresoVariable: 1000 })), 3500);
+  assert.strictEqual(engine.inmuebleIngresosReconocidos(base2({ ingresoNeto: 4000, ingresoVariable: 1000, variableRecPct: 0 })), 3000);
+  assert.strictEqual(engine.inmuebleIngresosReconocidos(base2({ ingresoNeto: 4000, ingresoVariable: 9000, variableRecPct: 100 })), 4000); // lo variable nunca supera el ingreso
+});
+test('costes de propietario: mantenimiento estimado (% anual del precio) más los importes conocidos, por separado', () => {
+  const c = engine.inmuebleCostesPropietario(base2({ hausgeld: 250, segurosProp: 40, energiaProp: 120, otrosProp: 10 }));
+  near(c.partidas[0].importe, 200000 * 0.01 / 12, 0.01); assert.strictEqual(c.partidas[0].estimado, true);
+  near(c.total, 200000 * 0.01 / 12 + 250 + 40 + 120 + 10, 0.01);
+  assert.strictEqual(engine.inmuebleCostesPropietario(base2({ mantenimientoPct: 0 })).total, 0);
+});
+test('cuota máxima = mínimo de límite por ingresos, presupuesto residual y presupuesto deseado, e indica cuál manda', () => {
+  const ficha = { ingresoTotal: 4000, gastos: 1800, libre: 2200, gastosTotales: 2300, libreHoy: 1700, liquido: 20000 };
+  const inm = base2({ ingresoNeto: 4000, ingresoVariable: 1000, reservaMensual: 100 }); inm.flujo = ficha;
+  const m = engine.inmuebleCuotaMaxModelo(inm), prop = 200000 * 0.01 / 12;
+  near(m.limitePorIngresos, 3500 * 0.35, 0.01); near(m.presupuestoResidual, 3500 - 1800 - 100 - prop, 0.01);
+  near(m.cuotaMax, Math.min(3500 * 0.35, 3500 - 1800 - 100 - prop), 0.01); assert.strictEqual(m.limitante, 'ingresos');
+  inm.presupuestoDeseado = 1000; const d = engine.inmuebleCuotaMaxModelo(inm); assert.strictEqual(d.cuotaMax, 1000); assert.strictEqual(d.limitante, 'deseado');
+  inm.presupuestoDeseado = 0; inm.flujo = Object.assign({}, ficha, { gastos: 3300 }); // gastos altos: el residual manda y puede quedar en 0
+  const r = engine.inmuebleCuotaMaxModelo(inm); assert.strictEqual(r.limitante, 'residual'); assert.strictEqual(r.cuotaMax, 0);
+});
+test('sin ficha solo hay límite por ingresos (no se inventa el presupuesto residual); sin ingresos no hay cuota máxima', () => {
+  const m = engine.inmuebleCuotaMaxModelo(base2({ ingresoNeto: 3000 }));
+  assert.strictEqual(m.presupuestoResidual, null); assert.strictEqual(m.limitante, 'ingresos'); near(m.cuotaMax, 1050, 0.01);
+  assert.strictEqual(engine.inmuebleCuotaMaxModelo(base2({})), null);
+});
+test('alternativas: si la cuota cabe no hay nada que proponer; si no cabe cada alternativa trae su efecto calculado', () => {
+  const inm = base2({ ingresoNeto: 3000, presupuestoDeseado: 700, reserva: 5000 }); inm.flujo = { ingresoTotal: 3000, gastos: 1000, libre: 2000, gastosTotales: 1000, libreHoy: 1200, liquido: 0 };
+  inm.banco.interesPrestamo = 3.5; inm.banco.tilgungInicial = 2;
+  const fin = engine.inmuebleFin(inm); near(fin, 185000, 0.01);
+  const a = engine.inmuebleAlternativas(inm); assert.strictEqual(a.cabe, false); near(a.cuota, 185000 * 5.5 / 1200, 0.01); near(a.cuotaMax, 700, 0.01);
+  const o = (k) => a.opciones.filter((x) => x.k === k)[0], finMax = 700 * 1200 / 5.5;
+  near(o('capital').capitalExtra, 185000 - finMax, 0.01);
+  const rec = Object.assign({}, inm, { precio: o('precio').precioObjetivo }); assert(engine.inmuebleFin(rec) <= finMax + 0.01);
+  assert(engine.inmuebleFin(Object.assign({}, inm, { precio: o('precio').precioObjetivo + 100 })) > finMax - 0.01); // es el mayor precio (a múltiplos de 100) que encaja
+  near(o('tilgung').cuota, 185000 * 4.5 / 1200, 0.01); assert.strictEqual(o('tilgung').cabe, true); assert(o('tilgung').restschuld > 0);
+  assert.strictEqual(o('fecha').meses, Math.ceil(o('capital').capitalExtra / 1200));
+  inm.presupuestoDeseado = 5000; assert.strictEqual(engine.inmuebleAlternativas(inm).cabe, true);
+});
+test('un proyecto antiguo se carga con los campos nuevos por defecto y sin cambiar sus importes', () => {
+  const inm = engine.normalizeInmueble({ inmueble: { modo: 'compra', precio: 250000, gastosPct: 10, capitalPropio: 50000 } });
+  assert.strictEqual(inm.variableRecPct, 50); assert.strictEqual(inm.mantenimientoPct, 1); assert.strictEqual(inm.reservaMensual, 0); assert.strictEqual(inm.presupuestoDeseado, 0);
+  assert.strictEqual(engine.inmuebleFin(inm), 225000);
+});
+
+test('barrido casos A–E × tres ingresos: la cuota máxima crece con el ingreso y cada alternativa de capital o de precio hace que la cuota quepa', () => {
+  const casos = [[150000, 15000, 30000, 5000], [180000, 18000, 40000, 5000], [200000, 20000, 40000, 5000], [250000, 25000, 60000, 10000], [300000, 30000, 80000, 15000]];
+  casos.forEach(([precio, gastos, cap, reserva]) => {
+    let previa = -1;
+    [2500, 4000, 6500].forEach((ing) => {
+      const inm = base2({ precio, gastosPct: gastos / precio * 100, capitalPropio: cap, reserva, ingresoNeto: ing });
+      inm.flujo = { ingresoTotal: ing, gastos: Math.round(ing * 0.45), libre: 0, gastosTotales: 0, libreHoy: Math.round(ing * 0.2), liquido: 0 };
+      inm.banco.interesPrestamo = 3.5; inm.banco.tilgungInicial = 2;
+      const m = engine.inmuebleCuotaMaxModelo(inm); assert(m.cuotaMax >= previa, 'cuota máxima no decrece con el ingreso'); previa = m.cuotaMax;
+      const a = engine.inmuebleAlternativas(inm); if (a.cabe) return;
+      const r = 3.5 + 2, ex = a.opciones.filter((x) => x.k === 'capital')[0];
+      const conCapital = Object.assign({}, inm, { capitalPropio: inm.capitalPropio + ex.capitalExtra + 1 });
+      assert(engine.inmuebleFin(conCapital) * r / 1200 <= m.cuotaMax + 0.01, 'con ese capital extra la cuota cabe');
+      const pr = a.opciones.filter((x) => x.k === 'precio')[0].precioObjetivo, conPrecio = Object.assign({}, inm, { precio: pr });
+      assert(engine.inmuebleFin(conPrecio) * r / 1200 <= m.cuotaMax + 0.01, 'con ese precio la cuota cabe');
+    });
+  });
+});
+
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');
 gaps.forEach(g => console.log('  · ' + g));
 process.exit(failed ? 1 : 0);
