@@ -65,6 +65,40 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .hero-toggle{display:flex;border:1px solid rgba(255,255,255,.18);border-radius:8px;overflow:hidden}
 .hero-toggle button{flex:1;padding:.5rem;font-size:.78rem;border:none;background:transparent;cursor:pointer;font-family:var(--sans);color:rgba(255,255,255,.6);transition:all .15s}
 .hero-toggle button.active{background:var(--gold);color:var(--midnight);font-weight:600}
+.fut-ages{display:flex;flex-wrap:wrap;gap:.5rem;margin:.9rem 0}
+.fut-age{font:inherit;font-weight:600;padding:.55rem 1.1rem;border-radius:999px;border:1px solid var(--line,#e8e3d6);background:#fff;color:var(--navy,#14213d);cursor:pointer;transition:all .18s}
+.fut-age:hover{border-color:var(--gold,#c9a961)}
+.fut-age[aria-selected="true"]{background:var(--navy,#14213d);color:#fff;border-color:var(--navy,#14213d)}
+.fut-age:disabled{opacity:.45;cursor:not-allowed}
+.fut-custom{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;font-size:.85rem;color:var(--slate,#64748b);margin-bottom:1rem}
+.fut-custom input{width:4.2rem;padding:.4rem .5rem;border:1px solid var(--line,#e8e3d6);border-radius:8px;font:inherit}
+.fut-custom button{font:inherit;font-size:.82rem;font-weight:600;padding:.4rem .9rem;border-radius:999px;border:1px solid var(--gold,#c9a961);background:transparent;color:var(--navy,#14213d);cursor:pointer}
+.fut-card{background:#fff;border:1px solid var(--line,#e8e3d6);border-radius:16px;padding:1.4rem;margin-bottom:1rem}
+.fut-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:1.5rem}
+@media(max-width:760px){.fut-grid{grid-template-columns:1fr}}
+.fut-stage{font-family:var(--serif,Georgia,serif);font-size:1.35rem;color:var(--navy,#14213d);margin:.1rem 0 .3rem}
+.fut-msg{color:var(--slate,#64748b);font-size:.92rem;line-height:1.55;margin:0 0 1rem}
+.fut-cap{font-family:var(--serif,Georgia,serif);font-size:2.3rem;color:var(--navy,#14213d);line-height:1.1}
+.fut-cap small{font-size:1.1rem;color:var(--gold-deep,#a8842f)}
+.fut-lbl{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep,#a8842f);margin-bottom:.25rem}
+.fut-rows{margin-top:.8rem;font-size:.84rem;color:var(--slate,#64748b);line-height:1.7}
+.fut-rows b{color:var(--navy,#14213d);font-weight:600}
+.fut-warn{margin-top:.6rem;font-size:.82rem;color:#9a4a3a}
+.fut-obj-title{font-weight:700;color:var(--navy,#14213d);margin:0 0 .3rem}
+.fut-hint{font-size:.8rem;color:var(--slate,#64748b);margin:0 0 .8rem}
+.fo{padding:.7rem 0;border-top:1px solid var(--line-soft,#f3efe6)}
+.fo-top{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1rem}
+.fo-chk{display:flex;align-items:center;gap:.5rem;font-weight:600;color:var(--navy,#14213d);cursor:pointer;flex:1 1 12rem}
+.fo-chk input{width:1.05rem;height:1.05rem;accent-color:var(--navy,#14213d)}
+.fo-cost{display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--slate,#64748b)}
+.fo-cost input{width:6rem;padding:.35rem .5rem;border:1px solid var(--line,#e8e3d6);border-radius:8px;font:inherit;text-align:right}
+.fo-res{display:block;font-size:.8rem;color:var(--slate,#64748b);margin-top:.35rem;line-height:1.45}
+.fo-res b{color:var(--navy,#14213d)}
+.fut-map{background:var(--surface-soft,#fff);border:1px dashed var(--gold-soft,#e3d4ab);border-radius:16px;padding:1.2rem 1.4rem;margin-bottom:.8rem}
+.fut-map h3{font-family:var(--serif,Georgia,serif);font-size:1.15rem;margin:0 0 .4rem;color:var(--navy,#14213d)}
+.fut-map ul{margin:.4rem 0;padding-left:1.1rem;font-size:.88rem;line-height:1.6;color:var(--navy,#14213d)}
+.fut-map .fm-sub{font-size:.78rem;color:var(--slate,#64748b)}
+.fut-note{font-size:.76rem;color:var(--slate,#64748b);line-height:1.5}
 .hero-toggle{flex-wrap:wrap}.hero-toggle button{min-width:5.2rem}
 .result-real{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin:-1rem 0 1rem;font-size:.76rem;color:rgba(255,255,255,.6)}
 .result-real .seg-r{display:inline-flex;border:1px solid rgba(255,255,255,.18);border-radius:999px;overflow:hidden}
@@ -358,6 +392,8 @@ body.adv .adv-only{display:block}
   </div>
 </section>
 
+<section class="section" id="fut-root"></section>
+
 <section class="section" id="hc-root"></section>
 
 <section class="section" id="rec-root"></section>
@@ -574,6 +610,22 @@ function calcPlan(){
   return {years,ageAtTarget,capital:d.capital,raw:d.raw,h:d.h,contributed:d.contributed,extraPaid:d.extraPaid,riskTotal:d.riskTotal,growth};
 }
 
+// ===== El futuro de tu hijo/a: capital por edad y coste de los objetivos. Usa SOLO el motor de arriba (simulate), sin fórmulas propias. =====
+const FUT_AGES=[16,18,20,22,25,30];
+// 0 = se muestran todas las edades (con aviso si el capital queda por debajo de lo aportado). 5 = aplica la regla «proyecciones solo desde el año 5 del contrato»
+// del prompt maestro, que está en consulta con cumplimiento: no activarla sin esa respuesta. El motor calcula siempre desde el primer mes.
+const FUT_MIN_VISIBLE_YEARS=0;
+function futAt(age){
+  const years=age-S.childAge;
+  if(!(years>0))return {ok:false,reason:'past',years};
+  if(years<MIN_YEARS)return {ok:false,reason:'short',years};
+  if(years<FUT_MIN_VISIBLE_YEARS)return {ok:false,reason:'hidden',years};
+  const d=simulate(years), pocket=d.contributed+d.extraPaid;
+  return {ok:true,age,years,year:THIS_YEAR+years,capital:d.capital,pocket,growth:d.capital-d.invested-d.extraPaid,real:d.capital/Math.pow(1+S.infl/100,years),below:d.capital<pocket};
+}
+// Coste futuro hipotético de un objetivo: presupuesto de hoy × (1 + inflación)^años. Solo con presupuesto escrito por el usuario (cost0 > 0).
+function futCost(cost0,years){ return (cost0>0&&years>=0)?cost0*Math.pow(1+S.infl/100,years):null; }
+
 function countUp(el,to,dur=900){
   const from=parseFloat(el.dataset.v||'0')||0;el.dataset.v=to;
   if(window.matchMedia('(prefers-reduced-motion:reduce)').matches){el.textContent=eur(to);return;}
@@ -671,6 +723,148 @@ function renderCombo(p){
 }
 $('r-combo').addEventListener('click',e=>{if(!e.target.closest('#r-combo-apply'))return; Object.assign(C,recoConfig()); syncHeroAdv(); render();});
 
+// ---------- El futuro de tu hijo/a: pantalla ----------
+// Catálogo de objetivos: nombre, categoría y edad orientativa. NO lleva precios: el presupuesto lo escribe el usuario (no se inventan precios de mercado).
+const FUT_STAGES=[
+  {age:16,t:{es:'Primeras experiencias',en:'First experiences',de:'Erste Erfahrungen'},m:{es:'Las primeras oportunidades también forman parte de su futuro.',en:'The first opportunities are also part of their future.',de:'Auch die ersten Chancen gehören zur Zukunft.'}},
+  {age:18,t:{es:'Independencia',en:'Independence',de:'Selbstständigkeit'},m:{es:'Cuando llegue el momento de dar sus primeros pasos, una buena planificación puede abrirle posibilidades.',en:'When the time comes to take their first steps, good planning can open up possibilities.',de:'Wenn die ersten Schritte anstehen, kann gute Planung Möglichkeiten eröffnen.'}},
+  {age:20,t:{es:'Formación',en:'Education',de:'Ausbildung'},m:{es:'Invertir en su formación puede ayudarle a construir nuevas oportunidades.',en:'Investing in their education can help build new opportunities.',de:'Die Investition in die Ausbildung kann helfen, neue Chancen aufzubauen.'}},
+  {age:22,t:{es:'Nuevos horizontes',en:'New horizons',de:'Neue Horizonte'},m:{es:'Su mundo crece, y sus oportunidades también.',en:'Their world grows, and so do their opportunities.',de:'Ihre Welt wächst, und mit ihr die Möglichkeiten.'}},
+  {age:25,t:{es:'Independencia económica',en:'Financial independence',de:'Finanzielle Unabhängigkeit'},m:{es:'Un respaldo financiero puede facilitar sus primeras grandes decisiones.',en:'Financial backing can make their first big decisions easier.',de:'Ein finanzielles Polster kann die ersten großen Entscheidungen erleichtern.'}},
+  {age:30,t:{es:'Construcción de patrimonio',en:'Building wealth',de:'Vermögensaufbau'},m:{es:'El ahorro de hoy puede convertirse en una base para sus proyectos futuros.',en:'Today’s savings can become a base for their future projects.',de:'Das Ersparte von heute kann zur Basis für künftige Projekte werden.'}}
+];
+const FUT_OBJ=[
+  {id:'pc',age:16,cat:'edu',n:{es:'Primer ordenador personal',en:'First personal computer',de:'Erster eigener Computer'}},
+  {id:'sports',age:16,cat:'edu',n:{es:'Actividades deportivas o artísticas',en:'Sports or arts activities',de:'Sport- oder Kunstaktivitäten'}},
+  {id:'exchange',age:16,cat:'viajes',n:{es:'Intercambio escolar',en:'School exchange',de:'Schüleraustausch'}},
+  {id:'lang16',age:16,cat:'idiomas',n:{es:'Curso de idiomas',en:'Language course',de:'Sprachkurs'}},
+  {id:'edutrip',age:16,cat:'viajes',n:{es:'Viaje educativo',en:'Educational trip',de:'Bildungsreise'}},
+  {id:'license',age:18,cat:'movilidad',n:{es:'Permiso de conducir',en:'Driving licence',de:'Führerschein'}},
+  {id:'car',age:18,cat:'movilidad',n:{es:'Primer coche',en:'First car',de:'Erstes Auto'}},
+  {id:'trip',age:18,cat:'viajes',n:{es:'Viaje internacional',en:'International trip',de:'Auslandsreise'}},
+  {id:'english',age:18,cat:'idiomas',n:{es:'Curso intensivo de inglés',en:'Intensive English course',de:'Intensiver Englischkurs'}},
+  {id:'vocational',age:18,cat:'edu',n:{es:'Formación profesional',en:'Vocational training',de:'Berufsausbildung'}},
+  {id:'uni',age:18,cat:'edu',n:{es:'Inicio de estudios universitarios',en:'Start of university studies',de:'Studienbeginn'}},
+  {id:'abroad',age:20,cat:'viajes',n:{es:'Semestre en el extranjero',en:'Semester abroad',de:'Auslandssemester'}},
+  {id:'special',age:20,cat:'edu',n:{es:'Formación especializada',en:'Specialised training',de:'Spezialisierte Weiterbildung'}},
+  {id:'gear',age:20,cat:'edu',n:{es:'Equipamiento para estudios',en:'Study equipment',de:'Ausstattung fürs Studium'}},
+  {id:'intl',age:20,cat:'viajes',n:{es:'Experiencias internacionales',en:'International experiences',de:'Internationale Erfahrungen'}},
+  {id:'prof',age:20,cat:'edu',n:{es:'Cursos profesionales',en:'Professional courses',de:'Berufliche Kurse'}},
+  {id:'master',age:22,cat:'edu',n:{es:'Máster',en:'Master’s degree',de:'Masterstudium'}},
+  {id:'erasmus',age:22,cat:'viajes',n:{es:'Programa Erasmus',en:'Erasmus programme',de:'Erasmus-Programm'}},
+  {id:'intern',age:22,cat:'edu',n:{es:'Prácticas internacionales',en:'International internship',de:'Internationales Praktikum'}},
+  {id:'langabroad',age:22,cat:'idiomas',n:{es:'Curso de idiomas en otro país',en:'Language course abroad',de:'Sprachkurs im Ausland'}},
+  {id:'move',age:22,cat:'independencia',n:{es:'Mudanza por estudios o trabajo',en:'Moving for studies or work',de:'Umzug für Studium oder Beruf'}},
+  {id:'rent',age:25,cat:'independencia',n:{es:'Primera vivienda de alquiler',en:'First rented home',de:'Erste Mietwohnung'}},
+  {id:'deposit',age:25,cat:'independencia',n:{es:'Depósito de alquiler y mobiliario',en:'Rental deposit and furniture',de:'Mietkaution und Möbel'}},
+  {id:'spec',age:25,cat:'edu',n:{es:'Especialización profesional',en:'Professional specialisation',de:'Berufliche Spezialisierung'}},
+  {id:'business',age:25,cat:'patrimonio',n:{es:'Inicio de un negocio',en:'Starting a business',de:'Unternehmensgründung'}},
+  {id:'emergency',age:25,cat:'independencia',n:{es:'Fondo de emergencia',en:'Emergency fund',de:'Notgroschen'}},
+  {id:'home',age:30,cat:'patrimonio',n:{es:'Capital inicial para una vivienda',en:'Starting capital for a home',de:'Eigenkapital für eine Wohnung'}},
+  {id:'project',age:30,cat:'patrimonio',n:{es:'Proyecto empresarial',en:'Business project',de:'Unternehmerisches Projekt'}},
+  {id:'train30',age:30,cat:'edu',n:{es:'Formación adicional',en:'Additional training',de:'Zusätzliche Weiterbildung'}},
+  {id:'reserve',age:30,cat:'patrimonio',n:{es:'Reserva financiera',en:'Financial reserve',de:'Finanzielle Reserve'}},
+  {id:'keep',age:30,cat:'patrimonio',n:{es:'Continuación del ahorro a largo plazo',en:'Continuing long-term saving',de:'Langfristiges Weitersparen'}}
+];
+const FUT={age:18,sel:{},custom:[],built:false};
+const futFmt=v=>eur(Math.round(v));
+const futStageFor=age=>{let st=FUT_STAGES[0];FUT_STAGES.forEach(x=>{if(x.age<=age)st=x;});return st;};
+const futAgeList=()=>[...new Set(FUT_AGES.concat(FUT.custom))].sort((a,b)=>a-b).filter(a=>a>S.childAge);
+function futEnsureAge(){
+  const l=futAgeList(); if(l.includes(FUT.age))return false;
+  const ok=l.find(a=>a-S.childAge>=MIN_YEARS); FUT.age=ok||l[0]||FUT.age; return true;
+}
+function buildFuture(){
+  const root=$('fut-root'); if(!root)return;
+  root.innerHTML=`<div class="section-head"><div class="section-eyebrow">${tx(X.futEy)}</div><h2 class="section-title">${tx(X.futTitle)}</h2><p class="section-lede">${tx(X.futLede)}</p></div>
+  <div class="fut-ages" id="fut-ages" role="tablist"></div>
+  <div class="fut-custom"><label for="fut-custom-age">${tx(X.futCustom)}</label><input type="number" id="fut-custom-age" min="${Math.ceil(S.childAge)+1}" max="60" step="1" inputmode="numeric"><button type="button" id="fut-custom-add">${tx(X.futAdd)}</button></div>
+  <div class="fut-card" id="fut-card" aria-live="polite"></div>
+  <div class="fut-map" id="fut-map"></div>
+  <p class="fut-note">${tx(X.futNote)}</p>`;
+  FUT.built=true; futEnsureAge(); buildFutCard(); updateFut();
+}
+function futAgesBar(){
+  const el=$('fut-ages'); if(!el)return;
+  el.innerHTML=futAgeList().map(a=>{const yrs=a-S.childAge, off=yrs<MIN_YEARS;
+    return `<button type="button" class="fut-age" role="tab" data-fut-age="${a}" aria-selected="${a===FUT.age}"${off?' disabled title="'+tx(X.futTooShort).replace('{0}',MIN_YEARS)+'"':''}>${tx(X.futYears).replace('{0}',a)}</button>`;}).join('');
+}
+// La tarjeta de la etapa (título, mensaje y objetivos con sus campos). Se reconstruye al cambiar de edad o de idioma, no al teclear (para no perder el cursor).
+function buildFutCard(){
+  const card=$('fut-card'); if(!card)return;
+  const st=futStageFor(FUT.age), objs=FUT_OBJ.filter(o=>o.age===st.age);
+  card.innerHTML=`<div class="fut-grid"><div>
+      <div class="fut-lbl">${tx(X.futRAge)} ${FUT.age}</div><h3 class="fut-stage">${tx(st.t)}</h3><p class="fut-msg">${tx(st.m)}</p>
+      <div id="fut-calc"></div></div>
+    <div><p class="fut-obj-title">${tx(X.futObjTitle)}</p><p class="fut-hint">${tx(X.futObjHint)}</p>
+      <label class="fo-cost" style="margin-bottom:.4rem">${tx(X.futInflLbl)} <input type="number" id="fut-infl" min="0" max="6" step="0.5" value="${S.infl}"> %</label>
+      ${objs.map(o=>{const sl=FUT.sel[o.id]||{};return `<div class="fo" data-fo="${o.id}"><div class="fo-top">
+        <label class="fo-chk"><input type="checkbox" data-fo-on="${o.id}"${sl.on?' checked':''}><span>${tx(o.n)}</span></label>
+        <label class="fo-cost">${tx(X.futCostLbl)} <input type="number" min="0" step="50" inputmode="decimal" data-fo-cost="${o.id}" value="${sl.cost>0?sl.cost:''}" placeholder="€"> €</label></div>
+        <span class="fo-res" id="fo-res-${o.id}"></span></div>`;}).join('')}
+    </div></div>`;
+}
+function updateFut(){
+  if(!FUT.built||!$('fut-card'))return;
+  futAgesBar();
+  const r=futAt(FUT.age), calc=$('fut-calc');
+  if(calc){
+    if(!r.ok){
+      calc.innerHTML='<p class="fut-hint">'+tx(r.reason==='short'?X.futTooShort:r.reason==='hidden'?X.futHidden:X.futPast).replace('{0}',MIN_YEARS)+'</p>';
+    } else {
+      const main=deflate(r.capital,r.years);
+      calc.innerHTML=`<div class="fut-lbl">${tx(X.futCapLbl)}</div><div class="fut-cap">${futFmt(main)} <small>€</small></div>
+        <div class="fut-rows"><div>${tx(X.futRAge)}: <b>${r.age}</b> · ${tx(X.futRYear)}: <b>${r.year}</b> · ${tx(X.futRElapsed)}: <b>${tx(X.futYears).replace('{0}',r.years)}</b></div>
+        <div>${tx(X.futRPocket)}: <b>${futFmt(r.pocket)} €</b></div>
+        <div>${tx(X.futRGrowth)}: <b>${(r.growth<0?'−':'')+futFmt(Math.abs(r.growth))} €</b></div>
+        <div>${tx(X.futRScn)}: <b>${tx(X.futPerYear).replace('{0}',S.ret)}</b> · ${tx(X.futRCosts)}: ${tx(X.futCostsVal)}</div>
+        <div>${tx(X.futRealNote).replace('{0}',futFmt(S.real?r.capital:r.real)).replace('{1}',S.infl)}</div></div>
+        <p class="fut-hint" style="margin-top:.5rem">${tx(X.futCapSub)}</p>`+(r.below?'<p class="fut-warn">'+tx(X.futBelow)+'</p>':'');
+    }
+  }
+  document.querySelectorAll('[data-fo]').forEach(row=>{
+    const id=row.getAttribute('data-fo'), sl=FUT.sel[id]||{}, out=$('fo-res-'+id); if(!out)return;
+    if(!r.ok){out.textContent=tx(X.futObjShort);return;}
+    const fc=futCost(sl.cost,r.years);
+    if(fc===null){out.textContent=tx(X.futNoCost);return;}
+    const diff=r.capital-fc;
+    out.innerHTML=tx(X.futNeed).replace('{0}',futFmt(fc)).replace('{1}',r.capital>0?(fc/r.capital*100).toFixed(0):'—')+' '+(diff>=0?tx(X.futCovers):tx(X.futMissing).replace('{0}',futFmt(-diff)));
+  });
+  futMap();
+}
+// Mapa de futuro: todos los objetivos marcados (de cualquier edad), con su coste futuro si tienen presupuesto. No se descuenta del capital.
+function futMap(){
+  const el=$('fut-map'); if(!el)return;
+  const chosen=FUT_OBJ.filter(o=>FUT.sel[o.id]&&FUT.sel[o.id].on);
+  if(!chosen.length){el.innerHTML=`<h3>${tx(X.futMapTitle)}</h3><p class="fm-sub">${tx(X.futMapEmpty)}</p>`;return;}
+  let total=0;
+  const items=chosen.map(o=>{const sl=FUT.sel[o.id], age=sl.age||o.age, yrs=age-S.childAge, fc=futCost(sl.cost,yrs); if(fc!==null)total+=fc;
+    return `<li>${tx(o.n)} · ${tx(X.futMapAtAge).replace('{0}',age)} · ${fc!==null?'<b>'+futFmt(fc)+' €</b>':'<span class="fm-sub">'+tx(X.futMapNoBudget)+'</span>'}</li>`;}).join('');
+  el.innerHTML=`<h3>${tx(X.futMapTitle)}</h3><p class="fm-sub">${chosen.length===1?tx(X.futMapCount1):tx(X.futMapCount).replace('{0}',chosen.length)}</p><ul>${items}</ul>`+(total>0?`<p>${tx(X.futMapTotal).replace('{0}',futFmt(total))}</p>`:'')+`<p class="fm-sub">${tx(X.futMapNote)}</p>`;
+}
+function futSync(){
+  if(!FUT.built)return;
+  const changed=futEnsureAge(); if(changed)buildFutCard();
+  updateFut();
+}
+$('fut-root').addEventListener('click',e=>{
+  const b=e.target.closest('[data-fut-age]');
+  if(b&&!b.disabled){FUT.age=parseInt(b.dataset.futAge,10); buildFutCard(); updateFut(); return;}
+  if(e.target.closest('#fut-custom-add')){
+    const inp=$('fut-custom-age'); let v=Math.round(parseFloat(inp.value)); if(isNaN(v)||v<=S.childAge||v>60)return;
+    if(!FUT_AGES.includes(v)&&!FUT.custom.includes(v))FUT.custom.push(v); FUT.age=v; inp.value=''; buildFutCard(); updateFut();
+  }
+});
+$('fut-root').addEventListener('change',e=>{
+  const on=e.target.getAttribute&&e.target.getAttribute('data-fo-on');
+  if(on){const sl=FUT.sel[on]||(FUT.sel[on]={}); sl.on=e.target.checked; sl.age=FUT.age; updateFut(); return;}
+  if(e.target.id==='fut-infl'){let v=parseFloat(e.target.value); if(isNaN(v))v=S.infl; S.infl=Math.min(6,Math.max(0,v)); render();}
+});
+$('fut-root').addEventListener('input',e=>{
+  const id=e.target.getAttribute&&e.target.getAttribute('data-fo-cost'); if(!id)return;
+  const sl=FUT.sel[id]||(FUT.sel[id]={}); const v=parseFloat(e.target.value); sl.cost=(isNaN(v)||v<0)?0:Math.min(1e8,v); sl.age=FUT.age; updateFut();
+});
+
 function render(){
   if(document.activeElement!==$('v-childage'))$('v-childage').value=Math.round(S.childAge);
   if(document.activeElement!==$('v-monthly'))$('v-monthly').value=Math.round(S.monthly);
@@ -716,7 +910,7 @@ function render(){
   $('e-gain-note').textContent=S.real?tx(X.realGain).replace('{0}',S.infl):(p.growth<0?'Una pérdida de '+eurc(-p.growth):'Un crecimiento de '+eurc(p.growth));
 
   renderChart(p.years);
-  syncReal(p); renderRange(p); renderCombo(p);
+  syncReal(p); renderRange(p); renderCombo(p); futSync();
   renderCovers(p); syncHeroAdv(); updateHealth(); updateRec();
 }
 
@@ -773,6 +967,39 @@ $('fase2-toggle').addEventListener('click',()=>{
 const LNG=()=>{const l=document.documentElement.lang;return (l==='de'||l==='en')?l:'es';};
 const tx=o=>o[LNG()]||o.es;
 const X={
+  futEy:{es:'Su futuro',en:'Their future',de:'Seine/Ihre Zukunft'},
+  futTitle:{es:'Su futuro está lleno de posibilidades',en:'Their future is full of possibilities',de:'Die Zukunft steckt voller Möglichkeiten'},
+  futLede:{es:'Descubre cómo podría evolucionar el ahorro de tu hijo y qué proyectos podría ayudarle a realizar en cada etapa.',en:'Discover how your child’s savings could evolve and which projects they could help make happen at each stage.',de:'Entdecken Sie, wie sich die Ersparnisse Ihres Kindes entwickeln könnten und welche Projekte sie in jeder Phase unterstützen könnten.'},
+  futCustom:{es:'Otra edad',en:'Another age',de:'Anderes Alter'}, futAdd:{es:'Añadir',en:'Add',de:'Hinzufügen'},
+  futTooShort:{es:'Esta edad queda demasiado cerca: el plan necesita al menos {0} años de duración.',en:'This age is too close: the plan needs a duration of at least {0} years.',de:'Dieses Alter ist zu nah: Der Plan braucht mindestens {0} Jahre Laufzeit.'},
+  futHidden:{es:'Las proyecciones de esta herramienta se presentan a partir del quinto año del contrato.',en:'The projections in this tool are shown from the fifth year of the contract.',de:'Die Projektionen dieses Tools werden ab dem fünften Vertragsjahr angezeigt.'},
+  futPast:{es:'Esta edad ya ha pasado.',en:'This age has already passed.',de:'Dieses Alter ist bereits erreicht.'},
+  futCapLbl:{es:'Capital estimado a esa edad',en:'Estimated capital at that age',de:'Geschätztes Kapital in diesem Alter'},
+  futCapSub:{es:'Calculado con el plan y el escenario que tienes seleccionados, con el ajuste orientativo por costes del contrato.',en:'Calculated with the plan and scenario you have selected, with the indicative contract-cost adjustment.',de:'Berechnet mit dem ausgewählten Plan und Szenario, inklusive des Richtwerts für Vertragskosten.'},
+  futRAge:{es:'Edad',en:'Age',de:'Alter'}, futRYear:{es:'Año',en:'Year',de:'Jahr'}, futRElapsed:{es:'Tiempo desde el inicio',en:'Time since the start',de:'Zeit seit Beginn'},
+  futRPocket:{es:'Total aportado',en:'Total contributed',de:'Insgesamt eingezahlt'}, futRGrowth:{es:'Resultado estimado de la inversión',en:'Estimated investment result',de:'Geschätztes Anlageergebnis'},
+  futRScn:{es:'Escenario',en:'Scenario',de:'Szenario'}, futRCosts:{es:'Costes',en:'Costs',de:'Kosten'},
+  futCostsVal:{es:'ajuste orientativo por costes del contrato incluido',en:'indicative contract-cost adjustment included',de:'Richtwert für Vertragskosten enthalten'},
+  futYears:{es:'{0} años',en:'{0} years',de:'{0} Jahre'}, futPerYear:{es:'{0} % anual',en:'{0} % a year',de:'{0} % pro Jahr'},
+  futRealNote:{es:'Equivale a unos {0} € de hoy (inflación supuesta del {1} %).',en:'Equivalent to about {0} € in today’s money (assumed inflation {1} %).',de:'Entspricht etwa {0} € in heutiger Kaufkraft (angenommene Inflation {1} %).'},
+  futBelow:{es:'Con este plazo el capital estimado queda por debajo de lo aportado: los costes de entrada pesan más en los primeros años.',en:'With this term the estimated capital is below what was contributed: entry costs weigh more in the early years.',de:'Bei dieser Laufzeit liegt das geschätzte Kapital unter dem Eingezahlten: Abschlusskosten wiegen in den ersten Jahren stärker.'},
+  futObjTitle:{es:'¿Qué podría ayudarle a financiar?',en:'What could it help fund?',de:'Was könnte es mitfinanzieren?'},
+  futObjHint:{es:'Marca los que te interesen y escribe tu presupuesto actual: la herramienta no usa precios de mercado inventados.',en:'Tick the ones you like and enter your current budget: the tool does not use made-up market prices.',de:'Wählen Sie aus und tragen Sie Ihr aktuelles Budget ein: Das Tool verwendet keine erfundenen Marktpreise.'},
+  futCostLbl:{es:'Presupuesto actual',en:'Current budget',de:'Aktuelles Budget'},
+  futInflLbl:{es:'Inflación supuesta del coste',en:'Assumed cost inflation',de:'Angenommene Kosteninflation'},
+  futNoCost:{es:'Escribe un presupuesto para ver el cálculo.',en:'Enter a budget to see the calculation.',de:'Geben Sie ein Budget ein, um die Berechnung zu sehen.'},
+  futNeed:{es:'Coste estimado a esa edad: <b>{0} €</b> ({1} % del capital proyectado).',en:'Estimated cost at that age: <b>{0} €</b> ({1} % of the projected capital).',de:'Geschätzte Kosten in diesem Alter: <b>{0} €</b> ({1} % des projizierten Kapitals).'},
+  futCovers:{es:'Con estas hipótesis, el capital proyectado superaría ese coste sobre el papel; que el dinero esté disponible depende de las condiciones del contrato.',en:'Under these assumptions the projected capital would exceed that cost on paper; whether the money is available depends on the contract terms.',de:'Unter diesen Annahmen würde das projizierte Kapital diese Kosten rechnerisch übersteigen; ob das Geld verfügbar ist, hängt von den Vertragsbedingungen ab.'},
+  futMissing:{es:'Frente al capital proyectado faltarían <b>{0} €</b>.',en:'Compared with the projected capital, <b>{0} €</b> would be missing.',de:'Gegenüber dem projizierten Kapital würden <b>{0} €</b> fehlen.'},
+  futObjShort:{es:'Esta edad queda demasiado cerca para proyectar el capital.',en:'This age is too close to project the capital.',de:'Dieses Alter ist zu nah, um das Kapital zu projizieren.'},
+  futMapTitle:{es:'Tu mapa de futuro',en:'Your future map',de:'Ihre Zukunftskarte'},
+  futMapEmpty:{es:'Selecciona los proyectos que te gustaría ayudarle a cumplir.',en:'Select the projects you would like to help them achieve.',de:'Wählen Sie die Projekte aus, bei denen Sie helfen möchten.'},
+  futMapCount:{es:'{0} objetivos seleccionados',en:'{0} goals selected',de:'{0} Ziele ausgewählt'},
+  futMapCount1:{es:'1 objetivo seleccionado',en:'1 goal selected',de:'1 Ziel ausgewählt'},
+  futMapNoBudget:{es:'sin presupuesto',en:'no budget',de:'ohne Budget'}, futMapAtAge:{es:'a los {0} años',en:'at {0}',de:'mit {0} Jahren'},
+  futMapTotal:{es:'Coste conjunto estimado de los objetivos con presupuesto: <b>{0} €</b>.',en:'Estimated combined cost of the goals with a budget: <b>{0} €</b>.',de:'Geschätzte Gesamtkosten der Ziele mit Budget: <b>{0} €</b>.'},
+  futMapNote:{es:'Es una suma de costes futuros en euros nominales de cada fecha y no se descuenta del capital: la simulación de retiradas todavía no está incluida.',en:'This is a sum of future costs in nominal euros of each date and is not deducted from the capital: withdrawal simulation is not included yet.',de:'Dies ist eine Summe zukünftiger Kosten in nominalen Euro des jeweiligen Zeitpunkts und wird nicht vom Kapital abgezogen: Entnahmesimulationen sind noch nicht enthalten.'},
+  futNote:{es:'Vista conceptual interactiva. Los proyectos son ejemplos, no prestaciones garantizadas ni recomendaciones de retirar capital. Los resultados dependen de las hipótesis y no están garantizados.',en:'Interactive conceptual view. The projects are examples, not guaranteed benefits nor recommendations to withdraw capital. Results depend on the assumptions and are not guaranteed.',de:'Interaktive Konzeptansicht. Die Projekte sind Beispiele, keine garantierten Leistungen und keine Empfehlungen, Kapital zu entnehmen. Die Ergebnisse hängen von den Annahmen ab und sind nicht garantiert.'},
   scnLbl:{es:'Escenario {0} %',en:'{0} % scenario',de:'Szenario {0} %'},
   chartPocket:{es:'Aportado',en:'Contributed',de:'Eingezahlt'},
   chartPocketNom:{es:'Aportado (euros nominales)',en:'Contributed (nominal euros)',de:'Eingezahlt (nominale Euro)'},
@@ -1200,7 +1427,7 @@ $('rec-root').addEventListener('change',e=>{
 
 // ---------- Idioma: estos módulos se repintan al cambiar ES / EN / DE ----------
 function buildAll(){
-  buildHeroAdv(); buildHealth(); buildRec(); buildReal();
+  buildHeroAdv(); buildHealth(); buildRec(); buildReal(); buildFuture();
   const b=$('adv-switch'); if(b){b.title=tx(X.advSwitchHint);$('adv-switch-label').textContent=ADV?tx(X.advOn):tx(X.adv);}
 }
 const _applyLang=window.applyLang;

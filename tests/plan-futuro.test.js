@@ -7,7 +7,7 @@ assert(ini > 0 && fin > ini, 'no se encuentra el modelo en plan-futuro.html');
 const codigo = html.slice(ini, fin).replace('const THIS_YEAR=new Date().getFullYear();', 'const THIS_YEAR=2026;')
   .replace(/^const \$=.*$/m, '').replace(/^const eur=.*$/m, '').replace(/^const eurc=.*$/m, '');
 const ctx = { Math, Intl, HC: { school: 'real' } }; vm.createContext(ctx);
-vm.runInContext(codigo + '\nthis.S=S; this.C=C; this.calcPlan=calcPlan; this.withCfg=withCfg; this.deflate=deflate; this.firstMonth=firstMonth; this.SCENARIOS=SCENARIOS;', ctx);
+vm.runInContext(codigo + '\nthis.S=S; this.C=C; this.calcPlan=calcPlan; this.withCfg=withCfg; this.deflate=deflate; this.firstMonth=firstMonth; this.SCENARIOS=SCENARIOS; this.simulate=simulate; this.futAt=futAt; this.futCost=futCost;', ctx);
 let passed = 0, failed = 0;
 function test(name, fn) { try { fn(); passed++; console.log('  ok   ' + name); } catch (e) { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); } }
 const base = () => Object.assign(ctx.S, { childAge: 2, monthly: 75, ret: 6, capital0: 1000, targetYear: 2042, dyn: 0, extraYear: 0, payerAge: 35, real: false, infl: 2 });
@@ -104,6 +104,39 @@ test('las coberturas se descuentan una sola vez: la suma de ahorro invertido y p
 });
 test('hallazgo conocido (bajo): con horizonte 0 el ajuste por costes se aplica igualmente a un capital inicial sin plazo', () => {
   const p = sim({ capital0: 1000, targetYear: 2026 }); assert.strictEqual(Math.round(p.capital), 910);    // 1.000 × (1 − 9 %). La pantalla exige al menos 2 años, así que no es visible.
+});
+
+console.log('\nEl futuro de tu hijo/a: capital por edad y coste de los objetivos (usa el mismo motor)');
+test('capital por edad = el del motor principal: el de los 18 años de la captura (24.056 €) y es el mismo que el de la tarjeta', () => {
+  base(); sinCob(); const r = ctx.futAt(18);
+  assert.strictEqual(r.ok, true); assert.strictEqual(r.years, 16); assert.strictEqual(r.year, 2042); assert.strictEqual(Math.round(r.capital), 24056);
+  ctx.S.targetYear = 2042; assert.strictEqual(r.capital, ctx.calcPlan().capital); assert.strictEqual(r.capital, ctx.simulate(16).capital);
+  assert.strictEqual(Math.round(r.pocket), 15400); assert.strictEqual(Math.round(r.growth), 8656); assert.strictEqual(r.below, false);
+});
+test('el capital crece con la edad y el poder adquisitivo se calcula con la inflación supuesta', () => {
+  base(); sinCob(); const e = [16, 18, 20, 22, 25, 30].map((a) => ctx.futAt(a).capital); for (let i = 1; i < e.length; i++) assert(e[i] > e[i - 1]);
+  near(ctx.futAt(18).real, ctx.futAt(18).capital / Math.pow(1.02, 16), 1e-6); ctx.S.infl = 3; near(ctx.futAt(18).real, ctx.futAt(18).capital / Math.pow(1.03, 16), 1e-6); base();
+});
+test('edades que no se pueden proyectar: ya pasadas o con menos de la duración mínima del plan', () => {
+  base(); ctx.S.childAge = 15; ctx.S.capital0 = 0;
+  assert.strictEqual(ctx.futAt(15).reason, 'past'); assert.strictEqual(ctx.futAt(16).reason, 'short');   // 1 año < 2 años mínimos
+  assert.strictEqual(ctx.futAt(17).ok, true);                                                             // 2 años
+  assert.strictEqual(ctx.futAt(18).ok, true); assert.strictEqual(ctx.futAt(18).below, true);              // 3 años: capital por debajo de lo aportado → la pantalla lo avisa
+  base();
+});
+test('coste futuro de un objetivo = presupuesto de hoy × (1 + inflación)^años; sin presupuesto no se inventa ninguno', () => {
+  base(); near(ctx.futCost(1500, 16), 1500 * Math.pow(1.02, 16), 1e-9); assert.strictEqual(Math.round(ctx.futCost(1500, 16)), 2059); assert.strictEqual(Math.round(ctx.futCost(20000, 28)), 34820);
+  assert.strictEqual(ctx.futCost(0, 16), null); assert.strictEqual(ctx.futCost(undefined, 16), null); assert.strictEqual(ctx.futCost(-5, 16), null);
+  ctx.S.infl = 0; assert.strictEqual(ctx.futCost(1500, 16), 1500); base();
+});
+test('la regla «solo desde el año 5» es un interruptor (FUT_MIN_VISIBLE_YEARS): por defecto no oculta nada; a 5, oculta solo la vista y no el cálculo', () => {
+  assert(/const FUT_MIN_VISIBLE_YEARS=0;/.test(codigo), 'por defecto debe estar en 0 mientras cumplimiento no responda');
+  const ctx5 = { Math, Intl, HC: { school: 'real' } }; vm.createContext(ctx5);
+  vm.runInContext(codigo.replace('const FUT_MIN_VISIBLE_YEARS=0;', 'const FUT_MIN_VISIBLE_YEARS=5;') + '\nthis.S=S; this.futAt=futAt; this.simulate=simulate;', ctx5);
+  Object.assign(ctx5.S, { childAge: 2, monthly: 75, ret: 6, capital0: 0, targetYear: 2042, dyn: 0, extraYear: 0, real: false, infl: 2 });
+  assert.strictEqual(ctx5.futAt(5).reason, 'hidden');                       // 3 años: oculto
+  assert.strictEqual(ctx5.futAt(7).ok, true);                                // 5 años: visible
+  assert(ctx5.simulate(3).capital > 0);                                      // el motor sigue calculando los primeros años
 });
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');
 process.exit(failed ? 1 : 0);
