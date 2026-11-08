@@ -7,7 +7,7 @@ assert(ini > 0 && fin > ini, 'no se encuentra el modelo en plan-futuro.html');
 const codigo = html.slice(ini, fin).replace('const THIS_YEAR=new Date().getFullYear();', 'const THIS_YEAR=2026;')
   .replace(/^const \$=.*$/m, '').replace(/^const eur=.*$/m, '').replace(/^const eurc=.*$/m, '');
 const ctx = { Math, Intl, HC: { school: 'real' } }; vm.createContext(ctx);
-vm.runInContext(codigo + '\nthis.S=S; this.C=C; this.calcPlan=calcPlan; this.withCfg=withCfg; this.deflate=deflate; this.firstMonth=firstMonth; this.SCENARIOS=SCENARIOS; this.simulate=simulate; this.futAt=futAt; this.futCost=futCost;', ctx);
+vm.runInContext(codigo + '\nthis.S=S; this.C=C; this.calcPlan=calcPlan; this.withCfg=withCfg; this.deflate=deflate; this.firstMonth=firstMonth; this.SCENARIOS=SCENARIOS; this.simulate=simulate; this.futAt=futAt; this.futCost=futCost; this.futNeeded=futNeeded;', ctx);
 let passed = 0, failed = 0;
 function test(name, fn) { try { fn(); passed++; console.log('  ok   ' + name); } catch (e) { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); } }
 const base = () => Object.assign(ctx.S, { childAge: 2, monthly: 75, ret: 6, capital0: 1000, targetYear: 2042, dyn: 0, extraYear: 0, payerAge: 35, real: false, infl: 2 });
@@ -138,5 +138,47 @@ test('la regla «solo desde el año 5» es un interruptor (FUT_MIN_VISIBLE_YEARS
   assert.strictEqual(ctx5.futAt(7).ok, true);                                // 5 años: visible
   assert(ctx5.simulate(3).capital > 0);                                      // el motor sigue calculando los primeros años
 });
+
+// ----- Planificador inverso (futNeeded) -----
+const monto = (m, years) => { const m0 = ctx.S.monthly; ctx.S.monthly = m; try { return ctx.simulate(years).capital; } finally { ctx.S.monthly = m0; } };
+test('planificador: la cuota devuelta alcanza el objetivo y un euro menos no (minimalidad)', () => {
+  base(); sinCob(); ctx.S.capital0 = 0;
+  [5000, 24000, 60000].forEach((target) => {
+    const n = ctx.futNeeded(target, 16);
+    assert(n.ok && n.reachable);
+    assert(monto(n.monthly, 16) >= target, 'no llega');
+    assert(monto(n.monthly - 1, 16) < target, 'se podía con un euro menos');
+  });
+});
+test('planificador: ida y vuelta con el motor (el capital de 75 €/mes pide 75 €/mes)', () => {
+  base(); sinCob(); ctx.S.capital0 = 0;
+  const t = monto(75, 16); assert.strictEqual(ctx.futNeeded(t, 16).monthly, 75);
+});
+test('planificador: sin coberturas ni capital inicial el capital es lineal en la cuota → cuota = objetivo / capital por euro', () => {
+  base(); sinCob(); ctx.S.capital0 = 0;
+  const porEuro = monto(1, 12), target = 30000;
+  assert.strictEqual(ctx.futNeeded(target, 12).monthly, Math.ceil(target / porEuro - 1e-6));
+});
+test('planificador: menos rentabilidad exige más cuota y las coberturas también', () => {
+  base(); sinCob(); ctx.S.capital0 = 0; const t = 20000;
+  const por = (r) => ctx.withCfg({ ret: r }, () => ctx.futNeeded(t, 16).monthly);
+  const v = ctx.SCENARIOS.map(por); for (let i = 1; i < v.length; i++) assert(v[i] < v[i - 1], 'no decrece con la rentabilidad: ' + v);
+  const con = ctx.withCfg({ C: { bu: 'option', vs: 'death' } }, () => ctx.futNeeded(t, 16).monthly);
+  assert(con > ctx.futNeeded(t, 16).monthly);
+});
+test('planificador: capital inicial suficiente → no hace falta cuota; objetivo imposible → no alcanzable; plazo corto → sin cálculo', () => {
+  base(); sinCob(); ctx.S.capital0 = 50000;
+  const a = ctx.futNeeded(5000, 10); assert(a.already && a.monthly === 0);
+  ctx.S.capital0 = 0; const b = ctx.futNeeded(1e9, 10); assert(b.ok && b.reachable === false);
+  assert.strictEqual(ctx.futNeeded(5000, 1).ok, false); assert.strictEqual(ctx.futNeeded(0, 10).ok, false);
+});
+test('planificador: no deja modificada la cuota del usuario', () => {
+  base(); sinCob(); ctx.S.monthly = 123; ctx.futNeeded(40000, 16); assert.strictEqual(ctx.S.monthly, 123);
+});
+test('planificador: con cuota creciente la cuota inicial necesaria es menor', () => {
+  base(); sinCob(); ctx.S.capital0 = 0; const plana = ctx.futNeeded(40000, 16).monthly;
+  ctx.S.dyn = 5; assert(ctx.futNeeded(40000, 16).monthly < plana);
+});
+
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');
 process.exit(failed ? 1 : 0);

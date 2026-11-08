@@ -85,6 +85,9 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .fut-rows b{color:var(--navy,#14213d);font-weight:600}
 .fut-warn{margin-top:.6rem;font-size:.82rem;color:#9a4a3a}
 .fut-obj-title{font-weight:700;color:var(--navy,#14213d);margin:0 0 .3rem}
+.fut-plan{margin-top:1rem;padding-top:.9rem;border-top:1px solid var(--line,#e5e7eb)}
+.fut-plan-main{font-size:.92rem;line-height:1.5;margin:.6rem 0}
+.fut-plan-list{margin:0 0 .5rem;padding-left:1.1rem;font-size:.85rem}
 .fut-hint{font-size:.8rem;color:var(--slate,#64748b);margin:0 0 .8rem}
 .fo{padding:.7rem 0;border-top:1px solid var(--line-soft,#f3efe6)}
 .fo-top{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1rem}
@@ -626,6 +629,21 @@ function futAt(age){
 // Coste futuro hipotético de un objetivo: presupuesto de hoy × (1 + inflación)^años. Solo con presupuesto escrito por el usuario (cost0 > 0).
 function futCost(cost0,years){ return (cost0>0&&years>=0)?cost0*Math.pow(1+S.infl/100,years):null; }
 
+// Planificador inverso: cuota mensual INICIAL necesaria para llegar a un capital objetivo (euros del año objetivo) con el mismo motor.
+// Búsqueda por bisección sobre simulate(): el capital no baja nunca al subir la cuota, así que hay una única solución. S.monthly se restaura siempre.
+const FUT_MAX_MONTHLY=5000;
+function futNeeded(target,years){
+  if(!(target>0)||!(years>=MIN_YEARS))return {ok:false};
+  const m0=S.monthly;
+  const capWith=m=>{S.monthly=m;try{return simulate(years).capital;}finally{S.monthly=m0;}};
+  if(capWith(0)>=target)return {ok:true,already:true,monthly:0,target,years};
+  if(capWith(FUT_MAX_MONTHLY)<target)return {ok:true,reachable:false,max:FUT_MAX_MONTHLY,target,years};
+  let lo=0,hi=FUT_MAX_MONTHLY;
+  for(let i=0;i<60;i++){const mid=(lo+hi)/2; if(capWith(mid)>=target)hi=mid; else lo=mid;}
+  let m=Math.ceil(hi-1e-6); if(capWith(m)<target)m+=1;   // redondeo al euro por arriba, comprobado con el propio motor
+  return {ok:true,reachable:true,monthly:m,target,years};
+}
+
 function countUp(el,to,dur=900){
   const from=parseFloat(el.dataset.v||'0')||0;el.dataset.v=to;
   if(window.matchMedia('(prefers-reduced-motion:reduce)').matches){el.textContent=eur(to);return;}
@@ -766,7 +784,7 @@ const FUT_OBJ=[
   {id:'reserve',age:30,cat:'patrimonio',n:{es:'Reserva financiera',en:'Financial reserve',de:'Finanzielle Reserve'}},
   {id:'keep',age:30,cat:'patrimonio',n:{es:'Continuación del ahorro a largo plazo',en:'Continuing long-term saving',de:'Langfristiges Weitersparen'}}
 ];
-const FUT={age:18,sel:{},custom:[],built:false};
+const FUT={age:18,sel:{},custom:[],goal:{},built:false};
 const futFmt=v=>eur(Math.round(v));
 const futStageFor=age=>{let st=FUT_STAGES[0];FUT_STAGES.forEach(x=>{if(x.age<=age)st=x;});return st;};
 const futAgeList=()=>[...new Set(FUT_AGES.concat(FUT.custom))].sort((a,b)=>a-b).filter(a=>a>S.childAge);
@@ -795,7 +813,10 @@ function buildFutCard(){
   const st=futStageFor(FUT.age), objs=FUT_OBJ.filter(o=>o.age===st.age);
   card.innerHTML=`<div class="fut-grid"><div>
       <div class="fut-lbl">${tx(X.futRAge)} ${FUT.age}</div><h3 class="fut-stage">${tx(st.t)}</h3><p class="fut-msg">${tx(st.m)}</p>
-      <div id="fut-calc"></div></div>
+      <div id="fut-calc"></div>
+      <div class="fut-plan"><p class="fut-obj-title">${tx(X.futPlanTitle)}</p><p class="fut-hint">${tx(X.futPlanHint)}</p>
+        <label class="fo-cost">${tx(X.futPlanGoal)} <input type="number" id="fut-goal" min="0" step="500" inputmode="decimal" value="${FUT.goal[FUT.age]>0?FUT.goal[FUT.age]:''}"> €</label>
+        <div id="fut-plan-res" aria-live="polite"></div></div></div>
     <div><p class="fut-obj-title">${tx(X.futObjTitle)}</p><p class="fut-hint">${tx(X.futObjHint)}</p>
       <label class="fo-cost" style="margin-bottom:.4rem">${tx(X.futInflLbl)} <input type="number" id="fut-infl" min="0" max="6" step="0.5" value="${S.infl}"> %</label>
       ${objs.map(o=>{const sl=FUT.sel[o.id]||{};return `<div class="fo" data-fo="${o.id}"><div class="fo-top">
@@ -830,7 +851,30 @@ function updateFut(){
     const diff=r.capital-fc;
     out.innerHTML=tx(X.futNeed).replace('{0}',futFmt(fc)).replace('{1}',r.capital>0?(fc/r.capital*100).toFixed(0):'—')+' '+(diff>=0?tx(X.futCovers):tx(X.futMissing).replace('{0}',futFmt(-diff)));
   });
+  futPlan(r);
   futMap();
+}
+// Planificador: objetivo = lo que escribe el usuario o, si no, la suma de sus objetivos marcados con presupuesto a esta edad.
+function futPlan(r){
+  const out=$('fut-plan-res'); if(!out)return;
+  if(!r.ok){out.innerHTML='';return;}
+  const typed=FUT.goal[FUT.age]>0?FUT.goal[FUT.age]:0;
+  const sugg=FUT_OBJ.reduce((t,o)=>{const sl=FUT.sel[o.id]; return (sl&&sl.on&&sl.cost>0&&(sl.age||o.age)===FUT.age)?t+sl.cost:t;},0);
+  const goal0=typed||sugg, inp=$('fut-goal'); if(inp)inp.placeholder=sugg>0?String(Math.round(sugg)):'€';
+  if(!(goal0>0)){out.innerHTML='<p class="fut-hint">'+tx(X.futPlanNone)+'</p>';return;}
+  const target=futCost(goal0,r.years), n=futNeeded(target,r.years);
+  if(!n.ok){out.innerHTML='';return;}
+  let main;
+  if(n.already)main=tx(X.futPlanAlready);
+  else if(!n.reachable)main=tx(X.futPlanUnreach).replace('{0}',futFmt(n.max));
+  else{
+    const d=n.monthly-S.monthly;
+    main=tx(X.futPlanNeed).replace('{0}',futFmt(goal0)).replace('{1}',futFmt(target)).replace('{2}',r.year).replace('{3}',futFmt(n.monthly)).replace('{4}',S.ret)
+      +' '+(d>0?tx(X.futPlanMore).replace('{0}',futFmt(S.monthly)).replace('{1}',futFmt(d)):tx(X.futPlanEnough).replace('{0}',futFmt(S.monthly)))
+      +(n.monthly>500||n.monthly<25?' '+tx(X.futPlanRange):'');
+  }
+  const rows=SCENARIOS.map(sc=>{const v=withCfg({ret:sc},()=>futNeeded(target,r.years)); return '<li>'+tx(X.futPerYear).replace('{0}',sc)+': <b>'+(v.already?'0':(v.reachable?futFmt(v.monthly):'>'+futFmt(v.max)))+' €/'+tx(X.futMonthAbbr)+'</b></li>';}).join('');
+  out.innerHTML='<p class="fut-plan-main">'+main+'</p><p class="fut-hint" style="margin-bottom:.2rem">'+tx(X.futPlanScn)+'</p><ul class="fut-plan-list">'+rows+'</ul><p class="fut-hint">'+tx(X.futPlanNote)+'</p>';
 }
 // Mapa de futuro: todos los objetivos marcados (de cualquier edad), con su coste futuro si tienen presupuesto. No se descuenta del capital.
 function futMap(){
@@ -861,6 +905,7 @@ $('fut-root').addEventListener('change',e=>{
   if(e.target.id==='fut-infl'){let v=parseFloat(e.target.value); if(isNaN(v))v=S.infl; S.infl=Math.min(6,Math.max(0,v)); render();}
 });
 $('fut-root').addEventListener('input',e=>{
+  if(e.target.id==='fut-goal'){const v=parseFloat(e.target.value); FUT.goal[FUT.age]=(isNaN(v)||v<0)?0:Math.min(1e8,v); futPlan(futAt(FUT.age)); return;}
   const id=e.target.getAttribute&&e.target.getAttribute('data-fo-cost'); if(!id)return;
   const sl=FUT.sel[id]||(FUT.sel[id]={}); const v=parseFloat(e.target.value); sl.cost=(isNaN(v)||v<0)?0:Math.min(1e8,v); sl.age=FUT.age; updateFut();
 });
@@ -987,6 +1032,19 @@ const X={
   futObjHint:{es:'Marca los que te interesen y escribe tu presupuesto actual: la herramienta no usa precios de mercado inventados.',en:'Tick the ones you like and enter your current budget: the tool does not use made-up market prices.',de:'Wählen Sie aus und tragen Sie Ihr aktuelles Budget ein: Das Tool verwendet keine erfundenen Marktpreise.'},
   futCostLbl:{es:'Presupuesto actual',en:'Current budget',de:'Aktuelles Budget'},
   futInflLbl:{es:'Inflación supuesta del coste',en:'Assumed cost inflation',de:'Angenommene Kosteninflation'},
+  futPlanTitle:{es:'¿Cuánto tendría que ahorrar al mes?',en:'How much would I need to save each month?',de:'Wie viel müsste ich monatlich sparen?'},
+  futPlanHint:{es:'Escribe el capital que te gustaría tener a esta edad, en euros de hoy. Si lo dejas vacío usamos la suma de tus objetivos marcados con presupuesto.',en:'Enter the capital you would like to have at this age, in today\'s euros. If left empty we use the total of your selected objectives that have a budget.',de:'Geben Sie das gewünschte Kapital in diesem Alter ein, in heutigen Euro. Bleibt das Feld leer, verwenden wir die Summe Ihrer gewählten Ziele mit Budget.'},
+  futPlanGoal:{es:'Capital deseado (euros de hoy)',en:'Desired capital (today\'s euros)',de:'Gewünschtes Kapital (heutige Euro)'},
+  futPlanNone:{es:'Escribe un capital o marca objetivos con presupuesto para ver el cálculo.',en:'Enter a capital or select objectives with a budget to see the calculation.',de:'Geben Sie ein Kapital ein oder wählen Sie Ziele mit Budget, um die Berechnung zu sehen.'},
+  futPlanNeed:{es:'Para tener {0} € de hoy (unos {1} € en {2}) haría falta una cuota inicial de unos <b>{3} € al mes</b> con el escenario del {4} % anual.',en:'To have {0} € in today\'s money (about {1} € in {2}) you would need an initial payment of around <b>{3} € per month</b> in the {4} % per year scenario.',de:'Für {0} € in heutigem Geld (etwa {1} € im Jahr {2}) wäre ein Anfangsbeitrag von rund <b>{3} € pro Monat</b> im Szenario mit {4} % pro Jahr nötig.'},
+  futPlanMore:{es:'Ahora aportas {0} € al mes: faltarían unos {1} € más al mes.',en:'You currently pay {0} € per month: about {1} € more per month would be needed.',de:'Aktuell zahlen Sie {0} € pro Monat: es wären rund {1} € mehr pro Monat nötig.'},
+  futPlanEnough:{es:'Con tu aportación actual de {0} € al mes ya lo alcanzarías en este escenario.',en:'With your current payment of {0} € per month you would already reach it in this scenario.',de:'Mit Ihrem aktuellen Beitrag von {0} € pro Monat würden Sie es in diesem Szenario bereits erreichen.'},
+  futPlanAlready:{es:'Con el capital inicial y las aportaciones extra que ya indicaste se llegaría a esa cifra sin cuota mensual en este escenario.',en:'With the initial capital and extra payments you already entered, that amount would be reached without a monthly payment in this scenario.',de:'Mit dem Startkapital und den Zusatzzahlungen, die Sie bereits angegeben haben, wäre dieser Betrag in diesem Szenario auch ohne Monatsbeitrag erreicht.'},
+  futPlanUnreach:{es:'Con este plazo, ni siquiera una cuota de {0} € al mes llegaría a ese capital en este escenario.',en:'With this term, not even a payment of {0} € per month would reach that capital in this scenario.',de:'Mit dieser Laufzeit würde selbst ein Beitrag von {0} € pro Monat dieses Kapital in diesem Szenario nicht erreichen.'},
+  futPlanRange:{es:'Esa cuota queda fuera del rango del simulador (25–500 € al mes): habría que estudiarla con un asesor.',en:'That payment is outside the simulator range (25–500 € per month): it would need to be reviewed with an advisor.',de:'Dieser Beitrag liegt außerhalb des Bereichs des Simulators (25–500 € pro Monat): er müsste mit einem Berater geprüft werden.'},
+  futPlanScn:{es:'Cuota inicial necesaria según el escenario:',en:'Initial payment needed by scenario:',de:'Benötigter Anfangsbeitrag je Szenario:'},
+  futMonthAbbr:{es:'mes',en:'month',de:'Monat'},
+  futPlanNote:{es:'Estimación con el mismo modelo del plan (la cuota incluye lo que va a coberturas y el ajuste por costes). No es una oferta ni garantiza ningún resultado.',en:'Estimate using the same model as the plan (the payment includes what goes to cover and the cost adjustment). It is not an offer and guarantees no result.',de:'Schätzung mit demselben Modell wie der Plan (der Beitrag umfasst Absicherungen und die Kostenanpassung). Es ist kein Angebot und garantiert kein Ergebnis.'},
   futNoCost:{es:'Escribe un presupuesto para ver el cálculo.',en:'Enter a budget to see the calculation.',de:'Geben Sie ein Budget ein, um die Berechnung zu sehen.'},
   futNeed:{es:'Coste estimado a esa edad: <b>{0} €</b> ({1} % del capital proyectado).',en:'Estimated cost at that age: <b>{0} €</b> ({1} % of the projected capital).',de:'Geschätzte Kosten in diesem Alter: <b>{0} €</b> ({1} % des projizierten Kapitals).'},
   futCovers:{es:'Con estas hipótesis, el capital proyectado superaría ese coste sobre el papel; que el dinero esté disponible depende de las condiciones del contrato.',en:'Under these assumptions the projected capital would exceed that cost on paper; whether the money is available depends on the contract terms.',de:'Unter diesen Annahmen würde das projizierte Kapital diese Kosten rechnerisch übersteigen; ob das Geld verfügbar ist, hängt von den Vertragsbedingungen ab.'},
