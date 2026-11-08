@@ -182,6 +182,52 @@ test('las familias de productos.js coinciden con las que acepta la regla de Fire
   const m = /familia in \[([^\]]*)\]/.exec(r); assert(m); const enRegla = m[1].match(/'([A-Z_]+)'/g).map((x) => x.replace(/'/g, '')).sort();
   assert.deepStrictEqual(Object.keys(P.PRODUCTO_FAMILIAS).sort(), enRegla);
 });
+console.log('\nExplicar al cliente');
+const x0 = (f) => P.productoExplicarCliente(f, HOY), txt = (f) => P.productoExplicarTexto(x0(f));
+test('cada tipo de coste tiene su explicación en lenguaje llano y cualquier otro cae en «otro coste»; todas avisan de que el importe depende del contrato', () => {
+  P.PRODUCTO_TIPOS_COSTE.forEach((t) => { assert(P.PRODUCTO_COSTE_LLANO[t] && P.PRODUCTO_COSTE_LLANO[t].t && P.PRODUCTO_COSTE_LLANO[t].d.length > 20, t); const e = P.productoExplicarCoste(coste({ tipo: t })); assert(/dependen del contrato concreto/.test(e.texto), t); assert(!/Abschluss|Vertriebs|Verwaltung|Fondskosten|Risikobeitr/.test(e.titulo), 'el título debe ir en lenguaje llano: ' + e.titulo); });
+  assert.strictEqual(P.productoExplicarCoste(coste({ tipo: 'inventado' })).titulo, 'Otro coste del contrato');
+});
+test('el importe de cada coste sale tal como está cargado (valor, base, periodicidad y meses) y no se añade ninguna otra cifra', () => {
+  const e = P.productoExplicarCoste(coste({ valor: 1.5, desdeMes: 1, hastaMes: 60 }));
+  assert(/1,5 % de cada prima bruta, cada mes, del mes 1 al 60/.test(e.texto), e.texto);
+  assert(/12 €, cada año, desde el mes 1/.test(P.productoExplicarCoste(coste({ unidad: 'eur', base: 'fijo', valor: 12, periodicidad: 'anual' })).texto));
+  const cifras = (t) => (t.match(/\d+(?:,\d+)?/g) || []).sort().join('|');
+  assert.strictEqual(cifras(P.productoExplicarCoste(coste({ valor: 1.5, desdeMes: 1, hastaMes: 60, concepto: 'X' })).texto), ['1,5', '1', '60'].sort().join('|'), 'solo las cifras de la ficha');
+  assert(/por determinar/.test(P.productoExplicarCoste(coste({ valor: null })).texto));
+});
+test('todos los costes cargados aparecen en la explicación (ninguno se oculta) y los no verificados lo dicen; sin costes se dice que faltan', () => {
+  const f = ficha({ costes: [coste({ id: 'a', tipo: 'abschlusskosten', valor: 2 }), coste({ id: 'b', tipo: 'risikobeitrag', valor: 3, estado: 'verificado', fuente: { documento: 'Doc', referencia: '' } }), coste({ id: 'c', tipo: 'fondskosten', valor: 0.5 })] });
+  const x = x0(f); assert.strictEqual(x.costes.length, 3); assert.deepStrictEqual(x.costes.map((c) => c.verificado), [false, true, false]);
+  assert.strictEqual(x.costes.filter((c) => /no está verificado y puede cambiar/.test(c.texto)).length, 2); assert(/Doc/.test(txt(f)));
+  const s = x0(ficha({ costes: [] })); assert.strictEqual(s.sinCostes, true); assert(/Todavía no hay costes cargados/.test(P.productoExplicarTexto(s)));
+});
+test('aviso de uso: ficha verificada y vigente → con sus condiciones verificadas; borrador/pendiente/obsoleta → versión de trabajo, no entregar; ilustrativa → importes de ejemplo', () => {
+  const v = completa(); P.productoCambiarEstado(v, 'pendiente_revision', 'a', 't'); P.productoCambiarEstado(v, 'verificado', 'a', 't');
+  const xv = x0(v); assert.strictEqual(xv.usable, true); assert(/condiciones verificadas de Proveedor de ejemplo/.test(xv.avisoUso));
+  const b = x0(ficha()); assert.strictEqual(b.usable, false); assert(/ATENCIÓN/.test(b.avisoUso) && /no debe entregarse al cliente/.test(b.avisoUso) && /Borrador/.test(b.avisoUso));
+  assert(/EJEMPLO/.test(x0(ficha({ ilustrativo: true })).avisoUso)); const o = completa(); P.productoCambiarEstado(o, 'pendiente_revision', 'a', 't'); P.productoCambiarEstado(o, 'verificado', 'a', 't'); P.productoCambiarEstado(o, 'obsoleto', 'a', 't');
+  assert.strictEqual(x0(o).usable, false); assert(/Obsoleto/.test(x0(o).avisoUso));
+  assert(/ATENCIÓN/.test(txt(ficha())), 'el aviso viaja dentro del texto copiado');
+});
+test('limitaciones, exclusiones y garantías nunca se omiten: si están escritas salen tal cual y si faltan se dice que faltan', () => {
+  const f = completa(); f.detalle.funcionamiento.exclusiones = 'No cubre X.'; f.detalle.evaluacion.limitaciones = 'Tiene la limitación Y.'; f.detalle.funcionamiento.garantias = 'Garantiza Z según contrato.';
+  const t = txt(f); assert(/No cubre X\./.test(t) && /limitación Y/.test(t) && /Garantiza Z según contrato/.test(t));
+  const vacia = x0(ficha()); ['Garantías', 'Exclusiones', 'Lo que debes tener en cuenta', 'Impuestos'].forEach((n) => { const b = vacia.bloques.find((y) => y.titulo === n); assert(b && b.pendiente && b.texto === P.PRODUCTO_PENDIENTE_CLIENTE, n); });
+});
+test('siempre incluye los avisos generales: orientativo, no garantizado, la documentación contractual manda y no es una recomendación; la fiscalidad dice que depende de la situación personal', () => {
+  const t = txt(ficha()); assert(/no constituyen una oferta/.test(t) && /no están garantizados/.test(t) && /documentación contractual/.test(t) && /no es una recomendación personalizada/.test(t));
+  const f = completa(); f.detalle.fiscalidad.aportaciones = 'Deducibles dentro del límite.'; assert(/Depende de tu situación personal/.test(txt(f)) && /vigente a 2026-01-01/.test(txt(f)));
+});
+test('la explicación es reproducible, no modifica la ficha y las fuentes y documentos que existen se listan', () => {
+  const f = completa(), copia = JSON.stringify(f); assert.strictEqual(txt(f), txt(f)); assert.strictEqual(JSON.stringify(f), copia);
+  assert(/Tarifunterlagen — Doc de ejemplo/.test(txt(f)));
+});
+test('solo texto: lo que haya escrito el admin se devuelve como texto sin interpretar (el escape lo hace la pantalla); la función no devuelve HTML propio', () => {
+  const f = completa(); f.detalle.argumentacion.nivel1 = '<script>alert(1)</script>'; const x = x0(f); assert.strictEqual(x.bloques[0].texto, '<script>alert(1)</script>');
+  const centro = fs.readFileSync(path.join(__dirname, '..', 'centro.js'), 'utf8'); assert(/function panelExplicar/.test(centro) && /esc\(b\.texto\)/.test(centro) && /esc\(x\.avisoUso\)/.test(centro), 'la pantalla debe escapar el texto de la ficha');
+});
+
 console.log('\nSeguridad de la biblioteca');
 const reglas = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
 const bloque = reglas.slice(reglas.indexOf('match /productosVersiones/{versionId}'));

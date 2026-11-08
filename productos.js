@@ -277,6 +277,74 @@ function productoDescribirCoste(c){
     +(c.estado==='verificado'?'':' (pendiente de verificar)')+'.';
 }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={PRODUCTO_ESTADOS,PRODUCTO_ESTADOS_ES,PRODUCTO_TRANSICIONES,PRODUCTO_FAMILIAS,PRODUCTO_TIPOS_COSTE,PRODUCTO_UNIDADES,PRODUCTO_BASES,
+// ---------- «Explicar al cliente»: la ficha en lenguaje llano, sin ocultar nada ----------
+// Traduce los términos técnicos (Abschluss- und Vertriebskosten, Risikobeiträge…) a frases sencillas. No añade NINGUNA cifra ni afirmación que no esté en la ficha:
+// los importes salen de los costes cargados y los textos de las secciones que haya escrito el admin. Lo que falta se dice («el asesor te lo confirmará antes
+// de contratar»), no se omite. Una ficha no verificada o de ejemplo lleva un aviso destacado y no puede presentarse como información oficial.
+var PRODUCTO_COSTE_LLANO={
+  abschlusskosten:{t:'Costes de contratación',d:'Lo que cuesta dar de alta el contrato.'},
+  vertriebskosten:{t:'Costes de distribución',d:'Lo que cuesta la venta y distribución del producto.'},
+  verwaltungskosten:{t:'Costes de administración',d:'Lo que cuesta gestionar el contrato mientras está vigente.'},
+  fondskosten:{t:'Gastos de los fondos',d:'Los gastos de gestión de los fondos en los que se invierte. Conviene comprobar si ya están descontados de la rentabilidad que se indique, para no contarlos dos veces.'},
+  risikobeitrag:{t:'Primas de riesgo',d:'La parte de lo que se paga que financia las coberturas de protección (por ejemplo fallecimiento o incapacidad). Esa parte no se ahorra ni se invierte.'},
+  zuzahlung:{t:'Aportaciones adicionales',d:'Lo que puede costar hacer pagos extra además de la cuota habitual.'},
+  fondswechsel:{t:'Cambio de fondos',d:'Lo que puede costar pasar el dinero de un fondo a otro.'},
+  teilentnahme:{t:'Retiradas parciales',d:'Lo que puede costar retirar solo una parte del capital.'},
+  otro:{t:'Otro coste del contrato',d:'Un coste del contrato que no encaja en las categorías anteriores.'}
+};
+var PRODUCTO_PENDIENTE_CLIENTE='Este punto todavía no está documentado: el asesor te lo confirmará antes de contratar.';
+function productoExplicarCoste(c){
+  var d=PRODUCTO_COSTE_LLANO[c.tipo]||PRODUCTO_COSTE_LLANO.otro, v=_num(c.valor), cuantia;
+  if(v===null) cuantia='Su importe todavía está por determinar.';
+  else {
+    var num=String(v).replace('.',','), val=c.unidad==='pct'?num+' %':c.unidad==='permille'?num+' ‰':num+' €';
+    var base=(c.unidad==='eur'&&c.base==='fijo')?'':' de '+(PRODUCTO_BASES_ES[c.base]||c.base);
+    var cuando=c.hastaMes==null?'desde el mes '+c.desdeMes:'del mes '+c.desdeMes+' al '+c.hastaMes;
+    cuantia='Importe recogido: '+val+base+', '+(PRODUCTO_PERIODICIDADES_ES[c.periodicidad]||c.periodicidad)+', '+cuando+'.';
+  }
+  var det=(c.concepto?'En el documento figura como «'+c.concepto+'». ':'');
+  return {titulo:d.t,texto:d.d+' '+cuantia+' '+det+'Su importe y la forma en que se descuentan dependen del contrato concreto.'
+    +(c.estado==='verificado'?'':' Este dato todavía no está verificado y puede cambiar.'),verificado:c.estado==='verificado',fuente:(c.fuente&&c.fuente.documento)||''};
+}
+// {titulo, subtitulo, avisoUso, avisoGeneral[], bloques:[{titulo,texto,pendiente}], costes:[…], documentos:[…]}
+function productoExplicarCliente(f,hoy){
+  f=productoNormalizar(JSON.parse(JSON.stringify(f||{}))); var d=f.detalle, res=productoResolver([f],f.productoId,hoy), uso=productoUsable(f,hoy);
+  var aviso;
+  if(uso.ok) aviso='Información basada en las condiciones verificadas de '+f.proveedor+' (versión '+f.version+', fuente: '+f.fuente.documento+'). Es una explicación orientativa: lo que vale es la documentación contractual.';
+  else if(f.ilustrativo) aviso='ATENCIÓN: ficha con importes de EJEMPLO. No son condiciones reales de ningún proveedor y no deben entregarse al cliente como información oficial.';
+  else aviso='ATENCIÓN: ficha en estado «'+(PRODUCTO_ESTADOS_ES[f.estado]||f.estado)+'», todavía no verificada. Es una versión de trabajo del asesor: no debe entregarse al cliente como información oficial.';
+  var bloque=function(titulo,valor){ var t=_txt(valor); return {titulo:titulo,texto:t||PRODUCTO_PENDIENTE_CLIENTE,pendiente:!t}; };
+  var queEs=_txt(d.argumentacion.nivel1)||_txt(d.funcionamiento.objetivo);
+  var bloques=[
+    bloque('Qué es',queEs),
+    bloque('Para qué puede servirte',_txt(d.argumentacion.nivel2)||_txt(d.evaluacion.necesidades)),
+    bloque('Qué cubre o cómo funciona',[d.funcionamiento.riesgosCubiertos,d.funcionamiento.aportacion,d.funcionamiento.prestaciones].map(_txt).filter(Boolean).join('\n')),
+    bloque('Garantías',d.funcionamiento.garantias),
+    bloque('Lo que debes tener en cuenta',[d.evaluacion.limitaciones,d.funcionamiento.restricciones,d.funcionamiento.flexibilidad].map(_txt).filter(Boolean).join('\n')),
+    bloque('Exclusiones',d.funcionamiento.exclusiones),
+    bloque('Cuándo puede no convenir',d.evaluacion.noConveniente),
+    bloque('Impuestos',[d.fiscalidad.aportaciones,d.fiscalidad.prestaciones,d.fiscalidad.restricciones].map(_txt).filter(Boolean).join('\n')+(_txt(d.fiscalidad.normativa)?'\nNormativa: '+_txt(d.fiscalidad.normativa)+(d.fiscalidad.normativaVigencia?' (vigente a '+d.fiscalidad.normativaVigencia+')':'')+'. Depende de tu situación personal.':''))
+  ];
+  return {titulo:f.nombre,subtitulo:f.proveedor+' · versión '+f.version,avisoUso:aviso,usable:uso.ok,etiqueta:productoEtiqueta(res),bloques:bloques,
+    costes:f.costes.map(productoExplicarCoste),
+    sinCostes:f.costes.length===0,
+    documentos:d.documentos.map(function(x){ return x.tipo+' — '+x.titulo+(x.referencia?' ('+x.referencia+')':''); }),
+    avisoGeneral:['Las cifras son orientativas y no constituyen una oferta.','Los resultados de inversión no están garantizados: pueden subir y bajar, y puedes recuperar menos de lo aportado.',
+      'Lo que cuenta es la documentación contractual del producto (condiciones, información de costes y propuesta oficial), que te entregará el asesor.','Esta explicación no es una recomendación personalizada: antes de decidir, el asesor revisará contigo tu situación y tus necesidades.']};
+}
+// Texto plano (para copiar o imprimir) de la explicación.
+function productoExplicarTexto(x){
+  var o=[x.titulo.toUpperCase(),x.subtitulo,'',x.avisoUso,''];
+  x.bloques.forEach(function(b){ o.push(b.titulo.toUpperCase()); o.push(b.texto); o.push(''); });
+  o.push('COSTES');
+  if(x.sinCostes) o.push('Todavía no hay costes cargados para este producto: '+PRODUCTO_PENDIENTE_CLIENTE);
+  x.costes.forEach(function(c){ o.push('• '+c.titulo+': '+c.texto+(c.fuente?' (fuente: '+c.fuente+')':'')); });
+  o.push('');
+  if(x.documentos.length){ o.push('DOCUMENTACIÓN QUE PUEDES PEDIR'); x.documentos.forEach(function(d){ o.push('• '+d); }); o.push(''); }
+  o.push('IMPORTANTE'); x.avisoGeneral.forEach(function(a){ o.push('• '+a); });
+  return o.join('\n');
+}
+
+if(typeof module!=='undefined'&&module.exports){ module.exports={PRODUCTO_COSTE_LLANO,PRODUCTO_PENDIENTE_CLIENTE,productoExplicarCoste,productoExplicarCliente,productoExplicarTexto,PRODUCTO_ESTADOS,PRODUCTO_ESTADOS_ES,PRODUCTO_TRANSICIONES,PRODUCTO_FAMILIAS,PRODUCTO_TIPOS_COSTE,PRODUCTO_UNIDADES,PRODUCTO_BASES,
   PRODUCTO_PERIODICIDADES,PRODUCTO_SECCIONES,PRODUCTO_TIPOS_DOC,PRODUCTO_TIPOS_COSTE_ES,PRODUCTO_BASES_ES,PRODUCTO_PERIODICIDADES_ES,PRODUCTO_ESTADOS_COSTE,productoDetalleNuevo,productoNormalizar,productoChecklist,productoDocId,productoParaGuardar,productoDesdeImportacion,productoNueva,productoCosteNuevo,productoValidar,productoRequisitosVerificado,productoCambiarEstado,productoVigente,productoUsable,productoResolver,
   productoEtiqueta,productoComparables,productoDescribirCoste}; }

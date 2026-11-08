@@ -1049,3 +1049,5 @@
   .cen-chk input{width:auto}
   .cen-costerow{border-top:1px solid var(--line-soft); padding:10px 0}
   @media (max-width:640px){ .cen-dl{grid-template-columns:1fr} }
+  .cen-expl h4{font-size:13px; margin:14px 0 4px; color:var(--navy); text-transform:uppercase; letter-spacing:.04em}
+  .cen-expl{border-color:var(--gold-soft)}

@@ -3,7 +3,7 @@
    lo que se ve viene de lo que el admin cargue en Firestore, y la seguridad la dan las reglas del servidor, no esta pantalla.
    Expone window.renderCentro(), que index.html llama al abrir «Centro del asesor». */
 (function(){
-  var CEN={fichas:[],cargado:false,cargando:false,error:'',sel:null,edit:null,editNueva:false,errores:[],aviso:'',fam:'',est:'',guardando:false};
+  var CEN={explicar:false,copiado:'',fichas:[],cargado:false,cargando:false,error:'',sel:null,edit:null,editNueva:false,errores:[],aviso:'',fam:'',est:'',guardando:false};
   var $=function(id){ return document.getElementById(id); };
   var esc=function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
   var cloud=function(){ return window.AORAES_CLOUD||null; };
@@ -54,14 +54,28 @@
     return h+'</tbody></table></div>';
   }
   function texto(v){ return v?'<div class="cen-txt">'+esc(v)+'</div>':'<div class="cen-pend">— pendiente de documentar</div>'; }
+  // «Explicar al cliente»: la ficha en lenguaje llano (productos.js), con sus avisos; solo texto, sin HTML de la ficha (todo escapado).
+  function panelExplicar(f){
+    var x=productoExplicarCliente(f,hoy()), p=x.usable?'cen-ok':'cen-error', h='<div class="cen-card cen-expl" id="cen-expl">';
+    h+='<div class="cen-eyebrow">Explicación para el cliente</div><h3>'+esc(x.titulo)+'</h3><p class="cen-sub">'+esc(x.subtitulo)+'</p><p class="'+p+'" role="note">'+esc(x.avisoUso)+'</p>';
+    x.bloques.forEach(function(b){ h+='<h4>'+esc(b.titulo)+'</h4><div class="cen-txt'+(b.pendiente?' cen-pend':'')+'">'+esc(b.texto)+'</div>'; });
+    h+='<h4>Costes</h4>';
+    if(x.sinCostes) h+='<div class="cen-pend">Todavía no hay costes cargados para este producto: '+esc(PRODUCTO_PENDIENTE_CLIENTE)+'</div>';
+    else h+='<ul class="cen-costes">'+x.costes.map(function(c){ return '<li><b>'+esc(c.titulo)+'</b> <span class="cen-b cen-b-'+(c.verificado?'verificado':'borrador')+'">'+(c.verificado?'Verificado':'Por verificar')+'</span><div class="cen-txt">'+esc(c.texto)+(c.fuente?' (fuente: '+esc(c.fuente)+')':'')+'</div></li>'; }).join('')+'</ul>';
+    if(x.documentos.length) h+='<h4>Documentación que puedes pedir</h4><ul class="cen-costes">'+x.documentos.map(function(d){ return '<li>'+esc(d)+'</li>'; }).join('')+'</ul>';
+    h+='<h4>Importante</h4><ul class="cen-costes">'+x.avisoGeneral.map(function(a){ return '<li>'+esc(a)+'</li>'; }).join('')+'</ul>';
+    h+='<div class="cen-bar" style="margin-top:12px"><button type="button" class="cen-btn cen-btn-gold" data-cen="copiar" data-id="'+esc(f.id)+'">Copiar texto</button>'+(CEN.copiado?'<span class="cen-sub" role="status">'+esc(CEN.copiado)+'</span>':'')+'</div></div>';
+    return h;
+  }
   function vistaDetalle(f){
     var adm=esAdmin(), res=productoResolver([f],f.productoId,hoy()), us=productoUsable(f,hoy()), cl=productoChecklist(f,hoy()), d=f.detalle, h='';
-    h+='<div class="cen-bar"><button type="button" class="cen-btn" data-cen="volver">← Volver a la lista</button>';
+    h+='<div class="cen-bar"><button type="button" class="cen-btn" data-cen="volver">← Volver a la lista</button><button type="button" class="cen-btn'+(CEN.explicar?' cen-btn-gold':'')+'" data-cen="explicar" aria-pressed="'+(CEN.explicar?'true':'false')+'">'+(CEN.explicar?'Ocultar explicación':'Explicar al cliente')+'</button>';
     if(adm&&(f.estado==='borrador'||f.estado==='pendiente_revision')) h+='<button type="button" class="cen-btn" data-cen="editar" data-id="'+esc(f.id)+'">✎ Editar</button>';
     if(adm) (PRODUCTO_TRANSICIONES[f.estado]||[]).forEach(function(n){ h+='<button type="button" class="cen-btn'+(n==='verificado'?' cen-btn-gold':'')+'" data-cen="estado" data-id="'+esc(f.id)+'" data-nuevo="'+n+'">'+({pendiente_revision:'Enviar a revisión',borrador:'Volver a borrador',verificado:'✔ Verificar',obsoleto:'Marcar como obsoleta'})[n]+'</button>'; });
     h+='</div>';
     if(CEN.aviso) h+='<p class="cen-aviso" role="status">'+esc(CEN.aviso)+'</p>';
     if(CEN.errores.length) h+='<div class="cen-error" role="alert"><b>No se pudo completar:</b><ul>'+CEN.errores.map(function(e){ return '<li>'+esc(e)+'</li>'; }).join('')+'</ul></div>';
+    if(CEN.explicar) h+=panelExplicar(f);
     h+='<div class="cen-card"><div class="cen-eyebrow">'+esc((PRODUCTO_FAMILIAS[f.familia]||{}).nombre||f.familia)+' · '+esc(f.proveedor)+'</div><h2>'+esc(f.nombre)+'</h2>'
       +'<p>'+insignia(f)+' <span class="cen-sub">Versión '+esc(f.version)+' · vigente desde '+esc(f.vigenteDesde)+(f.vigenteHasta?' hasta '+esc(f.vigenteHasta):'')+'</span></p>'
       +'<p class="'+(us.ok?'cen-ok':'cen-aviso')+'"><b>'+(us.ok?'Utilizable en proyecciones del proveedor.':'No utilizable como tarifa oficial')+'</b> '+esc(productoEtiqueta(res))+(us.ok?'':'. '+esc(res.aviso))+'</p>'
@@ -183,7 +197,9 @@
   function alClic(e){
     var b=e.target.closest&&e.target.closest('[data-cen]'); if(!b) return; var a=b.getAttribute('data-cen'), id=b.getAttribute('data-id');
     if(a==='abrir'){ CEN.sel=id; CEN.errores=[]; CEN.aviso=''; dibujar(); window.scrollTo(0,0); }
-    else if(a==='volver'){ CEN.sel=null; CEN.errores=[]; CEN.aviso=''; dibujar(); }
+    else if(a==='explicar'){ CEN.explicar=!CEN.explicar; CEN.copiado=''; dibujar(); }
+    else if(a==='copiar'){ copiarExplicacion(id); }
+    else if(a==='volver'){ CEN.sel=null; CEN.explicar=false; CEN.copiado=''; CEN.errores=[]; CEN.aviso=''; dibujar(); }
     else if(a==='refrescar'){ cargar(true); }
     else if(a==='importar'){ var fi=$('cen-import-file'); if(fi){ fi.value=''; fi.click(); } }
     else if(a==='nueva'){ nuevaFicha(); }
@@ -213,6 +229,12 @@
     CEN.guardando=true; CEN.errores=[]; dibujar();
     nuevas.reduce(function(p,n){ return p.then(function(){ return c.saveProductoVersion(n.id,productoParaGuardar(n.f)).then(function(){ hechas++; }).catch(function(e){ errores.push(n.f.nombre+': '+((e&&e.code==='permission-denied')?'el servidor rechazó el guardado.':((e&&e.message)||e))); }); }); },Promise.resolve())
       .then(function(){ CEN.guardando=false; CEN.errores=errores; CEN.aviso='Importadas '+hechas+' de '+nuevas.length+' ficha(s) como borrador'+(omitidas?'; '+omitidas+' ya existían.':'.'); return cargar(true); });
+  }
+  function copiarExplicacion(id){
+    var f=buscar(id); if(!f) return; var texto=productoExplicarTexto(productoExplicarCliente(f,hoy()));
+    var ok=function(){ CEN.copiado='Texto copiado.'; dibujar(); }, no=function(){ CEN.copiado='No se pudo copiar automáticamente: selecciona el texto y cópialo.'; dibujar(); };
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(texto).then(ok,no); return; } }catch(e){}
+    try{ var ta=document.createElement('textarea'); ta.value=texto; ta.style.position='absolute'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); var r=document.execCommand('copy'); document.body.removeChild(ta); r?ok():no(); }catch(e2){ no(); }
   }
   function alFiltrar(e){ var k=e.target.getAttribute&&e.target.getAttribute('data-cen-filtro'); if(!k) return; CEN[k]=e.target.value; dibujar(); }
 
