@@ -17,7 +17,7 @@
 <link rel="preload" href="fonts/Fraunces-opsz-wght-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/Manrope-wght-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="./app.css?v=f58403a8">
+<link rel="stylesheet" href="./app.css?v=1f726d9f">
 </head>
 <body>
   <div class="auth-gate" id="auth-gate">
@@ -141,6 +141,7 @@
             <button type="button" data-go="ninos">Plan Futuro</button>
             <button type="button" data-go="vsp">Seguros patrimoniales</button>
             <button type="button" data-go="medico">Preguntas médicas</button>
+            <button type="button" data-go="centro">Centro del asesor</button>
             <button type="button" id="nav-inmueble">Proyecto inmobiliario</button>
             <button type="button" id="nav-afa">Amortización (AfA)</button>
           </div>
@@ -337,6 +338,16 @@
     </div>
   </div>
 
+  <main class="scr home" id="centro" hidden>
+    <div class="cock">
+      <div class="cock-head">
+        <div><span class="cock-eyebrow">Área profesional</span><h1>Centro del asesor</h1></div>
+      </div>
+      <p class="cock-note" style="margin:0 0 18px" id="centro-nota" data-no-i18n></p>
+      <div id="centro-body" data-no-i18n></div>
+    </div>
+  </main>
+
   <main class="scr home" id="contactos" hidden>
     <div class="cock">
       <div class="cock-head">
@@ -384,6 +395,8 @@
 <script src="./fiscal.js?v=3cd619e3"></script>
 <script src="./fiscal-ui.js?v=900c6e63"></script>
 <script src="./idle.js?v=8c7edecd"></script>
+<script src="./productos.js?v=5dc7c97c"></script>
+<script src="./centro.js?v=c1abb2f5"></script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail }
@@ -449,6 +462,13 @@
         var uid = viewingUid || currentUid;
         if(!uid || !payload || !payload.id) return Promise.resolve();
         return setDoc(doc(clientsCol(uid), payload.id), payload).catch(function(e){ console.error('AORAES cloud: fallo al guardar', e); });
+      },
+      // ---- Centro del asesor: biblioteca de productos (reglas: lee asesor aprobado o admin; escribe solo admin) ----
+      listProductosVersiones: function(){
+        return getDocs(collection(db,'productosVersiones')).then(function(snap){ var arr=[]; snap.forEach(function(d){ arr.push(Object.assign({id:d.id}, d.data())); }); return arr; });
+      },
+      saveProductoVersion: function(id, data, createdAt){
+        return setDoc(doc(db,'productosVersiones',id), Object.assign({}, data, {createdAt: createdAt||serverTimestamp(), updatedAt: serverTimestamp()}));
       },
       removeClient: function(id){
         var uid = viewingUid || currentUid;
@@ -1554,14 +1574,14 @@
     }
 
     var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, ninos:{url:'./plan-futuro.html',el:null,ready:false}, vsp:{url:'./vsp.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false}, estudio:{url:'./estudio/index.html',el:null,ready:false} };
-    var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames'), asesoresScr=document.getElementById('asesores'), contactosScr=document.getElementById('contactos');
+    var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames'), asesoresScr=document.getElementById('asesores'), contactosScr=document.getElementById('contactos'), centroScr=document.getElementById('centro');
     var stage=document.getElementById('frame-stage'), sw=document.getElementById('switch'), banner=document.getElementById('bridge-banner');
     var insEl=document.getElementById('cock-insights'), listEl=document.getElementById('cock-list');
     var searchEl=document.getElementById('cock-search'), statusEl=document.getElementById('cock-status'), sortEl=document.getElementById('cock-sort'), advisorEl=document.getElementById('cock-advisor');
     var acChip=document.getElementById('active-chip'), acName=document.getElementById('ac-name');
     var lastSigByView={}, pendingApplyByView={}, pendingOpen=null, pendingSummary=null, wsId=null, wsStep='diagnostico', wsRec=null, cockQuickFilter=null;
 
-    var SWITCH_MORE_VIEWS=['analisis','jubilacion','ninos','vsp','medico'];
+    var SWITCH_MORE_VIEWS=['analisis','jubilacion','ninos','vsp','medico','centro'];
     function setActiveTab(view){
       var b=sw.querySelectorAll('button'); for(var i=0;i<b.length;i++)b[i].classList.toggle('active',b[i].getAttribute('data-go')===view);
       // "Proyecto inmobiliario" no viaja por data-go/show() (abre el workspace directo vía
@@ -1571,7 +1591,7 @@
       var smb=document.getElementById('switch-more'); if(smb) smb.classList.toggle('active', SWITCH_MORE_VIEWS.indexOf(view)>=0);
     }
     function updateActiveChip(){ var id=getActive(); var rec=id?findClient(id):null; if(rec){ acName.textContent=rec.name||'Cliente'; acChip.classList.add('on'); } else acChip.classList.remove('on'); }
-    function screenTo(name){ home.hidden=(name!=='home'); wsScreen.hidden=(name!=='workspace'); frames.hidden=(name!=='frames'); asesoresScr.hidden=(name!=='asesores'); contactosScr.hidden=(name!=='contactos'); }
+    function screenTo(name){ home.hidden=(name!=='home'); wsScreen.hidden=(name!=='workspace'); frames.hidden=(name!=='frames'); asesoresScr.hidden=(name!=='asesores'); contactosScr.hidden=(name!=='contactos'); centroScr.hidden=(name!=='centro'); }
     window.aoraesGoHome=function(){ show('home'); };
 
     /* ---------- iframe plumbing ---------- */
@@ -1639,6 +1659,7 @@
 
     function show(view){
       if(view==='asesores'){ screenTo('asesores'); for(var k0 in MOD){ if(MOD[k0].el)MOD[k0].el.style.display='none'; } setActiveTab('asesores'); showAdminTab('asesores'); renderAsesores(); if(location.hash.slice(1)!=='asesores')history.replaceState(null,'','#asesores'); return; }
+      if(view==='centro'){ screenTo('centro'); for(var k2 in MOD){ if(MOD[k2].el)MOD[k2].el.style.display='none'; } setActiveTab('centro'); if(window.renderCentro)window.renderCentro(); if(location.hash.slice(1)!=='centro')history.replaceState(null,'','#centro'); return; }
       if(view==='contactos'){ screenTo('contactos'); for(var k1 in MOD){ if(MOD[k1].el)MOD[k1].el.style.display='none'; } setActiveTab('contactos'); renderContactos(); if(location.hash.slice(1)!=='contactos')history.replaceState(null,'','#contactos'); return; }
       if(view==='home'||!MOD[view]){ screenTo('home'); for(var k in MOD){ if(MOD[k].el)MOD[k].el.style.display='none'; } setActiveTab('home'); renderCockpit(); updateActiveChip(); if(location.hash)history.replaceState(null,'','#'); return; }
       screenTo('frames'); ensureFrame(view);
@@ -4033,13 +4054,13 @@
       // de fichas antiguas) — así la cuota sigue calculándose como lo hace una Bausparkasse real.
       if(afaOnInput(e)) return;
     });
-    window.addEventListener('hashchange',function(){ var v=location.hash.slice(1); show(MOD[v]?v:'home'); });
+    window.addEventListener('hashchange',function(){ var v=location.hash.slice(1); show((MOD[v]||v==='centro')?v:'home'); });
     document.getElementById('cs-action').addEventListener('click',function(){
       if(clientesDirStatus==='denied') reactivateClientesDir(); else pickClientesDir();
     });
 
     var initial=location.hash.slice(1);
-    show(MOD[initial]?initial:'home');
+    show((MOD[initial]||initial==='centro')?initial:'home');
     renderNovedades();
     initClientesDir();
 

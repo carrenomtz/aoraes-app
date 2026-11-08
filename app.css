@@ -1000,3 +1000,52 @@
   .fiscal-pend{margin-top:10px}
   .fiscal-pend h5{margin:0 0 4px; font-size:12.5px}
   .fiscal-pend ul{margin:0; padding-left:18px; font-size:12.5px; line-height:1.55}
+
+  /* ---------- Centro del asesor (biblioteca de productos) ---------- */
+  .cen-bar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 14px}
+  .cen-bar select{font:inherit; font-size:13px; padding:7px 10px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); color:var(--ink)}
+  .cen-btn{font:inherit; font-size:13px; font-weight:600; padding:7px 14px; border-radius:999px; border:1px solid var(--line-strong); background:var(--surface); color:var(--navy); cursor:pointer; transition:border-color .15s var(--ease), background .15s var(--ease)}
+  .cen-btn:hover{border-color:var(--gold-deep)}
+  .cen-btn:disabled{opacity:.5; cursor:wait}
+  .cen-btn-gold{background:var(--navy); color:#fff; border-color:var(--navy)}
+  .cen-btn-gold:hover{background:var(--navy-deep)}
+  .cen-btn-x{color:var(--red); border-color:var(--line); margin-top:6px}
+  .cen-vacio{padding:34px 18px; text-align:center; color:var(--muted); background:var(--surface); border:1px dashed var(--line-strong); border-radius:var(--r-md)}
+  .cen-error{padding:12px 14px; margin:0 0 14px; background:#fbeeea; border:1px solid #e7c3ba; border-radius:var(--r-md); color:#7a2f25; font-size:13px}
+  .cen-error ul{margin:6px 0 0; padding-left:18px}
+  .cen-aviso{padding:10px 14px; margin:0 0 14px; background:var(--gold-tint); border:1px solid var(--line-strong); border-radius:var(--r-md); font-size:13px}
+  .cen-ok{padding:10px 14px; margin:8px 0; background:#eaf2ec; border:1px solid #c5d9cb; border-radius:var(--r-md); font-size:13px}
+  .cen-tbl .cen-fila{cursor:pointer}
+  .cen-tbl .cen-fila:hover td{background:var(--gold-tint)}
+  .cen-sub{color:var(--muted); font-size:12px}
+  .cen-b{display:inline-block; font-size:11px; font-weight:700; letter-spacing:.02em; padding:2px 9px; border-radius:999px; border:1px solid var(--line-strong); background:var(--bg); color:var(--navy-2)}
+  .cen-b-verificado{background:#eaf2ec; border-color:#b9d3c1; color:#2f6b45}
+  .cen-b-pendiente_revision{background:#fff6dc; border-color:var(--gold-soft); color:#7a5d12}
+  .cen-b-obsoleto{background:#eee; color:#777}
+  .cen-b-ilus{background:#f3e7e4; border-color:#e0c2bb; color:#8a3a2d}
+  .cen-prog{display:inline-block; width:54px; height:6px; border-radius:3px; background:var(--line); vertical-align:middle; overflow:hidden}
+  .cen-prog i{display:block; height:100%; background:var(--gold-deep)}
+  .cen-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:16px 18px; margin:0 0 14px; box-shadow:var(--sh-1)}
+  .cen-card h2{font-size:22px; margin:2px 0 6px}
+  .cen-card h3{font-size:16px; margin:0 0 10px}
+  .cen-eyebrow{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold-deep); font-weight:700}
+  .cen-txt{white-space:pre-wrap; font-size:13.5px; line-height:1.55}
+  .cen-pend{color:var(--faint); font-size:13px; font-style:italic}
+  .cen-dl{display:grid; grid-template-columns:minmax(0,220px) minmax(0,1fr); gap:8px 16px; margin:0}
+  .cen-dl dt{font-size:12px; font-weight:700; color:var(--muted)}
+  .cen-dl dd{margin:0}
+  .cen-costes{margin:0; padding:0; list-style:none; display:grid; gap:10px; font-size:13.5px}
+  .cen-check{margin:0; padding:0; list-style:none; display:grid; gap:4px; font-size:13.5px}
+  .cen-check .ok{color:#2f6b45}
+  .cen-check .no{color:var(--muted)}
+  .cen-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px 14px}
+  .cen-grid-c{margin-bottom:6px}
+  .cen-f{display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--muted); font-weight:600}
+  .cen-f input,.cen-f select,.cen-f textarea{font:inherit; font-size:13.5px; font-weight:400; padding:7px 9px; border:1px solid var(--line-strong); border-radius:var(--r-sm); background:#fff; color:var(--ink); width:100%}
+  .cen-f textarea{resize:vertical}
+  .cen-f input[readonly]{background:var(--bg); color:var(--muted)}
+  .cen-wide{grid-column:1/-1}
+  .cen-chk{flex-direction:row; align-items:center; gap:8px}
+  .cen-chk input{width:auto}
+  .cen-costerow{border-top:1px solid var(--line-soft); padding:10px 0}
+  @media (max-width:640px){ .cen-dl{grid-template-columns:1fr} }

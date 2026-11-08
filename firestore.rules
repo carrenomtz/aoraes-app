@@ -580,7 +580,7 @@ service cloud.firestore {
     function validProductoVersion() {
       return request.resource.data.keys().hasOnly([
           'productoId', 'familia', 'proveedor', 'nombre', 'version', 'estado', 'ilustrativo',
-          'vigenteDesde', 'vigenteHasta', 'fuente', 'costes', 'notas', 'verificadoPor', 'verificadoEn',
+          'vigenteDesde', 'vigenteHasta', 'fuente', 'costes', 'notas', 'verificadoPor', 'verificadoEn', 'detalle',
           'createdAt', 'updatedAt'
         ])
         && request.resource.data.productoId is string
@@ -606,6 +606,7 @@ service cloud.firestore {
         && request.resource.data.fuente is map
         && request.resource.data.costes is list
         && request.resource.data.costes.size() <= 60
+        && request.resource.data.detalle is map
         && request.resource.data.notas is string
         && request.resource.data.notas.size() <= 3000
         && request.resource.data.verificadoPor is string
@@ -634,7 +635,8 @@ service cloud.firestore {
         && (resource.data.estado != 'verificado'
           || (request.resource.data.estado == 'obsoleto'
             && request.resource.data.costes == resource.data.costes
-            && request.resource.data.fuente == resource.data.fuente));
+            && request.resource.data.fuente == resource.data.fuente
+            && request.resource.data.detalle == resource.data.detalle));
       allow delete: if false;
     }
   }

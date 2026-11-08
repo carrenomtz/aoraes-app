@@ -112,6 +112,63 @@ test('descripción de un coste en lenguaje llano: valor, base, periodicidad, mes
   assert(/por determinar/.test(P.productoDescribirCoste(coste({ valor: null }))));
 });
 
+console.log('\nContenido profesional, lista de control y guardado');
+const completa = () => { const f = verificable(); const d = f.detalle;
+  Object.assign(d.identificacion, { nombreContractual: 'N', aseguradora: 'A', codigoTarifa: 'T-1' }); Object.assign(d.funcionamiento, { garantias: 'g', exclusiones: 'e' });
+  Object.assign(d.fiscalidad, { normativa: 'EStG', normativaVigencia: '2026-01-01' }); d.evaluacion.alternativas = 'alt';
+  Object.assign(d.argumentacion, { nivel1: 'a', nivel2: 'b', nivel3: 'c' }); d.documentos.push({ tipo: 'Tarifunterlagen', titulo: 'Doc de ejemplo', referencia: '', fecha: '' });
+  Object.assign(d.revision, { fecha: '2026-11-01', por: 'Admin' }); return f; };
+test('una ficha vacía no cumple ningún punto de la lista de control; una completa los cumple todos', () => {
+  const v = P.productoChecklist(P.productoNueva(), HOY); assert.strictEqual(v.listo, false); assert.strictEqual(v.total, 11); assert.strictEqual(v.items.filter((i) => i.ok).length, 0);
+  const c = P.productoChecklist(completa(), HOY); assert.strictEqual(c.listo, true, c.items.filter((i) => !i.ok).map((i) => i.k).join(','));
+});
+test('cada punto de la lista falla por separado cuando falta lo suyo (costes sin fuente, vigencia vencida, fiscalidad sin fecha…)', () => {
+  const falla = (mut, k) => { const f = completa(); mut(f); const i = P.productoChecklist(f, HOY).items.find((x) => x.k === k); assert.strictEqual(i.ok, false, k); };
+  falla((f) => { f.costes[0].estado = 'pendiente'; }, 'costes'); falla((f) => { f.costes[0].fuente.documento = ''; }, 'costes'); falla((f) => { f.costes = []; }, 'costes');
+  falla((f) => { f.vigenteHasta = '2026-01-31'; }, 'vigente'); falla((f) => { f.detalle.fiscalidad.normativaVigencia = ''; }, 'fiscalidad');
+  falla((f) => { f.detalle.funcionamiento.exclusiones = '  '; }, 'exclusiones'); falla((f) => { f.detalle.argumentacion.nivel3 = ''; }, 'explicacion');
+  falla((f) => { f.detalle.documentos = []; }, 'fuentes'); falla((f) => { f.detalle.revision.por = ''; }, 'revision'); falla((f) => { f.detalle.identificacion.codigoTarifa = ''; }, 'codigo');
+});
+test('verificar con la lista exigida bloquea una ficha incompleta y dice qué falta; la completa pasa', () => {
+  const inc = verificable(); P.productoCambiarEstado(inc, 'pendiente_revision', 'a', 't');
+  const r = P.productoCambiarEstado(inc, 'verificado', 'a', 't', { exigirChecklist: true, hoy: HOY }); assert.strictEqual(r.ok, false); assert(r.errores.some((x) => /lista de control/.test(x))); assert.strictEqual(inc.estado, 'pendiente_revision');
+  const ok = completa(); P.productoCambiarEstado(ok, 'pendiente_revision', 'a', 't');
+  const r2 = P.productoCambiarEstado(ok, 'verificado', 'a', 't', { exigirChecklist: true, hoy: HOY }); assert.strictEqual(r2.ok, true, r2.errores.join('|'));
+});
+test('normalizar completa una ficha antigua sin tocar lo que tiene y descarta valores que no son texto', () => {
+  const f = P.productoNormalizar({ productoId: 'x', detalle: { funcionamiento: { garantias: 'ok', objetivo: 5 } , documentos: [null, { tipo: 'Otro', titulo: 'T' }] } });
+  assert.strictEqual(f.detalle.funcionamiento.garantias, 'ok'); assert.strictEqual(f.detalle.funcionamiento.objetivo, ''); assert.strictEqual(f.detalle.documentos.length, 1);
+  assert.strictEqual(P.productoNormalizar({}).detalle.identificacion.codigoTarifa, '');
+});
+test('la validación revisa el contenido: fechas mal escritas, textos que no lo son y tamaños desmedidos', () => {
+  const f = ficha(); f.detalle.fiscalidad.normativaVigencia = '01/01/2026'; assert(P.productoValidar(f).some((x) => /fecha/.test(x)));
+  const g = ficha(); g.detalle.funcionamiento.garantias = 'x'.repeat(8001); assert(P.productoValidar(g).some((x) => /demasiado largo/.test(x)));
+  const h = ficha(); h.detalle.funcionamiento.garantias = 7; assert(P.productoValidar(h).some((x) => /debe ser texto/.test(x)));
+  assert.deepStrictEqual(P.productoValidar(ficha()), []);
+});
+test('identificador del documento: minúsculas, sin acentos ni «/», y vacío si falta producto o versión', () => {
+  assert.strictEqual(P.productoDocId({ productoId: 'Generali VA', version: '2026/Q1 é' }), 'generali-va_2026-q1-e'); assert.strictEqual(P.productoDocId({ productoId: 'x', version: '' }), '');
+  assert.strictEqual(P.productoDocId({ productoId: '../x', version: '1' }).includes('/'), false);
+});
+test('lo que se guarda lleva SOLO las claves permitidas por las reglas y es estable (guardar dos veces da lo mismo)', () => {
+  const reglas2 = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
+  const lista = /request\.resource\.data\.keys\(\)\.hasOnly\(\[\s*'productoId'([\s\S]*?)\]\)/.exec(reglas2); assert(lista, 'no se encuentra la lista de claves');
+  const permitidas = ("'productoId'" + lista[1]).match(/'([A-Za-z]+)'/g).map((x) => x.replace(/'/g, ''));
+  const g = P.productoParaGuardar(Object.assign(completa(), { _createdAt: 1, id: 'x', _updated: 'z', extra: 1 }));
+  Object.keys(g).forEach((k) => assert(permitidas.includes(k), 'clave no permitida por las reglas: ' + k));
+  permitidas.filter((k) => !['createdAt', 'updatedAt'].includes(k)).forEach((k) => assert(k in g, 'falta la clave ' + k));
+  assert.deepStrictEqual(P.productoParaGuardar(g), g);
+});
+test('la ficha verificada que pasa a obsoleta conserva exactamente costes, fuente y contenido (lo que exige la regla)', () => {
+  const f = completa(); P.productoCambiarEstado(f, 'pendiente_revision', 'a', 't'); P.productoCambiarEstado(f, 'verificado', 'a', 't');
+  const antes = P.productoParaGuardar(f); P.productoCambiarEstado(f, 'obsoleto', 'a', 't'); const despues = P.productoParaGuardar(f);
+  assert.deepStrictEqual(despues.costes, antes.costes); assert.deepStrictEqual(despues.fuente, antes.fuente); assert.deepStrictEqual(despues.detalle, antes.detalle); assert.strictEqual(despues.estado, 'obsoleto');
+});
+test('las reglas incluyen el contenido profesional (detalle) y lo congelan en una ficha verificada', () => {
+  const r = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
+  assert(/'detalle'/.test(r)); assert(/detalle is map/.test(r)); assert(/detalle == resource\.data\.detalle/.test(r));
+});
+
 console.log('\nSeguridad de la biblioteca');
 const reglas = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
 const bloque = reglas.slice(reglas.indexOf('match /productosVersiones/{versionId}'));
