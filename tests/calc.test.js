@@ -741,6 +741,54 @@ test('captura: con el MISMO pago mensual y el puente, la diferencia con el banco
   assert(316786 - 192618 > 100000); // la cifra antigua que se publicaba
 });
 
+console.log('\nNecesidad total de fondos (Fase 1 de la especificación: ORDEN 1.1, 1.2, 1.3, 1.4)');
+const nf = (o) => engine.inmuebleNecesidadFondos(o);
+test('sin desglose, reserva, comprometido ni ayudas es la fórmula de siempre: precio·(1+gastos%) − capital', () => {
+  [[200000, 10, 40000], [150000, 0, 0], [320000, 12.5, 65000], [100000, 8, 150000]].forEach(([p, g, c]) => {
+    const esperado = Math.max(0, Math.round((p * (1 + g / 100) - c) * 100) / 100);
+    assert.strictEqual(engine.inmuebleFin({ precio: p, gastosPct: g, capitalPropio: c }), esperado);
+  });
+});
+test('casos A–E de la especificación (11.2): coste total, capital utilizable y financiación necesaria', () => {
+  // [precio, gastos de ejemplo, capital disponible, reserva] -> [coste total, capital utilizable, financiación]
+  const casos = [[150000, 15000, 30000, 5000, 165000, 25000, 140000], [180000, 18000, 40000, 5000, 198000, 35000, 163000],
+    [200000, 20000, 40000, 5000, 220000, 35000, 185000], [250000, 25000, 60000, 10000, 275000, 50000, 225000], [300000, 30000, 80000, 15000, 330000, 65000, 265000]];
+  casos.forEach(([precio, gastos, cap, reserva, coste, util, fin]) => {
+    const r = nf({ precio, gastosPct: gastos / precio * 100, capitalPropio: cap, reserva });
+    near(r.costeTotalCompra, coste, 0.01); near(r.capital.valor, util, 0.01); near(r.financiacionNecesaria, fin, 0.01);
+  });
+});
+test('capital utilizable = disponible − reserva − comprometido + ayudas confirmadas; con déficit se avisa y la financiación no es negativa', () => {
+  assert.strictEqual(engine.inmuebleCapitalUtilizable({ capitalPropio: 50000, reserva: 8000, comprometido: 7000, ayudas: 3000 }).valor, 38000);
+  const r = nf({ precio: 100000, gastosPct: 10, capitalPropio: 10000, reserva: 12000 });
+  assert.strictEqual(r.capital.valor, -2000); assert.strictEqual(r.sinFondosSuficientes, true); assert.strictEqual(r.financiacionNecesaria, 112000);
+  const sobra = nf({ precio: 100000, gastosPct: 0, capitalPropio: 300000 }); assert.strictEqual(sobra.financiacionNecesaria, 0);
+});
+test('desglose de gastos: % del precio o importe fijo por partida, y manda sobre el % global', () => {
+  const inm = { precio: 200000, gastosPct: 10, capitalPropio: 40000, gastos: { impuesto: { modo: 'pct', v: 3.5 }, notario: { modo: 'pct', v: 1.5 }, grundbuch: { modo: 'pct', v: 0.5 },
+    makler: { modo: 'pct', v: 3.57 }, reformas: { modo: 'eur', v: 12000 }, mudanza: { modo: 'eur', v: 2500 }, otros: { modo: 'eur', v: 0 } } };
+  near(engine.inmuebleGastosTotal(inm), 7000 + 3000 + 1000 + 7140 + 12000 + 2500, 0.01); // 32.640 €, no el 10 % global (20.000)
+  near(nf(inm).financiacionNecesaria, 200000 + 32640 - 40000, 0.01);
+  assert.strictEqual(engine.inmuebleGastosPartidas({ precio: 1, gastosPct: 10 }), null); // sin desglose → rige el % global
+});
+test('estimación típica por Bundesland: el impuesto sale de la tabla y se puede corregir; la tabla queda marcada como pendiente de validar', () => {
+  const g = engine.inmuebleGastosTipicos('BY'); assert.strictEqual(g.impuesto.v, 3.5); assert.strictEqual(g.notario.v, 1.5); assert.strictEqual(g.makler.v, 0);
+  assert.strictEqual(engine.inmuebleGastosTipicos('XX').impuesto.v, 0); // Bundesland desconocido: no se inventa un tipo
+  assert.strictEqual(engine.INM_BUNDESLAENDER.length, 16);
+});
+test('cuándo comprar: por defecto «ahora»; la compra futura no lleva puente', () => {
+  assert.strictEqual(engine.inmuebleCuando({}), 'ahora'); assert.strictEqual(engine.inmuebleCuando({ cuando: 'x' }), 'ahora');
+  assert.strictEqual(engine.inmuebleRequierePuente({ cuando: 'ahora' }), true); assert.strictEqual(engine.inmuebleRequierePuente({ cuando: '12m' }), true);
+  assert.strictEqual(engine.inmuebleRequierePuente({ cuando: 'esperar' }), false);
+});
+test('un proyecto guardado antes de estos campos se carga igual: mismos importes y valores por defecto', () => {
+  const rec = { inmueble: { modo: 'compra', precio: 250000, gastosPct: 10, capitalPropio: 50000 } };
+  const inm = engine.normalizeInmueble(rec);
+  assert.strictEqual(inm.reserva, 0); assert.strictEqual(inm.comprometido, 0); assert.strictEqual(inm.ayudas, 0); assert.strictEqual(inm.cuando, 'ahora');
+  assert.strictEqual(engine.inmuebleFin(inm), 225000); assert.strictEqual(inm.gastos, undefined);
+  const otra = engine.normalizeInmueble({ inmueble: JSON.parse(JSON.stringify(inm)) }); assert.deepStrictEqual(otra, inm); // idempotente
+});
+
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');
 gaps.forEach(g => console.log('  · ' + g));
 process.exit(failed ? 1 : 0);

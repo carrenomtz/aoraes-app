@@ -524,13 +524,68 @@ function migrateBausparTilgungsbeitrag(cfg,bausparsumme){
 // Importe a financiar en Comprar: precio + gastos de compra (% del precio) - capital propio. Con los valores por defecto (0 y 0)
 // es el precio, es decir, el comportamiento de siempre. Todo el cálculo (Bausparsumme, préstamo, banco) parte de este importe.
 function inmuebleFin(inm){
-  var p=Math.max(0,inm.precio||0), g=Math.max(0,inm.gastosPct||0), c=Math.max(0,inm.capitalPropio||0);
-  return Math.max(0,Math.round((p*(1+g/100)-c)*100)/100);
+  return inmuebleNecesidadFondos(inm).financiacionNecesaria;
 }
+
+// ---------------- Fase 1 de docs/especificacion-calculadora-badenia.md: necesidad total de fondos ----------------
+// Impuesto de adquisición (Grunderwerbsteuer) por Bundesland: tabla de REFERENCIA para proponer un tipo (ORDEN 1.1). Es un dato
+// `estimated_value` y está pendiente de validar contra la ley y la fecha de la operación: el asesor debe confirmarlo o corregirlo con el
+// documento de la compra. No se aplica solo: solo se usa al pulsar «Usar estimación típica».
+var INM_BUNDESLAENDER=[['BW','Baden-Württemberg',5],['BY','Bayern',3.5],['BE','Berlin',6],['BB','Brandenburg',6.5],['HB','Bremen',5.5],['HH','Hamburg',5.5],
+  ['HE','Hessen',6],['MV','Mecklenburg-Vorpommern',6],['NI','Niedersachsen',5],['NW','Nordrhein-Westfalen',6.5],['RP','Rheinland-Pfalz',5],['SL','Saarland',6.5],
+  ['SN','Sachsen',5.5],['ST','Sachsen-Anhalt',5],['SH','Schleswig-Holstein',6.5],['TH','Thüringen',5]];
+var INM_BUNDESLAENDER_ESTADO='pendiente_de_validacion';
+// Partidas del coste de compra (ORDEN 1.1). Cada una admite % del precio o un importe fijo. Valores típicos propuestos (estimación, editables).
+var INM_PARTIDAS=[['impuesto','Impuesto de adquisición (Grunderwerbsteuer)','pct'],['notario','Notario','pct'],['grundbuch','Registro de la propiedad (Grundbuch)','pct'],
+  ['makler','Comisión de agencia (Maklerprovision)','pct'],['reformas','Reformas y modernización','eur'],['mudanza','Mudanza y otros gastos iniciales','eur'],['otros','Otros costes','eur']];
+var INM_PARTIDAS_TIPICAS={notario:1.5,grundbuch:0.5};
+function inmuebleRedondea2(x){ return Math.round((x||0)*100)/100; }
+// Estimación típica del desglose: impuesto según el Bundesland, notario y Grundbuch en su tramo habitual, el resto a 0 (lo decide el asesor).
+function inmuebleGastosTipicos(bundesland){
+  var g={}, bl=INM_BUNDESLAENDER.filter(function(b){ return b[0]===bundesland; })[0];
+  INM_PARTIDAS.forEach(function(p){ g[p[0]]={modo:p[2],v:0}; });
+  if(bl) g.impuesto={modo:'pct',v:bl[2]};
+  g.notario={modo:'pct',v:INM_PARTIDAS_TIPICAS.notario}; g.grundbuch={modo:'pct',v:INM_PARTIDAS_TIPICAS.grundbuch};
+  return g;
+}
+// Partidas con su importe en euros, o null si el proyecto no usa el desglose (entonces rige el % global de siempre).
+function inmuebleGastosPartidas(inm){
+  var g=inm&&inm.gastos; if(!g||typeof g!=='object') return null;
+  var precio=Math.max(0,inm.precio||0);
+  return INM_PARTIDAS.map(function(p){
+    var it=(g[p[0]]&&typeof g[p[0]]==='object')?g[p[0]]:{}, modo=(it.modo==='eur')?'eur':(it.modo==='pct'?'pct':p[2]), v=Math.max(0,Number(it.v)||0);
+    return {k:p[0],label:p[1],modo:modo,v:v,importe:inmuebleRedondea2(modo==='pct'?precio*v/100:v)};
+  });
+}
+function inmuebleGastosTotal(inm){
+  var par=inmuebleGastosPartidas(inm);
+  if(par) return inmuebleRedondea2(par.reduce(function(a,x){ return a+x.importe; },0));
+  return inmuebleRedondea2(Math.max(0,inm.precio||0)*Math.max(0,inm.gastosPct||0)/100);
+}
+// capital_utilizable = capital_disponible - reserva_mantenida - capital_comprometido + ayudas_confirmadas (ORDEN 1.2).
+// `valor` puede ser negativo (la reserva y lo comprometido superan lo disponible): se conserva para avisar; la financiación lo trata como 0.
+function inmuebleCapitalUtilizable(inm){
+  var disp=Math.max(0,inm.capitalPropio||0), res=Math.max(0,inm.reserva||0), comp=Math.max(0,inm.comprometido||0), ay=Math.max(0,inm.ayudas||0);
+  return {disponible:disp,reserva:res,comprometido:comp,ayudas:ay,valor:inmuebleRedondea2(disp-res-comp+ay)};
+}
+// Fórmula única y visible (ORDEN 1.3): coste_total_compra = precio + gastos; financiación_necesaria = coste_total_compra - capital_utilizable.
+// Sin desglose, reserva, comprometido ni ayudas (todo a 0) es exactamente la fórmula de siempre: precio·(1+gastosPct/100) - capitalPropio.
+function inmuebleNecesidadFondos(inm){
+  var precio=inmuebleRedondea2(Math.max(0,(inm&&inm.precio)||0)), gastos=inmuebleGastosTotal(inm||{}), cap=inmuebleCapitalUtilizable(inm||{});
+  var coste=inmuebleRedondea2(precio+gastos);
+  return {precio:precio,gastos:gastos,partidas:inmuebleGastosPartidas(inm||{}),costeTotalCompra:coste,capital:cap,
+    financiacionNecesaria:Math.max(0,inmuebleRedondea2(coste-cap.valor)),
+    sinFondosSuficientes:(cap.valor<0)};
+}
+// Cuándo quiere comprar (ORDEN 1.4): condiciona las rutas. 'ahora' y '12m' exigen disponer del dinero pronto, así que un Bausparvertrag con
+// fase de ahorro necesita una financiación puente; 'esperar' es la compra futura (se ahorra antes de comprar, sin puente).
+var INM_CUANDO=['ahora','12m','esperar'];
+function inmuebleCuando(inm){ return (inm&&INM_CUANDO.indexOf(inm.cuando)>=0)?inm.cuando:'ahora'; }
+function inmuebleRequierePuente(inm){ return inmuebleCuando(inm)!=='esperar'; }
 
 // Límites de los campos numéricos: solo evitan valores absurdos (negativos, miles de millones…); no son recomendaciones.
 var INM_LIMITES={
-  precio:[0,1e8], ingresoNeto:[0,1e6], capitalPropio:[0,1e8], gastosPct:[0,30], pagoIgual:[0,1e6],
+  precio:[0,1e8], ingresoNeto:[0,1e6], capitalPropio:[0,1e8], gastosPct:[0,30], pagoIgual:[0,1e6], reserva:[0,1e8], comprometido:[0,1e8], ayudas:[0,1e8],
   interesPrestamo:[0,20], interesAhorro:[0,20], interesOriginal:[0,20], recargoST:[0,5], comision:[0,10],
   zinsbindung:[0,40], plazoOriginal:[0,60], pct:[0,100], anios:[0,40], marcaAnios:[0,40], topeST:[0,100],
   sondertilgung:[0,1e7], sonderAhorro:[0,1e6], pagoAhorro:[0,1e6], pagoPrestamo:[0,1e6], pagoPre:[0,1e6],
@@ -585,7 +640,7 @@ function inmuebleAplicarDatosCliente(rec,inm){
 // Semáforo del capital propio frente al precio: menos del 10 % rojo, del 10 % hasta menos del 15 % amarillo, 15 % o más verde.
 // Sin precio no hay semáforo (nivel '').
 function inmuebleCapitalNivel(inm){
-  var precio=(inm&&inm.precio)||0, cap=Math.max(0,(inm&&inm.capitalPropio)||0);
+  var precio=(inm&&inm.precio)||0, cap=Math.max(0,inmuebleCapitalUtilizable(inm||{}).valor);
   if(!(precio>0)) return { pct:0, nivel:'' };
   var pct=cap/precio*100;
   return { pct:pct, nivel:(pct<10)?'rojo':(pct<15?'amarillo':'verde') };
@@ -655,6 +710,9 @@ function normalizeInmueble(rec){
   if(inm.gastosPct==null||isNaN(inm.gastosPct)) inm.gastosPct=0;
   if(inm.capitalPropio==null||isNaN(inm.capitalPropio)) inm.capitalPropio=0;
   if(inm.ingresoNeto==null||isNaN(inm.ingresoNeto)) inm.ingresoNeto=0;
+  ['reserva','comprometido','ayudas'].forEach(function(k){ if(inm[k]==null||isNaN(inm[k])) inm[k]=0; });
+  if(INM_CUANDO.indexOf(inm.cuando)<0) inm.cuando='ahora';
+  if(inm.gastos!=null&&(typeof inm.gastos!=='object'||Array.isArray(inm.gastos))) delete inm.gastos;
   inmuebleAplicarDatosCliente(rec,inm);
   if(!Array.isArray(inm.curvaOff)) inm.curvaOff=[];
   if(inm.ratioMax==null||isNaN(inm.ratioMax)||inm.ratioMax<=0) inm.ratioMax=35;
@@ -673,7 +731,7 @@ function normalizeInmueble(rec){
   if(inm.refi.banco.zinsbindung==null) inm.refi.banco.zinsbindung=def.refi.banco.zinsbindung;
   inmuebleSyncCompraRefi(inm);
   // Valores guardados fuera de límites (p. ej. un interés negativo tecleado antes de existir el recorte) se reponen al límite más cercano.
-  ['precio','ingresoNeto','capitalPropio','gastosPct','pagoIgual'].forEach(function(k){ if(typeof inm[k]==='number') inm[k]=inmuebleLimitar(k,inm[k]).v; });
+  ['precio','ingresoNeto','capitalPropio','gastosPct','pagoIgual','reserva','comprometido','ayudas'].forEach(function(k){ if(typeof inm[k]==='number') inm[k]=inmuebleLimitar(k,inm[k]).v; });
   [inm.a,inm.b,inm.banco,inm.refi,inm.refi.a,inm.refi.b,inm.refi.banco].forEach(function(cfg){
     if(!cfg||typeof cfg!=='object') return;
     Object.keys(INM_LIMITES).forEach(function(k){ if(typeof cfg[k]==='number') cfg[k]=inmuebleLimitar(k,cfg[k]).v; });
@@ -772,4 +830,4 @@ function inmuebleToggleCurvaTipo(inm,r){
 }
 function inmuebleSetCurvaModo(inm,modo){ inm.curvaModo=(modo==='bauspar'||modo==='plazo')?modo:'banco'; inm.curvaOff=[]; }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleCostePuente, inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCuandoComprar, inmuebleCuotasBancoRealistas, inmuebleCapitalNivel, tilgungsbeitragParaPlazo, inmuebleCurvaPuntos, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleNecesidadFondos, inmuebleGastosTotal, inmuebleGastosPartidas, inmuebleGastosTipicos, inmuebleCapitalUtilizable, inmuebleCuando, inmuebleRequierePuente, INM_BUNDESLAENDER, INM_PARTIDAS, inmuebleCostePuente, inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCuandoComprar, inmuebleCuotasBancoRealistas, inmuebleCapitalNivel, tilgungsbeitragParaPlazo, inmuebleCurvaPuntos, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }
