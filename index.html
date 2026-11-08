@@ -1624,7 +1624,7 @@
       if(wsFrames.analisis.el && wsFrames.analisis.ready){ try{ return wsFrames.analisis.el.contentWindow.aoraesGetClient(); }catch(e){} }
       return null;
     }
-    function sigOf(c){ return c?[c.name,c.age,c.retireAge,c.monthlyContribution,c.suggestedRetirement,c.iban].join('|'):null; }
+    function sigOf(c){ return c?[c.name,c.age,c.retireAge,c.monthlyContribution,c.suggestedRetirement,c.iban,(c.childrenAges||[]).join(',')].join('|'):null; }
     function hideBanner(){ banner.hidden=true; banner.innerHTML=''; }
     // view: 'jubilacion' (por defecto) o 'vsp' — cada herramienta puente comparte este mismo banner y
     // guarda su propia solución en la ficha (saveSolution namespaced por tool, ver más arriba).
@@ -1638,10 +1638,14 @@
         bits.push('50% Rürup · 50% Privatrente');
       } else if(view==='vsp'){
         if(data.iban)bits.push('IBAN en ficha');
+      } else if(view==='ninos'){
+        var ha=(data.childrenAges||[]).filter(function(a){ return a>=0&&a<=18; });
+        bits.push(ha.length?(ha.length===1?'hijo/a de '+ha[0]+' años':ha.length+' hijos de 0 a 18 años (eliges cuál en la herramienta)'):'sin hijos de 0 a 18 años en la ficha');
       }
       banner.innerHTML='<div class="bb-inner"><span class="bb-ico">&#8596;</span><span class="bb-txt">Cargado desde el CRM: <b>'+esc(data.name)+'</b>'+(bits.length?' &middot; '+bits.join(' &middot; '):'')+'</span><button type="button" class="bb-save">Guardar solución en la ficha</button><button type="button" class="bb-undo">Deshacer</button><button type="button" class="bb-close" aria-label="Cerrar">&#10005;</button></div>';
       banner.hidden=false;
       var sv=banner.querySelector('.bb-save');
+      if(view==='ninos'&&sv){ sv.parentNode.removeChild(sv); sv=null; }   // Plan Futuro no guarda escenario en la ficha: solo lee edades
       // El escenario debe guardarse en el cliente que de verdad está cargado en el iframe de
       // Análisis (data.id) — que puede NO ser el mismo que el cliente "activo" global si el asesor
       // abrió esta herramienta desde el menú Herramientas mientras navegaba con Análisis abierto en
@@ -1666,7 +1670,7 @@
       screenTo('frames'); ensureFrame(view);
       for(var j in MOD){ if(MOD[j].el)MOD[j].el.style.display=(j===view)?'block':'none'; }
       setActiveTab(view); if(location.hash.slice(1)!==view)history.replaceState(null,'','#'+view);
-      if(view==='jubilacion'||view==='vsp')maybeBridge(view); else hideBanner();
+      if(view==='jubilacion'||view==='vsp'||view==='ninos')maybeBridge(view); else hideBanner();
       if(view==='medico')syncMedico();
     }
 

@@ -93,6 +93,25 @@ test('el ahorro fiscal del Riester es la cuota con y sin la deducción (no tipo 
   const zc = (60000 + 36000) * 0.78; near(ctxR.ahorroRiester('A', 2100), 2 * Tley(zc / 2) - 2 * Tley((zc - 2100) / 2), 1e-9);
 });
 
+// ---------- Análisis: lo que entrega la ficha al panel (aoraesGetClient) ----------
+const hijos = { fechas: [] }, campos = { '#m_cliente': 'Ana López', '#m_fecha_nac': '1988-12-01' };
+const HOY = new Date(2026, 10, 8), DateFija = class extends Date { constructor(...a) { if (a.length) super(...a); else super(HOY.getTime()); } };
+const ctxG = { Math, Number, String, parseFloat, isNaN, Date: DateFija, window: {},
+  document: { querySelector: (sel) => (sel in campos ? { value: campos[sel] } : null), querySelectorAll: (sel) => (sel.indexOf('child-block') >= 0 ? hijos.fechas.map((f) => ({ value: f })) : []) } };
+vm.createContext(ctxG);
+vm.runInContext(tramo(A, 'window.aoraesGetClient = function () {', '};\n</script>') + '};', ctxG);
+console.log('\nAnálisis · datos que entrega la ficha');
+test('aoraesGetClient entrega las EDADES de los hijos en años cumplidos (hoy 8-11-2026) y nada más sobre ellos: ni nombres ni fechas de nacimiento', () => {
+  hijos.fechas = ['2024-11-09', '2024-11-08', '2015-03-01', '2000-01-01', '', 'basura', '2090-01-01'];
+  const c = ctxG.window.aoraesGetClient(); assert.deepStrictEqual(Array.from(c.childrenAges).sort((x, y) => x - y), [1, 2, 11, 26]);   // un día antes de cumplir 2 → 1
+  assert.strictEqual(c.name, 'Ana López'); assert.strictEqual(c.age, 37);
+  assert(!JSON.stringify(c).includes('2024-11') && !JSON.stringify(c).includes('2015-03') && !JSON.stringify(c).includes('2000-01'), 'no deben salir fechas de nacimiento de los hijos');
+});
+test('sin hijos escritos la lista va vacía, y sin nombre de cliente la ficha no se entrega', () => {
+  hijos.fechas = []; assert.deepStrictEqual(Array.from(ctxG.window.aoraesGetClient().childrenAges), []);
+  campos['#m_cliente'] = ''; assert.strictEqual(ctxG.window.aoraesGetClient(), null); campos['#m_cliente'] = 'Ana López';
+});
+
 // ---------- Seguros patrimoniales (VSP) ----------
 const V = leer('vsp.html');
 const estado = { ramos: {}, freq: 'mensual', years: '5' };

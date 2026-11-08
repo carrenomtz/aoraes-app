@@ -52,6 +52,9 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .ctrl-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.45rem}
 .ctrl-label .lbl{font-size:.8rem;color:rgba(255,255,255,.62)}
 .ctrl-label .val{font-family:var(--mono);font-size:.9rem;color:#ffffff;font-weight:500}
+.client-bar{margin:0 0 .9rem;padding:.6rem .8rem;border:1px solid rgba(196,160,90,.35);border-radius:10px;background:rgba(255,255,255,.06);font-size:.78rem;line-height:1.5;color:rgba(255,255,255,.8)}
+.client-bar select{font:inherit;margin-left:.35rem;padding:.15rem .4rem;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff}
+.client-bar select option{color:#14213d}
 .scn-hint{margin:.5rem 0 0;font-size:.7rem;line-height:1.4;color:rgba(255,255,255,.55)}
 .val-wrap{display:inline-flex;align-items:center;gap:.3rem}
 .val-input{width:5.2em;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);border-radius:6px;color:#ffffff;font-family:var(--mono);font-size:.9rem;font-weight:500;text-align:right;padding:.15rem .45rem;-moz-appearance:textfield}
@@ -318,6 +321,7 @@ body.adv .adv-only{display:block}
   <div class="hero-grid">
     <div class="controls">
       <div class="controls-eyebrow">Tu hijo/a</div>
+      <div class="client-bar" id="fut-client" hidden></div>
       <div class="ctrl">
         <div class="ctrl-label"><span class="lbl">Edad actual</span><span class="val-wrap"><input type="number" class="val-input" id="v-childage" min="0" max="18" step="1" value="2"><span class="val-unit">años</span></span></div>
         <input type="range" id="s-childage" min="0" max="18" value="2">
@@ -678,6 +682,19 @@ function seqRowAt(age,dropPct){
   if(years<FUT_MIN_VISIBLE_YEARS)return {ok:false,reason:'hidden',years};
   const stable=simulate(years).capital, crash=seqCapital(years,seqCrash(years,'end',dropPct));
   return {ok:true,age,years,year:THIS_YEAR+years,stable,crash,diff:crash-stable,pct:stable>0?(crash-stable)/stable*100:0};
+}
+
+// ===== Ficha del cliente → Plan Futuro =====
+// El panel entrega los datos de la ficha (aoraesApplyClient). Solo se usan dos: la edad de quien paga (para la duración del Versorgerschutz) y las
+// EDADES de los hijos (no fechas ni nombres: Plan Futuro no necesita más). Nunca se toca la aportación mensual ni el escenario: la aportación de
+// jubilación de la ficha no es la de un plan infantil. Elegibles: hijos de 0 a 18 años (el rango de la herramienta); se elige por defecto el menor.
+const FICHA_HIJO_MAX=18;
+function fichaAPlan(data,idx){
+  const todas=(data&&Array.isArray(data.childrenAges))?data.childrenAges:[];
+  const elegibles=todas.filter(a=>typeof a==='number'&&Number.isFinite(a)&&a>=0&&a<=FICHA_HIJO_MAX).map(a=>Math.floor(a)).sort((a,b)=>a-b);
+  const i=Math.min(Math.max(0,idx|0),Math.max(0,elegibles.length-1));
+  const pagador=(data&&typeof data.age==='number'&&Number.isFinite(data.age))?Math.min(80,Math.max(18,Math.round(data.age))):null;
+  return {childAge:elegibles.length?elegibles[i]:null,payerAge:pagador,elegibles:elegibles,total:todas.length,idx:elegibles.length?i:0,name:(data&&data.name)?String(data.name):''};
 }
 
 // Planificador inverso: cuota mensual INICIAL necesaria para llegar a un capital objetivo (euros del año objetivo) con el mismo motor.
@@ -1146,6 +1163,13 @@ const X={
   seqUnitsReal:{es:'Importes en euros de hoy (el plazo termina en {0}).',en:'Amounts in today\'s euros (the term ends in {0}).',de:'Beträge in heutigen Euro (die Laufzeit endet {0}).'},
   seqAgeTitle:{es:'Si el mercado cae un {0} % el año antes de cada edad',en:'If the market falls {0} % in the year before each age',de:'Wenn der Markt im Jahr vor jedem Alter um {0} % fällt'},
   seqNote:{es:'Ilustración con supuestos propios, no una previsión ni una garantía. Aplica el mismo ajuste por costes que el plan; no modela retiradas ni distintos fondos. Cada año se expresa como rentabilidad efectiva anual.',en:'Illustration with our own assumptions, not a forecast or a guarantee. It applies the same cost adjustment as the plan; it does not model withdrawals or different funds. Each year is expressed as an effective annual return.',de:'Veranschaulichung mit eigenen Annahmen, keine Prognose und keine Garantie. Es gilt dieselbe Kostenanpassung wie im Plan; Entnahmen und unterschiedliche Fonds werden nicht modelliert. Jedes Jahr wird als effektive Jahresrendite angegeben.'},
+  fichaTxt:{es:'Datos de la ficha de {0}: quien paga tiene {1} años.',en:'Data from {0}\'s file: the payer is {1} years old.',de:'Daten aus der Akte von {0}: Die zahlende Person ist {1} Jahre alt.'},
+  fichaTxtSinPagador:{es:'Datos de la ficha de {0}.',en:'Data from {0}\'s file.',de:'Daten aus der Akte von {0}.'},
+  fichaHijo:{es:'Hijo/a de la ficha:',en:'Child from the file:',de:'Kind aus der Akte:'},
+  fichaHijoUno:{es:'Hijo/a de la ficha: {0} años.',en:'Child from the file: {0} years old.',de:'Kind aus der Akte: {0} Jahre alt.'},
+  fichaVarios:{es:'La ficha tiene {0} hijos; solo se pueden elegir los de 0 a 18 años.',en:'The file has {0} children; only those aged 0 to 18 can be chosen.',de:'Die Akte enthält {0} Kinder; wählbar sind nur Kinder von 0 bis 18 Jahren.'},
+  fichaSinHijos:{es:'La ficha no tiene hijos de 0 a 18 años: escribe la edad a mano.',en:'The file has no children aged 0 to 18: enter the age by hand.',de:'Die Akte enthält keine Kinder von 0 bis 18 Jahren: Alter bitte von Hand eingeben.'},
+  fichaAnos:{es:'{0} años',en:'{0} years',de:'{0} Jahre'},
   futPlanTitle:{es:'¿Cuánto tendría que ahorrar al mes?',en:'How much would I need to save each month?',de:'Wie viel müsste ich monatlich sparen?'},
   futPlanHint:{es:'Escribe el capital que te gustaría tener a esta edad, en euros de hoy. Si lo dejas vacío usamos la suma de tus objetivos marcados con presupuesto.',en:'Enter the capital you would like to have at this age, in today\'s euros. If left empty we use the total of your selected objectives that have a budget.',de:'Geben Sie das gewünschte Kapital in diesem Alter ein, in heutigen Euro. Bleibt das Feld leer, verwenden wir die Summe Ihrer gewählten Ziele mit Budget.'},
   futPlanGoal:{es:'Capital deseado (euros de hoy)',en:'Desired capital (today\'s euros)',de:'Gewünschtes Kapital (heutige Euro)'},
@@ -1600,8 +1624,43 @@ $('rec-root').addEventListener('change',e=>{
 });
 
 // ---------- Idioma: estos módulos se repintan al cambiar ES / EN / DE ----------
+// ---------- Puente con el panel (la ficha del cliente) ----------
+let FICHA=null;   // {data, idx}
+function fichaBar(){
+  const el=$('fut-client'); if(!el)return;
+  if(!FICHA){el.hidden=true;el.innerHTML='';return;}
+  const r=fichaAPlan(FICHA.data,FICHA.idx), nombre=esc2(r.name||'—');
+  let h='<div>'+(r.payerAge!=null?tx(X.fichaTxt).replace('{0}',nombre).replace('{1}',r.payerAge):tx(X.fichaTxtSinPagador).replace('{0}',nombre))+'</div>';
+  if(!r.elegibles.length) h+='<div>'+tx(X.fichaSinHijos)+'</div>';
+  else if(r.elegibles.length===1) h+='<div>'+tx(X.fichaHijoUno).replace('{0}',r.elegibles[0])+'</div>';
+  else h+='<div><label>'+tx(X.fichaHijo)+'<select id="fut-client-hijo" aria-label="'+tx(X.fichaHijo)+'">'+r.elegibles.map((a,i)=>'<option value="'+i+'"'+(i===r.idx?' selected':'')+'>'+tx(X.fichaAnos).replace('{0}',a)+'</option>').join('')+'</select></label></div>';
+  if(r.total>r.elegibles.length&&r.elegibles.length) h+='<div>'+tx(X.fichaVarios).replace('{0}',r.total)+'</div>';
+  el.innerHTML=h; el.hidden=false;
+}
+const esc2=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function fichaAplicar(){
+  const r=fichaAPlan(FICHA.data,FICHA.idx);
+  if(r.childAge!=null){S.childAge=r.childAge;$('v-childage').value=r.childAge;$('s-childage').value=r.childAge;}
+  if(r.payerAge!=null){S.payerAge=r.payerAge;const rp=$('r-payer');if(rp)rp.value=r.payerAge;}
+  const nc=$('nav-client'); if(nc&&r.name)nc.textContent=r.name;
+  fichaBar(); if(typeof syncHeroAdv==='function')syncHeroAdv(); if(typeof updateRec==='function'&&$('rec-cards'))updateRec(); render();
+}
+window.aoraesApplyClient=function(data){
+  if(!data)return null;
+  const nc=$('nav-client'), snap={childAge:S.childAge,payerAge:S.payerAge,name:nc?nc.textContent:null};
+  FICHA={data:data,idx:0}; fichaAplicar(); return snap;
+};
+window.aoraesRestore=function(snap){
+  if(!snap)return;
+  S.childAge=snap.childAge;$('v-childage').value=snap.childAge;$('s-childage').value=snap.childAge;S.payerAge=snap.payerAge;const rp=$('r-payer');if(rp)rp.value=snap.payerAge;
+  const nc=$('nav-client'); if(nc&&snap.name!=null)nc.textContent=snap.name;
+  FICHA=null; fichaBar(); if(typeof syncHeroAdv==='function')syncHeroAdv(); if(typeof updateRec==='function'&&$('rec-cards'))updateRec(); render();
+};
+document.addEventListener('change',e=>{ if(e.target&&e.target.id==='fut-client-hijo'&&FICHA){FICHA.idx=parseInt(e.target.value,10)||0;fichaAplicar();} });
+
 function buildAll(){
   buildHeroAdv(); buildHealth(); buildRec(); buildReal(); buildFuture(); buildSeq();
+  fichaBar();
   const b=$('adv-switch'); if(b){b.title=tx(X.advSwitchHint);$('adv-switch-label').textContent=ADV?tx(X.advOn):tx(X.adv);}
 }
 const _applyLang=window.applyLang;

@@ -6751,7 +6751,11 @@ window.aoraesGetClient = function () {
     var grossMonthly=parseFloat(String(grossEl.value).replace(',','.'));
     if(!isNaN(grossMonthly)) salary=Math.round(grossMonthly*((pagasEl&&parseFloat(pagasEl.value))||12));
   }
-  return { id:id, name:name, age:age, retireAge:num('[data-sit="edadJub"]'), monthlyContribution:num('[data-sit="aporteJubilacion"]'), suggestedRetirement:(suggested!=null?Math.round(suggested):null), iban:v('[data-pers="iban_A"]'), salary:salary };
+  // Edades en años cumplidos de los hijos (solo la EDAD: ni nombres ni fechas de nacimiento salen de la ficha; Plan Futuro no necesita más).
+  var childrenAges=[]; try{ var hoy=new Date(); document.querySelectorAll('#children-body .child-block [data-child$=":fechaNacimiento"]').forEach(function(e){
+    var iso=String(e.value||'').trim(); if(!iso) return; var d=new Date(iso); if(isNaN(d.getTime())) return;
+    var a=hoy.getFullYear()-d.getFullYear(), m=hoy.getMonth()-d.getMonth(); if(m<0||(m===0&&hoy.getDate()<d.getDate())) a--; if(a>=0&&a<=60) childrenAges.push(a); }); }catch(e){}
+  return { id:id, name:name, age:age, childrenAges:childrenAges, retireAge:num('[data-sit="edadJub"]'), monthlyContribution:num('[data-sit="aporteJubilacion"]'), suggestedRetirement:(suggested!=null?Math.round(suggested):null), iban:v('[data-pers="iban_A"]'), salary:salary };
 };
 </script>
 <div class="save-fab no-print" id="save-fab" role="status" aria-live="polite" hidden>

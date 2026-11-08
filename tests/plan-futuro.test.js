@@ -11,7 +11,7 @@ const ctx = { Math, Intl, HC: { school: 'real' } }; vm.createContext(ctx);
 const FICTICIAS = { kiz: [[0.25, 10], [18, 10]], buo: [[0.25, 5], [18, 20]], sbu: { grund: 30, haupt: 30, real: 30, gym: 30, sek2: 30 }, vs: { death: 0.02, both: 0.05 } };
 const conTablas = () => { ctx.AORAES_COSTES_COBERTURAS = FICTICIAS; }, sinTablas = () => { delete ctx.AORAES_COSTES_COBERTURAS; };
 conTablas();
-vm.runInContext(codigo + '\nthis.S=S; this.C=C; this.calcPlan=calcPlan; this.withCfg=withCfg; this.deflate=deflate; this.firstMonth=firstMonth; this.SCENARIOS=SCENARIOS; this.simulate=simulate; this.futAt=futAt; this.futCost=futCost; this.futNeeded=futNeeded; this.coverCostMissing=coverCostMissing; this.coverTables=coverTables; this.effRet=effRet; this.seqCrash=seqCrash; this.seqMean=seqMean; this.seqParse=seqParse; this.seqCapital=seqCapital; this.seqRowAt=seqRowAt;', ctx);
+vm.runInContext(codigo + '\nthis.S=S; this.C=C; this.calcPlan=calcPlan; this.withCfg=withCfg; this.deflate=deflate; this.firstMonth=firstMonth; this.SCENARIOS=SCENARIOS; this.simulate=simulate; this.futAt=futAt; this.futCost=futCost; this.futNeeded=futNeeded; this.coverCostMissing=coverCostMissing; this.coverTables=coverTables; this.fichaAPlan=fichaAPlan; this.effRet=effRet; this.seqCrash=seqCrash; this.seqMean=seqMean; this.seqParse=seqParse; this.seqCapital=seqCapital; this.seqRowAt=seqRowAt;', ctx);
 let passed = 0, failed = 0;
 function test(name, fn) { try { fn(); passed++; console.log('  ok   ' + name); } catch (e) { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); } }
 const base = () => Object.assign(ctx.S, { childAge: 2, monthly: 75, ret: 6, capital0: 1000, targetYear: 2042, dyn: 0, extraYear: 0, payerAge: 35, real: false, infl: 2 });
@@ -143,6 +143,28 @@ test('la regla «solo desde el año 5» es un interruptor (FUT_MIN_VISIBLE_YEARS
   assert.strictEqual(ctx5.futAt(5).reason, 'hidden');                       // 3 años: oculto
   assert.strictEqual(ctx5.futAt(7).ok, true);                                // 5 años: visible
   assert(ctx5.simulate(3).capital > 0);                                      // el motor sigue calculando los primeros años
+});
+
+// ----- Ficha del cliente → Plan Futuro -----
+test('ficha: toma la edad de quien paga (limitada a 18–80) y la edad del hijo/a menor de 0 a 18 años; ignora lo demás', () => {
+  const r = ctx.fichaAPlan({ name: 'Ana', age: 37, childrenAges: [9, 3, 21, 14] }, 0);
+  assert.strictEqual(r.payerAge, 37); assert.strictEqual(r.childAge, 3); assert.deepStrictEqual(Array.from(r.elegibles), [3, 9, 14]); assert.strictEqual(r.total, 4); assert.strictEqual(r.name, 'Ana');
+  assert.strictEqual(ctx.fichaAPlan({ age: 12, childrenAges: [] }, 0).payerAge, 18); assert.strictEqual(ctx.fichaAPlan({ age: 95, childrenAges: [] }, 0).payerAge, 80); assert.strictEqual(ctx.fichaAPlan({ age: 36.6, childrenAges: [] }, 0).payerAge, 37);
+});
+test('ficha: elegir otro hijo/a cambia solo la edad del hijo; un índice fuera de rango se limita; sin hijos de 0 a 18 años no se toca la edad', () => {
+  const d = { age: 40, childrenAges: [3, 9, 14] };
+  [[0, 3], [1, 9], [2, 14], [7, 14], [-4, 3]].forEach(([i, e]) => assert.strictEqual(ctx.fichaAPlan(d, i).childAge, e, 'índice ' + i));
+  const s = ctx.fichaAPlan({ age: 40, childrenAges: [25, 30] }, 0); assert.strictEqual(s.childAge, null); assert.strictEqual(s.total, 2); assert.strictEqual(ctx.fichaAPlan({ age: 40 }, 0).childAge, null);
+});
+test('ficha: datos ausentes o inválidos no inventan nada (null), edades con decimales se truncan y nunca se pide la aportación ni el escenario', () => {
+  const r = ctx.fichaAPlan({ name: 'X', age: 'treinta', childrenAges: ['2', NaN, -1, 5.9, null, 18, 19] }, 0);
+  assert.strictEqual(r.payerAge, null); assert.deepStrictEqual(Array.from(r.elegibles), [5, 18]); assert.strictEqual(r.childAge, 5);
+  const n = ctx.fichaAPlan(null, 0); assert.strictEqual(n.payerAge, null); assert.strictEqual(n.childAge, null); assert.strictEqual(n.name, '');
+  assert.deepStrictEqual(Object.keys(r).sort(), ['childAge', 'elegibles', 'idx', 'name', 'payerAge', 'total'], 'solo devuelve edades y el nombre para mostrar');
+});
+test('ficha: la página define el puente (aoraesApplyClient y aoraesRestore), solo lee edades de los hijos y no toca la aportación mensual', () => {
+  assert(/window\.aoraesApplyClient=function/.test(html) && /window\.aoraesRestore=function/.test(html));
+  const apl = html.slice(html.indexOf('function fichaAplicar()'), html.indexOf('window.aoraesApplyClient=function')); assert(!/S\.monthly|S\.ret\b/.test(apl), 'el puente no debe tocar la aportación ni el escenario');
 });
 
 // ----- Datos internos fuera del código público -----
