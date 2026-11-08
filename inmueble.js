@@ -341,17 +341,24 @@ function inmuebleFraseRefi(d){
   return '<div class="inm-headline">'+h+'<div class="inm-headline-sub">No incluye alquiler, revalorización, impuestos ni lo que rendiría tu ahorro en otra parte.</div></div>';
 }
 
-function inmuebleFraseComprar(rEst,rk,igual,custom){
+function inmuebleFraseComprar(rEst,rk,igual,custom,puente){
   var h, sub;
   var costeEst=rEst.interesTotalPrestamo+rEst.comision-rEst.interesGanadoAhorro;
   if(igual){
     h='<span>'+(custom?'Con un pago mensual del banco de':'Con el mismo pago mensual de')+' <b>'+eur(rk.cuotaPrestamo)+'/mes</b>, el banco termina en <b>'+inmuebleAnios(inmuebleMesesDesdeHoy(rk,0))+'</b> y paga <b>'+eur(rk.interesTotalPrestamo+rk.comision)+'</b> de intereses y comisiones; el Bausparvertrag termina en <b>'+inmuebleAnios(inmuebleMesesDesdeHoy(rEst,0))+'</b> y paga <b>'+eur(costeEst)+'</b>';
-    h+=(rEst.mesesAhorro>0)?(' en intereses y comisiones, pero durante los primeros <b>'+inmuebleAnios(rEst.mesesAhorro)+'</b>, todavía no eres propietario.</span>'):' en intereses y comisiones.</span>';
+    // Comprar hoy (puente): eres propietario desde el día 0 y el Bausparvertrag suma los intereses del puente; el alquiler de equilibrio
+    // solo tiene sentido en la compra futura (esperar), donde no hay puente y no se es propietario durante el ahorro.
+    var conPuente=(puente>0&&rEst.mesesAhorro>0);
+    if(conPuente) h=h.replace('<b>'+eur(costeEst)+'</b>','<b>'+eur(costeEst+puente)+'</b>');
+    h+=conPuente?(' en intereses y comisiones, incluidos <b>'+eur(puente)+'</b> de puente hasta la asignación, para comprar hoy.</span>')
+      :((rEst.mesesAhorro>0)?(' en intereses y comisiones, pero durante los primeros <b>'+inmuebleAnios(rEst.mesesAhorro)+'</b>, todavía no eres propietario.</span>'):' en intereses y comisiones.</span>');
     // Alquiler de equilibrio: ambos caminos terminan pagando el mismo precio, así que la diferencia
     // de desembolso en efectivo (costeTotal) es solo intereses y comisiones. Durante los meses de
     // ahorro el cliente del Bausparvertrag además sigue pagando su alquiler actual.
     var rentaEq=(rEst.mesesAhorro>0)?(rk.costeTotal-rEst.costeTotal)/rEst.mesesAhorro:null;
-    if(rentaEq!=null && isFinite(rentaEq) && rentaEq>0){
+    if(conPuente){
+      sub='Hipótesis: un banco adelanta la financiación solo con intereses hasta la asignación, que no está garantizada. Si prefieres esperar y comprar al asignarse el contrato, no hay puente, pero no eres propietario durante los primeros <b>'+inmuebleAnios(rEst.mesesAhorro)+'</b>. Sin contar revalorización, impuestos ni el rendimiento del ahorro.';
+    } else if(rentaEq!=null && isFinite(rentaEq) && rentaEq>0){
       sub='Si hoy pagas más de <b>'+eur(rentaEq)+'/mes</b> de alquiler, el banco sale más barato en efectivo; si pagas menos, el Bausparvertrag. Sin contar revalorización, impuestos ni el rendimiento del ahorro.';
     } else if(rentaEq!=null && isFinite(rentaEq)){
       sub='El banco sale más barato en efectivo aun sin alquiler. Sin contar revalorización, impuestos ni el rendimiento del ahorro.';
@@ -552,7 +559,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
     '<p class="inm-curve-note">'+(marcaMeses>0?'La línea de puntos dorada marca hasta cuándo suele mantenerse fijo el tipo de un banco; después hay que renovar la financiación. ':'')+'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.</p>';
   var hitosH=inmuebleHitosHTML(inmuebleHitosComprar(precio,rEst,rk,ptsEst,ptsBanco,Math.round((inm.banco.zinsbindung||0)*12)),'Bausparvertrag',Math.round((inm.banco.zinsbindung||0)*12));
   var curva=curvaHead+hitosH+'</div>', curvaSolo=curvaHead+'</div>', hitosCard=hitosH?('<div class="inm-curve-card">'+hitosH+'</div>'):'';
-  var parts={frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0),capacidad:inmuebleCapacidadHTML(inm,precio,[['Banco directo',rk.cuotaPrestamo],['Bausparvertrag · ahorro',rEst.cuotaAhorro],['Bausparvertrag · préstamo',rEst.cuotaPrestamo]]),curva:curva,curvaSolo:curvaSolo,hitos:hitosCard,
+  var parts={frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0,puente),capacidad:inmuebleCapacidadHTML(inm,precio,[['Banco directo',rk.cuotaPrestamo],['Bausparvertrag · ahorro',rEst.cuotaAhorro],['Bausparvertrag · préstamo',rEst.cuotaPrestamo]]),curva:curva,curvaSolo:curvaSolo,hitos:hitosCard,
     cards:'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>',rEst:rEst,rk:rk,estCfg:estCfg};
   return asParts?parts:(parts.frase+parts.capacidad+parts.curva+parts.cards);
 }
