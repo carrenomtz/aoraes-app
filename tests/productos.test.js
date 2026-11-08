@@ -169,6 +169,19 @@ test('las reglas incluyen el contenido profesional (detalle) y lo congelan en un
   assert(/'detalle'/.test(r)); assert(/detalle is map/.test(r)); assert(/detalle == resource\.data\.detalle/.test(r));
 });
 
+test('importar nunca verifica: entra como borrador, sin verificador, con costes pendientes y solo con las claves de contenido', () => {
+  const raw = { productoId: 'imp-1', familia: 'VA', proveedor: 'P', nombre: 'N', version: '1', vigenteDesde: '2026-01-01', estado: 'verificado', verificadoPor: 'yo', verificadoEn: 'hoy',
+    costes: [Object.assign(coste(), { estado: 'verificado' })], hackeo: 1, detalle: { funcionamiento: { objetivo: 'o', garantias: 5 } } };
+  const f = P.productoDesdeImportacion(raw);
+  assert.strictEqual(f.estado, 'borrador'); assert.strictEqual(f.verificadoPor, ''); assert.strictEqual(f.verificadoEn, ''); assert.strictEqual(f.costes[0].estado, 'pendiente');
+  assert(!('hackeo' in f)); assert.strictEqual(f.detalle.funcionamiento.objetivo, 'o'); assert.strictEqual(f.detalle.funcionamiento.garantias, '');
+  assert.strictEqual(P.productoDesdeImportacion(null).estado, 'borrador'); assert(P.productoValidar(P.productoDesdeImportacion([])).length > 0);
+});
+test('las familias de productos.js coinciden con las que acepta la regla de Firestore', () => {
+  const r = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
+  const m = /familia in \[([^\]]*)\]/.exec(r); assert(m); const enRegla = m[1].match(/'([A-Z_]+)'/g).map((x) => x.replace(/'/g, '')).sort();
+  assert.deepStrictEqual(Object.keys(P.PRODUCTO_FAMILIAS).sort(), enRegla);
+});
 console.log('\nSeguridad de la biblioteca');
 const reglas = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
 const bloque = reglas.slice(reglas.indexOf('match /productosVersiones/{versionId}'));

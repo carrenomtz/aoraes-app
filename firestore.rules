@@ -586,7 +586,7 @@ service cloud.firestore {
         && request.resource.data.productoId is string
         && request.resource.data.productoId.size() >= 2
         && request.resource.data.productoId.size() <= 60
-        && request.resource.data.familia in ['VA', 'VAESP', 'BASISRENTE', 'BAUSPAR', 'OTRO']
+        && request.resource.data.familia in ['VA', 'VAESP', 'BASISRENTE', 'RIESTER', 'BAV', 'RENTA_INMEDIATA', 'INVERSION', 'PROTECCION', 'BAUSPAR', 'OTRO']
         && request.resource.data.proveedor is string
         && request.resource.data.proveedor.size() >= 1
         && request.resource.data.proveedor.size() <= 80

@@ -18,11 +18,16 @@ var PRODUCTO_TRANSICIONES={borrador:['pendiente_revision'],pendiente_revision:['
 
 // Cada familia tiene su propio mecanismo económico: NO se mezclan en una misma fórmula ni se presentan como equivalentes.
 var PRODUCTO_FAMILIAS={
-  VA:        {nombre:'Vermögensaufbau (ahorro en fondos)',            mecanismo:'fondos',               finalidad:'ahorro flexible'},
-  VAESP:     {nombre:'Ahorro en fondos con protección',               mecanismo:'fondos_con_proteccion',finalidad:'ahorro con protección'},
-  BASISRENTE:{nombre:'Basisrente (Rürup)',                            mecanismo:'renta',                finalidad:'jubilación'},
-  BAUSPAR:   {nombre:'Bausparvertrag',                                mecanismo:'bauspar',              finalidad:'vivienda'},
-  OTRO:      {nombre:'Otro producto (requiere definir su mecanismo)', mecanismo:'otro',                 finalidad:'por definir'}
+  VA:             {nombre:'Vermögensaufbau (ahorro en fondos)',            mecanismo:'fondos',               finalidad:'ahorro flexible'},
+  VAESP:          {nombre:'Ahorro en fondos con protección',               mecanismo:'fondos_con_proteccion',finalidad:'ahorro con protección'},
+  BASISRENTE:     {nombre:'Basisrente (Rürup)',                            mecanismo:'renta',                finalidad:'jubilación'},
+  RIESTER:        {nombre:'Riester-Rente',                                 mecanismo:'riester',              finalidad:'jubilación con incentivos estatales'},
+  BAV:            {nombre:'Betriebliche Altersversorgung (bAV)',           mecanismo:'bav',                  finalidad:'jubilación a través del empleador'},
+  RENTA_INMEDIATA:{nombre:'Sofort-Rente (renta inmediata)',                mecanismo:'renta_inmediata',      finalidad:'convertir capital en renta'},
+  INVERSION:      {nombre:'Inversión a plazo o de liquidez (Kapitalplan Plus, Parkdepot Flex…)',mecanismo:'inversion_plazo',finalidad:'inversión o reserva de liquidez'},
+  PROTECCION:     {nombre:'Protección de riesgos biométricos (BU, Risikoleben…)',mecanismo:'proteccion',     finalidad:'protección de riesgos'},
+  BAUSPAR:        {nombre:'Bausparvertrag',                                mecanismo:'bauspar',              finalidad:'vivienda'},
+  OTRO:           {nombre:'Otro producto (requiere definir su mecanismo)', mecanismo:'otro',                 finalidad:'por definir'}
 };
 var PRODUCTO_TIPOS_COSTE=['abschlusskosten','vertriebskosten','verwaltungskosten','fondskosten','risikobeitrag','zuzahlung','fondswechsel','teilentnahme','otro'];
 var PRODUCTO_TIPOS_COSTE_ES={abschlusskosten:'Costes de contratación (Abschlusskosten)',vertriebskosten:'Costes de distribución (Vertriebskosten)',
@@ -197,6 +202,17 @@ function productoParaGuardar(f){
       periodicidad:c.periodicidad,desdeMes:c.desdeMes,hastaMes:c.hastaMes==null?null:c.hastaMes,fuente:{documento:_txt(c.fuente&&c.fuente.documento),referencia:_txt(c.fuente&&c.fuente.referencia)},estado:c.estado}; }),
     notas:f.notas,verificadoPor:f.verificadoPor,verificadoEn:f.verificadoEn,detalle:f.detalle};
 }
+// Ficha a partir de un JSON importado: se queda SOLO con las claves de contenido y la deja SIEMPRE como borrador, sin verificar y con todos los costes
+// pendientes. Importar nunca verifica nada: la verificación es un paso aparte, con su fuente, en la pantalla del Centro.
+function productoDesdeImportacion(raw){
+  raw=(raw&&typeof raw==='object'&&!Array.isArray(raw))?raw:{};
+  var f=productoNueva({productoId:raw.productoId,familia:raw.familia,proveedor:raw.proveedor,nombre:raw.nombre,version:raw.version,ilustrativo:raw.ilustrativo,vigenteDesde:raw.vigenteDesde});
+  if(raw.vigenteHasta&&_esFecha(raw.vigenteHasta)) f.vigenteHasta=raw.vigenteHasta;
+  if(raw.fuente&&typeof raw.fuente==='object') f.fuente={documento:_txt(raw.fuente.documento),referencia:_txt(raw.fuente.referencia),fecha:_txt(raw.fuente.fecha)};
+  if(typeof raw.notas==='string') f.notas=raw.notas;
+  if(Array.isArray(raw.costes)) f.costes=raw.costes.filter(function(c){ return c&&typeof c==='object'; }).map(function(c){ var n=productoCosteNuevo(c); n.estado='pendiente'; return n; });
+  f.detalle=raw.detalle; return productoNormalizar(f);
+}
 // Cambio de estado: aplica la transición solo si está permitida y, para verificar, si se cumplen todos los requisitos. Devuelve {ok, errores}.
 function productoCambiarEstado(f,nuevo,quien,ahora,opts){
   if(PRODUCTO_ESTADOS.indexOf(nuevo)<0) return {ok:false,errores:['Estado desconocido.']};
@@ -262,5 +278,5 @@ function productoDescribirCoste(c){
 }
 
 if(typeof module!=='undefined'&&module.exports){ module.exports={PRODUCTO_ESTADOS,PRODUCTO_ESTADOS_ES,PRODUCTO_TRANSICIONES,PRODUCTO_FAMILIAS,PRODUCTO_TIPOS_COSTE,PRODUCTO_UNIDADES,PRODUCTO_BASES,
-  PRODUCTO_PERIODICIDADES,PRODUCTO_SECCIONES,PRODUCTO_TIPOS_DOC,PRODUCTO_TIPOS_COSTE_ES,PRODUCTO_BASES_ES,PRODUCTO_PERIODICIDADES_ES,PRODUCTO_ESTADOS_COSTE,productoDetalleNuevo,productoNormalizar,productoChecklist,productoDocId,productoParaGuardar,productoNueva,productoCosteNuevo,productoValidar,productoRequisitosVerificado,productoCambiarEstado,productoVigente,productoUsable,productoResolver,
+  PRODUCTO_PERIODICIDADES,PRODUCTO_SECCIONES,PRODUCTO_TIPOS_DOC,PRODUCTO_TIPOS_COSTE_ES,PRODUCTO_BASES_ES,PRODUCTO_PERIODICIDADES_ES,PRODUCTO_ESTADOS_COSTE,productoDetalleNuevo,productoNormalizar,productoChecklist,productoDocId,productoParaGuardar,productoDesdeImportacion,productoNueva,productoCosteNuevo,productoValidar,productoRequisitosVerificado,productoCambiarEstado,productoVigente,productoUsable,productoResolver,
   productoEtiqueta,productoComparables,productoDescribirCoste}; }

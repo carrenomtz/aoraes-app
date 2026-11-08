@@ -38,7 +38,7 @@
     var fams='<option value="">Todas las familias</option>'+Object.keys(PRODUCTO_FAMILIAS).map(function(k){ return '<option value="'+k+'"'+(CEN.fam===k?' selected':'')+'>'+esc(PRODUCTO_FAMILIAS[k].nombre)+'</option>'; }).join('');
     var ests='<option value="">Todos los estados</option>'+PRODUCTO_ESTADOS.filter(function(e){ return adm||e!=='borrador'; }).map(function(k){ return '<option value="'+k+'"'+(CEN.est===k?' selected':'')+'>'+esc(ES[k])+'</option>'; }).join('');
     h+='<div class="cen-bar"><select data-cen-filtro="fam" aria-label="Filtrar por familia">'+fams+'</select><select data-cen-filtro="est" aria-label="Filtrar por estado">'+ests+'</select>'
-      +'<button type="button" class="cen-btn" data-cen="refrescar">↻ Actualizar</button>'+(adm?'<button type="button" class="cen-btn cen-btn-gold" data-cen="nueva">+ Nueva ficha</button>':'')+'</div>';
+      +'<button type="button" class="cen-btn" data-cen="refrescar">↻ Actualizar</button>'+(adm?'<button type="button" class="cen-btn cen-btn-gold" data-cen="nueva">+ Nueva ficha</button><button type="button" class="cen-btn" data-cen="importar" title="Carga fichas desde un archivo JSON. Siempre entran como borrador, sin verificar.">⬆ Importar JSON</button><input type="file" id="cen-import-file" accept="application/json,.json" hidden>':'')+'</div>'+(CEN.aviso?'<p class="cen-aviso" role="status">'+esc(CEN.aviso)+'</p>':'')+(CEN.errores.length?'<div class="cen-error" role="alert"><ul>'+CEN.errores.map(function(e){ return '<li>'+esc(e)+'</li>'; }).join('')+'</ul></div>':'');
     var lista=CEN.fichas.filter(function(f){ return (adm||f.estado!=='borrador')&&(!CEN.fam||f.familia===CEN.fam)&&(!CEN.est||f.estado===CEN.est); })
       .sort(function(a,b){ return (a.proveedor+a.nombre).localeCompare(b.proveedor+b.nombre)||(a.vigenteDesde<b.vigenteDesde?1:-1); });
     if(CEN.cargando&&!CEN.cargado) return h+'<p class="cen-vacio">Cargando la biblioteca…</p>';
@@ -185,6 +185,7 @@
     if(a==='abrir'){ CEN.sel=id; CEN.errores=[]; CEN.aviso=''; dibujar(); window.scrollTo(0,0); }
     else if(a==='volver'){ CEN.sel=null; CEN.errores=[]; CEN.aviso=''; dibujar(); }
     else if(a==='refrescar'){ cargar(true); }
+    else if(a==='importar'){ var fi=$('cen-import-file'); if(fi){ fi.value=''; fi.click(); } }
     else if(a==='nueva'){ nuevaFicha(); }
     else if(a==='editar'){ var o=buscar(id); if(o){ CEN.edit=copia(o); CEN.edit._createdAt=o._createdAt; CEN.editNueva=false; CEN.errores=[]; CEN.aviso=''; dibujar(); window.scrollTo(0,0); } }
     else if(a==='cancelar'){ CEN.edit=null; CEN.editNueva=false; CEN.errores=[]; dibujar(); }
@@ -195,13 +196,33 @@
     else if(a==='añadir-doc'){ CEN.edit.detalle.documentos.push({tipo:'',titulo:'',referencia:'',fecha:''}); dibujar(); }
     else if(a==='quitar-doc'){ CEN.edit.detalle.documentos.splice(+b.getAttribute('data-i'),1); dibujar(); }
   }
+  // Importación de fichas desde un JSON (solo admin). Cada ficha entra como borrador sin verificar; las que ya existen no se tocan.
+  function importar(texto){
+    var arr; try{ arr=JSON.parse(texto); }catch(e){ CEN.errores=['El archivo no es un JSON válido.']; CEN.aviso=''; dibujar(); return; }
+    if(!Array.isArray(arr)) arr=[arr];
+    var nuevas=[], errores=[], omitidas=0;
+    arr.forEach(function(raw,i){
+      var f=productoDesdeImportacion(raw), id=productoDocId(f), err=productoValidar(f);
+      if(err.length){ errores.push('Ficha '+(i+1)+(f.nombre?' («'+f.nombre+'»)':'')+': '+err[0]); return; }
+      if(buscar(id)){ omitidas++; return; }
+      nuevas.push({f:f,id:id});
+    });
+    if(!nuevas.length){ CEN.errores=errores; CEN.aviso=omitidas?omitidas+' ficha(s) ya existían y no se han tocado. No hay fichas nuevas que importar.':''; dibujar(); return; }
+    if(!window.confirm('Se van a crear '+nuevas.length+' ficha(s) como BORRADOR sin verificar'+(omitidas?' ('+omitidas+' ya existían y se omiten)':'')+'. ¿Continuar?')) return;
+    var c=cloud(), hechas=0;
+    CEN.guardando=true; CEN.errores=[]; dibujar();
+    nuevas.reduce(function(p,n){ return p.then(function(){ return c.saveProductoVersion(n.id,productoParaGuardar(n.f)).then(function(){ hechas++; }).catch(function(e){ errores.push(n.f.nombre+': '+((e&&e.code==='permission-denied')?'el servidor rechazó el guardado.':((e&&e.message)||e))); }); }); },Promise.resolve())
+      .then(function(){ CEN.guardando=false; CEN.errores=errores; CEN.aviso='Importadas '+hechas+' de '+nuevas.length+' ficha(s) como borrador'+(omitidas?'; '+omitidas+' ya existían.':'.'); return cargar(true); });
+  }
   function alFiltrar(e){ var k=e.target.getAttribute&&e.target.getAttribute('data-cen-filtro'); if(!k) return; CEN[k]=e.target.value; dibujar(); }
 
   var enlazado=false;
   window.renderCentro=function(){
     var root=$('centro'); if(!root) return;
     if(!enlazado){ enlazado=true;
-      root.addEventListener('click',alClic); root.addEventListener('input',alEditar); root.addEventListener('change',function(e){ alEditar(e); alFiltrar(e); });
+      root.addEventListener('click',alClic); root.addEventListener('input',alEditar); root.addEventListener('change',function(e){
+        if(e.target&&e.target.id==='cen-import-file'){ var fl=e.target.files&&e.target.files[0]; if(!fl) return; var rd=new FileReader(); rd.onload=function(){ importar(String(rd.result)); }; rd.readAsText(fl); return; }
+        alEditar(e); alFiltrar(e); });
       root.addEventListener('keydown',function(e){ if((e.key==='Enter'||e.key===' ')&&e.target.getAttribute&&e.target.getAttribute('data-cen')==='abrir'){ e.preventDefault(); alClic(e); } });
     }
     var adm=esAdmin(); var nota=$('centro-nota'); if(nota) nota.textContent=adm?'Eres administrador: puedes cargar fichas, enviarlas a revisión, verificarlas y marcarlas como obsoletas.':'Consulta de costes y condiciones. Solo se atribuyen cifras a un proveedor cuando la ficha está verificada, vigente y con fuente.';
