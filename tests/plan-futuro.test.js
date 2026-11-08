@@ -7,7 +7,7 @@ assert(ini > 0 && fin > ini, 'no se encuentra el modelo en plan-futuro.html');
 const codigo = html.slice(ini, fin).replace('const THIS_YEAR=new Date().getFullYear();', 'const THIS_YEAR=2026;')
   .replace(/^const \$=.*$/m, '').replace(/^const eur=.*$/m, '').replace(/^const eurc=.*$/m, '');
 const ctx = { Math, Intl, HC: { school: 'real' } }; vm.createContext(ctx);
-vm.runInContext(codigo + '\nthis.S=S; this.C=C; this.calcPlan=calcPlan; this.withCfg=withCfg; this.deflate=deflate; this.firstMonth=firstMonth; this.SCENARIOS=SCENARIOS; this.simulate=simulate; this.futAt=futAt; this.futCost=futCost; this.futNeeded=futNeeded;', ctx);
+vm.runInContext(codigo + '\nthis.S=S; this.C=C; this.calcPlan=calcPlan; this.withCfg=withCfg; this.deflate=deflate; this.firstMonth=firstMonth; this.SCENARIOS=SCENARIOS; this.simulate=simulate; this.futAt=futAt; this.futCost=futCost; this.futNeeded=futNeeded; this.effRet=effRet; this.seqCrash=seqCrash; this.seqMean=seqMean; this.seqParse=seqParse; this.seqCapital=seqCapital; this.seqRowAt=seqRowAt;', ctx);
 let passed = 0, failed = 0;
 function test(name, fn) { try { fn(); passed++; console.log('  ok   ' + name); } catch (e) { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); } }
 const base = () => Object.assign(ctx.S, { childAge: 2, monthly: 75, ret: 6, capital0: 1000, targetYear: 2042, dyn: 0, extraYear: 0, payerAge: 35, real: false, infl: 2 });
@@ -178,6 +178,60 @@ test('planificador: no deja modificada la cuota del usuario', () => {
 test('planificador: con cuota creciente la cuota inicial necesaria es menor', () => {
   base(); sinCob(); ctx.S.capital0 = 0; const plana = ctx.futNeeded(40000, 16).monthly;
   ctx.S.dyn = 5; assert(ctx.futNeeded(40000, 16).monthly < plana);
+});
+
+
+// ----- Escenarios variables y riesgo de secuencia -----
+const crudo = (rets, years) => ctx.simulate(years, rets).raw;
+test('secuencia: una secuencia constante (la rentabilidad efectiva del escenario) da el mismo capital que el modelo normal', () => {
+  base(); sinCob(); ctx.S.dyn = 3; ctx.S.extraYear = 200;
+  const e = ctx.effRet(), n = 16;
+  assert(Math.abs(ctx.simulate(n, Array(n).fill(e)).capital - ctx.simulate(n).capital) < 1e-6);
+  assert.strictEqual(Math.round(ctx.simulate(n, undefined).capital), Math.round(ctx.simulate(n).capital));
+});
+test('secuencia: sin aportaciones el orden no importa y el resultado es capital × producto de (1+rentabilidad) (cálculo independiente, con años negativos)', () => {
+  base(); sinCob(); Object.assign(ctx.S, { monthly: 0, capital0: 10000, extraYear: 0 });
+  near(crudo([-20, 10, 5], 3), 10000 * 0.8 * 1.1 * 1.05, 1e-6);
+  near(crudo([5, 10, -20], 3), 10000 * 0.8 * 1.1 * 1.05, 1e-6);
+  [ 'start', 'mid', 'end' ].forEach((pos) => near(crudo(ctx.seqCrash(10, pos, 30), 10), crudo(Array(10).fill(ctx.effRet()), 10), 1e-4));
+});
+test('secuencia: todas las secuencias de caída tienen la misma media geométrica que el escenario', () => {
+  base(); [2, 4, 6, 8].forEach((r) => { ctx.S.ret = r; [ 'start', 'mid', 'end' ].forEach((pos) => near(ctx.seqMean(ctx.seqCrash(16, pos, 30), 16), ctx.effRet(), 1e-9)); });
+  base(); const a = ctx.seqCrash(16, 'end', 30); assert.strictEqual(a.length, 16); assert.strictEqual(a[15], -30); assert(a[0] > ctx.effRet());
+});
+test('secuencia: con aportaciones periódicas y la misma media, una caída al final es peor que al inicio (riesgo de secuencia)', () => {
+  base(); sinCob(); ctx.S.capital0 = 0;
+  const f = (pos) => crudo(ctx.seqCrash(16, pos, 30), 16), est = crudo(Array(16).fill(ctx.effRet()), 16);
+  assert(f('end') < f('mid') && f('mid') < f('start'), f('start') + ' ' + f('mid') + ' ' + f('end'));
+  assert(f('end') < est, 'la caída final queda por debajo de la constante');
+});
+test('secuencia: una caída del 0 % equivale a la constante; con rentabilidades negativas el capital nunca es negativo ni se inventa', () => {
+  base(); sinCob();
+  assert.strictEqual(Math.round(ctx.seqCapital(16, ctx.seqCrash(16, 'end', 0))), Math.round(ctx.simulate(16).capital));
+  const mal = ctx.simulate(16, Array(16).fill(-99));
+  assert(mal.capital >= 0 && mal.capital < 5000, 'con −99 % todos los años casi no queda capital: ' + mal.capital);
+  const peor = ctx.simulate(16, Array(16).fill(-500)); assert(peor.capital >= 0 && isFinite(peor.capital));
+});
+test('secuencia: reproducible (mismos parámetros, mismo resultado) y los años que faltan usan el escenario', () => {
+  base(); sinCob(); const s = [8, -20, 12];
+  assert.strictEqual(ctx.simulate(10, s).capital, ctx.simulate(10, s).capital);
+  const completa = s.concat(Array(7).fill(ctx.effRet()));
+  assert(Math.abs(ctx.simulate(10, s).capital - ctx.simulate(10, completa).capital) < 1e-6);
+});
+test('secuencia: parseo de texto (decimales con coma, signo menos tipográfico, separadores, límites) y no deja la configuración tocada', () => {
+  const lista = (x) => Array.from(x); assert.deepStrictEqual(lista(ctx.seqParse('8; \u221220 12,5\n5')), [8, -20, 12.5, 5]);
+  assert.deepStrictEqual(lista(ctx.seqParse('abc ; 500 ; -300')), [100, -99]); assert.deepStrictEqual(lista(ctx.seqParse('')), []);
+  base(); const r0 = ctx.S.ret, m0 = ctx.S.monthly; ctx.seqCapital(10, [1, 2]); assert.strictEqual(ctx.S.ret, r0); assert.strictEqual(ctx.S.monthly, m0);
+});
+test('secuencia por edad: capital estable = el del modelo; con caída final es menor; edades no proyectables se descartan; el interruptor del año 5 oculta la vista', () => {
+  base(); sinCob(); ctx.S.capital0 = 0;
+  const r = ctx.seqRowAt(18, 30); assert(r.ok && r.crash < r.stable && r.diff < 0 && r.pct < 0);
+  assert.strictEqual(Math.round(r.stable), Math.round(ctx.futAt(18).capital));
+  assert.strictEqual(ctx.seqRowAt(2, 30).reason, 'past'); assert.strictEqual(ctx.seqRowAt(3, 30).reason, 'short');
+  const c5 = { Math, Intl, HC: { school: 'real' } }; vm.createContext(c5);
+  vm.runInContext(codigo.replace('const FUT_MIN_VISIBLE_YEARS=0;', 'const FUT_MIN_VISIBLE_YEARS=5;') + '\nthis.S=S; this.seqRowAt=seqRowAt;', c5);
+  Object.assign(c5.S, { childAge: 2, monthly: 75, ret: 6, capital0: 0, dyn: 0, extraYear: 0 });
+  assert.strictEqual(c5.seqRowAt(5, 30).reason, 'hidden'); assert.strictEqual(c5.seqRowAt(7, 30).ok, true);
 });
 
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');

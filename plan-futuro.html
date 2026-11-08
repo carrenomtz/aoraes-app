@@ -88,6 +88,16 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .fut-plan{margin-top:1rem;padding-top:.9rem;border-top:1px solid var(--line,#e5e7eb)}
 .fut-plan-main{font-size:.92rem;line-height:1.5;margin:.6rem 0}
 .fut-plan-list{margin:0 0 .5rem;padding-left:1.1rem;font-size:.85rem}
+.seq-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1.4rem;margin:.8rem 0}
+.seq-ctl label{display:flex;align-items:center;gap:.4rem;font-size:.82rem;color:var(--slate,#64748b)}
+.seq-ctl input[type=number]{width:4.5rem;padding:.35rem .5rem;border:1px solid var(--line,#e8e3d6);border-radius:8px;font:inherit;text-align:right}
+.seq-free{width:100%;max-width:26rem;padding:.4rem .6rem;border:1px solid var(--line,#e8e3d6);border-radius:8px;font:inherit}
+.seq-tbl{width:100%;border-collapse:collapse;font-size:.86rem;margin:.4rem 0 .8rem}
+.seq-tbl th{font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;color:var(--gold-deep,#a8842f);text-align:right;font-weight:600;padding:.35rem .5rem;border-bottom:1px solid var(--line,#e8e3d6)}
+.seq-tbl th:first-child,.seq-tbl td:first-child{text-align:left}
+.seq-tbl td{padding:.45rem .5rem;border-bottom:1px solid var(--line,#eee);text-align:right;color:var(--navy,#14213d)}
+.seq-tbl .neg{color:#9a4a3a}
+.seq-wrap{overflow-x:auto}
 .fut-hint{font-size:.8rem;color:var(--slate,#64748b);margin:0 0 .8rem}
 .fo{padding:.7rem 0;border-top:1px solid var(--line-soft,#f3efe6)}
 .fo-top{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1rem}
@@ -397,6 +407,8 @@ body.adv .adv-only{display:block}
 
 <section class="section" id="fut-root"></section>
 
+<section class="section" id="seq-root"></section>
+
 <section class="section" id="hc-root"></section>
 
 <section class="section" id="rec-root"></section>
@@ -575,9 +587,12 @@ function vsMonths(){
 }
 // Simulación mensual. Las coberturas salen de la misma cuota; el resto se invierte (con el 2,5 % de coste de
 // entrada los 5 primeros años). Después se aplica el ajuste prudente por costes.
-function simulate(years){
+// rets (opcional): rentabilidad EFECTIVA de cada año de contrato en % (p. ej. [6,−20,8…]). Cada año se reparte en 12 meses iguales
+// ((1+x)^(1/12)−1); sin rets se usa la tasa del escenario como siempre. Los años que falten o no sean números usan la tasa del escenario.
+function simulate(years,rets){
   const n=Math.round(years*12), r=S.ret/100/12, g=S.dyn/100, cv=childCovers(), vsEnd=vsMonths();
   const vsPct=VS_PCT[C.vs]||0, ALPHA=0.025, ZM=60;
+  const rm=k=>{ if(!rets)return r; const x=rets[Math.floor(k/12)]; return (typeof x==='number'&&isFinite(x))?Math.pow(1+Math.max(-99,x)/100,1/12)-1:r; };
   let c=S.capital0||0, contributed=0, extraPaid=S.capital0||0, invested=0, riskTotal=0;
   for(let k=0;k<n;k++){
     const f=Math.pow(1+g,Math.floor(k/12)), M=S.monthly*f, ageK=S.childAge+k/12;
@@ -586,7 +601,7 @@ function simulate(years){
     if(ageK<30||C.bu!=='option'){ risk+=cv.kiz*f; }
     if(k<vsEnd)risk+=vsPct*M;
     const inv=Math.max(0,M-risk);
-    c=c*(1+r)+inv*(k<ZM?1-ALPHA:1);
+    c=c*(1+rm(k))+inv*(k<ZM?1-ALPHA:1);
     contributed+=M; invested+=inv; riskTotal+=M-inv;
     if(S.extraYear>0&&k%12===11){c+=S.extraYear;extraPaid+=S.extraYear;}
   }
@@ -628,6 +643,40 @@ function futAt(age){
 }
 // Coste futuro hipotético de un objetivo: presupuesto de hoy × (1 + inflación)^años. Solo con presupuesto escrito por el usuario (cost0 > 0).
 function futCost(cost0,years){ return (cost0>0&&years>=0)?cost0*Math.pow(1+S.infl/100,years):null; }
+
+// ===== Escenarios variables y riesgo de secuencia =====
+// Rentabilidad efectiva anual (%) equivalente al escenario elegido (la tasa del escenario es nominal con capitalización mensual).
+const effRet=()=>(Math.pow(1+S.ret/1200,12)-1)*100;
+// Secuencia anual con UNA caída (dropPct %) en el año indicado ('start' | 'mid' | 'end' | nº de año desde 1) y el resto de años con una
+// rentabilidad constante calculada para que la MEDIA GEOMÉTRICA de toda la secuencia sea idéntica a la del escenario. Así, la única diferencia
+// entre secuencias es el ORDEN de los años. Con horizontes no enteros la media es aproximada.
+function seqCrash(years,pos,dropPct){
+  const N=Math.max(1,Math.ceil(years)), e=effRet()/100, d=Math.min(0.99,Math.max(0,dropPct/100));
+  const idx=pos==='start'?0:pos==='end'?N-1:pos==='mid'?Math.floor(N/2):Math.min(N-1,Math.max(0,(pos|0)-1));
+  if(N<2||d===0)return Array(N).fill(e*100);
+  const g=Math.pow(Math.pow(1+e,N)/(1-d),1/(N-1))-1, a=Array(N).fill(g*100); a[idx]=-d*100; return a;
+}
+// Media geométrica anual (%) de una secuencia (los años que faltan valen la rentabilidad del escenario) sobre N años.
+function seqMean(rets,years){
+  const N=Math.max(1,Math.ceil(years)), e=effRet(); let p=1;
+  for(let i=0;i<N;i++){const x=(typeof rets[i]==='number'&&isFinite(rets[i]))?Math.max(-99,rets[i]):e; p*=1+x/100;}
+  return (Math.pow(p,1/N)-1)*100;
+}
+// Texto del usuario → secuencia. Separadores: espacios, «;» o saltos de línea; decimales con punto o coma. Límites −99 % … +100 %.
+function seqParse(txt){
+  return String(txt||'').split(/[;\s]+/).map(t=>parseFloat(t.replace('\u2212','-').replace(',','.'))).filter(x=>isFinite(x)).map(x=>Math.min(100,Math.max(-99,x)));
+}
+// Capital (nominal del año objetivo) de una secuencia, con el mismo motor y el mismo ajuste por costes que el resto de la herramienta.
+const seqCapital=(years,rets)=>simulate(years,rets).capital;
+// Fila «por edad»: capital estable frente a una caída en el último año antes de esa edad (misma media). Respeta la regla del año 5 (interruptor).
+function seqRowAt(age,dropPct){
+  const years=age-S.childAge;
+  if(!(years>0))return {ok:false,reason:'past',years};
+  if(years<MIN_YEARS)return {ok:false,reason:'short',years};
+  if(years<FUT_MIN_VISIBLE_YEARS)return {ok:false,reason:'hidden',years};
+  const stable=simulate(years).capital, crash=seqCapital(years,seqCrash(years,'end',dropPct));
+  return {ok:true,age,years,year:THIS_YEAR+years,stable,crash,diff:crash-stable,pct:stable>0?(crash-stable)/stable*100:0};
+}
 
 // Planificador inverso: cuota mensual INICIAL necesaria para llegar a un capital objetivo (euros del año objetivo) con el mismo motor.
 // Búsqueda por bisección sobre simulate(): el capital no baja nunca al subir la cuota, así que hay una única solución. S.monthly se restaura siempre.
@@ -910,6 +959,47 @@ $('fut-root').addEventListener('input',e=>{
   const sl=FUT.sel[id]||(FUT.sel[id]={}); const v=parseFloat(e.target.value); sl.cost=(isNaN(v)||v<0)?0:Math.min(1e8,v); sl.age=FUT.age; updateFut();
 });
 
+// ===== UI: «Si el mercado no avanza en línea recta» =====
+const SEQ={drop:30,free:'',built:false};
+function buildSeq(){
+  const root=$('seq-root'); if(!root)return;
+  root.innerHTML=`<div class="section-head"><div class="section-eyebrow">${tx(X.seqEy)}</div><h2 class="section-title">${tx(X.seqTitle)}</h2><p class="section-lede">${tx(X.seqLede)}</p></div>
+  <div class="fut-card">
+    <div class="seq-ctl"><label>${tx(X.seqDropLbl)} <input type="number" id="seq-drop" min="5" max="60" step="5" value="${SEQ.drop}"> %</label>
+      <label>${tx(X.seqFreeLbl)} <input type="text" class="seq-free" id="seq-free" inputmode="text" placeholder="${tx(X.seqFreePh)}" value="${SEQ.free.replace(/"/g,'&quot;')}"></label></div>
+    <div id="seq-res" aria-live="polite"></div></div>
+  <p class="fut-note">${tx(X.seqNote)}</p>`;
+  SEQ.built=true; updateSeq();
+}
+const seqDec=(v,n)=>{const t=Math.abs(v).toFixed(n); return LNG()==='en'?t:t.replace('.',',');};
+const seqMoney=v=>(v<0?'−':'')+futFmt(Math.abs(deflate(v,SEQ.years||0)))+' €';
+function updateSeq(){
+  const out=$('seq-res'); if(!SEQ.built||!out)return;
+  const p=calcPlan(), years=p.years; SEQ.years=years;
+  if(years<MIN_YEARS){out.innerHTML='<p class="fut-hint">'+tx(X.futTooShort).replace('{0}',MIN_YEARS)+'</p>';return;}
+  if(years<FUT_MIN_VISIBLE_YEARS){out.innerHTML='<p class="fut-hint">'+tx(X.futHidden).replace('{0}',MIN_YEARS)+'</p>';return;}
+  const d=SEQ.drop, base=seqCapital(years), pocket=p.contributed+p.extraPaid;
+  const rows=[[tx(X.seqRowStable),null,base]];
+  [['start',X.seqRowStart],['mid',X.seqRowMid],['end',X.seqRowEnd]].forEach(([pos,lbl])=>rows.push([tx(lbl),pos,seqCapital(years,seqCrash(years,pos,d))]));
+  const free=seqParse(SEQ.free); let meanNote='';
+  if(free.length){const cf=seqCapital(years,free); rows.push([tx(X.seqRowFree),'free',cf]); meanNote='<p class="fut-hint">'+tx(X.seqFreeMean).replace('{0}',seqDec(seqMean(free,years),1)).replace('{1}',seqDec(effRet(),1))+'</p>';}
+  const tr=rows.map(([lbl,pos,c])=>{const diff=c-base, pct=base>0?diff/base*100:0;
+    return `<tr><td>${lbl}</td><td>${seqMoney(c)}</td><td${diff<-0.5?' class="neg"':''}>${pos===null?'—':(diff<0?'−':'+')+futFmt(Math.abs(deflate(diff,years)))+' € ('+(pct<0?'−':'+')+seqDec(pct,1)+' %)'}</td></tr>`;}).join('');
+  const worst=rows.slice(1,4).reduce((a,b)=>b[2]<a[2]?b:a);
+  const ages=futAgeList().map(a=>seqRowAt(a,d)).filter(x=>x.ok);
+  const ageRows=ages.map(x=>`<tr><td>${tx(X.futYears).replace('{0}',x.age)}</td><td>${seqMoney(x.stable)}</td><td>${seqMoney(x.crash)}</td><td class="neg">${(x.diff<0?'−':'+')+futFmt(Math.abs(deflate(x.diff,x.years)))} € (${(x.pct<0?'−':'+')+seqDec(x.pct,1)} %)</td></tr>`).join('');
+  out.innerHTML=`<p class="fut-obj-title">${tx(X.seqTblTitle).replace('{0}',d).replace('{1}',years).replace('{2}',seqDec(effRet(),1))}</p>
+    <div class="seq-wrap"><table class="seq-tbl"><thead><tr><th>${tx(X.seqColSeq)}</th><th>${tx(X.seqColCap)}</th><th>${tx(X.seqColDiff)}</th></tr></thead><tbody>${tr}</tbody></table></div>${meanNote}
+    <p class="fut-plan-main">${tx(X.seqWorst).replace('{0}',worst[0])}${worst[2]<pocket?' '+tx(X.seqBelow).replace('{0}',futFmt(pocket)):''}</p>
+    <p class="fut-hint">${tx(X.seqWhy)}</p>
+    <p class="fut-hint">${tx(S.real?X.seqUnitsReal:X.seqUnitsNom).replace('{0}',THIS_YEAR+years)}</p>
+    ${ageRows?`<p class="fut-obj-title" style="margin-top:1rem">${tx(X.seqAgeTitle).replace('{0}',d)}</p><div class="seq-wrap"><table class="seq-tbl"><thead><tr><th>${tx(X.futRAge)}</th><th>${tx(X.seqColStable)}</th><th>${tx(X.seqColCrash)}</th><th>${tx(X.seqColDiff)}</th></tr></thead><tbody>${ageRows}</tbody></table></div>`:''}`;
+}
+$('seq-root').addEventListener('input',e=>{
+  if(e.target.id==='seq-drop'){let v=parseFloat(e.target.value); if(isNaN(v))return; SEQ.drop=Math.min(60,Math.max(5,v)); updateSeq();}
+  else if(e.target.id==='seq-free'){SEQ.free=e.target.value; updateSeq();}
+});
+
 function render(){
   if(document.activeElement!==$('v-childage'))$('v-childage').value=Math.round(S.childAge);
   if(document.activeElement!==$('v-monthly'))$('v-monthly').value=Math.round(S.monthly);
@@ -955,7 +1045,7 @@ function render(){
   $('e-gain-note').textContent=S.real?tx(X.realGain).replace('{0}',S.infl):(p.growth<0?'Una pérdida de '+eurc(-p.growth):'Un crecimiento de '+eurc(p.growth));
 
   renderChart(p.years);
-  syncReal(p); renderRange(p); renderCombo(p); futSync();
+  syncReal(p); renderRange(p); renderCombo(p); futSync(); updateSeq();
   renderCovers(p); syncHeroAdv(); updateHealth(); updateRec();
 }
 
@@ -1032,6 +1122,28 @@ const X={
   futObjHint:{es:'Marca los que te interesen y escribe tu presupuesto actual: la herramienta no usa precios de mercado inventados.',en:'Tick the ones you like and enter your current budget: the tool does not use made-up market prices.',de:'Wählen Sie aus und tragen Sie Ihr aktuelles Budget ein: Das Tool verwendet keine erfundenen Marktpreise.'},
   futCostLbl:{es:'Presupuesto actual',en:'Current budget',de:'Aktuelles Budget'},
   futInflLbl:{es:'Inflación supuesta del coste',en:'Assumed cost inflation',de:'Angenommene Kosteninflation'},
+  seqEy:{es:'Riesgo de secuencia',en:'Sequence risk',de:'Reihenfolgerisiko'},
+  seqTitle:{es:'Si el mercado no avanza en línea recta',en:'If the market does not move in a straight line',de:'Wenn der Markt nicht geradlinig verläuft'},
+  seqLede:{es:'Los escenarios del plan suponen la misma rentabilidad todos los años. En la realidad hay años buenos y malos. Aquí se compara el mismo rendimiento medio con una caída en distintos momentos: lo que cambia es solo el orden.',en:'The plan scenarios assume the same return every year. In reality there are good and bad years. Here the same average return is compared with a fall at different moments: only the order changes.',de:'Die Szenarien des Plans gehen in jedem Jahr von derselben Rendite aus. In der Realität gibt es gute und schlechte Jahre. Hier wird dieselbe Durchschnittsrendite mit einem Rückgang zu verschiedenen Zeitpunkten verglichen: nur die Reihenfolge ändert sich.'},
+  seqDropLbl:{es:'Caída de un año',en:'One-year fall',de:'Rückgang in einem Jahr'},
+  seqFreeLbl:{es:'O tu propia secuencia (% por año)',en:'Or your own sequence (% per year)',de:'Oder Ihre eigene Folge (% pro Jahr)'},
+  seqFreePh:{es:'8; −20; 12; 5 …',en:'8; −20; 12; 5 …',de:'8; −20; 12; 5 …'},
+  seqFreeMean:{es:'La media anual de tu secuencia es {0} %, frente al {1} % efectivo del escenario elegido: si no coinciden, la diferencia viene también del rendimiento medio y no solo del orden. Los años que no escribas usan el escenario.',en:'The yearly average of your sequence is {0} %, versus {1} % effective for the chosen scenario: if they differ, part of the difference comes from the average return and not only from the order. Years you do not enter use the scenario.',de:'Der Jahresdurchschnitt Ihrer Folge beträgt {0} %, gegenüber {1} % effektiv im gewählten Szenario: Weichen sie ab, stammt ein Teil des Unterschieds aus der Durchschnittsrendite und nicht nur aus der Reihenfolge. Nicht eingegebene Jahre verwenden das Szenario.'},
+  seqTblTitle:{es:'Una caída del {0} % en un año, con la misma media del escenario ({2} % efectivo anual), en {1} años',en:'A {0} % fall in one year, with the same average as the scenario ({2} % effective per year), over {1} years',de:'Ein Rückgang von {0} % in einem Jahr, mit demselben Durchschnitt wie das Szenario ({2} % effektiv pro Jahr), über {1} Jahre'},
+  seqColSeq:{es:'Secuencia',en:'Sequence',de:'Verlauf'}, seqColCap:{es:'Capital estimado',en:'Estimated capital',de:'Geschätztes Kapital'}, seqColDiff:{es:'Diferencia',en:'Difference',de:'Unterschied'},
+  seqColStable:{es:'Sin caída',en:'No fall',de:'Ohne Rückgang'}, seqColCrash:{es:'Con caída el último año',en:'With a fall in the last year',de:'Mit Rückgang im letzten Jahr'},
+  seqRowStable:{es:'Rentabilidad constante (escenario elegido)',en:'Constant return (chosen scenario)',de:'Konstante Rendite (gewähltes Szenario)'},
+  seqRowStart:{es:'Caída en el primer año',en:'Fall in the first year',de:'Rückgang im ersten Jahr'},
+  seqRowMid:{es:'Caída a mitad de plazo',en:'Fall in the middle of the term',de:'Rückgang in der Mitte der Laufzeit'},
+  seqRowEnd:{es:'Caída en el último año',en:'Fall in the last year',de:'Rückgang im letzten Jahr'},
+  seqRowFree:{es:'Tu secuencia',en:'Your sequence',de:'Ihre Folge'},
+  seqWorst:{es:'Con la misma rentabilidad media, el peor de estos recorridos es: «{0}».',en:'With the same average return, the weakest of these paths is: “{0}”.',de:'Bei gleicher Durchschnittsrendite ist der schwächste dieser Verläufe: „{0}“.'},
+  seqWhy:{es:'Por qué sale así: al principio hay poco capital acumulado, así que una caída temprana pesa poco; una caída en los últimos años afecta a todo lo ahorrado. Para mantener la misma media, los demás años rinden algo más de lo normal. Es un ejemplo de orden, no una predicción de cuándo caerá el mercado.',en:'Why it turns out this way: at the start there is little accumulated capital, so an early fall weighs little; a fall in the last years affects everything saved. To keep the same average, the other years return somewhat more than usual. It is an example of order, not a prediction of when the market will fall.',de:'Warum das so ausfällt: Am Anfang ist wenig Kapital angespart, ein früher Rückgang wiegt daher wenig; ein Rückgang in den letzten Jahren trifft alles Ersparte. Um denselben Durchschnitt zu halten, rentieren die übrigen Jahre etwas mehr als üblich. Es ist ein Beispiel für die Reihenfolge, keine Prognose, wann der Markt fällt.'},
+  seqBelow:{es:'En ese caso el capital queda por debajo de lo aportado ({0} €).',en:'In that case the capital is below what was contributed ({0} €).',de:'In diesem Fall liegt das Kapital unter dem Eingezahlten ({0} €).'},
+  seqUnitsNom:{es:'Importes en euros de {0}.',en:'Amounts in {0} euros.',de:'Beträge in Euro des Jahres {0}.'},
+  seqUnitsReal:{es:'Importes en euros de hoy (el plazo termina en {0}).',en:'Amounts in today\'s euros (the term ends in {0}).',de:'Beträge in heutigen Euro (die Laufzeit endet {0}).'},
+  seqAgeTitle:{es:'Si el mercado cae un {0} % el año antes de cada edad',en:'If the market falls {0} % in the year before each age',de:'Wenn der Markt im Jahr vor jedem Alter um {0} % fällt'},
+  seqNote:{es:'Ilustración con supuestos propios, no una previsión ni una garantía. Aplica el mismo ajuste por costes que el plan; no modela retiradas ni distintos fondos. Cada año se expresa como rentabilidad efectiva anual.',en:'Illustration with our own assumptions, not a forecast or a guarantee. It applies the same cost adjustment as the plan; it does not model withdrawals or different funds. Each year is expressed as an effective annual return.',de:'Veranschaulichung mit eigenen Annahmen, keine Prognose und keine Garantie. Es gilt dieselbe Kostenanpassung wie im Plan; Entnahmen und unterschiedliche Fonds werden nicht modelliert. Jedes Jahr wird als effektive Jahresrendite angegeben.'},
   futPlanTitle:{es:'¿Cuánto tendría que ahorrar al mes?',en:'How much would I need to save each month?',de:'Wie viel müsste ich monatlich sparen?'},
   futPlanHint:{es:'Escribe el capital que te gustaría tener a esta edad, en euros de hoy. Si lo dejas vacío usamos la suma de tus objetivos marcados con presupuesto.',en:'Enter the capital you would like to have at this age, in today\'s euros. If left empty we use the total of your selected objectives that have a budget.',de:'Geben Sie das gewünschte Kapital in diesem Alter ein, in heutigen Euro. Bleibt das Feld leer, verwenden wir die Summe Ihrer gewählten Ziele mit Budget.'},
   futPlanGoal:{es:'Capital deseado (euros de hoy)',en:'Desired capital (today\'s euros)',de:'Gewünschtes Kapital (heutige Euro)'},
@@ -1485,7 +1597,7 @@ $('rec-root').addEventListener('change',e=>{
 
 // ---------- Idioma: estos módulos se repintan al cambiar ES / EN / DE ----------
 function buildAll(){
-  buildHeroAdv(); buildHealth(); buildRec(); buildReal(); buildFuture();
+  buildHeroAdv(); buildHealth(); buildRec(); buildReal(); buildFuture(); buildSeq();
   const b=$('adv-switch'); if(b){b.title=tx(X.advSwitchHint);$('adv-switch-label').textContent=ADV?tx(X.advOn):tx(X.adv);}
 }
 const _applyLang=window.applyLang;
