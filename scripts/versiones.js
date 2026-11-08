@@ -6,7 +6,7 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const RAIZ = path.join(__dirname, '..'), HTML = path.join(RAIZ, 'index.html');
 // Páginas cuyos ./archivo?v=… se mantienen. index.html es la principal; las herramientas (se abren en iframes) comparten scripts propios como impuesto.js.
-const PAGINAS = ['index.html', 'analisis.html', 'jubilacion.html'];
+const PAGINAS = ['index.html', 'analisis.html', 'jubilacion.html', 'necesidades.html'];
 const huella = (archivo) => crypto.createHash('md5').update(fs.readFileSync(path.join(RAIZ, archivo))).digest('hex').slice(0, 8);
 
 // Devuelve [{archivo, puesta, actual, existe}] para cada ./archivo?v=xxxxxxxx de index.html.

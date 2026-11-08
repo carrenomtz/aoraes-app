@@ -25,6 +25,8 @@ on:
       - 'analisis.html'
       - 'vsp.html'
       - 'impuesto.js'
+      - 'necesidades.js'
+      - 'necesidades.html'
       - 'firestore.rules'
       - 'tests/**'
   pull_request:
@@ -47,6 +49,8 @@ on:
       - 'analisis.html'
       - 'vsp.html'
       - 'impuesto.js'
+      - 'necesidades.js'
+      - 'necesidades.html'
       - 'firestore.rules'
       - 'tests/**'
 
@@ -68,3 +72,4 @@ jobs:
       - run: node tests/jubilacion.test.js
       - run: node tests/impuesto.test.js
       - run: node tests/analisis.test.js
+      - run: node tests/necesidades.test.js

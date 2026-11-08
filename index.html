@@ -141,6 +141,7 @@
             <button type="button" data-go="ninos">Plan Futuro</button>
             <button type="button" data-go="vsp">Seguros patrimoniales</button>
             <button type="button" data-go="medico">Preguntas médicas</button>
+            <button type="button" data-go="necesidades">Calculadoras de necesidad</button>
             <button type="button" data-go="centro">Centro del asesor</button>
             <button type="button" id="nav-inmueble">Proyecto inmobiliario</button>
             <button type="button" id="nav-afa">Amortización (AfA)</button>
@@ -1573,7 +1574,7 @@
       }catch(e){ return false; }
     }
 
-    var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, ninos:{url:'./plan-futuro.html',el:null,ready:false}, vsp:{url:'./vsp.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false}, estudio:{url:'./estudio/index.html',el:null,ready:false} };
+    var MOD={ analisis:{url:'./analisis.html',el:null,ready:false}, jubilacion:{url:'./jubilacion.html',el:null,ready:false}, ninos:{url:'./plan-futuro.html',el:null,ready:false}, vsp:{url:'./vsp.html',el:null,ready:false}, medico:{url:'./preguntas-medicas.html',el:null,ready:false}, estudio:{url:'./estudio/index.html',el:null,ready:false}, necesidades:{url:'./necesidades.html',el:null,ready:false} };
     var home=document.getElementById('home'), wsScreen=document.getElementById('workspace'), frames=document.getElementById('frames'), asesoresScr=document.getElementById('asesores'), contactosScr=document.getElementById('contactos'), centroScr=document.getElementById('centro');
     var stage=document.getElementById('frame-stage'), sw=document.getElementById('switch'), banner=document.getElementById('bridge-banner');
     var insEl=document.getElementById('cock-insights'), listEl=document.getElementById('cock-list');
@@ -1581,7 +1582,7 @@
     var acChip=document.getElementById('active-chip'), acName=document.getElementById('ac-name');
     var lastSigByView={}, pendingApplyByView={}, pendingOpen=null, pendingSummary=null, wsId=null, wsStep='diagnostico', wsRec=null, cockQuickFilter=null;
 
-    var SWITCH_MORE_VIEWS=['analisis','jubilacion','ninos','vsp','medico','centro'];
+    var SWITCH_MORE_VIEWS=['analisis','jubilacion','ninos','vsp','medico','centro','necesidades'];
     function setActiveTab(view){
       var b=sw.querySelectorAll('button'); for(var i=0;i<b.length;i++)b[i].classList.toggle('active',b[i].getAttribute('data-go')===view);
       // "Proyecto inmobiliario" no viaja por data-go/show() (abre el workspace directo vía
@@ -1598,7 +1599,7 @@
     function ensureFrame(view){
       if(MOD[view].el) return MOD[view].el;
       var f=document.createElement('iframe'); f.src=MOD[view].url;
-      f.title=(view==='analisis')?'Análisis financiero y CRM':(view==='jubilacion'?'Comparador de jubilación':(view==='ninos'?'Plan Futuro':(view==='vsp'?'Seguros patrimoniales':(view==='estudio'?'Estudio de examen':'Preguntas médicas'))));
+      f.title=(view==='analisis')?'Análisis financiero y CRM':(view==='jubilacion'?'Comparador de jubilación':(view==='ninos'?'Plan Futuro':(view==='vsp'?'Seguros patrimoniales':(view==='estudio'?'Estudio de examen':(view==='necesidades'?'Calculadoras de necesidad':'Preguntas médicas')))));
       f.addEventListener('load',function(){
         MOD[view].ready=true;
         if(view==='analisis'){ if(pendingOpen){ var o=pendingOpen; pendingOpen=null; try{o();}catch(e){} } if(pendingSummary){ var s=pendingSummary; pendingSummary=null; try{s();}catch(e){} } }
