@@ -359,15 +359,22 @@ function fechaRefiEfectiva(refi){
 // arranca el préstamo, capital menos lo ya amortizado. Reutiliza balanceTrasMeses, la misma
 // fórmula que ya usa Refinanciar para el saldo pendiente — no es un cálculo nuevo, es el mismo
 // aplicado mes a mes en vez de a una única fecha.
-function inmuebleCurvaSaldo(precio,r,cfg){
+// bruta=true (comprar hoy con puente): durante el ahorro la deuda es la financiación puente COMPLETA (precio) y el ahorro es un activo aparte
+// (puntos.ahorro(t)); al asignarse el contrato el ahorro se aplica y la deuda pasa al saldo del Bauspardarlehen. bruta=false (compra futura):
+// durante el ahorro aún no hay deuda y la línea es lo que falta por reunir (precio − ahorro acumulado, neto).
+function inmuebleCurvaSaldo(precio,r,cfg,bruta){
   // Valor exacto en un mes cualquiera: la gráfica se dibuja cada 3 meses (más los cambios de tramo), pero los hitos y las
   // etiquetas piden meses sueltos (p. ej. 43) y NO deben salir interpolados entre dos puntos de la rejilla.
+  // Ahorro acumulado del Bausparvertrag en el mes t (activo), con tope en el objetivo; 0 sin fase de ahorro o después de la asignación.
+  function ahorroAt(t){
+    if(!(r.mesesAhorro>0)||t>r.mesesAhorro) return 0;
+    return Math.min(ahorroSaldoEn(r.cuotaAhorro,r.sonderAhorro,cfg.interesAhorro,t),r.objetivoAhorro);
+  }
   function pend(t){
     if(t>=r.mesesTotal) return 0;
     var pendiente;
-    if(r.mesesAhorro>0 && t<=r.mesesAhorro){
-      var ahorroAcum=ahorroSaldoEn(r.cuotaAhorro,r.sonderAhorro,cfg.interesAhorro,t);
-      pendiente=precio-Math.min(ahorroAcum,r.objetivoAhorro);
+    if(r.mesesAhorro>0 && (bruta?t<r.mesesAhorro:t<=r.mesesAhorro)){
+      pendiente=bruta?precio:precio-ahorroAt(t);
     }else{
       var tp=t-r.mesesAhorro;
       pendiente=(r.saldos&&tp>0)?(tp>r.saldos.length?0:r.saldos[tp-1]):balanceTrasMeses(r.capitalPrestamo,cfg.interesPrestamo,r.cuotaPrestamo,tp);
@@ -375,7 +382,7 @@ function inmuebleCurvaSaldo(precio,r,cfg){
     return Math.max(0,pendiente);
   }
   var puntos=inmuebleCurvaPuntos(pend,r.mesesTotal,[r.mesesAhorro]);
-  puntos.exacto=pend;
+  puntos.exacto=pend; puntos.ahorro=ahorroAt; puntos.bruta=!!bruta;
   return puntos;
 }
 // Rejilla de la gráfica: cada 3 meses, más los meses donde cambia el tramo (asignación, refinanciación…) y el final, para que
@@ -427,7 +434,7 @@ function inmuebleMesesDesdeHoy(r,esperaMeses){
 
 function inmuebleHitosComprar(precio,rEst,rk,ptsEst,ptsBanco,zMeses){
   var rows=[];
-  function ahorroEn(m){ return (rEst.mesesAhorro>0 && m<=rEst.mesesAhorro)?Math.max(0,precio-inmuebleValorEn(ptsEst,m)):(rEst.objetivoAhorro||0); }
+  function ahorroEn(m){ return (rEst.mesesAhorro>0 && m<=rEst.mesesAhorro)?(ptsEst.ahorro?ptsEst.ahorro(m):Math.max(0,precio-inmuebleValorEn(ptsEst,m))):(rEst.objetivoAhorro||0); }
   function add(n,m){ rows.push({n:n,m:m,banco:(m>=rk.mesesTotal)?0:inmuebleValorEn(ptsBanco,m),baus:(m>=rEst.mesesTotal)?0:inmuebleValorEn(ptsEst,m),ahorro:(rEst.mesesAhorro>0)?ahorroEn(m):0}); }
   if(rEst.mesesAhorro>0) add('Asignación del Bausparvertrag',rEst.mesesAhorro);
   if(zMeses>0 && zMeses<rk.mesesTotal) add('Fin del tipo fijo',zMeses);
@@ -527,7 +534,7 @@ function inmuebleFin(inm){
   return inmuebleNecesidadFondos(inm).financiacionNecesaria;
 }
 
-// ---------------- Fase 1 de docs/especificacion-calculadora-badenia.md: necesidad total de fondos ----------------
+// ---------------- Fase 1 de la especificación de mejora de la calculadora Badenia (documento interno, fuera del repo): necesidad total de fondos ----------------
 // Impuesto de adquisición (Grunderwerbsteuer) por Bundesland: tabla de REFERENCIA para proponer un tipo (ORDEN 1.1). Es un dato
 // `estimated_value` y está pendiente de validar contra la ley y la fecha de la operación: el asesor debe confirmarlo o corregirlo con el
 // documento de la compra. No se aplica solo: solo se usa al pulsar «Usar estimación típica».
@@ -580,7 +587,7 @@ function inmuebleNecesidadFondos(inm){
 // Cuándo quiere comprar (ORDEN 1.4): condiciona las rutas. 'ahora' y '12m' exigen disponer del dinero pronto, así que un Bausparvertrag con
 // fase de ahorro necesita una financiación puente; 'esperar' es la compra futura (se ahorra antes de comprar, sin puente).
 var INM_CUANDO=['ahora','12m','esperar'];
-// ---------------- Fase 2 de docs/especificacion-calculadora-badenia.md: capacidad de pago sostenible ----------------
+// ---------------- Fase 2 de la especificación de mejora de la calculadora Badenia (documento interno, fuera del repo): capacidad de pago sostenible ----------------
 // Campos opcionales del proyecto (todos en €/mes salvo %): ingresoVariable (la parte del ingreso neto que no es fija) y variableRecPct (qué
 // % de esa parte se reconoce, 50 por defecto: no se asume que lo variable esté garantizado), reservaMensual (imprevistos), presupuestoDeseado
 // (lo máximo que el cliente quiere dedicar a la vivienda; 0 = sin tope) y los costes de propietario (mantenimientoPct es % anual del precio,
@@ -892,4 +899,4 @@ function inmuebleToggleCurvaTipo(inm,r){
 }
 function inmuebleSetCurvaModo(inm,modo){ inm.curvaModo=(modo==='bauspar'||modo==='plazo')?modo:'banco'; inm.curvaOff=[]; }
 
-if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleIngresosReconocidos, inmuebleCostesPropietario, inmuebleCuotaMaxModelo, inmuebleAlternativas, INM_PROPIETARIO, inmuebleNecesidadFondos, inmuebleGastosTotal, inmuebleGastosPartidas, inmuebleGastosTipicos, inmuebleCapitalUtilizable, inmuebleCuando, inmuebleRequierePuente, INM_BUNDESLAENDER, INM_PARTIDAS, inmuebleCostePuente, inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCuandoComprar, inmuebleCuotasBancoRealistas, inmuebleCapitalNivel, tilgungsbeitragParaPlazo, inmuebleCurvaPuntos, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }
+if(typeof module!=='undefined'&&module.exports){ module.exports={ inmuebleCurvaSaldo, inmuebleHitosComprar, inmuebleIngresosReconocidos, inmuebleCostesPropietario, inmuebleCuotaMaxModelo, inmuebleAlternativas, INM_PROPIETARIO, inmuebleNecesidadFondos, inmuebleGastosTotal, inmuebleGastosPartidas, inmuebleGastosTipicos, inmuebleCapitalUtilizable, inmuebleCuando, inmuebleRequierePuente, INM_BUNDESLAENDER, INM_PARTIDAS, inmuebleCostePuente, inmuebleMesesDesdeHoy, INM_LIMITES, inmuebleLimitar, inmuebleRecargoST, sonderAhorroFV, ahorroSaldoEn, ahorroCuotaConSonder, INM_CURVA_COLORES, inmuebleCurvaModo, inmuebleCurvaCuotas, inmuebleParseCurvaCuotas, inmuebleToggleCurvaTipo, inmuebleSetCurvaModo, inmuebleCuotaSugerida, inmuebleCuandoComprar, inmuebleCuotasBancoRealistas, inmuebleCapitalNivel, tilgungsbeitragParaPlazo, inmuebleCurvaPuntos, inmuebleCapacidadDatos, fmtISODate, annuityQuota, BAUSPAR_MIN_ANIOS, BAUSPAR_MIN_MESES, effectiveAnnualRate, savingsQuota, monthsToPayoff, simLoan, calcInmuebleOption, isoDateYearsAgo, todayISO, mesesEntreFechas, interesAnualidad, balanceTrasMeses, calcRefiRemaining, saldoEnFecha, defaultInmueble, tilgungsbeitragRango, bausparPlazoActual, fechaRefiEfectiva, inmuebleCurvaSaldo, inmuebleValorEn, inmuebleHitosComprar, inmuebleHitosRefi, inmuebleCurvaSaldoRefi, inmuebleFechaRefiYM, inmuebleSyncFechaRefi, inmuebleInicioDate, migrateBancoTilgung, tilgungParaPlazo, bancoPlazoActual, migrateBausparTilgungsbeitrag, inmuebleFin, normalizeInmueble, inmuebleDatosCliente, inmuebleSyncCompraRefi }; }

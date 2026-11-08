@@ -856,6 +856,34 @@ test('barrido casos A–E × tres ingresos: la cuota máxima crece con el ingres
   });
 });
 
+console.log('\nGráfico de deuda: bruta comprando hoy, neta esperando (auditoría A1)');
+const cfgBau = { pct: 40, anios: 3.6, interesAhorro: 0.05, interesPrestamo: 1.75, tilgungsbeitragPerMille: 5.4, comision: 1.6, pagoPrestamo: 982 };
+test('comprando hoy la deuda durante el ahorro es la del puente completa y baja al saldo del préstamo en la asignación', () => {
+  const r = engine.calcInmuebleOption(180000, cfgBau), p = engine.inmuebleCurvaSaldo(180000, r, cfgBau, true);
+  [0, 1, 20, 42].forEach((m) => assert.strictEqual(p.exacto(m), 180000, 'mes ' + m));
+  near(p.exacto(43), 108000, 0.01); assert(p.exacto(44) < 108000); assert.strictEqual(p.bruta, true);
+});
+test('el ahorro es una serie aparte: crece hasta el objetivo en la asignación y se aplica (0) después', () => {
+  const r = engine.calcInmuebleOption(180000, cfgBau), p = engine.inmuebleCurvaSaldo(180000, r, cfgBau, true);
+  assert.strictEqual(p.ahorro(0), 0); assert(p.ahorro(20) > 0 && p.ahorro(20) < p.ahorro(40)); near(p.ahorro(43), 72000, 0.01); assert.strictEqual(p.ahorro(44), 0);
+});
+test('compra futura (neta): línea = precio − ahorro acumulado, y bruta − neta = ahorro en cada mes de ahorro', () => {
+  const r = engine.calcInmuebleOption(180000, cfgBau), n = engine.inmuebleCurvaSaldo(180000, r, cfgBau, false), b = engine.inmuebleCurvaSaldo(180000, r, cfgBau, true);
+  for (let m = 0; m < 43; m++) { near(b.exacto(m) - n.exacto(m), n.ahorro(m), 0.01, 'mes ' + m); near(n.exacto(m), 180000 - n.ahorro(m), 0.01); }
+  near(n.exacto(43), 108000, 0.01); assert.strictEqual(n.bruta, false);
+});
+test('sin fase de ahorro (banco) la curva no cambia con el modo y no hay serie de ahorro', () => {
+  const k = engine.calcInmuebleOption(180000, { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: 4.2, tilgungInicial: 2, comision: 0, zinsbindung: 10 });
+  const a = engine.inmuebleCurvaSaldo(180000, k, { interesPrestamo: 4.2, interesAhorro: 0 }, true), b = engine.inmuebleCurvaSaldo(180000, k, { interesPrestamo: 4.2, interesAhorro: 0 }, false);
+  [0, 12, 60, 120, 300].forEach((m) => near(a.exacto(m), b.exacto(m), 0.001)); assert.strictEqual(a.ahorro(10), 0);
+});
+test('los hitos usan la serie de ahorro: en la asignación el ahorro es el objetivo y la deuda el préstamo Bauspar', () => {
+  const r = engine.calcInmuebleOption(180000, cfgBau), k = engine.calcInmuebleOption(180000, { pct: 0, anios: 0, interesAhorro: 0, interesPrestamo: 4.2, tilgungInicial: 1.67, comision: 0, zinsbindung: 10 });
+  const pe = engine.inmuebleCurvaSaldo(180000, r, cfgBau, true), pb = engine.inmuebleCurvaSaldo(180000, k, { interesPrestamo: 4.2, interesAhorro: 0 }, false);
+  const h = engine.inmuebleHitosComprar(180000, r, k, pe, pb, 120)[0];
+  assert.strictEqual(h.m, 43); near(h.ahorro, 72000, 0.01); near(h.baus, 108000, 0.01);
+});
+
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');
 gaps.forEach(g => console.log('  · ' + g));
 process.exit(failed ? 1 : 0);
