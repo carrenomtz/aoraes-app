@@ -10,6 +10,8 @@ on:
       - 'index.html'
       - 'app.css'
       - 'inmueble.js'
+      - 'fiscal.js'
+      - 'fiscal-ui.js'
       - 'scripts/**'
       - 'calc.js'
       - 'afa.js'
@@ -23,6 +25,8 @@ on:
       - 'index.html'
       - 'app.css'
       - 'inmueble.js'
+      - 'fiscal.js'
+      - 'fiscal-ui.js'
       - 'scripts/**'
       - 'calc.js'
       - 'afa.js'
@@ -44,3 +48,4 @@ jobs:
       - run: node tests/leads.test.js
       - run: node tests/idle.test.js
       - run: node tests/versiones.test.js
+      - run: node tests/fiscal.test.js

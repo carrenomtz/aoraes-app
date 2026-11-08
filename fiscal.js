@@ -259,7 +259,7 @@ function fiscalResumen(f){
   FISCAL_CAMPOS.forEach(function(c){
     if(!fiscalCampoVisible(f,c.k)) return;
     var x=f.campos[c.k]||fiscalCampoVacio();
-    filas.push({k:c.k,paso:c.paso,label:c.label,unidad:c.unidad||'',value:x.value,estado:x.estado,fuente:x.fuente,ejercicio:x.ejercicio,capturadoEn:x.capturadoEn,confirmadoEn:x.confirmadoEn,confianza:x.confianza,esEstimacion:x.esEstimacion,
+    filas.push({k:c.k,paso:c.paso,tipo:c.tipo,label:c.label,unidad:c.unidad||'',value:x.value,estado:x.estado,fuente:x.fuente,ejercicio:x.ejercicio,capturadoEn:x.capturadoEn,confirmadoEn:x.confirmadoEn,confianza:x.confianza,esEstimacion:x.esEstimacion,
       etiquetaValor:fiscalEtiquetaValor(c,x.value)});
   });
   return filas;

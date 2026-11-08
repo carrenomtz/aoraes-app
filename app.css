@@ -974,3 +974,29 @@
   .inm-sost{margin-top:14px; padding-top:12px; border-top:1px solid var(--line)}
   .inm-alt{margin:6px 0 0; padding-left:18px; font-size:12.5px; line-height:1.5; color:var(--navy)}
   .inm-alt li{margin-bottom:6px}
+
+  /* ---------- Perfil fiscal (exploratorio): cuestionario de cuatro pasos y revisión ---------- */
+  details.inm-fiscal{margin-top:16px; padding:14px 16px; border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface)}
+  details.inm-fiscal>summary{cursor:pointer; font-family:'Fraunces',Georgia,serif; font-size:15px; font-weight:600; color:var(--navy)}
+  .fiscal-h{font-family:'Fraunces',Georgia,serif; font-size:16px; margin:12px 0 4px}
+  .fiscal-sub{font-size:13px; color:var(--muted); margin:0 0 10px; line-height:1.5}
+  .fiscal-aviso{padding:8px 10px; background:var(--gold-tint); border-radius:var(--r-sm)}
+  .fiscal-permiso{margin:10px 0; padding:10px 12px; border:1px solid var(--gold-soft); border-radius:var(--r-sm); background:var(--surface-soft)}
+  .fiscal-prog{position:relative; height:22px; margin:10px 0 2px; font-size:11.5px; font-weight:700; color:var(--muted); letter-spacing:.04em; text-transform:uppercase}
+  .fiscal-prog i{position:absolute; left:0; bottom:0; height:3px; border-radius:3px; background:var(--gold)}
+  .fiscal-campos{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px 18px; margin:10px 0}
+  .fiscal-acc{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:4px}
+  .fiscal-mini{font-family:inherit; font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:999px; border:1px solid var(--line-strong); background:var(--surface); color:var(--navy); cursor:pointer}
+  .fiscal-mini:hover{border-color:var(--gold); background:var(--gold-tint)}
+  .fiscal-est{font-size:10.5px; font-weight:700; letter-spacing:.03em; padding:1px 8px; border-radius:999px; border:1px solid var(--line-strong); color:var(--muted); background:var(--surface)}
+  .fiscal-est-confirmado{color:#4f7358; border-color:#cfe3d4; background:#eaf2ec}
+  .fiscal-est-proporcionado{color:var(--gold-deep); border-color:var(--gold-soft); background:var(--gold-tint)}
+  .fiscal-est-no_aplica{color:var(--faint)}
+  .fiscal-err{font-size:11.5px; color:var(--red)}
+  .fiscal-nav{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
+  .fiscal-tabla td{vertical-align:middle}
+  .fiscal-val{font-variant-numeric:var(--tab); font-weight:700; white-space:nowrap}
+  .fiscal-nulo{color:var(--faint); font-weight:500}
+  .fiscal-pend{margin-top:10px}
+  .fiscal-pend h5{margin:0 0 4px; font-size:12.5px}
+  .fiscal-pend ul{margin:0; padding-left:18px; font-size:12.5px; line-height:1.55}

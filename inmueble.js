@@ -778,6 +778,7 @@ function inmuebleBlock(rec){
     '<p class="inm-eff-note inm-adv">El <b>interés efectivo del préstamo</b> mide la fase de préstamo y ya descuenta la comisión de apertura sobre lo que el cliente recibe (en el Bausparvertrag, la parte de la Abschlussgebühr proporcional al préstamo, como en la Modellrechnung de Badenia). Es el mismo método (interés actuarial/IRR) que usa la PAngV alemana, distinto del nominal que se introduce como dato. No sustituye la oferta vinculante con el Effektiver Jahreszins real que dará el banco o la Bausparkasse.</p>'+
     (inm.modo!=='refi'?'<p class="inm-eff-note inm-adv">Una hipoteca bancaria alemana casi nunca fija el tipo para todo el plazo: lo normal es una <b>Zinsbindung</b> de 10-15 años, tras la cual el saldo pendiente (<b>Restschuld</b>) se refinancia al tipo que haya entonces (<b>Anschlussfinanzierung</b>). La certeza de tipo durante todo el plazo que muestra "Banco directo" aquí es el caso favorable — coméntalo con el cliente si su horizonte real es más largo que la Zinsbindung que le ofrecerán.</p>':'')+
     body+
+    (typeof fiscalCardHTML==='function'?fiscalCardHTML(rec):'')+
     '<div class="inm-adv inm-reset-wrap"><button type="button" class="inm-reset" id="inm-reset-btn">Restablecer valores por defecto</button></div>'+
   '</div>').replace('<!--INMLIVE-->',inmuebleLiveBancoHTML()).replace('<!--INMLIVEEST-->',inmuebleLiveEstHTML());
 }
@@ -1039,6 +1040,7 @@ document.addEventListener('visibilitychange',function(){ if(document.visibilityS
 
 // Eventos de clic y de teclado de la pantalla del módulo: index.html los llama antes de sus propias ramas y, si devuelven true, ya está atendido.
 function inmuebleOnClick(e){
+  if(typeof fiscalOnClick==='function'&&fiscalOnClick(e)) return true;   // perfil fiscal (fiscal-ui.js)
   if(e.target.closest('#inm-reset-btn')){
     // Vuelve el proyecto (del modo actual y del otro) a los valores de partida; pide confirmación porque se pierden los cambios.
     if(!APP_HOST.wsRec||!APP_HOST.wsRec.inmueble) return true;
@@ -1168,6 +1170,7 @@ function inmuebleMarcarRango(el,recortado,valor){
 }
 function inmuebleOnInput(e){
   var t=e.target;
+  if(typeof fiscalOnInput==='function'&&fiscalOnInput(e)) return true;   // perfil fiscal (fiscal-ui.js)
   if(t.id==='inm-curva-tipos'){
     // Cuotas de las líneas de la gráfica para el modo elegido: "800; 1000; 1200" (hasta 4; vacío = automáticas). Lo no interpretable se ignora hasta que haya algo válido.
     if(!APP_HOST.wsRec) return true;
