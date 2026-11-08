@@ -595,6 +595,41 @@ function inmuebleCuandoHTML(inm){
     '<div class="inm-headline-lite">'+frase+'</div>'+
     '<p class="inm-curve-note"><span>Orientativo: supone que ahorra cada mes todo lo que le sobra, sin contar intereses, y que el precio no cambia.</span> <span>Los gastos de compra (notario, impuestos, registro y comisión) rondan el 10 % del precio.</span></p></div>';
 }
+// Cuota que puede sostener el hogar (ORDEN 2.2/2.3/2.4): tres límites, costes de propietario aparte y, si la cuota del banco no cabe,
+// alternativas ya calculadas. Solo en modo avanzado (clase inm-detalle). No es una aprobación crediticia.
+function inmuebleSostenibleHTML(inm,fin){
+  var m=inmuebleCuotaMaxModelo(inm); if(!m) return '';
+  function ln(lab,val,cls){ return '<div class="inm-res-line'+(cls?' '+cls:'')+'"><span>'+lab+'</span><b>'+val+'</b></div>'; }
+  var h=ln('Ingresos reconocidos',eur(m.ingresosReconocidos)),
+    quien={ingresos:'el límite por ingresos',residual:'el presupuesto que sobra',deseado:'el presupuesto que quieres dedicar'};
+  h+=ln('Límite por ingresos ('+Math.round(m.limitePct)+' %)',eur(m.limitePorIngresos)+'/mes','inm-detalle');
+  h+=(m.presupuestoResidual!=null)?ln('Presupuesto que sobra tras gastos, reserva y costes de propietario',eur(Math.max(0,m.presupuestoResidual))+'/mes','inm-detalle')
+    :'<p class="inm-curve-note inm-detalle"><span>Sin los gastos de la ficha no se puede calcular el presupuesto que sobra: solo se usa el límite por ingresos.</span></p>';
+  if(m.presupuestoDeseado!=null) h+=ln('Presupuesto que quieres dedicar',eur(m.presupuestoDeseado)+'/mes','inm-detalle');
+  h+=ln('Cuota máxima del modelo',eur(m.cuotaMax)+'/mes','total')+'<p class="inm-curve-note"><span>Manda</span> <b>'+(quien[m.limitante]||'')+'</b><span>. No es una aprobación crediticia: el banco aplica sus propios criterios.</span></p>';
+  var pr=m.costesPropietario; h+='<div class="inm-cmp-wrap"><span class="inm-cmp-lab">Costes de propietario al mes (aparte de la cuota)</span></div>';
+  pr.partidas.forEach(function(x){ if(x.importe>0) h+=ln('<span>'+esc(x.label)+'</span>'+(x.estimado?' <small>· estimación</small>':''),eur(x.importe),'inm-detalle'); });
+  h+=ln('Total de costes de propietario',eur(pr.total)+'/mes');
+  if(inm.modo!=='refi'&&fin>0){
+    var b=inm.banco||{}, cuota=fin*((b.interesPrestamo||0)+((b.tilgungInicial==null)?2:b.tilgungInicial))/1200, ok=cuota<=m.cuotaMax+0.005;
+    h+=ln('Cuota del banco',eur(cuota)+'/mes')+ln('Coste mensual de vivir en la vivienda (cuota + costes de propietario)',eur(cuota+pr.total)+'/mes','total');
+    h+='<p class="inm-curve-note"><span>'+(ok?'La cuota del banco encaja dentro de la cuota máxima del modelo.':'La cuota del banco supera la cuota máxima del modelo.')+'</span></p>';
+    var al=inmuebleAlternativas(inm);
+    if(al&&!al.cabe){
+      var li='';
+      al.opciones.forEach(function(o){
+        if(o.k==='capital') li+='<li><span>Podemos revisar la aportación inicial: con</span> <b>'+eur(o.capitalExtra)+'</b> <span>más de capital utilizable, la cuota del banco encaja.</span></li>';
+        else if(o.k==='precio') li+='<li><span>Podemos calcular qué presupuesto de vivienda encaja: hasta</span> <b>'+eur(o.precioObjetivo)+'</b><span>, es decir,</span> <b>'+eur(o.diferencia)+'</b> <span>menos que el precio actual.</span></li>';
+        else if(o.k==='tilgung') li+='<li><span>Podemos comparar otra amortización inicial: con un</span> <b>'+String(o.tilgung).replace('.',',')+' %</b> <span>la cuota sería</span> <b>'+eur(o.cuota)+'/mes</b><span>'+(o.cabe?', que sí encaja,':', que aún no encaja,')+' pero al terminar el tipo fijo quedaría una deuda de</span> <b>'+eur(o.restschuld)+'</b><span>.</span></li>';
+        else if(o.k==='fecha') li+=(o.meses==null)
+          ?'<li><span>Podemos estudiar una fecha de compra posterior, pero con la ficha actual no sobra margen mensual para ahorrar: conviene revisarla.</span></li>'
+          :'<li><span>Podemos estudiar una fecha de compra posterior: ahorrando</span> <b>'+eur(o.ahorroMes)+'/mes</b> <span>se reuniría ese capital en</span> <b>'+(o.meses<24?(o.meses===1?'1 mes':o.meses+' meses'):inmuebleAniosUnos(o.meses))+'</b><span>.</span></li>';
+      });
+      h+='<div class="inm-cmp-wrap"><span class="inm-cmp-lab">Alternativas para que encaje</span></div><ul class="inm-alt">'+li+'</ul>';
+    }
+  }
+  return '<div class="inm-sost inm-detalle"><div class="inm-curve-head"><h5>Cuota que puede sostener el hogar</h5></div>'+h+'</div>';
+}
 function inmuebleCapacidadHTML(inm,fin,filas){
   var d=inmuebleCapacidadDatos(inm,fin,filas); if(!d) return '';
   var rows=d.filas.map(function(f){ return '<tr><td>'+f.label+'</td><td>'+eur(f.cuota)+'</td><td>'+Math.round(f.pct)+' %</td><td class="cap-'+f.cls+'">'+f.estado+'</td></tr>'; }).join('');
@@ -604,16 +639,16 @@ function inmuebleCapacidadHTML(inm,fin,filas){
     '<div class="inm-res-line"><span>Préstamo orientativo (sueldo neto anual × 8)</span><b>'+eur(d.orientativo)+'</b></div>'+
     (fin>0?'<div class="inm-res-line cap-extra"><span>Importe a financiar</span><b>'+eur(fin)+(d.finSuperaOrientativo?' · por encima':'')+'</b></div>':'')+
     '<table class="inm-tabla inm-cap-tabla"><thead><tr><th>Cuota mensual</th><th>€/mes</th><th>Del ingreso</th><th>Estado</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-    inmuebleSugerenciaHTML(inm)+
+    inmuebleSugerenciaHTML(inm)+inmuebleSostenibleHTML(inm,fin)+
     '<p class="inm-curve-note"><span>Regla orientativa: la vivienda no debería pasar del 30–35 % del ingreso neto del hogar, y además de la cuota hay seguros, Grundsteuer y otros gastos.</span> <span>No sustituye el análisis de solvencia del banco.</span></p></div>'+inmuebleCuandoHTML(inm);
 }
 
 // Necesidad total de fondos (ORDEN 1.3), con cada paso a la vista: de dónde sale el importe a financiar.
 function inmuebleFondosDetalleHTML(inm){
   var nf=inmuebleNecesidadFondos(inm), c=nf.capital;
-  function ln(lab,val,cls){ return '<div class="inm-res-line'+(cls?' '+cls:'')+'"><span>'+lab+'</span><b>'+val+'</b></div>'; }
+  function ln(lab,val,cls){ return '<div class="inm-res-line'+(cls?' '+cls:'')+'">'+(lab.charAt(0)==='<'?lab:'<span>'+lab+'</span>')+'<b>'+val+'</b></div>'; }
   var h=ln('Precio del inmueble',eur(nf.precio));
-  if(nf.partidas) nf.partidas.forEach(function(x){ if(x.importe>0) h+=ln(esc(x.label)+(x.modo==='pct'?' · '+String(x.v).replace('.',',')+' %':''),eur(x.importe),'inm-detalle'); });
+  if(nf.partidas) nf.partidas.forEach(function(x){ if(x.importe>0) h+=ln('<span>'+esc(x.label)+'</span>'+(x.modo==='pct'?' <small>· '+String(x.v).replace('.',',')+' %</small>':''),eur(x.importe),'inm-detalle'); });
   h+=ln('Gastos de compra',eur(nf.gastos))+ln('Coste total de la compra',eur(nf.costeTotalCompra),'total')+ln('Capital disponible',eur(c.disponible));
   if(c.reserva>0) h+=ln('Menos la reserva que se mantiene','− '+eur(c.reserva));
   if(c.comprometido>0) h+=ln('Menos el capital comprometido para otros fines','− '+eur(c.comprometido));
@@ -654,6 +689,12 @@ function inmuebleFondosHTML(inm){
   var cuando='<div class="inm-cmp-wrap"><span class="inm-cmp-lab">¿Cuándo quieres comprar?</span></div><div class="inm-mode inm-cmp" role="tablist" aria-label="Cuándo quieres comprar">'+
     [['ahora','Ahora'],['12m','En el próximo año'],['esperar','Puedo esperar y planificar']].map(function(p){ var on=(p[0]===cu); return '<button type="button" data-inm-cuando="'+p[0]+'"'+(on?' class="active"':'')+' aria-pressed="'+(on?'true':'false')+'">'+p[1]+'</button>'; }).join('')+'</div>'+
     '<p class="inm-curve-note"><span>'+(cu==='esperar'?'Compra futura: se ahorra antes de comprar y no hace falta financiación puente.':'Para comprar pronto con un Bausparvertrag hay que adelantar la financiación hasta la asignación: el comparador suma ese coste.')+'</span></p>';
+  function cp(k,lab,v,suf,step){ return '<label class="inm-f inm-inicio"><span>'+lab+'</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-cp-'+k+'" value="'+(v||'')+'" step="'+(step||50)+'" min="0" placeholder="0"><span class="inm-suf">'+(suf||'€')+'</span></span></label>'; }
+  var capDet='<details class="inm-gastos-det inm-capdet"><summary>Capacidad de pago (opcional)</summary>'+
+    '<p class="inm-curve-note"><span>Con estos datos se calcula la cuota máxima que el hogar puede sostener: el menor de tres límites. Lo variable solo cuenta en el porcentaje que indiques.</span></p>'+
+    '<div class="inm-toprow">'+cp('ingresoVariable','Parte variable del ingreso neto (al mes)',inm.ingresoVariable)+cp('variableRecPct','Qué % de lo variable se reconoce',inm.variableRecPct,'%',5)+cp('reservaMensual','Reserva mensual para imprevistos',inm.reservaMensual)+cp('presupuestoDeseado','Máximo que quieres dedicar a la vivienda (al mes)',inm.presupuestoDeseado)+'</div>'+
+    '<div class="inm-cmp-wrap"><span class="inm-cmp-lab">Costes de propietario (al mes, aparte de la cuota)</span></div>'+
+    '<div class="inm-toprow">'+cp('mantenimientoPct','Mantenimiento y reparaciones (% anual del precio · estimación)',inm.mantenimientoPct,'%',0.1)+cp('hausgeld','Gastos de comunidad (Hausgeld)',inm.hausgeld)+cp('segurosProp','Seguros y tributos recurrentes',inm.segurosProp)+cp('energiaProp','Energía y suministros',inm.energiaProp)+cp('otrosProp','Otros costes recurrentes de la vivienda',inm.otrosProp)+'</div></details>';
   var det;
   if(!par){
     det='<p class="inm-curve-note"><span>Ahora se usa un % global para los gastos de compra. Puedes desglosarlos (impuesto, notario, Grundbuch, agencia, reformas…) para calcular con importes más reales.</span></p>'+
@@ -671,7 +712,7 @@ function inmuebleFondosHTML(inm){
   }
   return '<div class="inm-fondos inm-adv">'+cuando+
     '<div class="inm-toprow">'+num('inm-reserva','Reserva que quieres mantener',inm.reserva)+num('inm-comprometido','Capital comprometido para otros fines',inm.comprometido)+num('inm-ayudas','Ayudas confirmadas',inm.ayudas)+'</div>'+
-    '<details class="inm-gastos-det"'+(par?' open':'')+'><summary>Desglose de los gastos de compra</summary>'+det+'</details></div>';
+    '<details class="inm-gastos-det"'+(par?' open':'')+'><summary>Desglose de los gastos de compra</summary>'+det+'</details>'+capDet+'</div>';
 }
 function inmuebleTopFieldsHTML(inm){
   return '<div class="inm-toprow inm-precio-row"><label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
@@ -1144,6 +1185,13 @@ function inmuebleOnInput(e){
         var inmF=normalizeInmueble(APP_HOST.wsRec), kF=t.id.slice(4), limF=inmuebleLimitar(kF,t.value);
         inmF[kF]=limF.v; inmuebleMarcarRango(t,limF.recortado,limF.v);
         refreshInmuebleResults(); scheduleInmuebleSave();
+        return true;
+      }
+      var cpm=/^inm-cp-([A-Za-z]+)$/.exec(t.id||'');
+      if(cpm){
+        if(!APP_HOST.wsRec) return true;
+        var inmCP=normalizeInmueble(APP_HOST.wsRec), limCP=inmuebleLimitar(cpm[1],t.value);
+        if(INM_LIMITES[cpm[1]]){ inmCP[cpm[1]]=limCP.v; inmuebleMarcarRango(t,limCP.recortado,limCP.v); refreshInmuebleResults(); scheduleInmuebleSave(); }
         return true;
       }
       if(t.id==='inm-bl'){

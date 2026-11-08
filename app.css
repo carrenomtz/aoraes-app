@@ -971,3 +971,6 @@
   .inm-g-imp{font-variant-numeric:var(--tab); font-weight:700; text-align:right; white-space:nowrap}
   .inm-gastos-btns{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
   .inm-eff-hint em{font-style:normal; font-weight:500}
+  .inm-sost{margin-top:14px; padding-top:12px; border-top:1px solid var(--line)}
+  .inm-alt{margin:6px 0 0; padding-left:18px; font-size:12.5px; line-height:1.5; color:var(--navy)}
+  .inm-alt li{margin-bottom:6px}
