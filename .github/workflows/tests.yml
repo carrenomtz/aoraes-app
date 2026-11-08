@@ -12,6 +12,7 @@ on:
       - 'inmueble.js'
       - 'fiscal.js'
       - 'fiscal-ui.js'
+      - 'plan-futuro.html'
       - 'scripts/**'
       - 'calc.js'
       - 'afa.js'
@@ -27,6 +28,7 @@ on:
       - 'inmueble.js'
       - 'fiscal.js'
       - 'fiscal-ui.js'
+      - 'plan-futuro.html'
       - 'scripts/**'
       - 'calc.js'
       - 'afa.js'
@@ -49,3 +51,4 @@ jobs:
       - run: node tests/idle.test.js
       - run: node tests/versiones.test.js
       - run: node tests/fiscal.test.js
+      - run: node tests/plan-futuro.test.js
