@@ -21,6 +21,7 @@ on:
       - 'leads.js'
       - 'idle.js'
       - 'productos.js'
+      - 'jubilacion.html'
       - 'firestore.rules'
       - 'tests/**'
   pull_request:
@@ -39,6 +40,7 @@ on:
       - 'leads.js'
       - 'idle.js'
       - 'productos.js'
+      - 'jubilacion.html'
       - 'firestore.rules'
       - 'tests/**'
 
@@ -57,3 +59,4 @@ jobs:
       - run: node tests/fiscal.test.js
       - run: node tests/plan-futuro.test.js
       - run: node tests/productos.test.js
+      - run: node tests/jubilacion.test.js

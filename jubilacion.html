@@ -841,7 +841,9 @@ function calc(ins,years){
   const taxRate=effectiveTaxRate();
   const ruerup=S.monthly*(S.split/100);
   const restBase=S.monthly*(1-S.split/100);      // non-Rürup contribution
-  const taxSave=ruerup*taxRate;                  // ahorro fiscal estimado total (no depende de si se reinvierte)
+  // Solo es deducible hasta el límite anual de la Basisrente (BASISRENTE_LIMIT, soltero): lo que se aporta por encima entra en el contrato pero no
+  // desgrava. Sin este tope, aportar p. ej. 3.000 €/mes al Rürup sugería deducir 36.000 € cuando el máximo es 30.826 €.
+  const taxSave=Math.min(ruerup,BASISRENTE_LIMIT.single/12)*taxRate;   // ahorro fiscal estimado total (no depende de si se reinvierte)
   const reinvestPct=(S.reinvestPct!=null?S.reinvestPct:100)/100;
   const reinvestedAmt=taxSave*reinvestPct;       // solo esta parte se reinvierte y compone
   const reinvest=S.reinvest;
@@ -1304,7 +1306,7 @@ async function generatePDF(lang){
       entTitle:'Y cuando llegues, ¿cuánto te durará?',
       entSub:'Acumular es solo la mitad. Lo que cuenta es la fase de cobro: cuánto recibes, durante cuánto tiempo y qué pasa si vives muchos años. Aquí una renta vitalicia puede cubrir el riesgo de longevidad, algo que un ETF no ofrece por sí solo.',
       entHeroLabel:'TU RENTA AORAES',entHeroNote:'de por vida (parte garantizada según contrato) — sin decisiones de inversión sobre esa parte',
-      entAnnualL:'al año en tu bolsillo',entByLifeL:'cobrados si vives hasta los {0}',entInfL:'sigue pagando aunque llegues a los 100',
+      entAnnualL:'al año en tu bolsillo',entByLifeL:'cobrados si vives hasta los {0}',entInfL:'la parte garantizada sigue pagándose aunque llegues a los 100 (según contrato)',
       e1:'Renta de por vida',e1d:'Cobras tu renta vivas hasta los 80, 95 o 105: la parte garantizada se paga mientras vivas, según el contrato. El riesgo de longevidad de esa parte lo asume la aseguradora.',
       e2:'Fiscalidad por Ertragsanteil',e2d:'Solo el {0}% de tu renta tributa a tu tipo. En un ETF, cada venta tributa al 26,375% sobre la ganancia.',
       e3:'Menor riesgo de secuencia',e3d:'Una caída de la bolsa al inicio del retiro no reduce la parte garantizada de tu renta, pero sí puede reducir la parte variable. En un ETF, vender en un mal año adelanta el agotamiento.',
@@ -1365,7 +1367,7 @@ async function generatePDF(lang){
       entTitle:'And when you get there, how long will it last?',
       entSub:'Saving up is only half the story. What matters is the payout phase: how much you receive, for how long, and what happens if you live a long life. A lifetime annuity can cover longevity risk here, something an ETF does not offer on its own.',
       entHeroLabel:'YOUR AORAES PENSION',entHeroNote:'for life (guaranteed part per contract) — no investment decisions on that part',
-      entAnnualL:'per year in your pocket',entByLifeL:'received if you live to {0}',entInfL:'keeps paying even if you reach 100',
+      entAnnualL:'per year in your pocket',entByLifeL:'received if you live to {0}',entInfL:'the guaranteed part keeps being paid even if you reach 100 (per contract)',
       e1:'Pension for life',e1d:'You receive your pension whether you live to 80, 95 or 105: the guaranteed part is paid for as long as you live, per the contract. The insurer bears the longevity risk of that part.',
       e2:'Taxation via Ertragsanteil',e2d:'Only {0}% of your pension is taxed at your rate. With an ETF, every sale is taxed at 26.375% on the gain.',
       e3:'Lower sequence-of-returns risk',e3d:'A market crash at the start of retirement does not reduce the guaranteed part of your pension, but it can reduce the variable part. With an ETF, selling in a bad year brings depletion forward.',
@@ -1426,7 +1428,7 @@ async function generatePDF(lang){
       entTitle:'Und dann? Wie lange reicht es?',
       entSub:'Ansparen ist nur die Hälfte. Entscheidend ist die Auszahlphase: wie viel, wie lange und was passiert, wenn du lange lebst. Hier kann eine lebenslange Rente das Langlebigkeitsrisiko abdecken, was ein ETF von sich aus nicht bietet.',
       entHeroLabel:'DEINE AORAES-RENTE',entHeroNote:'lebenslang (garantierter Teil laut Vertrag) — ohne Anlageentscheidungen für diesen Teil',
-      entAnnualL:'pro Jahr für dich',entByLifeL:'erhalten, wenn du {0} wirst',entInfL:'zahlt weiter, auch wenn du 100 wirst',
+      entAnnualL:'pro Jahr für dich',entByLifeL:'erhalten, wenn du {0} wirst',entInfL:'der garantierte Teil wird weitergezahlt, auch wenn du 100 wirst (laut Vertrag)',
       e1:'Lebenslange Rente',e1d:'Du bekommst deine Rente, ob du 80, 95 oder 105 wirst: der garantierte Teil wird laut Vertrag gezahlt, solange du lebst. Das Langlebigkeitsrisiko dieses Teils trägt der Versicherer.',
       e2:'Steuervorteil (Ertragsanteil)',e2d:'Nur {0}% deiner Rente werden besteuert. Bei einem ETF fällt bei jedem Verkauf 26,375% auf den Gewinn an.',
       e3:'Geringeres Sequenzrisiko',e3d:'Ein Börsensturz zu Rentenbeginn senkt den garantierten Teil deiner Rente nicht, kann aber den variablen Teil senken. Bei einem ETF beschleunigt ein Verkauf im schlechten Jahr das Aufbrauchen.',
@@ -1677,7 +1679,7 @@ async function generatePDF(lang){
   txt(C.white);font('helvetica','bold',30);doc.text(Math.round(entMo)+' €/'+t.month,22,77);
   txt([185,196,214]);font('helvetica','normal',8.5);doc.text(t.entHeroNote,22,85,{maxWidth:120});
   // stats inside band (right)
-  const eStats=[[eur0(entAnnual),t.entAnnualL],[eur0(entByLife),t.entByLifeL.replace('{0}',S.life)],[(lang==='es'?'Siempre':'Immer'),t.entInfL]];
+  const eStats=[[eur0(entAnnual),t.entAnnualL],[eur0(entByLife),t.entByLifeL.replace('{0}',S.life)],[(lang==='es'?'De por vida':(lang==='en'?'For life':'Lebenslang')),t.entInfL]];
   let esy=58;
   eStats.forEach(s=>{
     txt(C.goldL);font('helvetica','bold',12);doc.text(s[0],160,esy);
