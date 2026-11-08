@@ -13,6 +13,10 @@ test('cada versión de index.html es la huella actual de su archivo (si falla: n
   const mal = v.revisar().filter((x) => x.puesta !== x.actual).map((x) => x.archivo + ' (' + x.puesta + ' ≠ ' + x.actual + ')');
   assert.deepStrictEqual(mal, []);
 });
+test('las herramientas que cargan scripts propios (Jubilación, Análisis) también llevan versión al día', () => {
+  const r = v.revisarTodo().filter((x) => x.pagina !== 'index.html'); assert(r.length >= 2, 'jubilacion.html y analisis.html deben cargar impuesto.js con versión');
+  r.forEach((x) => { assert(x.existe, x.archivo + ' no existe'); assert.strictEqual(x.puesta, x.actual, x.pagina + ' · ' + x.archivo); });
+});
 test('la revisión detecta una versión desactualizada y no inventa errores', () => {
   const falso = '<script src="./calc.js?v=00000000"></script><script src="./leads.js?v=' + v.huella('leads.js') + '"></script>';
   const r = v.revisar(falso);

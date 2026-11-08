@@ -689,35 +689,18 @@ window.I18N_EN_JUB = {"Tasa anual nominal, capitalizada cada mes. El rendimiento
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
+<script src="./impuesto.js?v=407831a7"></script>
 <script>
-// §32a EStG 2026 (Grundfreibetrag 12.348 €) — misma fórmula que analisis.html (grenzsteuersatz2026),
-// mantener ambas sincronizadas si cambia el año fiscal; cada HTML es autocontenido, sin módulos compartidos.
-function grenzsteuersatz(gross){
-  const z=gross*0.78; let g;
-  if(z<=12348)g=0;
-  else if(z<=17799){const y=(z-12348)/10000;g=(2*914.51*y+1400)/10000;}
-  else if(z<=69878){const y=(z-17799)/10000;g=(2*173.10*y+2397)/10000;}
-  else if(z<=277825)g=0.42; else g=0.45;
-  return Math.min(0.45,Math.max(0,g));
-}
-// Cuota del impuesto sobre la renta (§32a EStG 2026, tarifa básica) para un zvE; la ley redondea el zvE hacia abajo a euros enteros.
-// Es la tarifa completa, no el tipo marginal: sirve para calcular el ahorro de una deducción como cuota CON y SIN ella (§ ahorroFiscalAnual).
-function cuotaEStG(zve){
-  const x=Math.floor(Math.max(0,zve));
-  if(x<=12348)return 0;
-  if(x<=17799){const y=(x-12348)/10000;return (914.51*y+1400)*y;}
-  if(x<=69878){const z=(x-17799)/10000;return (173.10*z+2397)*z+1034.87;}
-  if(x<=277825)return 0.42*x-11135.63;
-  return 0.45*x-19470.38;
-}
-// Ahorro fiscal anual de deducir `ded` euros: cuota sin la deducción menos cuota con ella, con el mismo zvE aproximado que grenzsteuersatz (78 % del
-// bruto). Multiplicar la deducción por el tipo marginal sobrestima el ahorro porque el impuesto es progresivo (2 % con 300 €/mes al Rürup, 6,5 % con
-// 1.000 €/mes y ~11 % con 2.000 €/mes). Si el asesor fija el tipo a mano, se respeta tal cual (deducción × ese tipo): es su decisión explícita.
+// Tarifa del impuesto (§32a EStG 2026): UNA sola copia en impuesto.js, compartida con Análisis. Aquí solo se traduce el sueldo bruto a zvE (aproximación).
+function grenzsteuersatz(gross){ return AORAES_IMPUESTO.tipoMarginal(gross*0.78); }
+function cuotaEStG(zve){ return AORAES_IMPUESTO.cuota(zve); }
+// Ahorro fiscal anual de deducir `ded` euros: cuota CON y SIN la deducción (progresividad), con el mismo zvE aproximado que grenzsteuersatz (78 % del
+// bruto). Multiplicar la deducción por el tipo marginal sobrestima el ahorro (2 % con 300 €/mes al Rürup, 6,5 % con 1.000 €/mes y ~11 % con 2.000 €/mes).
+// Si el asesor fija el tipo a mano, se respeta tal cual (deducción × ese tipo): es su decisión explícita.
 function ahorroFiscalAnual(ded){
   ded=Math.max(0,ded||0);
   if(S.marginOverride!=null)return ded*S.marginOverride/100;
-  const zve=S.salary*0.78;
-  return Math.max(0,cuotaEStG(zve)-cuotaEStG(zve-ded));
+  return AORAES_IMPUESTO.ahorroPorDeduccion(S.salary*0.78,ded);
 }
 // Tipo marginal efectivo: auto-calculado según el sueldo, salvo que el asesor lo sobrescriba
 // (p. ej. tributación conjunta u otra situación que la fórmula automática no modela).
