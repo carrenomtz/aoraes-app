@@ -177,4 +177,13 @@ test('ETF directo (calcETFonly) coherente con fvETFdetailed y con el capital apo
   base(); const e = ctx.calcETFonly(30), d = ctx.fvETFdetailed(300, 6, 30); near(e.net, d.net, 1e-9); near(e.contributed, 300 * 12 * 30, 1e-9); assert(e.costs >= 0 && isFinite(e.moN));
 });
 
+
+test('la tasa anual se declara como nominal con capitalización mensual en la pantalla (ES/EN/DE) y, en Jubilación, también en el PDF', () => {
+  const es = 'Tasa anual nominal, capitalizada cada mes. El rendimiento efectivo al año resulta algo mayor.';
+  assert(html.includes('>' + es + '<'), 'falta la aclaración visible');
+  assert(html.includes('"' + es + '":"Nominaler Jahreszins, monatlich verzinst.'), 'falta la traducción al alemán');
+  assert(html.includes('"' + es + '":"Nominal annual rate, compounded monthly.'), 'falta la traducción al inglés');
+  assert(/disclaimer:'Cálculo orientativo[^']*nominal[^']*'/.test(html) && /disclaimer:'Indicative[^']*nominal[^']*'/.test(html) && /disclaimer:'Orientierungsrechnung[^']*nominaler[^']*'/.test(html), 'el PDF no lo aclara');
+});
+
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas'); process.exit(failed ? 1 : 0);

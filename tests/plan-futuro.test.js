@@ -234,5 +234,14 @@ test('secuencia por edad: capital estable = el del modelo; con caída final es m
   assert.strictEqual(c5.seqRowAt(5, 30).reason, 'hidden'); assert.strictEqual(c5.seqRowAt(7, 30).ok, true);
 });
 
+
+test('la tasa anual se declara como nominal con capitalización mensual en la pantalla (ES/EN/DE) y, en Jubilación, también en el PDF', () => {
+  const es = 'Tasa anual nominal, capitalizada cada mes. El rendimiento efectivo al año resulta algo mayor.';
+  assert(html.includes('>' + es + '<'), 'falta la aclaración visible');
+  assert(html.includes('"' + es + '":"Nominaler Jahreszins, monatlich verzinst.'), 'falta la traducción al alemán');
+  assert(html.includes('"' + es + '":"Nominal annual rate, compounded monthly.'), 'falta la traducción al inglés');
+  
+});
+
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas');
 process.exit(failed ? 1 : 0);
