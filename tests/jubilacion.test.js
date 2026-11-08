@@ -7,7 +7,7 @@ const ini = html.indexOf('function grenzsteuersatz(gross){'), fin = html.indexOf
 assert(ini > 0 && fin > ini, 'no se encuentra el motor en jubilacion.html');
 const codigo = html.slice(ini, fin).replace('new Date().getFullYear()', '2026');
 const ctx = { Math, Intl, Set, document: { getElementById: () => ({}) } }; vm.createContext(ctx);
-vm.runInContext(codigo + '\nthis.S=S; this.INSURERS=INSURERS; this.grenzsteuersatz=grenzsteuersatz; this.calc=calc; this.calcRiester=calcRiester; this.calcGeneric=calcGeneric; this.fvGeneric=fvGeneric; this.fvIns=fvIns; this.fvETF=fvETF; this.fvETFdetailed=fvETFdetailed; this.calcETFonly=calcETFonly; this.ertragsanteil=ertragsanteil; this.besteuerungsanteilForYear=besteuerungsanteilForYear; this.BASISRENTE_LIMIT=BASISRENTE_LIMIT; this.RIESTER=RIESTER; this.effectiveTaxRate=effectiveTaxRate;', ctx);
+vm.runInContext(codigo + '\nthis.S=S; this.INSURERS=INSURERS; this.grenzsteuersatz=grenzsteuersatz; this.calc=calc; this.calcRiester=calcRiester; this.calcGeneric=calcGeneric; this.fvGeneric=fvGeneric; this.fvIns=fvIns; this.fvETF=fvETF; this.fvETFdetailed=fvETFdetailed; this.calcETFonly=calcETFonly; this.ertragsanteil=ertragsanteil; this.besteuerungsanteilForYear=besteuerungsanteilForYear; this.BASISRENTE_LIMIT=BASISRENTE_LIMIT; this.RIESTER=RIESTER; this.effectiveTaxRate=effectiveTaxRate; this.cuotaEStG=cuotaEStG; this.ahorroFiscalAnual=ahorroFiscalAnual;', ctx);
 let passed = 0, failed = 0;
 function test(name, fn) { try { fn(); passed++; console.log('  ok   ' + name); } catch (e) { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); } }
 const near = (a, b, t, m) => assert(Math.abs(a - b) <= t, (m || '') + ' esperado ' + b + ' obtenido ' + a);
@@ -48,11 +48,34 @@ test('Besteuerungsanteil de la renta Rürup: 50 % hasta 2005, +2 pp al año hast
 });
 test('límite de la Basisrente 2026: 30.826 € (soltero) y el doble en tributación conjunta', () => { assert.strictEqual(ctx.BASISRENTE_LIMIT.single, 30826); assert.strictEqual(ctx.BASISRENTE_LIMIT.joint, 61652); assert.strictEqual(ctx.BASISRENTE_LIMIT.year, 2026); });
 
+console.log('\nAhorro fiscal con y sin deducción');
+test('cuotaEStG coincide con el tarifario independiente en todas las zonas y en los cuatro cambios de zona', () => {
+  [0, 12348, 12349, 15000, 17799, 17800, 30000, 46800, 69878, 69879, 120000, 277825, 277826, 400000].forEach((x) => near(ctx.cuotaEStG(x), T(x), 1e-6, 'zvE ' + x));
+  near(ctx.cuotaEStG(46800.9), T(46800), 1e-6, 'redondeo del zvE hacia abajo a euros enteros'); assert.strictEqual(ctx.cuotaEStG(-5), 0);
+});
+test('ahorroFiscalAnual = T(zvE) − T(zvE − deducción); 0 sin deducción; nunca más que la cuota total ni que deducción × tipo marginal', () => {
+  base(); const zve = 60000 * 0.78;
+  [0, 500, 2100, 6000, 12000, 30826].forEach((d) => { const a = ctx.ahorroFiscalAnual(d); near(a, T(zve) - T(zve - d), 1e-9, 'deducción ' + d); assert(a >= 0 && a <= d * ctx.grenzsteuersatz(60000) + 1e-9); });
+  assert.strictEqual(ctx.ahorroFiscalAnual(0), 0); assert.strictEqual(ctx.ahorroFiscalAnual(-100), 0);
+  near(ctx.ahorroFiscalAnual(1e7), T(zve), 1e-9, 'no se puede ahorrar más impuesto del que se paga');
+});
+test('con deducciones pequeñas el ahorro por euro ≈ tipo marginal y baja al crecer la deducción (progresividad); por encima del 42 % se iguala', () => {
+  base(); const m = ctx.grenzsteuersatz(60000); near(ctx.ahorroFiscalAnual(100) / 100, m, 0.002);
+  assert(ctx.ahorroFiscalAnual(12000) / 12000 < ctx.ahorroFiscalAnual(1200) / 1200 && ctx.ahorroFiscalAnual(1200) / 1200 < m + 1e-9);
+  ctx.S.salary = 150000; near(ctx.ahorroFiscalAnual(30000) / 30000, 0.42, 1e-9);   // zvE 117.000 € − 30.000 €: todo dentro del tramo del 42 %
+});
+test('un tipo marginal fijado a mano por el asesor se respeta tal cual (deducción × ese tipo)', () => {
+  base(); ctx.S.marginOverride = 30; near(ctx.ahorroFiscalAnual(10000), 3000, 1e-9); base(); ctx.S.marginOverride = 0; assert.strictEqual(ctx.ahorroFiscalAnual(10000), 0);
+});
+test('la cifra de ahorro de la herramienta es coherente con el cálculo manual de la auditoría (1.000 €/mes al Rürup, sueldo 60.000 €: unos 3.832 € al año, no 4.081 €)', () => {
+  base(); Object.assign(ctx.S, { monthly: 1000, split: 100 }); const c = ctx.calc('generali', 30); near(c.taxSave * 12, 3832, 1); assert(c.taxSave * 12 < 4081);
+});
+
 console.log('\nRiester');
 test('sueldo 60.000 €, sin hijos: mínimo propio 1.925 €, cuota sugerida 161 €/mes, Zulage 175 €, aportación fomentada tope 2.100 €', () => {
   base(); const r = ctx.calcRiester();
   near(r.mindesteigenbeitrag, 1925, 1e-9); assert.strictEqual(r.suggestedMonthly, 161); near(r.zulage, 175, 1e-9); assert.strictEqual(r.metRatio, 1);
-  near(r.taxSaving, 2100 * ctx.grenzsteuersatz(60000), 1e-9); near(r.extraRefund, r.taxSaving - 175, 1e-9); near(r.beneficioAnual, r.zulage + r.extraRefund, 1e-9);
+  near(r.taxSaving, T(46800) - T(46800 - 2100), 1e-9); assert(r.taxSaving < 2100 * ctx.grenzsteuersatz(60000), 'con y sin la deducción ahorra algo menos que tipo marginal × 2.100'); near(r.extraRefund, r.taxSaving - 175, 1e-9); near(r.beneficioAnual, r.zulage + r.extraRefund, 1e-9);
 });
 test('con hijos: la Zulage sube 300 € por hijo y baja el mínimo propio; con sueldo bajo manda el 4 % y con sueldo muy bajo el Sockelbetrag de 60 €', () => {
   base(); ctx.S.riesterKids = 2; let r = ctx.calcRiester(); near(r.zulageBase, 775, 1e-9); near(r.mindesteigenbeitrag, 2100 - 775, 1e-9);
@@ -131,13 +154,14 @@ test('sin reinvertir lo aportado efectivo es lo aportado de bolsillo; reinvirtie
   base(); ctx.S.reinvest = 'none'; let c = ctx.calc('generali', 30); near(c.effContrib, c.contributed, 1e-6);
   base(); ctx.S.reinvest = 'vasp'; c = ctx.calc('generali', 30); near(c.effContrib, c.contributed + c.taxSave * 12 * 30, 1e-6);
 });
-test('ahorro fiscal de un Rürup dentro del límite = aportación al Rürup × tipo marginal', () => {
-  base(); ctx.S.monthly = 1000; ctx.S.split = 50; const c = ctx.calc('generali', 30); near(c.taxSave, 500 * ctx.effectiveTaxRate(), 1e-9);
+test('ahorro fiscal de un Rürup dentro del límite = cuota sin la aportación − cuota con ella (no tipo marginal × aportación)', () => {
+  base(); ctx.S.monthly = 1000; ctx.S.split = 50; const c = ctx.calc('generali', 30), zve = 60000 * 0.78;
+  near(c.taxSave * 12, T(zve) - T(zve - 6000), 1e-6); assert(c.taxSave < 500 * ctx.effectiveTaxRate(), 'menos que el cálculo con tipo marginal');
 });
 test('el ahorro fiscal NO supera el límite deducible de la Basisrente (30.826 €/año): aportar 36.000 € al año deduce solo 30.826 €', () => {
   base(); Object.assign(ctx.S, { monthly: 3000, split: 100 }); const c = ctx.calc('generali', 30);
-  near(c.taxSave * 12, ctx.BASISRENTE_LIMIT.single * ctx.effectiveTaxRate(), 1e-6); assert(c.taxSave * 12 < 36000 * ctx.effectiveTaxRate());
-  base(); Object.assign(ctx.S, { monthly: 2568, split: 100 }); const justo = ctx.calc('generali', 30); near(justo.taxSave * 12, 2568 * 12 * ctx.effectiveTaxRate(), 1e-6);
+  const zve = 60000 * 0.78; near(c.taxSave * 12, T(zve) - T(zve - ctx.BASISRENTE_LIMIT.single), 1e-6); assert(c.taxSave * 12 < T(zve) - T(zve - 36000), 'deducir 36.000 € daría más que el tope');
+  base(); Object.assign(ctx.S, { monthly: 2568, split: 100 }); const justo = ctx.calc('generali', 30); near(justo.taxSave * 12, T(zve) - T(zve - 2568 * 12), 1e-6);
 });
 test('más aportación nunca da menos capital, y más rentabilidad tampoco', () => {
   base(); let prev = -1; [100, 200, 300, 600, 1200].forEach((m) => { ctx.S.monthly = m; const n = ctx.calc('generali', 30).net; assert(n > prev); prev = n; });

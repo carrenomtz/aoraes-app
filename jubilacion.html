@@ -698,6 +698,25 @@ function grenzsteuersatz(gross){
   else if(z<=277825)g=0.42; else g=0.45;
   return Math.min(0.45,Math.max(0,g));
 }
+// Cuota del impuesto sobre la renta (§32a EStG 2026, tarifa básica) para un zvE; la ley redondea el zvE hacia abajo a euros enteros.
+// Es la tarifa completa, no el tipo marginal: sirve para calcular el ahorro de una deducción como cuota CON y SIN ella (§ ahorroFiscalAnual).
+function cuotaEStG(zve){
+  const x=Math.floor(Math.max(0,zve));
+  if(x<=12348)return 0;
+  if(x<=17799){const y=(x-12348)/10000;return (914.51*y+1400)*y;}
+  if(x<=69878){const z=(x-17799)/10000;return (173.10*z+2397)*z+1034.87;}
+  if(x<=277825)return 0.42*x-11135.63;
+  return 0.45*x-19470.38;
+}
+// Ahorro fiscal anual de deducir `ded` euros: cuota sin la deducción menos cuota con ella, con el mismo zvE aproximado que grenzsteuersatz (78 % del
+// bruto). Multiplicar la deducción por el tipo marginal sobrestima el ahorro porque el impuesto es progresivo (2 % con 300 €/mes al Rürup, 6,5 % con
+// 1.000 €/mes y ~11 % con 2.000 €/mes). Si el asesor fija el tipo a mano, se respeta tal cual (deducción × ese tipo): es su decisión explícita.
+function ahorroFiscalAnual(ded){
+  ded=Math.max(0,ded||0);
+  if(S.marginOverride!=null)return ded*S.marginOverride/100;
+  const zve=S.salary*0.78;
+  return Math.max(0,cuotaEStG(zve)-cuotaEStG(zve-ded));
+}
 // Tipo marginal efectivo: auto-calculado según el sueldo, salvo que el asesor lo sobrescriba
 // (p. ej. tributación conjunta u otra situación que la fórmula automática no modela).
 function effectiveTaxRate(){
@@ -736,7 +755,7 @@ function calcRiester(){
   const zulage=zulageBase*metRatio;
   const totalContrib=Math.min(RIESTER.hoechstbetrag,annualOwn+zulage);
   const taxRate=effectiveTaxRate();
-  const taxSaving=totalContrib*taxRate;
+  const taxSaving=ahorroFiscalAnual(totalContrib);   // cuota con y sin la deducción (Riester: aportación propia + Zulage, hasta 2.100 €)
   const extraRefund=Math.max(0,taxSaving-zulage);
   const beneficioAnual=zulage+extraRefund;
   const capitalAdicional=fvGeneric(0,beneficioAnual/12,S.ret,years);
@@ -843,7 +862,7 @@ function calc(ins,years){
   const restBase=S.monthly*(1-S.split/100);      // non-Rürup contribution
   // Solo es deducible hasta el límite anual de la Basisrente (BASISRENTE_LIMIT, soltero): lo que se aporta por encima entra en el contrato pero no
   // desgrava. Sin este tope, aportar p. ej. 3.000 €/mes al Rürup sugería deducir 36.000 € cuando el máximo es 30.826 €.
-  const taxSave=Math.min(ruerup,BASISRENTE_LIMIT.single/12)*taxRate;   // ahorro fiscal estimado total (no depende de si se reinvierte)
+  const taxSave=ahorroFiscalAnual(Math.min(ruerup*12,BASISRENTE_LIMIT.single))/12;   // ahorro fiscal mensual equivalente (no depende de si se reinvierte)
   const reinvestPct=(S.reinvestPct!=null?S.reinvestPct:100)/100;
   const reinvestedAmt=taxSave*reinvestPct;       // solo esta parte se reinvierte y compone
   const reinvest=S.reinvest;
