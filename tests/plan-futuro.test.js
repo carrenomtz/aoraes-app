@@ -7,7 +7,11 @@ assert(ini > 0 && fin > ini, 'no se encuentra el modelo en plan-futuro.html');
 const codigo = html.slice(ini, fin).replace('const THIS_YEAR=new Date().getFullYear();', 'const THIS_YEAR=2026;')
   .replace(/^const \$=.*$/m, '').replace(/^const eur=.*$/m, '').replace(/^const eurc=.*$/m, '');
 const ctx = { Math, Intl, HC: { school: 'real' } }; vm.createContext(ctx);
-vm.runInContext(codigo + '\nthis.S=S; this.C=C; this.calcPlan=calcPlan; this.withCfg=withCfg; this.deflate=deflate; this.firstMonth=firstMonth; this.SCENARIOS=SCENARIOS; this.simulate=simulate; this.futAt=futAt; this.futCost=futCost; this.futNeeded=futNeeded; this.effRet=effRet; this.seqCrash=seqCrash; this.seqMean=seqMean; this.seqParse=seqParse; this.seqCapital=seqCapital; this.seqRowAt=seqRowAt;', ctx);
+// Los costes reales de las coberturas son datos internos de Generali y NO están en el repositorio. Estas tablas son INVENTADAS, solo para probar la lógica.
+const FICTICIAS = { kiz: [[0.25, 10], [18, 10]], buo: [[0.25, 5], [18, 20]], sbu: { grund: 30, haupt: 30, real: 30, gym: 30, sek2: 30 }, vs: { death: 0.02, both: 0.05 } };
+const conTablas = () => { ctx.AORAES_COSTES_COBERTURAS = FICTICIAS; }, sinTablas = () => { delete ctx.AORAES_COSTES_COBERTURAS; };
+conTablas();
+vm.runInContext(codigo + '\nthis.S=S; this.C=C; this.calcPlan=calcPlan; this.withCfg=withCfg; this.deflate=deflate; this.firstMonth=firstMonth; this.SCENARIOS=SCENARIOS; this.simulate=simulate; this.futAt=futAt; this.futCost=futCost; this.futNeeded=futNeeded; this.coverCostMissing=coverCostMissing; this.coverTables=coverTables; this.effRet=effRet; this.seqCrash=seqCrash; this.seqMean=seqMean; this.seqParse=seqParse; this.seqCapital=seqCapital; this.seqRowAt=seqRowAt;', ctx);
 let passed = 0, failed = 0;
 function test(name, fn) { try { fn(); passed++; console.log('  ok   ' + name); } catch (e) { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); } }
 const base = () => Object.assign(ctx.S, { childAge: 2, monthly: 75, ret: 6, capital0: 1000, targetYear: 2042, dyn: 0, extraYear: 0, payerAge: 35, real: false, infl: 2 });
@@ -35,8 +39,10 @@ test('withCfg calcula con otro escenario y otras coberturas y restaura SIEMPRE l
 test('las coberturas restan capital: cuanto más cubren, menos ahorro', () => {
   base(); sinCob(); const sin = cap();
   const con = (c) => ctx.withCfg({ C: c }, cap);
-  assert.strictEqual(con({ bu: 'option' }), 22683); assert.strictEqual(con({ vs: 'death' }), 23730);
-  assert.strictEqual(con({ bu: 'option', vs: 'death' }), 22358); assert.strictEqual(con({ bu: 'option', vs: 'death', kiz: 500 }), 18930);
+  // Con tablas ficticias: cada cobertura resta lo suyo y combinadas restan más; una cobertura de coste constante equivale a pagar esa cuota menos
+  assert(con({ vs: 'death' }) < sin && con({ vs: 'both' }) < con({ vs: 'death' }));
+  assert(con({ bu: 'option', vs: 'death', kiz: 500 }) < con({ bu: 'option', vs: 'death' }));
+  near(con({ kiz: 500 }), (() => { ctx.S.monthly = 65; const c = cap(); ctx.S.monthly = 75; return c; })(), 1, 'kiz constante de 10 € = cuota de 65 € sin coberturas');
   assert(con({ bu: 'option' }) < sin && con({ bu: 'option', vs: 'death' }) < con({ bu: 'option' }));
 });
 test('valor real: deflacta el capital con la inflación supuesta y no toca nada en euros nominales', () => {
@@ -137,6 +143,21 @@ test('la regla «solo desde el año 5» es un interruptor (FUT_MIN_VISIBLE_YEARS
   assert.strictEqual(ctx5.futAt(5).reason, 'hidden');                       // 3 años: oculto
   assert.strictEqual(ctx5.futAt(7).ok, true);                                // 5 años: visible
   assert(ctx5.simulate(3).capital > 0);                                      // el motor sigue calculando los primeros años
+});
+
+// ----- Datos internos fuera del código público -----
+test('sin tablas de costes cargadas, las coberturas no restan nada y la herramienta lo declara (nunca inventa un coste)', () => {
+  base(); sinCob(); const sin = cap(); sinTablas();
+  Object.assign(ctx.C, { vs: 'both', kiz: 500, bu: 'option' });
+  assert.strictEqual(ctx.coverTables(), null); assert.strictEqual(ctx.coverCostMissing(), true); assert.strictEqual(ctx.calcPlan().coversUnpriced, true);
+  assert.strictEqual(ctx.calcPlan().riskTotal, 0); assert.strictEqual(cap(), sin); assert.strictEqual(ctx.firstMonth().risk, 0);
+  sinCob(); assert.strictEqual(ctx.coverCostMissing(), false); assert.strictEqual(ctx.calcPlan().coversUnpriced, false);
+  conTablas(); Object.assign(ctx.C, { kiz: 500 }); assert.strictEqual(ctx.coverCostMissing(), false); assert(ctx.calcPlan().riskTotal > 0); sinCob();
+});
+test('plan-futuro.html es público: no contiene las tablas de costes de Generali ni su rastro (nombres de las tablas, filas edad/importe, porcentajes internos)', () => {
+  ['KIZ500', 'BUO500', 'SBU500', 'VS_PCT'].forEach((n) => assert(!html.includes(n), 'queda ' + n));
+  assert(!/\[0\.25,\s*\d+\.\d+\]/.test(html), 'queda una fila de tabla edad/importe');
+  assert(!/ejemplo oficial/i.test(html), 'queda un texto que cita el ejemplo oficial con sus cifras');
 });
 
 // ----- Planificador inverso (futNeeded) -----
