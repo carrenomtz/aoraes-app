@@ -503,7 +503,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
   var dif=rk.costeTotal-rEst.costeTotal;
   // Comprar HOY con Bausparvertrag exige prefinanciar durante el ahorro (hipótesis: tipo del banco, solo intereses): el banco desembolsa
   // el día 0 y el Bausparvertrag no. Sin ese coste, la comparación favorece al Bausparvertrag de forma artificial.
-  var puente=(rEst.mesesAhorro>0&&rEst.cuotaAhorro>0)?inmuebleCostePuente(precio,inm.banco.interesPrestamo,rEst.mesesAhorro):0;
+  var puente=(rEst.mesesAhorro>0&&rEst.cuotaAhorro>0&&inmuebleRequierePuente(inm))?inmuebleCostePuente(precio,inm.banco.interesPrestamo,rEst.mesesAhorro):0;
   var difPuente=rk.costeTotal-(rEst.costeTotal+puente);
   var marcaMeses=Math.round((inm.banco.marcaAnios==null?10:Math.max(0,inm.banco.marcaAnios))*12);
   function row(title,r,isBanco){
@@ -529,6 +529,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
         ?'<div class="inm-res-line save inm-detalle"><span>'+(puente>0?(dif>=0?'Menos intereses y comisiones que el banco (comprando al asignarse el contrato)':'Más intereses y comisiones que el banco (comprando al asignarse el contrato)'):(dif>=0?'Menos intereses y comisiones que el banco':'Más intereses y comisiones que el banco'))+'</span><b'+(dif>=0?' class="inm-ahorro"':'')+'>'+eur(Math.abs(dif))+'</b></div>'+
           (puente>0?'<div class="inm-res-line save inm-detalle"><span>'+(difPuente>=0?'Menos intereses y comisiones que el banco si compras hoy':'Más intereses y comisiones que el banco si compras hoy')+'</span><b'+(difPuente>=0?' class="inm-ahorro"':'')+'>'+eur(Math.abs(difPuente))+'</b></div>':'')
         :'<div class="inm-res-line inm-eff-hint"><span>Comparación en euros no disponible: los pagos mensuales de ambas opciones son distintos. Pulsa «Mismo pago mensual» para compararlas en igualdad.</span></div>'):'')+
+      (!isBanco&&rEst.mesesAhorro>0&&!inmuebleRequierePuente(inm)?'<div class="inm-res-line inm-eff-hint inm-detalle"><span>Compra futura: se ahorra antes de comprar, así que no hay financiación puente. Hasta entonces no eres propietario.</span></div>':'')+
       (!isBanco&&puente>0?'<div class="inm-res-line inm-eff-hint inm-detalle"><span>* Hipótesis: para comprar hoy, un banco adelanta la financiación al tipo del banco, solo intereses, hasta la asignación del contrato. La fecha de asignación es una estimación, no está garantizada.</span></div>':'')+
       inmuebleTimeRow(r,maxMeses,isBanco)+
       inmuebleCertRow(r,inm.banco.zinsbindung,isBanco)+
@@ -607,7 +608,24 @@ function inmuebleCapacidadHTML(inm,fin,filas){
     '<p class="inm-curve-note"><span>Regla orientativa: la vivienda no debería pasar del 30–35 % del ingreso neto del hogar, y además de la cuota hay seguros, Grundsteuer y otros gastos.</span> <span>No sustituye el análisis de solvencia del banco.</span></p></div>'+inmuebleCuandoHTML(inm);
 }
 
+// Necesidad total de fondos (ORDEN 1.3), con cada paso a la vista: de dónde sale el importe a financiar.
+function inmuebleFondosDetalleHTML(inm){
+  var nf=inmuebleNecesidadFondos(inm), c=nf.capital;
+  function ln(lab,val,cls){ return '<div class="inm-res-line'+(cls?' '+cls:'')+'"><span>'+lab+'</span><b>'+val+'</b></div>'; }
+  var h=ln('Precio del inmueble',eur(nf.precio));
+  if(nf.partidas) nf.partidas.forEach(function(x){ if(x.importe>0) h+=ln(esc(x.label)+(x.modo==='pct'?' · '+String(x.v).replace('.',',')+' %':''),eur(x.importe),'inm-detalle'); });
+  h+=ln('Gastos de compra',eur(nf.gastos))+ln('Coste total de la compra',eur(nf.costeTotalCompra),'total')+ln('Capital disponible',eur(c.disponible));
+  if(c.reserva>0) h+=ln('Menos la reserva que se mantiene','− '+eur(c.reserva));
+  if(c.comprometido>0) h+=ln('Menos el capital comprometido para otros fines','− '+eur(c.comprometido));
+  if(c.ayudas>0) h+=ln('Más ayudas confirmadas','+ '+eur(c.ayudas));
+  h+=ln('Capital utilizable',eur(Math.max(0,c.valor)))+ln('Importe a financiar',eur(nf.financiacionNecesaria),'total');
+  if(nf.sinFondosSuficientes) h+='<p class="inm-curve-note"><span>La reserva y el capital comprometido superan el capital disponible: faltan '+eur(-c.valor)+' para mantener esa reserva.</span></p>';
+  else if(nf.financiacionNecesaria<=0) h+='<p class="inm-curve-note"><span>Con ese capital utilizable no hay nada que financiar.</span></p>';
+  h+='<p class="inm-curve-note"><span>Las ayudas solo cuentan si están confirmadas. Los gastos de compra del desglose son estimaciones: confírmalos con los documentos de la operación.</span></p>';
+  return '<div class="inm-fin inm-fin-det">'+h+'</div>';
+}
 function inmuebleFinLine(inm){
+  if(inmuebleGastosPartidas(inm)||(inm.reserva||0)>0||(inm.comprometido||0)>0||(inm.ayudas||0)>0) return inmuebleFondosDetalleHTML(inm);
   if(!((inm.gastosPct||0)>0||(inm.capitalPropio||0)>0)) return '';
   var fin=inmuebleFin(inm);
   return '<div class="inm-fin"><div class="inm-res-line"><span>Importe a financiar</span><b>'+eur(fin)+'</b></div>'+(fin>0?'':'<p class="inm-curve-note"><span>Con ese capital propio no hay nada que financiar.</span></p>')+'</div>';
@@ -615,13 +633,53 @@ function inmuebleFinLine(inm){
 
 // Campos de arriba compartidos por Comprar y por Comprar y refinanciar: precio, gastos de compra y capital propio (básicos) y, en
 // avanzadas, ingreso, límite de cuota, mes de inicio y fecha de refinanciación.
+// Filas del informe para gastos de compra y capital: con desglose, cada partida con su importe; con reserva, comprometido o ayudas, el capital utilizable.
+function inmuebleInformeCostesRows(inm,row){
+  var par=inmuebleGastosPartidas(inm), h='';
+  if(par){ par.forEach(function(x){ if(x.importe>0) h+=row(x.label,eur(x.importe)); }); h+=row('Gastos de compra (total)',eur(inmuebleGastosTotal(inm))); }
+  else if((inm.gastosPct||0)>0) h+=row('Gastos de compra',pct(inm.gastosPct));
+  if((inm.capitalPropio||0)>0) h+=row('Capital propio disponible',eur(inm.capitalPropio));
+  if((inm.reserva||0)>0) h+=row('Reserva que se mantiene',eur(inm.reserva));
+  if((inm.comprometido||0)>0) h+=row('Capital comprometido para otros fines',eur(inm.comprometido));
+  if((inm.ayudas||0)>0) h+=row('Ayudas confirmadas',eur(inm.ayudas));
+  if((inm.reserva||0)>0||(inm.comprometido||0)>0||(inm.ayudas||0)>0) h+=row('Capital utilizable',eur(Math.max(0,inmuebleCapitalUtilizable(inm).valor)));
+  return h;
+}
+// % que representa el desglose sobre el precio (solo para mostrarlo en el campo de gastos, que entonces es de solo lectura).
+function inmuebleGastosPctEfectivo(inm){ var p=Math.max(0,inm.precio||0); return p>0?Math.round(inmuebleGastosTotal(inm)/p*10000)/100:0; }
+// Reserva, capital comprometido, ayudas confirmadas, cuándo comprar y desglose de gastos (opciones avanzadas).
+function inmuebleFondosHTML(inm){
+  var cu=inmuebleCuando(inm), par=inmuebleGastosPartidas(inm);
+  function num(id,lab,v){ return '<label class="inm-f inm-inicio"><span>'+lab+'</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="'+id+'" value="'+(v||'')+'" step="500" min="0" placeholder="0"><span class="inm-suf">€</span></span></label>'; }
+  var cuando='<div class="inm-cmp-wrap"><span class="inm-cmp-lab">¿Cuándo quieres comprar?</span></div><div class="inm-mode inm-cmp" role="tablist" aria-label="Cuándo quieres comprar">'+
+    [['ahora','Ahora'],['12m','En el próximo año'],['esperar','Puedo esperar y planificar']].map(function(p){ var on=(p[0]===cu); return '<button type="button" data-inm-cuando="'+p[0]+'"'+(on?' class="active"':'')+' aria-pressed="'+(on?'true':'false')+'">'+p[1]+'</button>'; }).join('')+'</div>'+
+    '<p class="inm-curve-note"><span>'+(cu==='esperar'?'Compra futura: se ahorra antes de comprar y no hace falta financiación puente.':'Para comprar pronto con un Bausparvertrag hay que adelantar la financiación hasta la asignación: el comparador suma ese coste.')+'</span></p>';
+  var det;
+  if(!par){
+    det='<p class="inm-curve-note"><span>Ahora se usa un % global para los gastos de compra. Puedes desglosarlos (impuesto, notario, Grundbuch, agencia, reformas…) para calcular con importes más reales.</span></p>'+
+      '<div class="inm-quick"><button type="button" data-inm-gastos-act="on">Desglosar gastos de compra</button></div>';
+  } else {
+    var bl='<label class="inm-f inm-inicio"><span>Bundesland (para proponer el impuesto)</span><select class="inm-inp" id="inm-bl"><option value="">—</option>'+
+      INM_BUNDESLAENDER.map(function(b){ return '<option value="'+b[0]+'"'+(inm.bundesland===b[0]?' selected':'')+'>'+esc(b[1])+' · '+String(b[2]).replace('.',',')+' %</option>'; }).join('')+'</select></label>';
+    var rows=par.map(function(x){
+      return '<tr><td>'+esc(x.label)+'</td><td><select class="inm-inp" id="inm-g-modo-'+x.k+'" aria-label="Tipo de importe"><option value="pct"'+(x.modo==='pct'?' selected':'')+'>% del precio</option><option value="eur"'+(x.modo==='eur'?' selected':'')+'>€ fijos</option></select></td>'+
+        '<td><input type="number" class="inm-inp" id="inm-g-v-'+x.k+'" value="'+(x.v||'')+'" step="'+(x.modo==='pct'?'0.1':'100')+'" min="0" placeholder="0" aria-label="Valor"></td><td class="inm-g-imp" id="inm-g-imp-'+x.k+'">'+eur(x.importe)+'</td></tr>';
+    }).join('');
+    det=bl+'<table class="inm-tabla inm-gastos-tabla"><thead><tr><th>Partida</th><th>Tipo</th><th>Valor</th><th>Importe</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<p class="inm-curve-note"><span>Los tipos del Bundesland y del notario son estimaciones típicas, pendientes de validar: confírmalos con los documentos de la operación.</span></p>'+
+      '<div class="inm-gastos-btns inm-quick"><button type="button" data-inm-gastos-act="tipico">Usar estimación típica</button><button type="button" data-inm-gastos-act="off">Volver al % global</button></div>';
+  }
+  return '<div class="inm-fondos inm-adv">'+cuando+
+    '<div class="inm-toprow">'+num('inm-reserva','Reserva que quieres mantener',inm.reserva)+num('inm-comprometido','Capital comprometido para otros fines',inm.comprometido)+num('inm-ayudas','Ayudas confirmadas',inm.ayudas)+'</div>'+
+    '<details class="inm-gastos-det"'+(par?' open':'')+'><summary>Desglose de los gastos de compra</summary>'+det+'</details></div>';
+}
 function inmuebleTopFieldsHTML(inm){
   return '<div class="inm-toprow inm-precio-row"><label class="inm-f inm-precio"><span>Precio del inmueble</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-precio" value="'+inm.precio+'" step="1000" min="0"><span class="inm-suf">€</span></span></label>'+
-      '<label class="inm-f inm-inicio"><span>Gastos de compra (% del precio · típico 7–12 %)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-gastos" value="'+(inm.gastosPct||0)+'" step="0.5" min="0" max="30"><span class="inm-suf">%</span></span></label>'+
-      '<label class="inm-f inm-inicio"><span>Capital propio</span><span class="inm-inp-wrap"><input type="number" class="inm-inp'+inmuebleCapitalClase(inm)+'" id="inm-capital"'+inmuebleCapitalTitulo(inm)+' value="'+(inm.capitalPropio||0)+'" step="1000" min="0"><span class="inm-suf">€</span></span></label></div>'+
+      '<label class="inm-f inm-inicio"><span>Gastos de compra (% del precio · típico 7–12 %)'+(inmuebleGastosPartidas(inm)?' <em class="inm-eff-hint">· calculado del desglose</em>':'')+'</span><span class="inm-inp-wrap"><input type="number" class="inm-inp'+(inmuebleGastosPartidas(inm)?' calc-ro':'')+'" id="inm-gastos" value="'+(inmuebleGastosPartidas(inm)?inmuebleGastosPctEfectivo(inm):(inm.gastosPct||0))+'"'+(inmuebleGastosPartidas(inm)?' readonly':'')+' step="0.5" min="0" max="30"><span class="inm-suf">%</span></span></label>'+
+      '<label class="inm-f inm-inicio"><span>Capital propio disponible</span><span class="inm-inp-wrap"><input type="number" class="inm-inp'+inmuebleCapitalClase(inm)+'" id="inm-capital"'+inmuebleCapitalTitulo(inm)+' value="'+(inm.capitalPropio||0)+'" step="1000" min="0"><span class="inm-suf">€</span></span></label></div>'+
       '<div class="inm-toprow inm-adv"><label class="inm-f inm-inicio"><span>Ingreso neto mensual del hogar (opcional)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-ingreso" value="'+(inm.ingresoNeto||'')+'" step="100" min="0" placeholder="0"><span class="inm-suf">€</span></span></label>'+
       '<label class="inm-f inm-inicio"><span>Límite de la cuota (% del ingreso)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-ratio" value="'+(inm.ratioMax||35)+'" step="1" min="10" max="60"><span class="inm-suf">%</span></span></label>'+
-      '<label class="inm-f inm-inicio"><span>Mes de inicio</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-inicio" value="'+(inm.inicio||(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);})())+'"></span></label><label class="inm-f inm-inicio"><span>Fecha de refinanciación</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-fecha-refi" value="'+inmuebleFechaRefiYM(inm)+'"></span></label></div>';
+      '<label class="inm-f inm-inicio"><span>Mes de inicio</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-inicio" value="'+(inm.inicio||(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);})())+'"></span></label><label class="inm-f inm-inicio"><span>Fecha de refinanciación</span><span class="inm-inp-wrap"><input type="month" class="inm-inp" id="inm-fecha-refi" value="'+inmuebleFechaRefiYM(inm)+'"></span></label></div>'+inmuebleFondosHTML(inm);
 }
 
 function inmuebleBlock(rec){
@@ -750,7 +808,7 @@ function inmuebleDatosHTML(inm){
   function rowInteresPrestamo(opt,cfg){ return rowEdit('Interés del préstamo',opt,'interesPrestamo',cfg.interesPrestamo||0,'%',false); }
   if(inm.modo==='refi'&&inm.refi.compraNueva){
     var rc=inm.refi, estC=(rc.estrategia==='refiB')?rc.b:rc.a;
-    return '<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+row('Precio del inmueble',eur(inm.precio))+((inm.gastosPct||0)>0?row('Gastos de compra',pct(inm.gastosPct)):'')+((inm.capitalPropio||0)>0?row('Capital propio',eur(inm.capitalPropio)):'')+row('Importe a financiar',eur(inmuebleFin(inm)))+row('Interés de la compra',pct(inm.banco.interesPrestamo))+row('Mes de inicio',inmuebleMesAnio(0))+row('Fecha de refinanciación',inmuebleFmtFecha(fechaRefiEfectiva(rc)))+
+    return '<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+row('Precio del inmueble',eur(inm.precio))+inmuebleInformeCostesRows(inm,row)+row('Importe a financiar',eur(inmuebleFin(inm)))+row('Interés de la compra',pct(inm.banco.interesPrestamo))+row('Mes de inicio',inmuebleMesAnio(0))+row('Fecha de refinanciación',inmuebleFmtFecha(fechaRefiEfectiva(rc)))+
       '</div><div class="afa-inf-sec"><h4>Refinanciar con banco</h4>'+rowInteresPrestamo('banco',rc.banco)+row('Vigencia del tipo (Zinsbindung)',inmuebleAnios((rc.banco.zinsbindung||0)*12))+rowsBancoPlazo()+
       '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(estC.pct))+rowInteresAhorro(estC)+rowInteresPrestamo('bs',estC)+row('Comisión de apertura',pct(estC.comision))+rowSonder(estC)+'</div>';
   }
@@ -763,7 +821,7 @@ function inmuebleDatosHTML(inm){
       '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(estCfg.pct))+rowInteresAhorro(estCfg)+rowInteresPrestamo('bs',estCfg)+row('Comisión de apertura',pct(estCfg.comision))+rowSonder(estCfg)+'</div>';
   }
   var e=(inm.estrategia==='b')?inm.b:inm.a, rE=calcInmuebleOption(inmuebleFin(inm),e);
-  return '<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+row('Precio del inmueble',eur(inm.precio))+((inm.gastosPct||0)>0?row('Gastos de compra',pct(inm.gastosPct)):'')+((inm.capitalPropio||0)>0?row('Capital propio',eur(inm.capitalPropio)):'')+(inmuebleFin(inm)!==inm.precio?row('Importe a financiar',eur(inmuebleFin(inm))):'')+row('Mes de inicio',inmuebleMesAnio(0))+row('Cómo comparar',inm.comparar==='igual'?'Mismo pago mensual':'Cada camino como es')+
+  return '<div class="afa-inf-sec"><h4>Datos de la simulación</h4>'+row('Precio del inmueble',eur(inm.precio))+inmuebleInformeCostesRows(inm,row)+(inmuebleFin(inm)!==inm.precio?row('Importe a financiar',eur(inmuebleFin(inm))):'')+row('Mes de inicio',inmuebleMesAnio(0))+row('Cómo comparar',inm.comparar==='igual'?'Mismo pago mensual':'Cada camino como es')+
     '</div><div class="afa-inf-sec"><h4>Bausparvertrag</h4>'+row('% ahorrado',pct(e.pct))+row('Años de ahorro',inmuebleAnios(rE.mesesAhorro))+rowInteresAhorro(e)+rowInteresPrestamo('bs',e)+row('Plazo del préstamo',inmuebleAnios(rE.mesesPrestamo))+row('Comisión de apertura',pct(e.comision))+rowSonder(e)+
     '</div><div class="afa-inf-sec"><h4>Banco directo</h4>'+rowInteresPrestamo('banco',inm.banco)+row('Vigencia del tipo (Zinsbindung)',inmuebleAnios((inm.banco.zinsbindung||0)*12))+rowsBancoPlazo()+'</div>';
 }
@@ -975,6 +1033,26 @@ function inmuebleOnClick(e){
         scheduleInmuebleSave();
         return true;
       }
+      var cuB=e.target.closest('[data-inm-cuando]');
+      if(cuB){
+        if(!APP_HOST.wsRec) return true;
+        normalizeInmueble(APP_HOST.wsRec).cuando=cuB.getAttribute('data-inm-cuando');
+        normalizeInmueble(APP_HOST.wsRec);
+        var secC=document.getElementById('sec-inmueble'); if(secC) secC.innerHTML=inmuebleBlock(APP_HOST.wsRec);
+        scheduleInmuebleSave();
+        return true;
+      }
+      var gB=e.target.closest('[data-inm-gastos-act]');
+      if(gB){
+        if(!APP_HOST.wsRec) return true;
+        var inmGB=normalizeInmueble(APP_HOST.wsRec), actG=gB.getAttribute('data-inm-gastos-act');
+        if(actG==='on'){ inmGB.gastos=inmuebleGastosTipicos(inmGB.bundesland||''); }
+        else if(actG==='tipico'){ inmGB.gastos=inmuebleGastosTipicos(inmGB.bundesland||''); }
+        else if(actG==='off'){ delete inmGB.gastos; }
+        var secG=document.getElementById('sec-inmueble'); if(secG) secG.innerHTML=inmuebleBlock(APP_HOST.wsRec);
+        scheduleInmuebleSave();
+        return true;
+      }
       var cm=e.target.closest('[data-inm-cmp]');
       if(cm){
         if(!APP_HOST.wsRec) return true;
@@ -1058,6 +1136,30 @@ function inmuebleOnInput(e){
         if(!APP_HOST.wsRec) return true;
         var inmC=normalizeInmueble(APP_HOST.wsRec), vC=parseFloat(t.value);
         if(t.id==='inm-ingreso'){ var limIn=inmuebleLimitar('ingresoNeto',t.value); inmC.ingresoNeto=limIn.v; inmuebleMarcarRango(t,limIn.recortado,limIn.v); } else if(vC>=10&&vC<=60) inmC.ratioMax=vC;
+        refreshInmuebleResults(); scheduleInmuebleSave();
+        return true;
+      }
+      if(t.id==='inm-reserva'||t.id==='inm-comprometido'||t.id==='inm-ayudas'){
+        if(!APP_HOST.wsRec) return true;
+        var inmF=normalizeInmueble(APP_HOST.wsRec), kF=t.id.slice(4), limF=inmuebleLimitar(kF,t.value);
+        inmF[kF]=limF.v; inmuebleMarcarRango(t,limF.recortado,limF.v);
+        refreshInmuebleResults(); scheduleInmuebleSave();
+        return true;
+      }
+      if(t.id==='inm-bl'){
+        if(!APP_HOST.wsRec) return true;
+        normalizeInmueble(APP_HOST.wsRec).bundesland=t.value;
+        scheduleInmuebleSave();
+        return true;
+      }
+      var gm=/^inm-g-(modo|v)-([a-z]+)$/.exec(t.id||'');
+      if(gm){
+        if(!APP_HOST.wsRec) return true;
+        var inmP=normalizeInmueble(APP_HOST.wsRec); if(!inmP.gastos) return true;
+        var itP=inmP.gastos[gm[2]]||(inmP.gastos[gm[2]]={modo:'pct',v:0});
+        if(gm[1]==='modo') itP.modo=(t.value==='eur')?'eur':'pct'; else itP.v=Math.max(0,Math.min(1e8,parseFloat(t.value)||0));
+        INM_PARTIDAS.forEach(function(pp){ var x=inmuebleGastosPartidas(inmP).filter(function(q){ return q.k===pp[0]; })[0], c=document.getElementById('inm-g-imp-'+pp[0]); if(c&&x) c.textContent=eur(x.importe); });
+        var gp=document.getElementById('inm-gastos'); if(gp) gp.value=inmuebleGastosPctEfectivo(inmP);
         refreshInmuebleResults(); scheduleInmuebleSave();
         return true;
       }
