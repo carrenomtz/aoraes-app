@@ -187,4 +187,19 @@ test('la tasa anual se declara como nominal con capitalización mensual en la pa
   assert(/disclaimer:'Cálculo orientativo[^']*nominal[^']*'/.test(html) && /disclaimer:'Indicative[^']*nominal[^']*'/.test(html) && /disclaimer:'Orientierungsrechnung[^']*nominaler[^']*'/.test(html), 'el PDF no lo aclara');
 });
 
+test('el PDF usa la rentabilidad elegida: ningún texto de ES/EN/DE fija «6%» y todos llevan el marcador {r}, que se sustituye al generar', () => {
+  const lineas = html.split('\n').filter((l) => /^\s+(s3n|vsNote|disclaimer):/.test(l) || /[,{]\s*(s3n|vsNote):/.test(l));
+  assert(lineas.length >= 6, 'se esperaban los textos de los tres idiomas');
+  lineas.forEach((l) => { assert(!/(?<![0-9{])6%/.test(l), 'queda un 6% fijo: ' + l.slice(0, 80)); });
+  ['s3n', 'vsNote', 'disclaimer'].forEach((k) => assert((html.match(new RegExp(k + ":'[^']*\\{r\\}%", 'g')) || []).length >= 3, k + ' debe llevar {r} en los tres idiomas'));
+  assert(/riesterCapNote\.replace\('\{0\}',rTxt\)/.test(html), 'la nota de la Riester también usa la rentabilidad con su formato decimal');
+  assert(/split\('\{r\}'\)\.join\(rTxt\)/.test(html) && /S\.ret\)\.replace\('\.',lang==='en'/.test(html), 'falta la sustitución con coma decimal en es/de y punto en en');
+});
+test('la etiqueta del ahorro fiscal habla de tipo MEDIO sobre la aportación (ES/EN/DE) y ese tipo medio queda entre 0 y el marginal', () => {
+  assert(/'\(tipo medio aprox\. '/.test(html)); assert(html.includes('"(tipo medio aprox. {0} %)":"(durchschnittlicher Satz ca. {0} %)"') && html.includes('"(tipo medio aprox. {0} %)":"(average rate approx. {0} %)"'));
+  base(); Object.assign(ctx.S, { monthly: 1000, split: 100 }); const ded = Math.min(1000 * 12, ctx.BASISRENTE_LIMIT.single), medio = ctx.ahorroFiscalAnual(ded) / ded;
+  assert(medio > 0 && medio < ctx.effectiveTaxRate(), 'el medio es menor que el marginal con deducciones grandes'); near(medio, 3832 / 12000, 1e-3);
+  ctx.S.marginOverride = 30; near(ctx.ahorroFiscalAnual(ded) / ded, 0.30, 1e-12);
+});
+
 console.log('\n' + passed + ' correctas, ' + failed + ' fallidas'); process.exit(failed ? 1 : 0);
