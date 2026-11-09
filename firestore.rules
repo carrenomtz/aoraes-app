@@ -617,7 +617,11 @@ service cloud.firestore {
         && (request.resource.data.estado != 'verificado'
           || (request.resource.data.ilustrativo == false
             && request.resource.data.verificadoPor.size() > 0
-            && request.resource.data.verificadoEn.size() > 0));
+            && request.resource.data.verificadoEn.size() > 0
+            // PROPUESTA AOR-SEC-003/CAT-001: las reglas no confiaban en que productos.js (cliente) exigiera fuente y costes para verificar.
+            && request.resource.data.fuente.documento is string
+            && request.resource.data.fuente.documento.size() > 0
+            && request.resource.data.costes.size() > 0));
     }
 
     match /productosVersiones/{versionId} {

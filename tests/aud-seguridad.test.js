@@ -62,10 +62,10 @@ test('SEC-003 (hallazgo): los administradores se reconocen por UID fijo en un fi
 test('SEC-003 (hallazgo): consultationRequests admite creación SIN autenticación (límites de tamaño, sin límite de frecuencia: Firestore Rules no puede imponerlo → App Check)',()=>{
   const c=rules.slice(rules.indexOf('match /consultationRequests'),rules.indexOf('match /advisorNotes')); has(c,/allow create: if request\.resource\.data\.keys\(\)\.hasOnly/); has(c,/\(!isSignedIn\(\) && request\.resource\.data\.profileUid == ''\)/);
 });
-test('SEC-003/CAT-001 (hallazgo): para pasar a `verificado` las reglas solo exigen ilustrativo=false y verificador/fecha; NO exigen fuente.documento ni costes (eso solo lo comprueba productos.js en el cliente)',()=>{
+test('SEC-003/CAT-001 (corregido, probado con emulador): para pasar a `verificado` las reglas exigen además fuente.documento y costes no vacíos',()=>{
   const p=rules.slice(rules.indexOf('function validProductoVersion'),rules.indexOf('match /productosVersiones'));
   has(p,/request\.resource\.data\.ilustrativo == false/); has(p,/request\.resource\.data\.verificadoPor\.size\(\) > 0/);
-  assert.ok(!/fuente\.documento/.test(p)); assert.ok(!/costes\.size\(\) > 0|costes\.size\(\) >= 1/.test(p));
+  has(p,/request\.resource\.data\.fuente\.documento is string/); has(p,/request\.resource\.data\.fuente\.documento\.size\(\) > 0/); has(p,/request\.resource\.data\.costes\.size\(\) > 0/);
 });
 
 // ---------------- AOR-SEC-004: exposición pública ----------------
