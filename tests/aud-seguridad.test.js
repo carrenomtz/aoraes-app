@@ -103,3 +103,13 @@ test('TAX-006: el alcance del permiso excluye Steuer-ID, nombre, nacimiento, gas
 test('TAX-006 (hallazgo R): fiscalNum usa parseFloat(replace(",",".")): «60.000» daría 60 — hoy NO es alcanzable porque fiscal-ui.js usa <input type="number">',()=>{
   assert.equal(F.fiscalValidar('gross_salary_primary','60.000').valor,60); has(read('fiscal-ui.js'),/<input type="number" class="inm-inp" id=/);
 });
+
+/* Despliegue: Pages no debe publicar archivos internos */
+test('pages.yml publica _site sin reglas, pruebas, scripts ni config de Firebase y lo comprueba', () => {
+  const fs=require('node:fs'), path=require('node:path'), assert=require('node:assert');
+  const y=fs.readFileSync(path.join(__dirname,'..','.github','workflows','pages.yml'),'utf8');
+  for (const x of ["--exclude='tests'","--exclude='scripts'","--exclude='firestore.rules'","--exclude='firebase.json'","--exclude='.firebaserc'"]) assert.ok(y.includes(x), 'falta '+x);
+  assert.match(y,/test ! -e "_site\/\$f"/);
+  assert.match(y,/if: github\.ref == 'refs\/heads\/main' && github\.event_name != 'pull_request'/);
+  assert.match(y,/upload-pages-artifact@v3[\s\S]*path: _site/);
+});
