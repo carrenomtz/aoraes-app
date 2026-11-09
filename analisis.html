@@ -140,6 +140,25 @@
   @media(min-width:1000px){ .analysis-grid > .live-panel{top:78px} }   /* el panel pegajoso queda justo debajo de la barra de secciones */
   @media print{.sec-nav{display:none !important}}
 
+  /* ---------- Fase D · UX-03: zonas táctiles (solo móvil / puntero táctil; el escritorio no cambia) y datos secundarios de la cabecera plegados ---------- */
+  .head-more-btn{display:none}
+  @media (max-width:680px),(pointer:coarse){
+    .chk{min-height:36px;padding-block:8px}            /* antes 23 px: por debajo incluso del mínimo AA de 24 px */
+    .cr-add,.em-btn,.vs-btn{min-height:40px}
+    .lang-switch button{min-height:40px;padding-inline:14px}
+    summary{padding-block:8px}
+    .stepper button,.cr-del{position:relative}
+    .stepper button::after,.cr-del::after{content:"";position:absolute;left:-4px;right:-4px;top:-9px;bottom:-9px}   /* área de pulsación >= 44 px de alto sin mover nada */
+  }
+  @media(max-width:680px){
+    .head-more-btn{display:inline-flex;align-items:center;gap:6px;grid-column:1/-1;justify-self:start;min-height:40px;padding:0 4px;border:0;background:transparent;
+      color:var(--gold-soft);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+    .head-more-btn::after{content:"▾";font-size:11px}
+    .head-more-btn[aria-expanded="true"]::after{content:"▴"}
+    .head-meta.is-folded .head-field:nth-child(n+2){display:none}
+  }
+  @media print{.head-more-btn{display:none !important}}
+
   /* ---------- Layout ---------- */
   .wrap{
     display:block;max-width:780px;margin:0 auto;
@@ -6869,6 +6888,19 @@ window.aoraesGetClient = function () {
   }
   window.addEventListener('scroll',function(){ if(!ticking){ ticking=true; requestAnimationFrame(spy); } },{passive:true});
   refresh(); spy();
+})();
+</script>
+<script>
+/* Fase D · en móvil la cabecera solo muestra «Cliente»; Asesor/a, Fecha y Próxima reunión quedan tras «Más datos». Solo cambia la visibilidad: los campos siguen en el DOM y se guardan igual. */
+(function(){
+  var meta=document.querySelector('.head-meta'); if(!meta||meta.querySelector('.head-more-btn')) return;
+  var btn=document.createElement('button'); btn.type='button'; btn.className='head-more-btn'; btn.setAttribute('aria-expanded','false'); btn.setAttribute('aria-controls','head-meta-extra');
+  var fields=[].slice.call(meta.querySelectorAll('.head-field')).slice(1); fields.forEach(function(f){ f.setAttribute('data-head-extra','1'); });
+  meta.id=meta.id||'head-meta-extra'; btn.setAttribute('aria-controls',meta.id);
+  function label(){ var n=fields.filter(function(f){ var i=f.querySelector('input'); return i&&i.value&&i.id!=='m_fecha'; }).length; btn.textContent='Asesor/a, fecha y próxima reunión'+(n?' · '+n:''); }
+  label(); meta.classList.add('is-folded'); meta.appendChild(btn);
+  btn.addEventListener('click',function(){ var folded=meta.classList.toggle('is-folded'); btn.setAttribute('aria-expanded',folded?'false':'true'); });
+  meta.addEventListener('input',label,true); setInterval(label,3000);
 })();
 </script>
 </body>

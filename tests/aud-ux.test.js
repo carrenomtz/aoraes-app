@@ -78,3 +78,23 @@ test('UX-12 (Fase B): por debajo de 1000 px el resumen completo va tras el formu
   assert.match(A,/Puntuación '\+s\+' de 100/); assert.match(A,/getElementById\('lp-score-num'\)/); assert.match(A,/getElementById\('lp-flow'\)/);
   assert.ok(ratio('#ffffff','#14213d')>=7);   // texto de la pastilla sobre marino
 });
+
+// ================= Fase D (análisis): zonas táctiles y cabecera plegada =================
+test('UX-03 (Fase D): las ampliaciones táctiles solo aplican en móvil o puntero táctil y no mueven nada (hit-area por ::after)',()=>{
+  const m=ac.match(/@media \(max-width:680px\),\(pointer:coarse\)\{[\s\S]*?\n  \}/); assert.ok(m,'bloque táctil');
+  const b=m[0];
+  assert.match(b,/\.chk\{min-height:36px;padding-block:8px\}/); assert.match(b,/\.cr-add,\.em-btn,\.vs-btn\{min-height:40px\}/); assert.match(b,/\.lang-switch button\{min-height:40px/);
+  assert.match(b,/\.stepper button::after,\.cr-del::after\{content:"";position:absolute;left:-4px;right:-4px;top:-9px;bottom:-9px\}/);
+  assert.ok(36>=24&&40>=24);                                   // por encima del mínimo AA (WCAG 2.2, 2.5.8) de 24 px
+  // la regla base de .chk (23 px de alto en escritorio) no se ha tocado
+  assert.match(ac,/\.chk\{display:flex;align-items:center;gap:9px;padding:7px 9px;/);
+});
+test('UX-07 (Fase D): en móvil la cabecera solo muestra «Cliente»; Asesor/a, Fecha y Próxima reunión quedan tras un botón accesible y siguen en el DOM',()=>{
+  assert.match(ac,/\.head-more-btn\{display:none\}/);                                          // oculto por defecto (escritorio, impresión)
+  assert.match(ac,/@media\(max-width:680px\)\{\s*\.head-more-btn\{display:inline-flex/);
+  assert.match(ac,/\.head-meta\.is-folded \.head-field:nth-child\(n\+2\)\{display:none\}/);
+  assert.match(ac,/@media print\{\.head-more-btn\{display:none !important\}\}/);
+  const i=A.indexOf('/* Fase D · en móvil la cabecera'), j=A.indexOf('</script>',i), s=A.slice(i,j); assert.ok(i>0&&j>i);
+  assert.match(s,/setAttribute\('aria-expanded','false'\)/); assert.match(s,/classList\.toggle\('is-folded'\)/);
+  for(const prohibido of [/localStorage|sessionStorage|setItem/,/saveCurrent|compute\(|collectState/,/\.value\s*=[^=]/,/\.remove\(\)|removeChild/]) assert.ok(!prohibido.test(s),String(prohibido));   // solo visibilidad
+});
