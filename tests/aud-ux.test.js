@@ -53,3 +53,28 @@ test('UX-13/14: necesidades muestra «—» sin plazo, avisa de importes no vál
   const t=H.necesidades; assert.match(t,/r\.ahorroCalculable===false\?'—'/); assert.match(t,/Importe no válido\.<\/b> Revisa:/); assert.match(t,/Importes en euros: escribe 1\.500 o 1500,50/);
   assert.match(t,/inputmode="decimal"/);
 });
+
+// ================= Fase B (análisis): cabecera móvil, índice de secciones, resumen en la barra =================
+const A=H.analisis, ac=css(A);
+test('UX-07 (Fase B): cabecera móvil compacta — campos en 2 columnas, sin subtítulo ni texto de ayuda, barra de herramientas en filas',()=>{
+  const m=ac.match(/@media\(max-width:680px\)\{\s*header\.top\{padding:12px 16px[\s\S]*?\n  \}/); assert.ok(m,'bloque móvil');
+  for(const r of [/\.brand \.sub\{display:none\}/,/\.head-meta\{display:grid;grid-template-columns:1fr 1fr/,/\.head-field:first-child\{grid-column:1\/-1\}/,/#tb-hint\{display:none\}/,/\.toolbar\{width:100%;flex-direction:row;flex-wrap:wrap/]) assert.match(m[0],r);
+});
+test('UX-08 (Fase B): barra de secciones pegajosa con una pastilla por sección S.x, recuento de campos con datos y scroll-spy; ancla bajo la barra',()=>{
+  assert.match(ac,/\.sec-nav\{position:sticky;top:0;z-index:45/); assert.match(ac,/section\.card\{scroll-margin-top:64px\}/);
+  const alto=61; assert.ok(64>=alto);
+  const mh=+ac.match(/\.sec-chip\{[^}]*min-height:(\d+)px/)[1]; assert.ok(mh>=40,'zona táctil de las pastillas');
+  assert.match(ac,/@media print\{\.sec-nav\{display:none !important\}\}/);
+  assert.match(A,/nav\.setAttribute\('aria-label','Secciones del análisis'\)/); assert.match(A,/b\.addEventListener\('click',function\(\)\{ card\.scrollIntoView/);
+  assert.match(A,/aria-current/); assert.match(A,/campos con datos/);
+});
+test('UX-08 (Fase B): el índice SOLO LEE el formulario — no guarda, no calcula, no usa almacenamiento',()=>{
+  const i=A.indexOf('/* Fase B · índice de secciones'), j=A.indexOf('</script>',i); const s=A.slice(i,j); assert.ok(i>0&&j>i);
+  for(const prohibido of [/localStorage/,/sessionStorage/,/saveCurrent|saveEmpresa|persistClients/,/\bcompute\(/,/collectState/,/\.value\s*=[^=]/,/setItem/,/fetch\(|XMLHttpRequest/]) assert.ok(!prohibido.test(s),String(prohibido));
+});
+test('UX-12 (Fase B): por debajo de 1000 px el resumen completo va tras el formulario y su pastilla (puntuación + margen) queda en la barra; en escritorio el panel pegajoso se coloca bajo la barra',()=>{
+  assert.match(ac,/@media\(max-width:999px\)\{\s*\.sec-nav-score\{display:inline-flex\}\s*\.analysis-grid > \.live-panel\{order:5\}/);
+  assert.match(ac,/@media\(min-width:1000px\)\{ \.analysis-grid > \.live-panel\{top:78px\} \}/);
+  assert.match(A,/Puntuación '\+s\+' de 100/); assert.match(A,/getElementById\('lp-score-num'\)/); assert.match(A,/getElementById\('lp-flow'\)/);
+  assert.ok(ratio('#ffffff','#14213d')>=7);   // texto de la pastilla sobre marino
+});

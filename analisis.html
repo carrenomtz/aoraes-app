@@ -100,6 +100,46 @@
   @media print{.save-fab{display:none !important}}
   @media(max-width:680px){.titleband{flex-direction:column}.toolbar{align-items:flex-start}.edit-chip{text-align:left}}
 
+  /* ---------- Fase B · UX-07 / UX-08 / UX-12: cabecera compacta en móvil, índice de secciones y resumen en la barra ---------- */
+  section.card{scroll-margin-top:64px}
+  .sec-nav{position:sticky;top:0;z-index:45;display:flex;align-items:center;gap:8px;margin:0 calc(-1*clamp(18px,4vw,46px)) 14px;
+    padding:8px clamp(18px,4vw,46px);background:rgba(243,239,230,.96);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+  .sec-nav-list{display:flex;gap:6px;overflow-x:auto;flex:1 1 auto;min-width:0;padding:2px 0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .sec-nav-list::-webkit-scrollbar{display:none}
+  .sec-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border:1px solid var(--line);border-radius:999px;
+    background:var(--paper);color:var(--ink);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .sec-chip b{font-size:12px;color:var(--gold-text)}
+  .sec-chip-t{max-width:16ch;overflow:hidden;text-overflow:ellipsis}
+  .sec-chip-n{font-style:normal;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--line);color:var(--muted);font-size:12px;display:inline-flex;align-items:center;justify-content:center}
+  .sec-chip-n.has{background:rgba(201,169,97,.28);color:var(--navy)}
+  .sec-chip.is-active{background:var(--navy);border-color:var(--navy);color:#fff}
+  .sec-chip.is-active b{color:var(--gold-soft)}
+  .sec-chip.is-active .sec-chip-n{background:rgba(255,255,255,.16);color:#fff}
+  .sec-nav-score{display:none;flex:0 0 auto;align-items:center;gap:7px;min-height:40px;padding:0 14px;border:0;border-radius:999px;background:var(--navy);color:#fff;
+    font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .sec-score-l{font-weight:500;opacity:.8;font-size:12px}
+  .sec-score-f{color:var(--gold-soft);font-weight:600;font-size:12.5px}
+  @media(max-width:999px){
+    .sec-nav-score{display:inline-flex}
+    .analysis-grid > .live-panel{order:5}          /* el resumen completo va tras el formulario; arriba queda su pastilla en la barra de secciones */
+  }
+  @media(max-width:680px){
+    header.top{padding:12px 16px;gap:10px}
+    .brand .sub{display:none}
+    .brand .mark{font-size:20px;letter-spacing:4px}
+    .head-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;width:100%}
+    .head-field:first-child{grid-column:1/-1}
+    .head-field input{min-width:0;width:100%}
+    .titleband{padding:12px 16px 2px;gap:8px}
+    .titleband h1{font-size:22px;line-height:1.2;margin:2px 0 0}
+    #tb-hint{display:none}
+    .toolbar{width:100%;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px}
+    .toolbar .edit-chip{flex:1 1 100%;max-width:100%;order:9}
+    .sec-nav{margin:0 -16px 12px;padding:8px 16px}
+  }
+  @media(min-width:1000px){ .analysis-grid > .live-panel{top:78px} }   /* el panel pegajoso queda justo debajo de la barra de secciones */
+  @media print{.sec-nav{display:none !important}}
+
   /* ---------- Layout ---------- */
   .wrap{
     display:block;max-width:780px;margin:0 auto;
@@ -6765,5 +6805,71 @@ window.aoraesGetClient = function () {
   <span class="save-fab-msg" id="save-fab-msg"></span>
   <button type="button" class="btn btn-gold" id="save-fab-btn">Guardar</button>
 </div>
+<script>
+/* Fase B · índice de secciones con recuento de campos con datos (UX-08) y pastilla de resumen (UX-12).
+   Solo LEE el formulario: no toca ningún cálculo ni ningún dato. «Con datos» = el valor es distinto del que tenía el campo al cargar la página. */
+(function(){
+  var wrap=document.querySelector('.wrap'), grid=document.querySelector('.analysis-grid');
+  if(!wrap||!grid||document.getElementById('sec-nav')) return;
+  var nav=document.createElement('nav'); nav.id='sec-nav'; nav.className='sec-nav no-print'; nav.setAttribute('aria-label','Secciones del análisis');
+  var list=document.createElement('div'); list.className='sec-nav-list';
+  var pill=document.createElement('button'); pill.type='button'; pill.className='sec-nav-score'; pill.id='sec-nav-score';
+  nav.appendChild(list); nav.appendChild(pill); wrap.insertBefore(nav,grid);
+  var items=[];
+  function codeOf(card){
+    var e=card.querySelector('.card-head .eyebrow'); if(!e) return null;
+    var nums=(e.textContent.match(/^\s*((?:S\.\d+\s*·\s*)+)/)||[])[1]; if(!nums) return null;
+    return 'S.'+(nums.match(/\d+/g)||[]).join('·');
+  }
+  function titleOf(card){ var h=card.querySelector('.card-head h2'); return h?h.textContent.trim():''; }
+  function build(){
+    var cards=[].slice.call(grid.querySelectorAll('.inputs > section.card')).filter(function(c){ return codeOf(c); });
+    if(items.length===cards.length && items.every(function(it,i){ return it.card===cards[i]; })) return;
+    list.innerHTML=''; items=[];
+    cards.forEach(function(card,i){
+      var b=document.createElement('button'); b.type='button'; b.className='sec-chip';
+      b.innerHTML='<b></b><span class="sec-chip-t"></span><i class="sec-chip-n" aria-hidden="true"></i>';
+      b.addEventListener('click',function(){ card.scrollIntoView({behavior:'smooth',block:'start'}); });
+      list.appendChild(b); items.push({card:card,btn:b,code:b.children[0],title:b.children[1],count:b.children[2]});
+    });
+  }
+  function isShown(el){ return el.offsetParent!==null && !el.closest('[hidden]'); }
+  function filled(el){
+    var ty=el.type;
+    if(ty==='checkbox'||ty==='radio') return el.checked!==el.defaultChecked;
+    if(el.tagName==='SELECT'){ var d=0; [].forEach.call(el.options,function(o,i){ if(o.defaultSelected) d=i; }); return el.selectedIndex!==d; }
+    return el.value!=='' && el.value!==el.defaultValue;
+  }
+  function refresh(){
+    if(wrap.offsetParent===null||document.visibilityState==='hidden') return;
+    build();
+    items.forEach(function(it){
+      var ctrls=[].filter.call(it.card.querySelectorAll('input:not([type=hidden]):not([type=button]),select,textarea'),isShown);
+      var n=ctrls.filter(filled).length, code=codeOf(it.card), title=titleOf(it.card);
+      it.code.textContent=code; it.title.textContent=title; it.count.textContent=n;
+      it.count.className='sec-chip-n'+(n>0?' has':'');
+      it.btn.setAttribute('aria-label',code+' '+title+': '+n+' de '+ctrls.length+' campos con datos');
+      it.btn.title=n+' de '+ctrls.length+' campos con datos';
+    });
+    var sc=document.getElementById('lp-score-num'), fl=document.getElementById('lp-flow');
+    var s=sc?sc.textContent.trim():'0', f=fl?fl.textContent.trim():'';
+    pill.innerHTML='<span>'+s+'</span><span class="sec-score-l">/100</span>'+(f&&f!=='—'?'<span class="sec-score-f">'+f+'</span>':'');
+    pill.setAttribute('aria-label','Puntuación '+s+' de 100'+(f&&f!=='—'?', margen '+f:'')+'. Ir al resumen completo');
+  }
+  pill.addEventListener('click',function(){ var lp=document.getElementById('live-panel'); if(lp) lp.scrollIntoView({behavior:'smooth',block:'start'}); });
+  var tmr=null; function later(){ clearTimeout(tmr); tmr=setTimeout(refresh,350); }
+  document.addEventListener('input',later,true); document.addEventListener('change',later,true); document.addEventListener('click',later,true);
+  setInterval(refresh,2500);
+  var ticking=false;
+  function spy(){
+    ticking=false; var act=null;
+    items.forEach(function(it){ if(it.card.getBoundingClientRect().top<=110) act=it; });
+    items.forEach(function(it){ var on=(it===act); it.btn.classList.toggle('is-active',on); if(on) it.btn.setAttribute('aria-current','location'); else it.btn.removeAttribute('aria-current'); });
+    if(act){ var l=list, b=act.btn, x=b.offsetLeft, w=b.offsetWidth; if(x<l.scrollLeft+8||x+w>l.scrollLeft+l.clientWidth-8) l.scrollTo({left:Math.max(0,x-16),behavior:'smooth'}); }
+  }
+  window.addEventListener('scroll',function(){ if(!ticking){ ticking=true; requestAnimationFrame(spy); } },{passive:true});
+  refresh(); spy();
+})();
+</script>
 </body>
 </html>
