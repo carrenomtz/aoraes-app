@@ -63,9 +63,9 @@ test('RET-008: generatePDF fuerza S.excel=false mientras se genera el informe y 
   assert.ok(/_generatePDF\(lang\)/.test(wrapper),'generatePDF debe delegar en _generatePDF');
   const visto=[]; const S={excel:true};
   const inner=async()=>{ visto.push(S.excel); };
-  const g=new Function('S','_generatePDF',wrapper+'; return generatePDF;')(S,inner);
+  const g=new Function('S','_generatePDF','cargarJsPDF',wrapper+'; return generatePDF;')(S,inner,async()=>true);
   await g('es'); assert.deepEqual(visto,[false]); assert.equal(S.excel,true);          // dentro apagado, después restaurado
-  S.excel=true; const g2=new Function('S','_generatePDF',wrapper+'; return generatePDF;')(S,async()=>{ throw new Error('boom'); });
+  S.excel=true; const g2=new Function('S','_generatePDF','cargarJsPDF',wrapper+'; return generatePDF;')(S,async()=>{ throw new Error('boom'); },async()=>true);
   await assert.rejects(()=>g2('de'),/boom/); assert.equal(S.excel,true);               // restaurado aunque falle
   S.excel=false; await g('es'); assert.equal(S.excel,false);                           // apagado se queda apagado
 });
@@ -73,4 +73,22 @@ test('RET-008: el informe se calcula con calc() dentro de _generatePDF (por tant
   const inner=ex('_generatePDF'); assert.ok(/const real=calc\('generali',years\)/.test(inner));
   assert.equal((src.match(/generatePDF\(/g)||[]).length>=3,true);
   assert.ok(!/window\.print\(|\.save\(\s*['"`][^)]*Excel/.test(src));
+});
+
+// ---- AOR-PERF (Fase C): jsPDF (364 KB, 116 KB comprimido) solo se descarga cuando hace falta ----
+test('PERF: jubilacion.html ya no carga jspdf.min.js al abrirse; lo pide al abrir el menú PDF y siempre antes de generar',async()=>{
+  assert.ok(!/<script src="\.\/jspdf\.min\.js"><\/script>/.test(src),'sigue cargándose siempre');
+  has(/\$\('pdf-fab-btn'\)\.addEventListener\('click',\(\)=>\{\s*\$\('pdf-menu'\)\.classList\.toggle\('open'\);\s*cargarJsPDF\(\);/);   // se adelanta al abrir el menú
+  const cargador=ex('cargarJsPDF'), wrapper='async '+ex('generatePDF');
+  // el cargador: no repite la descarga, reintenta tras un fallo y respeta una librería ya presente
+  const log=[]; let fallar=false; const win={}, doc={createElement:()=>{const s={}; setTimeout(()=>{ if(fallar) s.onerror(); else { win.jspdf={}; s.onload(); } },0); return s;},head:{appendChild:(s)=>log.push(s.src)}};
+  const mk=new Function('window','document','let _jspdfPromise=null;'+cargador+'; return cargarJsPDF;'); const cj=mk(win,doc);
+  fallar=true; assert.equal(await cj(),false); assert.equal(log.length,1);          // fallo de red -> false
+  fallar=false; assert.equal(await cj(),true); assert.equal(log.length,2);          // reintento tras el fallo
+  assert.equal(await cj(),true); assert.equal(log.length,2);                        // ya cargada: sin nueva descarga
+  const p1=mk({},doc)(); assert.equal(typeof p1.then,'function');
+  // el envoltorio carga antes de generar y conserva la restauración de S.excel
+  const orden=[]; const S={excel:true};
+  const g=new Function('S','_generatePDF','cargarJsPDF',wrapper+'; return generatePDF;')(S,async()=>{orden.push('generar:'+S.excel);},async()=>{orden.push('cargar');return true;});
+  await g('es'); assert.deepEqual(orden,['cargar','generar:false']); assert.equal(S.excel,true);
 });
