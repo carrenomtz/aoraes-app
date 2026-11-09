@@ -65,7 +65,7 @@ test('UX-08 (Fase B): barra de secciones pegajosa con una pastilla por sección 
   const alto=61; assert.ok(64>=alto);
   const mh=+ac.match(/\.sec-chip\{[^}]*min-height:(\d+)px/)[1]; assert.ok(mh>=40,'zona táctil de las pastillas');
   assert.match(ac,/@media print\{\.sec-nav\{display:none !important\}\}/);
-  assert.match(A,/nav\.setAttribute\('aria-label','Secciones del análisis'\)/); assert.match(A,/b\.addEventListener\('click',function\(\)\{ card\.scrollIntoView/);
+  assert.match(A,/nav\.setAttribute\('aria-label','Secciones del análisis'\)/); assert.match(A,/b\.addEventListener\('click',function\(\)\{ if\(card\.classList\.contains\('is-collapsed'\)\) card\.dispatchEvent\(new CustomEvent\('acc-open'\)\); card\.scrollIntoView/);
   assert.match(A,/aria-current/); assert.match(A,/campos con datos/);
 });
 test('UX-08 (Fase B): el índice SOLO LEE el formulario — no guarda, no calcula, no usa almacenamiento',()=>{
@@ -97,4 +97,17 @@ test('UX-07 (Fase D): en móvil la cabecera solo muestra «Cliente»; Asesor/a, 
   const i=A.indexOf('/* Fase D · en móvil la cabecera'), j=A.indexOf('</script>',i), s=A.slice(i,j); assert.ok(i>0&&j>i);
   assert.match(s,/setAttribute\('aria-expanded','false'\)/); assert.match(s,/classList\.toggle\('is-folded'\)/);
   for(const prohibido of [/localStorage|sessionStorage|setItem/,/saveCurrent|compute\(|collectState/,/\.value\s*=[^=]/,/\.remove\(\)|removeChild/]) assert.ok(!prohibido.test(s),String(prohibido));   // solo visibilidad
+});
+
+/* Fase F · acordeón móvil de secciones: solo visibilidad */
+test('Fase F: acordeón móvil solo cambia visibilidad (sin datos/cálculo/almacenamiento)', () => {
+  const fs=require('node:fs'), path=require('node:path'), assert=require('node:assert');
+  const h=fs.readFileSync(path.join(__dirname,'..','analisis.html'),'utf8');
+  const i=h.indexOf('Fase F · en móvil las secciones'); assert.ok(i>0);
+  const js=h.slice(i,h.indexOf('</script>',i));
+  assert.doesNotMatch(js,/localStorage|sessionStorage|\.value\s*=|save[A-Z(]|fetch\(|firebase/i);
+  assert.match(h,/@media \(max-width:680px\)\{\s*\.inputs > section\.card\.acc-on > \.card-head/);
+  assert.match(h,/@media print\{\.inputs > section\.card\.acc-on\.is-collapsed > \.card-body\{display:block !important\}\}/);
+  assert.match(js,/aria-expanded/); assert.match(js,/beforeprint/);
+  assert.match(h,/function isShown\(el\)\{[\s\S]*is-collapsed/);
 });

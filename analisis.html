@@ -264,6 +264,14 @@
     display:flex;align-items:center;justify-content:space-between;
     border-bottom:2px solid rgba(201,169,97,.30);
   }
+  /* Fase F · acordeón de secciones solo en móvil (el JS añade .acc-on). Plegar solo oculta: los campos siguen en el DOM y se guardan igual. */
+  @media (max-width:680px){
+    .inputs > section.card.acc-on > .card-head{position:relative;cursor:pointer;min-height:52px;padding-right:48px;-webkit-tap-highlight-color:transparent}
+    .inputs > section.card.acc-on > .card-head::after{content:"";position:absolute;right:20px;top:50%;width:9px;height:9px;border-right:2px solid #c9a961;border-bottom:2px solid #c9a961;transform:translateY(-70%) rotate(45deg);transition:transform .15s}
+    .inputs > section.card.acc-on.is-collapsed > .card-head::after{transform:translateY(-30%) rotate(-45deg)}
+    .inputs > section.card.acc-on.is-collapsed > .card-body{display:none}
+  }
+  @media print{.inputs > section.card.acc-on.is-collapsed > .card-body{display:block !important}}
   .card-head h2{font-size:19.5px;letter-spacing:.2px}
   .card-head .eyebrow{margin-bottom:2px;display:block}
   .card-body{padding:18px 20px 20px}
@@ -6848,11 +6856,17 @@ window.aoraesGetClient = function () {
     cards.forEach(function(card,i){
       var b=document.createElement('button'); b.type='button'; b.className='sec-chip';
       b.innerHTML='<b></b><span class="sec-chip-t"></span><i class="sec-chip-n" aria-hidden="true"></i>';
-      b.addEventListener('click',function(){ card.scrollIntoView({behavior:'smooth',block:'start'}); });
+      b.addEventListener('click',function(){ if(card.classList.contains('is-collapsed')) card.dispatchEvent(new CustomEvent('acc-open')); card.scrollIntoView({behavior:'smooth',block:'start'}); });
       list.appendChild(b); items.push({card:card,btn:b,code:b.children[0],title:b.children[1],count:b.children[2]});
     });
   }
-  function isShown(el){ return el.offsetParent!==null && !el.closest('[hidden]'); }
+  function isShown(el){
+    if(el.closest('[hidden]')) return false;
+    if(el.offsetParent!==null) return true;
+    var card=el.closest('section.card.is-collapsed'); if(!card) return false; /* sección plegada: cuenta si solo la oculta el pliegue */
+    for(var n=el;n&&n!==card;n=n.parentElement){ if(n.classList.contains('card-body')) continue; if(getComputedStyle(n).display==='none') return false; }
+    return true;
+  }
   function filled(el){
     var ty=el.type;
     if(ty==='checkbox'||ty==='radio') return el.checked!==el.defaultChecked;
@@ -6901,6 +6915,41 @@ window.aoraesGetClient = function () {
   label(); meta.classList.add('is-folded'); meta.appendChild(btn);
   btn.addEventListener('click',function(){ var folded=meta.classList.toggle('is-folded'); btn.setAttribute('aria-expanded',folded?'false':'true'); });
   meta.addEventListener('input',label,true); setInterval(label,3000);
+})();
+</script>
+<script>
+/* Fase F · en móvil las secciones del análisis se pliegan (solo la primera abierta). Solo cambia la visibilidad: no toca datos, cálculos ni almacenamiento. */
+(function(){
+  var mq=window.matchMedia('(max-width:680px)'), cards=[], on=false;
+  function collect(){ return [].slice.call(document.querySelectorAll('.inputs > section.card')).filter(function(c){ return c.querySelector(':scope > .card-head') && c.querySelector(':scope > .card-body'); }); }
+  function set(card,open){
+    var h=card.querySelector(':scope > .card-head');
+    card.classList.toggle('is-collapsed',!open); h.setAttribute('aria-expanded',open?'true':'false');
+  }
+  function enable(){
+    if(on) return; on=true; cards=collect();
+    cards.forEach(function(c,i){
+      var h=c.querySelector(':scope > .card-head'), b=c.querySelector(':scope > .card-body');
+      if(!b.id) b.id='acc-body-'+i;
+      c.classList.add('acc-on'); h.setAttribute('role','button'); h.setAttribute('tabindex','0'); h.setAttribute('aria-controls',b.id);
+      if(!c.__accBound){
+        c.__accBound=true;
+        h.addEventListener('click',function(){ if(on) set(c,c.classList.contains('is-collapsed')); });
+        h.addEventListener('keydown',function(e){ if(on&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); set(c,c.classList.contains('is-collapsed')); } });
+        c.addEventListener('acc-open',function(){ if(on) set(c,true); });
+        c.addEventListener('focusin',function(){ if(on&&c.classList.contains('is-collapsed')) set(c,true); });
+      }
+      set(c,c.__open!==undefined?c.__open:i===0);
+    });
+  }
+  function disable(){
+    if(!on) return; on=false;
+    cards.forEach(function(c){ var h=c.querySelector(':scope > .card-head'); c.__open=!c.classList.contains('is-collapsed'); c.classList.remove('acc-on','is-collapsed'); h.removeAttribute('role'); h.removeAttribute('tabindex'); h.removeAttribute('aria-expanded'); h.removeAttribute('aria-controls'); });
+  }
+  function sync(){ if(mq.matches) enable(); else disable(); }
+  if(mq.addEventListener) mq.addEventListener('change',sync); else if(mq.addListener) mq.addListener(sync);
+  window.addEventListener('beforeprint',disable); window.addEventListener('afterprint',sync);
+  sync();
 })();
 </script>
 </body>
