@@ -115,6 +115,16 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
   .qans-head{display:block;margin-top:.3rem}
   .cols-head{display:none}
 }
+/* Fase E: móvil y táctil — nav sin desbordar, casillas y botones más fáciles de pulsar */
+@media(max-width:680px){
+  .nav{padding:.7rem 1rem;gap:.6rem}
+  .nav-sep,.nav-tag,.nav-client{display:none}
+}
+@media(max-width:760px),(pointer:coarse){
+  .yn input[type=checkbox]{width:22px;height:22px}
+  .yn label{min-height:40px;padding-right:.4rem}
+  .lang-switch button{min-height:40px;padding-inline:14px}
+}
 @media print{
   .nav,.toolbar,.cols-head{display:none!important}
   .hero{background:var(--navy)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
