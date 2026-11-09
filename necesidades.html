@@ -12,13 +12,13 @@
 <meta name="theme-color" content="#14213d">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#14213d;--midnight:#0e1830;--gold:#c9a961;--gold-deep:#a8842f;--gold-soft:#e3d4ab;--cream:#f3efe6;--ink:#14213d;--slate:#6c6d76;--line:#e8e3d6;--clay:#b0473a;--sage:#4f7358;--sage-soft:#eaf2ec;
+:root{--navy:#14213d;--midnight:#0e1830;--gold:#c9a961;--gold-deep:#a8842f;--gold-text:#7d611a;--gold-soft:#e3d4ab;--cream:#f3efe6;--ink:#14213d;--slate:#666771;--line:#e8e3d6;--clay:#b0473a;--sage:#4f7358;--sage-soft:#eaf2ec;
   --serif:'Fraunces',Georgia,serif;--sans:'Manrope',system-ui,-apple-system,sans-serif}
 body{font-family:var(--sans);background:var(--cream);color:var(--ink);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .nav{background:var(--midnight);border-bottom:1px solid rgba(196,160,90,.22);display:flex;align-items:center;gap:1rem;padding:.85rem 1.6rem}
 .nav b{font-family:var(--serif);font-size:1.25rem;color:var(--gold);letter-spacing:.14em}
-.nav span{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.nav span{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55)}
 main{max-width:1040px;margin:0 auto;padding:1.6rem 1.2rem 3rem}
 h1{font-family:var(--serif);font-size:1.7rem;font-weight:600;margin-bottom:.3rem}
 .lede{color:var(--slate);max-width:62ch;margin-bottom:1.2rem}
@@ -33,12 +33,12 @@ h1{font-family:var(--serif);font-size:1.7rem;font-weight:600;margin-bottom:.3rem
 .f{display:block;margin-bottom:.75rem}
 .f span{display:block;font-size:.82rem;font-weight:700;color:var(--navy)}
 .f small{display:block;font-size:.74rem;color:var(--slate);margin-bottom:.2rem}
-.f em{font-style:normal;font-size:.7rem;color:var(--gold-deep);font-weight:600;margin-left:.3rem}
+.f em{font-style:normal;font-size:.72rem;color:var(--gold-text);font-weight:600;margin-left:.3rem}
 .f input{width:100%;font:inherit;padding:.5rem .65rem;border:1px solid var(--line);border-radius:9px;background:#fff;text-align:right}
 .f input:focus{outline:2px solid var(--gold-deep);outline-offset:1px}
-.res-lbl{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);font-weight:700}
+.res-lbl{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-text);font-weight:700}
 .res-big{font-family:var(--serif);font-size:2.2rem;line-height:1.1;color:var(--navy);margin:.2rem 0 .6rem}
-.res-big small{font-size:1rem;color:var(--gold-deep)}
+.res-big small{font-size:1rem;color:var(--gold-text)}
 .rows{font-size:.88rem;color:var(--slate);line-height:1.8}
 .rows b{color:var(--navy);font-weight:600}
 .badge{display:inline-block;font-size:.75rem;font-weight:700;padding:.2rem .7rem;border-radius:999px;border:1px solid var(--line);margin:.2rem 0 .6rem}
@@ -48,6 +48,9 @@ h1{font-family:var(--serif);font-size:1.7rem;font-weight:600;margin-bottom:.3rem
 .prov{background:#fff6dc;border:1px solid var(--gold-soft);border-radius:10px;padding:.55rem .8rem;font-size:.82rem;margin:.6rem 0}
 .aviso{font-size:.78rem;color:var(--slate);line-height:1.5;border-top:1px dashed var(--line);padding-top:.7rem;margin-top:.9rem}
 .note{font-size:.76rem;color:var(--slate);line-height:1.5}
+
+/* Fase A · UX-06: anillo de foco visible para teclado (doble anillo: se ve sobre fondos claros y oscuros) */
+:focus-visible{outline:2px solid #14213d!important;outline-offset:2px;box-shadow:0 0 0 4px #c9a961!important}
 </style>
 </head>
 <body>
@@ -72,7 +75,7 @@ h1{font-family:var(--serif);font-size:1.7rem;font-weight:600;margin-bottom:.3rem
   function tabs(){ $('tabs').innerHTML=ORDEN.map(function(k){return '<button type="button" role="tab" data-k="'+k+'" aria-selected="'+(k===ACTIVA)+'">'+esc(NEC_CALCULADORAS[k].titulo)+'</button>';}).join(''); }
   function formulario(k){
     var c=NEC_CALCULADORAS[k]; VALORES[k]=VALORES[k]||{};
-    return '<div class="grid"><div><div class="formula">'+esc(c.formula)+'</div>'+c.campos.map(function(f){
+    return '<div class="grid"><div><div class="formula">'+esc(c.formula)+'</div><div class="note" style="margin:-.2rem 0 .6rem">Importes en euros: escribe 1.500 o 1500,50 (con punto de millares o sin él).</div>'+c.campos.map(function(f){
       var v=VALORES[k][f.k]; return '<label class="f"><span>'+esc(f.l)+(f.opcional?'<em>opcional</em>':'')+'</span><small>'+esc(f.ayuda)+'</small><input type="text" inputmode="decimal" data-f="'+f.k+'" value="'+esc(v==null?'':v)+'" autocomplete="off"></label>';
     }).join('')+'</div><div id="res" aria-live="polite"></div></div>';
   }
@@ -82,6 +85,8 @@ h1{font-family:var(--serif);font-size:1.7rem;font-weight:600;margin-bottom:.3rem
   function resultado(k){
     var c=NEC_CALCULADORAS[k], r=c.calcular(VALORES[k]), h='';
     var prov=r.completo?'':'<div class="prov"><b>Resultado provisional.</b> Faltan datos: '+r.faltan.map(function(f){ var o=c.campos.filter(function(x){return x.k===f;})[0]; return esc(o.l); }).join(', ')+'. Un campo vacío no se cuenta como cero: escribe 0 si es un dato real.</div>';
+    var inval=(r.invalidos&&r.invalidos.length)?'<div class="prov"><b>Importe no válido.</b> Revisa: '+r.invalidos.map(function(f){ var o=c.campos.filter(function(x){return x.k===f;})[0]; return esc(o?o.l:f); }).join(', ')+'. Escribe solo números, por ejemplo 1.500 o 1500,50; mientras tanto se cuenta como 0.</div>':'';
+    var sinPlazo=(k==='sterbegeld'&&r.ahorroCalculable===false)?'<div class="prov">Indica los años de prima o de ahorro para calcular el ahorro mensual.</div>':'';
     if(k==='bu'){
       h='<div class="res-lbl">Necesidad mensual</div><div class="res-big">'+eur(r.necesidad)+' <small>al mes</small></div>'
        +insignia(r)
@@ -97,9 +102,9 @@ h1{font-family:var(--serif);font-size:1.7rem;font-weight:600;margin-bottom:.3rem
     } else {
       h='<div class="res-lbl">Capital necesario</div><div class="res-big">'+eur(r.capitalNecesario)+'</div>'
        +insignia(r)
-       +filas([['Costes totales estimados',eur(r.costesTotales)],['Reserva ya dedicada',eur(r.reservaDedicada)],['Ahorro mensual para alcanzarlo en el plazo',eur(r.ahorroMensualEquivalente)+' al mes'],['Primas totales del seguro en ese plazo',eur(r.primaTotal)]]);
+       +filas([['Costes totales estimados',eur(r.costesTotales)],['Reserva ya dedicada',eur(r.reservaDedicada)],['Ahorro mensual para alcanzarlo en el plazo',(r.ahorroCalculable===false?'—':eur(r.ahorroMensualEquivalente)+' al mes')],['Primas totales del seguro en ese plazo',eur(r.primaTotal)]]);
     }
-    return h+prov+'<div class="aviso">'+esc(c.aviso)+'</div>';
+    return h+prov+inval+sinPlazo+'<div class="aviso">'+esc(c.aviso)+'</div>';
   }
   function pintar(){ var el=$('res'); if(el) el.innerHTML=resultado(ACTIVA); }
   function abrir(k){ ACTIVA=k; tabs(); $('calc').innerHTML=formulario(k); pintar(); }

@@ -16,7 +16,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --midnight:#0e1830; --navy:#14213d; --navy-soft:#3a5077;
-  --gold:#c9a961; --gold-light:#e3d4ab; --gold-deep:#a8842f;
+  --gold:#c9a961; --gold-light:#e3d4ab; --gold-deep:#a8842f;--gold-text:#7d611a;
   --gold-glow:rgba(196,160,90,.16);
   --ivory:#ffffff; --cream:#f3efe6; --white:#ffffff;
   --ink:#14213d; --slate:#6c6d76; --mist:#e8e3d6;
@@ -34,7 +34,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .nav{position:sticky;top:0;z-index:50;background:rgba(13,23,41,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(196,160,90,.22);display:flex;align-items:center;padding:.85rem 2rem;gap:1rem}
 .nav-logo{font-family:var(--serif);font-size:1.35rem;font-weight:700;color:var(--gold);letter-spacing:.14em}
 .nav-sep{width:1px;height:18px;background:rgba(255,255,255,.18)}
-.nav-tag{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.nav-tag{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)}
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:.9rem}
 .nav-client{font-size:.8rem;color:rgba(255,255,255,.6)}
 .nav-client b{color:var(--gold-light);font-weight:500}
@@ -44,7 +44,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .hero-grid{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:340px 1fr;gap:2.5rem;align-items:stretch;position:relative;z-index:2}
 @media(max-width:880px){.hero-grid{grid-template-columns:1fr;gap:1.75rem}}
 
-.controls-eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem}
+.controls-eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem}
 .controls-eyebrow::before{content:"";width:18px;height:1px;background:var(--gold)}
 .ctrl{margin-bottom:1.2rem}
 .ctrl-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.45rem}
@@ -60,13 +60,13 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);border:2px solid var(--midnight);box-shadow:0 0 0 1px var(--gold),0 2px 8px rgba(0,0,0,.4);transition:transform .15s}
 .ctrl input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18)}
 .ctrl input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--gold);border:2px solid var(--midnight);cursor:pointer}
-.split-track{display:flex;align-items:center;gap:.6rem;font-size:.7rem;color:rgba(255,255,255,.5);font-family:var(--mono);margin-top:.5rem}
+.split-track{display:flex;align-items:center;gap:.6rem;font-size:.72rem;color:rgba(255,255,255,.5);font-family:var(--mono);margin-top:.5rem}
 .hero-toggle{display:flex;border:1px solid rgba(255,255,255,.18);border-radius:8px;overflow:hidden}
 .hero-toggle button{flex:1;padding:.5rem;font-size:.78rem;border:none;background:transparent;cursor:pointer;font-family:var(--sans);color:rgba(255,255,255,.6);transition:all .15s}
 .hero-toggle button.active{background:var(--gold);color:var(--midnight);font-weight:600}
 
 .result{background:linear-gradient(155deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(196,160,90,.28);border-radius:20px;padding:2.25rem 2.5rem;display:flex;flex-direction:column;justify-content:center;box-shadow:0 30px 80px rgba(0,0,0,.3)}
-.result-eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:.4rem}
+.result-eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:.4rem}
 .result-eyebrow b{color:var(--gold-light);font-weight:500}
 .result-main{font-family:var(--serif);font-size:clamp(3rem,7vw,4.75rem);font-weight:600;line-height:1;color:#ffffff;letter-spacing:-.02em;margin-bottom:.3rem}
 .result-main .cur{color:var(--gold);font-size:.62em;vertical-align:.06em;margin-left:.12em}
@@ -82,11 +82,11 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .hero-target-box{margin-top:1.4rem;padding:1rem 1.2rem;background:rgba(196,160,90,.1);border:1px solid rgba(196,160,90,.3);border-radius:12px;font-size:.85rem;color:rgba(255,255,255,.82);line-height:1.7}
 .hero-target-box b{color:var(--gold-light);font-family:var(--mono);font-weight:500}
 .hero-target-box .gap-line{font-size:1.05rem;margin-top:.2rem}
-.hero-disclaimer{font-size:.68rem;color:rgba(255,255,255,.4);margin-top:1.5rem;line-height:1.45}
+.hero-disclaimer{font-size:.72rem;color:rgba(255,255,255,.4);margin-top:1.5rem;line-height:1.45}
 .fase2-teaser{display:flex;align-items:center;justify-content:space-between;gap:1.25rem;margin-top:1.6rem;padding-top:1.4rem;border-top:1px solid rgba(196,160,90,.25);cursor:pointer;transition:opacity .15s}
 .fase2-teaser:hover{opacity:.8}
 .fase2-teaser-title{font-family:var(--serif);font-size:1.05rem;font-weight:600;color:var(--gold-light);line-height:1.3}
-.fase2-teaser-sub{font-family:var(--mono);font-size:.66rem;letter-spacing:.05em;color:rgba(255,255,255,.5);margin-top:.35rem}
+.fase2-teaser-sub{font-family:var(--mono);font-size:.72rem;letter-spacing:.05em;color:rgba(255,255,255,.5);margin-top:.35rem}
 .fase2-teaser svg{width:14px;height:14px;color:var(--gold);flex:0 0 auto;transition:transform .2s}
 .fase2-teaser.open svg{transform:rotate(180deg)}
 #fase2-wrap{display:none}
@@ -94,7 +94,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 
 .section{max-width:1180px;margin:0 auto;padding:3.5rem 2rem}
 .section-head{margin-bottom:2rem;max-width:640px}
-.section-eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:.65rem;display:flex;align-items:center;gap:.5rem}
+.section-eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:.65rem;display:flex;align-items:center;gap:.5rem}
 .section-eyebrow::before{content:"";width:20px;height:1px;background:var(--gold)}
 .section-title{font-family:var(--serif);font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;color:var(--navy);line-height:1.15;letter-spacing:-.01em}
 .section-lede{font-size:1rem;color:var(--slate);margin-top:.7rem}
@@ -110,7 +110,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 @media(max-width:760px){.effort-grid{grid-template-columns:1fr;gap:1rem}}
 .effort-card{background:var(--white);border:1px solid var(--mist);border-radius:16px;padding:1.75rem;box-shadow:var(--shadow)}
 .effort-card.accent{background:linear-gradient(160deg,var(--navy),var(--midnight));border-color:transparent;color:#ffffff}
-.ec-label{font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);margin-bottom:.6rem}
+.ec-label{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);margin-bottom:.6rem}
 .effort-card.accent .ec-label{color:var(--gold-light)}
 .ec-value{font-family:var(--serif);font-size:2.5rem;font-weight:600;line-height:1;color:var(--navy)}
 .effort-card.accent .ec-value{color:#ffffff}
@@ -147,14 +147,14 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .metric-toggle button.active{background:var(--gold);color:var(--midnight);font-weight:600}
 
 .conclusion{background:linear-gradient(155deg,var(--midnight),var(--navy));border-radius:24px;padding:2.7rem 2rem;color:#ffffff;text-align:center;box-shadow:0 24px 60px -24px rgba(13,23,41,.6)}
-.conclusion-eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.7rem}
+.conclusion-eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.7rem}
 .conclusion-title{font-family:var(--serif);font-size:clamp(1.5rem,2.6vw,2rem);font-weight:600;color:#ffffff;line-height:1.2;margin-bottom:2.1rem;letter-spacing:-.01em}
 .concl-grid{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:1rem;align-items:end;max-width:780px;margin:0 auto}
 .concl-fig{display:flex;flex-direction:column;gap:.45rem}
 .concl-fig .cf-val{font-family:var(--serif);font-weight:600;color:#ffffff;line-height:1;font-size:clamp(1.5rem,3.4vw,2.2rem)}
 .concl-fig.lead .cf-val{color:var(--gold-light);font-size:clamp(2.1rem,5vw,3.2rem)}
 .concl-fig .cf-per{font-size:.46em;color:var(--gold);font-family:var(--mono)}
-.concl-fig .cf-lbl{font-family:var(--mono);font-size:.63rem;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.55);line-height:1.4}
+.concl-fig .cf-lbl{font-family:var(--mono);font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.55);line-height:1.4}
 .concl-fig.lead .cf-lbl{color:var(--gold)}
 .concl-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(196,160,90,.55),transparent);margin:2.1rem auto 1.4rem;max-width:620px}
 .concl-take{font-family:var(--sans);font-size:.93rem;line-height:1.65;color:rgba(255,255,255,.82);max-width:660px;margin:0 auto}
@@ -182,7 +182,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .more[open]{border-color:var(--cream)}
 .more>summary{list-style:none;cursor:pointer;padding:1.15rem 1.5rem;display:flex;align-items:center;gap:1rem}
 .more>summary::-webkit-details-marker{display:none}
-.more-eyebrow{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:.2rem}
+.more-eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:.2rem}
 .more-summary-txt{font-family:var(--serif);font-size:1.08rem;font-weight:600;color:var(--navy)}
 .more>summary:hover .more-summary-txt{color:var(--gold-deep)}
 .more-chevron{margin-left:auto;width:16px;height:16px;color:var(--slate);transition:transform .2s;flex-shrink:0}
@@ -197,7 +197,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .comp-bar{height:30px;background:var(--cream);border-radius:8px;overflow:hidden;position:relative}
 .comp-bar-fill{height:100%;border-radius:8px;transition:width .8s cubic-bezier(.2,.7,.2,1)}
 .comp-val{font-family:var(--mono);font-size:.86rem;font-weight:500;text-align:right}
-.comp-tag{display:inline-block;font-size:.6rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;padding:.1rem .4rem;border-radius:5px;background:var(--gold-light);color:var(--navy);margin-left:.4rem}
+.comp-tag{display:inline-block;font-size:.72rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;padding:.1rem .4rem;border-radius:5px;background:var(--gold-light);color:var(--navy);margin-left:.4rem}
 
 .pdf-fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:.5rem}
 .pdf-fab-btn{width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--navy),var(--midnight));color:var(--gold);cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;transition:.2s}
@@ -222,11 +222,11 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .advisor-panel{display:none;background:var(--white);border:1px solid var(--mist);border-radius:14px;padding:1.5rem;margin-top:.75rem;box-shadow:var(--shadow)}
 .advisor.open .advisor-panel{display:block}
 .adv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem}
-.adv-block-title{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-bottom:.75rem}
+.adv-block-title{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-bottom:.75rem}
 .adv-ctrl{margin-bottom:.75rem}
 .adv-ctrl-label{font-size:.76rem;color:var(--slate);margin-bottom:.3rem;display:flex;justify-content:space-between}
 .adv-ctrl-label b{font-family:var(--mono);color:var(--navy);font-weight:500}
-.adv-hint{font-size:.68rem;color:var(--slate);line-height:1.4;margin-top:.3rem}
+.adv-hint{font-size:.72rem;color:var(--slate);line-height:1.4;margin-top:.3rem}
 .adv-ctrl input[type=range]{width:100%;height:2px;-webkit-appearance:none;appearance:none;background:var(--mist);border-radius:2px;outline:none;cursor:pointer}
 .adv-ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--navy);border:2px solid var(--white);box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .adv-num-input{width:100%;box-sizing:border-box;padding:.4rem .5rem;border:1px solid var(--mist);border-radius:8px;background:var(--white);color:inherit;font-size:.95rem;font-family:inherit}
@@ -255,10 +255,10 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .pbt thead th:first-child{text-align:left}
 .pbt thead th.pbt-tot{background:linear-gradient(160deg,#1c3258,var(--navy));color:var(--gold-light)}
 .pbt-corner .pbt-rl{font-family:var(--serif);font-size:1.05rem;font-weight:600}
-.pbt-corner-s{display:block;font-size:.64rem;font-weight:500;color:rgba(255,255,255,.62);letter-spacing:.02em;margin-top:.15rem}
+.pbt-corner-s{display:block;font-size:.72rem;font-weight:500;color:rgba(255,255,255,.62);letter-spacing:.02em;margin-top:.15rem}
 .pbt tbody th{text-align:left;padding:.85rem 1.1rem;border-top:1px solid var(--mist);font-weight:600;color:var(--navy);vertical-align:top}
 .pbt-rl{display:block;font-size:.92rem;line-height:1.2}
-.pbt-rs{display:block;font-size:.68rem;color:var(--slate);font-weight:500;margin-top:.15rem}
+.pbt-rs{display:block;font-size:.72rem;color:var(--slate);font-weight:500;margin-top:.15rem}
 .pbt-num{text-align:right;padding:.85rem 1.1rem;border-top:1px solid var(--mist);font-size:.98rem;color:var(--ink);white-space:nowrap;font-weight:500}
 .pbt-tot{background:rgba(196,160,90,.07)}
 .pbt td.pbt-tot{font-weight:700;color:var(--navy)}
@@ -274,6 +274,12 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 .nav .lang-switch button:not(.active){color:rgba(255,255,255,.85)!important}
 .nav .lang-switch button.active{background:var(--gold)!important;color:#14213d!important}
 @media(max-width:560px){.nav{padding:.85rem 1rem;flex-wrap:wrap}.nav-client{display:none}}
+
+/* Fase A · UX-06: anillo de foco visible para teclado (doble anillo: se ve sobre fondos claros y oscuros) */
+:focus-visible{outline:2px solid #14213d!important;outline-offset:2px;box-shadow:0 0 0 4px #c9a961!important}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+html{background:#0e1830}
 </style>
 </head>
 <body>
@@ -290,28 +296,30 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
     </div></div>
 </nav>
 
+<main id="main-content">
+<h1 class="sr-only">Plan de Jubilación</h1>
 <header class="hero">
   <div class="hero-grid">
     <div class="controls">
       <div class="controls-eyebrow">Tu situación</div>
       <div class="ctrl">
-        <div class="ctrl-label"><span class="lbl">Edad actual</span><span class="val" id="v-age">37 años</span></div>
-        <input type="range" id="s-age" min="18" max="60" value="37">
+        <div class="ctrl-label"><span class="lbl" id="aud-lbl-1">Edad actual</span><span class="val" id="v-age">37 años</span></div>
+        <input type="range" id="s-age" min="18" max="60" value="37" aria-labelledby="aud-lbl-1">
       </div>
       <div class="ctrl">
-        <div class="ctrl-label"><span class="lbl">Jubilación a los</span><span class="val" id="v-retire">67 años</span></div>
-        <input type="range" id="s-retire" min="62" max="72" value="67">
+        <div class="ctrl-label"><span class="lbl" id="aud-lbl-2">Jubilación a los</span><span class="val" id="v-retire">67 años</span></div>
+        <input type="range" id="s-retire" min="62" max="72" value="67" aria-labelledby="aud-lbl-2">
       </div>
       <div class="ctrl">
-        <div class="ctrl-label"><span class="lbl">Capital ya acumulado (opcional)</span><span class="val-wrap"><input type="number" class="val-input" id="v-capital0" min="0" max="500000" step="1000" value="0"><span class="val-unit">€</span></span></div>
-        <input type="range" id="s-capital0" min="0" max="500000" step="5000" value="0">
+        <div class="ctrl-label"><span class="lbl" id="aud-lbl-3">Capital ya acumulado (opcional)</span><span class="val-wrap"><input type="number" class="val-input" id="v-capital0" min="0" max="500000" step="1000" value="0" aria-labelledby="aud-lbl-3"><span class="val-unit">€</span></span></div>
+        <input type="range" id="s-capital0" min="0" max="500000" step="5000" value="0" aria-labelledby="aud-lbl-3">
       </div>
       <div class="ctrl">
-        <div class="ctrl-label"><span class="lbl">Ahorro mensual</span><span class="val-wrap"><input type="number" class="val-input" id="v-monthly" min="50" max="3000" step="10" value="300"><span class="val-unit">€</span></span></div>
-        <input type="range" id="s-monthly" min="50" max="3000" step="25" value="300">
+        <div class="ctrl-label"><span class="lbl" id="aud-lbl-4">Ahorro mensual</span><span class="val-wrap"><input type="number" class="val-input" id="v-monthly" min="50" max="3000" step="10" value="300" aria-labelledby="aud-lbl-4"><span class="val-unit">€</span></span></div>
+        <input type="range" id="s-monthly" min="50" max="3000" step="25" value="300" aria-labelledby="aud-lbl-4">
       </div>
       <div class="ctrl">
-        <div class="ctrl-label" style="margin-bottom:.5rem"><span class="lbl">Escenario de evolución anual media</span></div>
+        <div class="ctrl-label" style="margin-bottom:.5rem"><span class="lbl" id="aud-lbl-5">Escenario de evolución anual media</span></div>
         <div class="hero-toggle" id="scenario-toggle">
           <button data-scn="4">Conservador · 4 %</button>
           <button data-scn="6">Equilibrado · 6 %</button>
@@ -319,14 +327,14 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
         </div>
       </div>
       <div class="ctrl" style="margin-top:1.5rem">
-        <div class="ctrl-label" style="margin-bottom:.5rem"><span class="lbl">Objetivo</span></div>
+        <div class="ctrl-label" style="margin-bottom:.5rem"><span class="lbl" id="aud-lbl-6">Objetivo</span></div>
         <div class="hero-toggle" id="goalmode-toggle">
           <button class="active" data-goalmode="tendre">Ver cuánto tendré</button>
           <button data-goalmode="necesito">Ver cuánto necesito ahorrar</button>
         </div>
       </div>
       <div class="ctrl" id="target-ctrl" style="display:none">
-        <div class="ctrl-label"><span class="lbl">Capital objetivo a la jubilación</span><span class="val-wrap"><input type="number" class="val-input" id="v-target" min="0" step="5000" value="300000"><span class="val-unit">€</span></span></div>
+        <div class="ctrl-label"><span class="lbl" id="aud-lbl-7">Capital objetivo a la jubilación</span><span class="val-wrap"><input type="number" class="val-input" id="v-target" min="0" step="5000" value="300000" aria-labelledby="aud-lbl-7"><span class="val-unit">€</span></span></div>
       </div>
     </div>
 
@@ -403,12 +411,12 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
       <div class="adv-grid" style="grid-template-columns:1fr 1fr;gap:1.5rem">
         <div>
           <div class="adv-ctrl">
-            <div class="adv-ctrl-label" style="margin-bottom:.3rem">Hijos con derecho a Kinderzulage</div>
-            <input type="number" id="v-riesterkids" class="adv-num-input" min="0" max="10" step="1" value="0">
+            <div class="adv-ctrl-label" style="margin-bottom:.3rem" id="aud-lbl-8">Hijos con derecho a Kinderzulage</div>
+            <input type="number" id="v-riesterkids" class="adv-num-input" min="0" max="10" step="1" value="0" aria-labelledby="aud-lbl-8">
           </div>
           <div class="adv-ctrl">
-            <div class="adv-ctrl-label" style="margin-bottom:.3rem">Aportación propia mensual a Riester</div>
-            <input type="number" id="v-riestermonthly" class="adv-num-input" min="0" step="1" placeholder="auto">
+            <div class="adv-ctrl-label" style="margin-bottom:.3rem" id="aud-lbl-9">Aportación propia mensual a Riester</div>
+            <input type="number" id="v-riestermonthly" class="adv-num-input" min="0" step="1" placeholder="auto" aria-labelledby="aud-lbl-9">
             <div style="font-size:.68rem;color:var(--slate);margin-top:.4rem">Sugerido para cobrar la Zulage completa (4 % del sueldo bruto − Zulagen, mínimo 60 €/año): <b id="riester-suggested">0</b> €/mes. <span id="riester-auto-reset" style="color:var(--gold-deep,#a8842f);cursor:pointer;text-decoration:underline">Usar sugerido</span></div>
           </div>
         </div>
@@ -541,46 +549,46 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
       <div>
         <div class="adv-block-title">Parámetros</div>
         <div class="adv-ctrl">
-          <div class="adv-ctrl-label" style="margin-bottom:.3rem">Sueldo bruto anual</div>
-          <input type="number" id="v-salary" class="adv-num-input" min="20000" max="150000" step="100" value="60000">
-          <input type="range" id="s-salary" min="20000" max="150000" step="2500" value="60000" style="margin-top:.4rem">
+          <div class="adv-ctrl-label" style="margin-bottom:.3rem" id="aud-lbl-10">Sueldo bruto anual</div>
+          <input type="number" id="v-salary" class="adv-num-input" min="20000" max="150000" step="100" value="60000" aria-labelledby="aud-lbl-10">
+          <input type="range" id="s-salary" min="20000" max="150000" step="2500" value="60000" style="margin-top:.4rem" aria-labelledby="aud-lbl-10">
         </div>
         <div class="adv-ctrl">
-          <div class="adv-ctrl-label">Reparto a Rürup<b id="v-split">50 %</b></div>
-          <input type="range" id="s-split" min="0" max="100" step="5" value="50">
+          <div class="adv-ctrl-label" id="aud-lbl-11">Reparto a Rürup<b id="v-split">50 %</b></div>
+          <input type="range" id="s-split" min="0" max="100" step="5" value="50" aria-labelledby="aud-lbl-11">
           <div class="split-track"><span id="split-ruerup">150 € Rürup</span><span style="margin-left:auto" id="split-prv">150 € Privatrente</span></div>
         </div>
         <div class="adv-ctrl">
-          <div class="adv-ctrl-label" style="margin-bottom:.4rem">El resto (no-Rürup) va a</div>
+          <div class="adv-ctrl-label" style="margin-bottom:.4rem" id="aud-lbl-12">El resto (no-Rürup) va a</div>
           <div class="toggle-pair">
             <button class="active" id="rd-vasp">Privatrente</button>
             <button id="rd-etf">ETF S&P 500</button>
           </div>
         </div>
         <div class="adv-ctrl">
-          <div class="adv-ctrl-label">Rentabilidad anual<b id="av-ret">6 %</b></div>
-          <input type="range" id="a-ret" min="3" max="12" step="0.5" value="6">
+          <div class="adv-ctrl-label" id="aud-lbl-13">Rentabilidad anual<b id="av-ret">6 %</b></div>
+          <input type="range" id="a-ret" min="3" max="12" step="0.5" value="6" aria-labelledby="aud-lbl-13">
           <div class="adv-hint">Tasa anual nominal, capitalizada cada mes. El rendimiento efectivo al año resulta algo mayor.</div>
         </div>
         <div class="adv-ctrl">
-          <div class="adv-ctrl-label">Esperanza de vida<b id="av-life">90 años</b></div>
-          <input type="range" id="a-life" min="78" max="100" value="90">
+          <div class="adv-ctrl-label" id="aud-lbl-14">Esperanza de vida<b id="av-life">90 años</b></div>
+          <input type="range" id="a-life" min="78" max="100" value="90" aria-labelledby="aud-lbl-14">
         </div>
         <div class="adv-ctrl">
-          <div class="adv-ctrl-label">Rentabilidad en la jubilación<b id="av-retdraw">3 %</b></div>
-          <input type="range" id="a-retdraw" min="0" max="7" step="0.5" value="3">
+          <div class="adv-ctrl-label" id="aud-lbl-15">Rentabilidad en la jubilación<b id="av-retdraw">3 %</b></div>
+          <input type="range" id="a-retdraw" min="0" max="7" step="0.5" value="3" aria-labelledby="aud-lbl-15">
         </div>
         <div class="adv-ctrl">
-          <div class="adv-ctrl-label" style="margin-bottom:.4rem">Rentenfaktor (€ por 10.000 €)</div>
+          <div class="adv-ctrl-label" style="margin-bottom:.4rem" id="aud-lbl-16">Rentenfaktor (€ por 10.000 €)</div>
           <div style="display:flex;gap:.5rem">
-            <div style="flex:1"><label style="font-size:.68rem;color:var(--slate);display:block;margin-bottom:.2rem">Rürup</label><input type="number" id="a-rfbrva" class="adv-num-input" step="0.01" min="10" max="40" value="24.08"></div>
-            <div style="flex:1"><label style="font-size:.68rem;color:var(--slate);display:block;margin-bottom:.2rem">VASP</label><input type="number" id="a-rfvasp" class="adv-num-input" step="0.01" min="10" max="40" value="24.16"></div>
+            <div style="flex:1"><label style="font-size:.68rem;color:var(--slate);display:block;margin-bottom:.2rem">Rürup</label><input type="number" id="a-rfbrva" class="adv-num-input" step="0.01" min="10" max="40" value="24.08" aria-labelledby="aud-lbl-16"></div>
+            <div style="flex:1"><label style="font-size:.68rem;color:var(--slate);display:block;margin-bottom:.2rem">VASP</label><input type="number" id="a-rfvasp" class="adv-num-input" step="0.01" min="10" max="40" value="24.16" aria-labelledby="aud-lbl-16"></div>
           </div>
         </div>
         <div class="adv-ctrl">
-          <div class="adv-ctrl-label" style="margin-bottom:.3rem">Tipo marginal estimado (%)</div>
+          <div class="adv-ctrl-label" style="margin-bottom:.3rem" id="aud-lbl-17">Tipo marginal estimado (%)</div>
           <div style="display:flex;gap:.5rem;align-items:center">
-            <input type="number" id="a-margin" class="adv-num-input" step="0.5" min="0" max="45" value="0" style="flex:1">
+            <input type="number" id="a-margin" class="adv-num-input" step="0.5" min="0" max="45" value="0" style="flex:1" aria-labelledby="aud-lbl-17">
             <span id="a-margin-reset" style="font-size:.68rem;color:var(--gold-deep,#a8842f);cursor:pointer;text-decoration:underline;white-space:nowrap">Automático</span>
           </div>
           <div style="font-size:.68rem;color:var(--slate);margin-top:.3rem">Auto según el sueldo bruto anual. Ajusta si conoces el tipo real del cliente (p. ej. tributación conjunta).</div>
@@ -589,14 +597,14 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
           <div style="display:block;font-size:.68rem;color:var(--slate);line-height:1.5">Aportación anual a Rürup: <b id="av-ruerup-annual">0 €</b> · máximo deducible <b id="av-ruerup-limit">0 €</b>/año (soltero, <span id="av-limit-year">2026</span>)</div>
         </div>
         <div class="adv-ctrl">
-          <div class="adv-ctrl-label" style="margin-bottom:.4rem">Crecimiento AORAES</div>
+          <div class="adv-ctrl-label" style="margin-bottom:.4rem" id="aud-lbl-18">Crecimiento AORAES</div>
           <div class="toggle-pair">
             <button class="active" id="gm-stated">Tasa indicada</button>
             <button id="gm-excel">Modo Excel</button>
           </div>
         </div>
         <div class="adv-ctrl">
-          <div class="adv-ctrl-label" style="margin-bottom:.4rem">Cambios de ETF (año 10 y 5 antes de jubilar)</div>
+          <div class="adv-ctrl-label" style="margin-bottom:.4rem" id="aud-lbl-19">Cambios de ETF (año 10 y 5 antes de jubilar)</div>
           <div class="toggle-pair">
             <button class="active" id="sw-on">2 cambios</button>
             <button id="sw-off">Sin cambios</button>
@@ -607,8 +615,8 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
         <div class="adv-block-title">Reinvertir subsidio en</div>
         <div class="chip-row" id="reinvest-chips"></div>
         <div class="adv-ctrl" style="margin-top:.7rem">
-          <div class="adv-ctrl-label">% del ahorro fiscal a reinvertir<b id="av-reinvpct">100 %</b></div>
-          <input type="range" id="a-reinvpct" min="0" max="100" step="10" value="100">
+          <div class="adv-ctrl-label" id="aud-lbl-20">% del ahorro fiscal a reinvertir<b id="av-reinvpct">100 %</b></div>
+          <input type="range" id="a-reinvpct" min="0" max="100" step="10" value="100" aria-labelledby="aud-lbl-20">
         </div>
       </div>
       <div>
@@ -629,6 +637,7 @@ body{font-family:var(--sans);background:var(--ivory);color:var(--ink);font-size:
 </div>
 </div>
 
+</main>
 <div class="pdf-fab" id="pdf-fab">
   <div class="pdf-menu" id="pdf-menu">
     <button onclick="generatePDF('es')">📄 Informe en español</button>

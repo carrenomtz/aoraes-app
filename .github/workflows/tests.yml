@@ -71,5 +71,6 @@ jobs:
       - run: node tests/productos.test.js
       - run: node tests/jubilacion.test.js
       - run: node tests/impuesto.test.js
+      - run: node --test tests/aud-*.test.js
       - run: node tests/analisis.test.js
       - run: node tests/necesidades.test.js
