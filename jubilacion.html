@@ -689,7 +689,7 @@ window.I18N_EN_JUB = {"(tipo medio aprox. {0} %)":"(average rate approx. {0} %)"
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
-<script src="./impuesto.js?v=407831a7"></script>
+<script src="./impuesto.js?v=b4304358"></script>
 <script>
 // Tarifa del impuesto (§32a EStG 2026): UNA sola copia en impuesto.js, compartida con Análisis. Aquí solo se traduce el sueldo bruto a zvE (aproximación).
 function grenzsteuersatz(gross){ return AORAES_IMPUESTO.tipoMarginal(gross*0.78); }
@@ -1262,7 +1262,14 @@ $('pdf-fab-btn').addEventListener('click',()=>$('pdf-menu').classList.toggle('op
 document.addEventListener('click',e=>{if(!$('pdf-fab').contains(e.target))$('pdf-menu').classList.remove('open');});
 
 
+// AOR-RET-008: el «Modo Excel» (+0,65 pp en la rentabilidad de los seguros) es solo una herramienta de reproducción en pantalla; nunca debe llegar a un
+// informe de cliente. Se apaga mientras se genera el PDF y se restaura siempre al terminar (aunque falle), así que la pantalla no cambia.
 async function generatePDF(lang){
+  const excelEstaba=S.excel; S.excel=false;
+  try{ return await _generatePDF(lang); }
+  finally{ S.excel=excelEstaba; }
+}
+async function _generatePDF(lang){
   $('pdf-menu').classList.remove('open');
   if(typeof window.jspdf==='undefined'){alert('Error: jsPDF no disponible.');return;}
 

@@ -392,11 +392,11 @@
 <script src="./leads.js?v=28d53483"></script>
 <script src="./calc.js?v=eba0208a"></script>
 <script src="./inmueble.js?v=89112d10"></script>
-<script src="./afa.js?v=8c8d2660"></script>
-<script src="./fiscal.js?v=3cd619e3"></script>
+<script src="./afa.js?v=253000f3"></script>
+<script src="./fiscal.js?v=874fe5e5"></script>
 <script src="./fiscal-ui.js?v=900c6e63"></script>
 <script src="./idle.js?v=8c7edecd"></script>
-<script src="./productos.js?v=4319b7aa"></script>
+<script src="./productos.js?v=f2640997"></script>
 <script src="./centro.js?v=b7d3ae10"></script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -1340,10 +1340,12 @@
       _preLoginClientsRaw=null; _preLoginSolutionsRaw=null; _preLoginMedRaw=null;
       // Y sin esto, hasta que llegue el primer snapshot del nuevo asesor, el cockpit seguiría
       // mostrando la cartera del que acaba de cerrar sesión (readClients() cae a localStorage).
+      // AOR-SEC-001: también se borran el borrador de preguntas médicas sin cliente activo (aoraes_med_draft_v1: ranura global con datos de salud) y el
+      // sueldo recordado entre herramientas (aoraes_bruto_*): sin esto el siguiente asesor de ese navegador los veía.
       // ACTIVE_KEY entra en la misma limpieza: es otra ranura global (no por asesor), y sin
       // borrarla aquí un cliente "activo" del asesor anterior podía seguir seleccionado para el
       // siguiente que iniciara sesión en la misma pestaña.
-      try{ localStorage.removeItem(CLIENTS_KEY); localStorage.removeItem(SOLUTIONS_KEY); localStorage.removeItem(MED_BY_CLIENT_KEY); localStorage.removeItem(ACTIVE_KEY); }catch(e){}
+      try{ localStorage.removeItem(CLIENTS_KEY); localStorage.removeItem(SOLUTIONS_KEY); localStorage.removeItem(MED_BY_CLIENT_KEY); localStorage.removeItem(ACTIVE_KEY); localStorage.removeItem('aoraes_med_draft_v1'); localStorage.removeItem('aoraes_bruto_mensual'); localStorage.removeItem('aoraes_bruto_anual'); }catch(e){}
       if(typeof renderCockpit==='function') renderCockpit();
     });
     // El admin cambiando entre "ver cartera de X" y "ver la mía" (viewAsAdvisor/viewMyOwn):
@@ -1351,7 +1353,7 @@
     // muestre, o un guardado escriba sobre, la cartera del asesor que se dejó de ver.
     window.addEventListener('aoraes-viewing-switch', function(){
       _cloudClientsById=null;
-      try{ localStorage.removeItem(CLIENTS_KEY); localStorage.removeItem(SOLUTIONS_KEY); localStorage.removeItem(MED_BY_CLIENT_KEY); localStorage.removeItem(ACTIVE_KEY); }catch(e){}
+      try{ localStorage.removeItem(CLIENTS_KEY); localStorage.removeItem(SOLUTIONS_KEY); localStorage.removeItem(MED_BY_CLIENT_KEY); localStorage.removeItem(ACTIVE_KEY); localStorage.removeItem('aoraes_med_draft_v1'); localStorage.removeItem('aoraes_bruto_mensual'); localStorage.removeItem('aoraes_bruto_anual'); }catch(e){}
       if(typeof renderCockpit==='function') renderCockpit();
     });
     function findClient(id){ return readClients().filter(function(c){return c.id===id;})[0]||null; }

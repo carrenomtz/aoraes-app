@@ -215,6 +215,8 @@ function fiscalImportar(f,rec,ahora){
     var x=f.campos[c.k]||(f.campos[c.k]=fiscalCampoVacio());
     if((x.estado==='proporcionado'||x.estado==='confirmado')&&x.fuente!=='analisis_financiero'){ omitidos.push({k:c.k,motivo:'Ya introducido a mano: no se sobrescribe.'}); return; }
     if(x.value===c.value&&x.fuente==='analisis_financiero') return;                      // ya importado y sin cambios
+    // AOR-TAX-006: un valor ya CONFIRMADO por el asesor no se sustituye en silencio aunque viniera del análisis; para cambiarlo hay que editarlo a mano.
+    if(x.estado==='confirmado'){ omitidos.push({k:c.k,motivo:'Ya confirmado: no se sobrescribe (edítalo a mano si cambió).'}); return; }
     if(x.value!==null||x.estado!=='desconocido') fiscalGuardarVersion(x,'importación del análisis',ahora);
     x.value=c.value; x.estado='proporcionado'; x.fuente=c.fuente; x.fuenteRef=c.fuenteRef; x.capturadoEn=c.capturadoEn||fiscalAhora(ahora);
     x.confirmadoEn=null; x.confianza=c.confianza; x.esEstimacion=false; x.ejercicio=null;     // el análisis no guarda el ejercicio: hay que confirmarlo

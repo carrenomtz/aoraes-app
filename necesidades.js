@@ -14,15 +14,30 @@
 
 var NEC_ESTADOS={sin_necesidad:'Sin necesidad económica',insuficiente:'Cobertura insuficiente',suficiente:'Cobertura suficiente',superior:'Cobertura superior a la necesidad'};
 
-function _necNum(x){ if(x===null||x===undefined||x==='') return null; var n=(typeof x==='number')?x:parseFloat(String(x).replace(',','.')); return (isFinite(n)&&n>=0)?n:null; }
+// Importe escrito a mano -> número >= 0, o null si está vacío o no es un número válido. Los campos son type="text" y la pantalla muestra los importes con
+// punto de millares (es-ES: «1.500 €»), así que se aceptan los dos formatos: «1.500,50» / «1500,5» / «1500.5» / «1,234.56». Con un solo punto, «1.500» (grupo
+// de tres cifras que no empieza por 0) es 1500 y «2.5» o «0.500» son decimales. Cualquier otra cosa («12abc», «1,2,3», «1..5») es inválida, no un 12 ni un 1,2.
+function _necNum(x){
+  if(x===null||x===undefined) return null;
+  if(typeof x==='number') return (isFinite(x)&&x>=0)?x:null;
+  var s=String(x).replace(/\s/g,''); if(s==='') return null;
+  var c=s.lastIndexOf(','), p=s.lastIndexOf('.');
+  if(c>=0&&p>=0){ var dec=(c>p)?',':'.', mil=(c>p)?'.':','; s=s.split(mil).join('').replace(dec,'.'); }
+  else if(c>=0){ if(s.indexOf(',')!==c) return null; s=s.replace(',','.'); }
+  else if(p>=0 && /^[1-9]\d{0,2}(\.\d{3})+$/.test(s)){ s=s.split('.').join(''); }
+  if(!/^\d+(\.\d+)?$/.test(s)) return null;
+  var n=parseFloat(s); return (isFinite(n)&&n>=0)?n:null;
+}
 // Lee los campos de una calculadora: valores (opcionales sin dato = 0), faltan (obligatorios sin dato o inválidos) y completo.
 function necLeer(campos,v){
-  v=v||{}; var valores={}, faltan=[];
+  v=v||{}; var valores={}, faltan=[], invalidos=[];
   campos.forEach(function(c){
-    var n=_necNum(v[c.k]);
+    var raw=v[c.k], n=_necNum(raw);
+    // invalidos: había algo escrito pero no es un importe válido (distinto de «vacío»). Informativo: no cambia faltan ni completo.
+    if(n===null && raw!==null && raw!==undefined && String(raw).trim()!=='') invalidos.push(c.k);
     if(n===null){ if(c.opcional){ valores[c.k]=0; } else { valores[c.k]=0; faltan.push(c.k); } } else valores[c.k]=n;
   });
-  return {valores:valores,faltan:faltan,completo:faltan.length===0};
+  return {valores:valores,faltan:faltan,invalidos:invalidos,completo:faltan.length===0};
 }
 // Valor actual de una renta mensual constante `m` durante `anos` años con una tasa real anual `tasaPct` (0 = suma simple, sin descontar).
 function necValorActualRenta(m,anos,tasaPct){
@@ -58,7 +73,7 @@ var NEC_CALCULADORAS={
       var bruta=x.gastosFamiliares+x.obligaciones+x.ahorroNecesario-x.ingresosDisponibles, necesidad=Math.max(0,bruta);
       var brecha=Math.max(0,necesidad-x.rentaAsegurada), exceso=Math.max(0,x.rentaAsegurada-necesidad);
       return {necesidadBruta:bruta,necesidad:necesidad,rentaAsegurada:x.rentaAsegurada,brecha:brecha,exceso:exceso,
-        cobertura:necesidad>0?x.rentaAsegurada/necesidad:null,estado:_estado(necesidad,x.rentaAsegurada),faltan:r.faltan,completo:r.completo};
+        cobertura:necesidad>0?x.rentaAsegurada/necesidad:null,estado:_estado(necesidad,x.rentaAsegurada),faltan:r.faltan,invalidos:r.invalidos,completo:r.completo};
     }
   },
   risikoleben:{
@@ -84,7 +99,7 @@ var NEC_CALCULADORAS={
       var obligaciones=x.hipoteca+x.otrasDeudas, recursos=x.ahorrosLiquidos+x.segurosExistentes+x.otrosRecursos;
       var bruto=obligaciones+futuras-recursos, necesario=Math.max(0,bruto);
       return {obligaciones:obligaciones,necesidadesFuturas:futuras,recursos:recursos,capitalBruto:bruto,capitalNecesario:necesario,
-        cubiertoPorSeguros:x.segurosExistentes,estado:_estado(obligaciones+futuras,recursos),faltan:r.faltan,completo:r.completo};
+        cubiertoPorSeguros:x.segurosExistentes,estado:_estado(obligaciones+futuras,recursos),faltan:r.faltan,invalidos:r.invalidos,completo:r.completo};
     }
   },
   pflege:{
@@ -102,7 +117,7 @@ var NEC_CALCULADORAS={
       var r=necLeer(NEC_CALCULADORAS.pflege.campos,v), x=r.valores;
       var sin=Math.max(0,x.costeCuidados-x.prestacionPublica-x.ingresosDisponibles), con=Math.max(0,sin-x.prestacionContratada);
       return {brechaSinSeguro:sin,brechaConSeguro:con,exceso:Math.max(0,x.prestacionContratada-sin),
-        reservaSinSeguro:sin*x.mesesDeCuidado,reservaConSeguro:con*x.mesesDeCuidado,estado:_estado(sin,x.prestacionContratada),faltan:r.faltan,completo:r.completo};
+        reservaSinSeguro:sin*x.mesesDeCuidado,reservaConSeguro:con*x.mesesDeCuidado,estado:_estado(sin,x.prestacionContratada),faltan:r.faltan,invalidos:r.invalidos,completo:r.completo};
     }
   },
   sterbegeld:{
@@ -122,8 +137,8 @@ var NEC_CALCULADORAS={
       var total=x.costesFallecimiento+x.otrosGastos, bruto=total-x.reservaDedicada, necesario=Math.max(0,bruto);
       var ahorro=necAhorroMensualParaObjetivo(necesario,x.anosPrima,x.tasaAhorro), primaTotal=x.primaMensual*12*x.anosPrima;
       return {costesTotales:total,capitalBruto:bruto,capitalNecesario:necesario,reservaDedicada:x.reservaDedicada,
-        ahorroMensualEquivalente:ahorro,primaTotal:primaTotal,ahorroTotal:ahorro*12*x.anosPrima,
-        estado:_estado(total,x.reservaDedicada),faltan:r.faltan,completo:r.completo};
+        ahorroMensualEquivalente:ahorro,ahorroCalculable:(!(necesario>0)||x.anosPrima>0),primaTotal:primaTotal,ahorroTotal:ahorro*12*x.anosPrima,
+        estado:_estado(total,x.reservaDedicada),faltan:r.faltan,invalidos:r.invalidos,completo:r.completo};
     }
   }
 };

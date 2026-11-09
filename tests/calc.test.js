@@ -201,21 +201,23 @@ test('hitos de Comprar: asignación con lo ahorrado, fin del tipo fijo con la de
   assert(rows.every((r, i) => i === 0 || r.m >= rows[i - 1].m), 'hitos ordenados en el tiempo');
 });
 console.log('Amortización (AfA)')
-test('AfA estándar: Nebenkosten = precio × (ITP + notaría + registro) y base = precio + Nebenkosten − suelo − cocina', () => {
-  // 300.000 € en Berlín (ITP 6 %) + 1,5 % notaría + 0,5 % registro = 8 % = 24.000 €; suelo 60.000 €, cocina 5.000 € -> base 259.000 €
+test('AfA estándar: Nebenkosten = precio × (ITP + notaría + registro) y base = (precio + Nebenkosten) × (1 − suelo/precio) − cocina', () => {
+  // AOR-TAX-004: los gastos de adquisición se reparten entre suelo y edificio en la proporción del precio; solo el edificio se amortiza.
+  // 300.000 € en Berlín (ITP 6 %) + 1,5 % notaría + 0,5 % registro = 8 % = 24.000 €; suelo 60.000 € (20 %), cocina 5.000 € -> (324.000 × 0,8) − 5.000 = 254.200 €
   const a = Object.assign(afaMod.defaultAfa(), { precioCompra: 300000, valorSuelo: 60000, valorCocina: 5000, afaEstandarPct: 2 });
   const c = afaMod.calcAfa(a);
-  near(c.nebenkosten, 24000, 0.001); near(c.baseAmortizable, 259000, 0.001);
-  near(c.perdidaEstandarAnual, 5180, 0.001); assert.strictEqual(c.pctGutachten, null);
+  near(c.nebenkosten, 24000, 0.001); near(c.baseAmortizable, 254200, 0.001);
+  near(c.perdidaEstandarAnual, 5084, 0.001); assert.strictEqual(c.pctGutachten, null);
   near(c.perdidaEfectivaAnual, c.perdidaEstandarAnual, 0.001);
 });
-test('AfA con Gutachten: % = 100 / años restantes (puede ser menor o mayor que el estándar) y manda sobre el estándar', () => {
+test('AfA con Gutachten: % = 100 / años restantes; la AfA efectiva nunca baja del % legal (§7 Abs. 4 S. 2 EStG: solo vale si la vida real es más corta)', () => {
   const base = Object.assign(afaMod.defaultAfa(), { precioCompra: 300000, valorSuelo: 60000, valorCocina: 5000, afaEstandarPct: 2, tieneGutachten: true });
   const corto = afaMod.calcAfa(Object.assign({}, base, { restnutzungsdauerGutachten: 30 }));
-  near(corto.pctGutachten, 100 / 30, 1e-9); near(corto.perdidaGutachtenAnual, 259000 / 30, 0.001);
-  near(corto.diferenciaAnual, 259000 / 30 - 5180, 0.001); near(corto.perdidaEfectivaAnual, corto.perdidaGutachtenAnual, 0.001);
+  near(corto.pctGutachten, 100 / 30, 1e-9); near(corto.perdidaGutachtenAnual, 254200 / 30, 0.001);
+  near(corto.diferenciaAnual, 254200 / 30 - 5084, 0.001); near(corto.perdidaEfectivaAnual, corto.perdidaGutachtenAnual, 0.001);
   const largo = afaMod.calcAfa(Object.assign({}, base, { restnutzungsdauerGutachten: 60 }));
-  assert(largo.diferenciaAnual < 0, 'una vida útil más larga da MENOS AfA que el estándar');
+  assert(largo.diferenciaAnual < 0, 'la tarjeta del Gutachten sigue mostrando el escenario con menos AfA que el estándar');
+  near(largo.pctEfectivo, 2, 1e-9); near(largo.perdidaEfectivaAnual, largo.perdidaEstandarAnual, 0.001);   // AOR-TAX-005: el suelo legal manda
 });
 test('el suelo pendiente no se descuenta (se muestra como pendiente) y el suelo nunca entra en la base si está informado', () => {
   const a = Object.assign(afaMod.defaultAfa(), { precioCompra: 300000, valorSuelo: 60000, sueloPendiente: true });

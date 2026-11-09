@@ -245,8 +245,11 @@ function productoUsable(f,hoy){
 //   modo 'ilustrativo' → solo hay fichas de ejemplo o sin verificar: se puede mostrar un cálculo, pero NUNCA atribuido al proveedor.
 //   modo 'generico'    → no hay ficha: parámetros genéricos del modelo.
 // Entre varias versiones verificadas y vigentes gana la que rige desde más reciente.
-function productoResolver(fichas,productoId,hoy){
-  var propias=(fichas||[]).filter(function(f){ return f&&f.productoId===productoId; });
+// opts.version (opcional, AOR-CAT-002): pide una versión contractual concreta (p. ej. un contrato firmado con una generación anterior). Si esa versión no es
+// utilizable en la fecha, NO se cae a otra más reciente: el resultado no es atribuible. Sin opts el comportamiento es el de siempre.
+function productoResolver(fichas,productoId,hoy,opts){
+  var version=(opts&&typeof opts.version==='string'&&opts.version)?opts.version:null;
+  var propias=(fichas||[]).filter(function(f){ return f&&f.productoId===productoId&&(version===null||f.version===version); });
   var ok=propias.filter(function(f){ return productoUsable(f,hoy).ok; }).sort(function(a,b){ return a.vigenteDesde<b.vigenteDesde?1:a.vigenteDesde>b.vigenteDesde?-1:0; });
   if(ok.length) return {modo:'verificado',ficha:ok[0],costes:JSON.parse(JSON.stringify(ok[0].costes)),atribuible:true,aviso:''};
   if(propias.length){

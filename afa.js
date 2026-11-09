@@ -50,7 +50,12 @@ function calcAfa(afa){
   var nebenkosten=(afa.precioCompra||0)*(((afa.itpPct||0)+notarioRegistroPct)/100)+(afa.otrosGastos||0);
   var notarioRegistro=(afa.precioCompra||0)*(notarioRegistroPct/100);
   var sueloEfectivo=afa.sueloPendiente?0:(afa.valorSuelo||0);
-  var baseAmortizable=Math.max(0,(afa.precioCompra||0)+nebenkosten-sueloEfectivo-(afa.valorCocina||0));
+  // AOR-TAX-004: los gastos de adquisición (Grunderwerbsteuer, notaría, registro…) se reparten entre suelo y edificio en la misma proporción
+  // que el precio; solo la parte del edificio se amortiza. Antes se sumaban ENTEROS al edificio y solo se restaba el valor del suelo
+  // (sobrestimaba la base en Nebenkosten × suelo/precio). Con el suelo pendiente (0) o sin suelo, el resultado es el de siempre.
+  var precioCompra=afa.precioCompra||0;
+  var factorEdificio=precioCompra>0?(1-Math.min(sueloEfectivo,precioCompra)/precioCompra):0;
+  var baseAmortizable=Math.max(0,(precioCompra+nebenkosten)*factorEdificio-(afa.valorCocina||0));
   var pctEstandar=afa.afaEstandarPct||0;
   var perdidaEstandarAnual=baseAmortizable*pctEstandar/100;
   var pctGutachten=null, perdidaGutachtenAnual=null, diferenciaAnual=null;
@@ -61,8 +66,10 @@ function calcAfa(afa){
   }
   // "Efectivo" = lo que realmente aplica para la declaración: el Gutachten manda si existe,
   // porque sustituye la vida útil (no se suma al estándar).
-  var pctEfectivo=(afa.tieneGutachten&&pctGutachten!=null)?pctGutachten:pctEstandar;
-  var perdidaEfectivaAnual=(afa.tieneGutachten&&perdidaGutachtenAnual!=null)?perdidaGutachtenAnual:perdidaEstandarAnual;
+  // AOR-TAX-005: §7 Abs. 4 S. 2 EStG solo permite la AfA según la vida útil real cuando es MÁS CORTA que la típica (el % legal es el suelo):
+  // un Gutachten con una vida útil más larga no baja la AfA por debajo del % estándar. (Las tarjetas de pantalla siguen mostrando ambos escenarios.)
+  var pctEfectivo=(afa.tieneGutachten&&pctGutachten!=null)?Math.max(pctGutachten,pctEstandar):pctEstandar;
+  var perdidaEfectivaAnual=baseAmortizable*pctEfectivo/100;
   return {nebenkosten:nebenkosten, notarioRegistro:notarioRegistro, sueloEfectivo:sueloEfectivo, baseAmortizable:baseAmortizable,
     pctEstandar:pctEstandar, perdidaEstandarAnual:perdidaEstandarAnual,
     pctGutachten:pctGutachten, perdidaGutachtenAnual:perdidaGutachtenAnual, diferenciaAnual:diferenciaAnual,
