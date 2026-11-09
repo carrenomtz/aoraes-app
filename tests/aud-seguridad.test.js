@@ -108,7 +108,7 @@ test('TAX-006 (hallazgo R): fiscalNum usa parseFloat(replace(",",".")): «60.000
 test('pages.yml publica _site sin reglas, pruebas, scripts ni config de Firebase y lo comprueba', () => {
   const fs=require('node:fs'), path=require('node:path'), assert=require('node:assert');
   const y=fs.readFileSync(path.join(__dirname,'..','.github','workflows','pages.yml'),'utf8');
-  for (const x of ["--exclude='tests'","--exclude='scripts'","--exclude='firestore.rules'","--exclude='firebase.json'","--exclude='.firebaserc'"]) assert.ok(y.includes(x), 'falta '+x);
+  for (const x of ["--exclude='tests'","--exclude='tests-emulador'","--exclude='scripts'","--exclude='firestore.rules'","--exclude='firebase.json'","--exclude='.firebaserc'"]) assert.ok(y.includes(x), 'falta '+x);
   assert.match(y,/test ! -e "_site\/\$f"/);
   assert.match(y,/if: github\.ref == 'refs\/heads\/main' && github\.event_name != 'pull_request'/);
   assert.match(y,/upload-pages-artifact@v3[\s\S]*path: _site/);

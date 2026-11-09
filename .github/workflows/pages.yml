@@ -28,7 +28,7 @@ jobs:
           mkdir _site
           rsync -a \
             --exclude='.git' --exclude='.github' --exclude='_site' \
-            --exclude='tests' --exclude='scripts' \
+            --exclude='tests' --exclude='tests-emulador' --exclude='scripts' \
             --exclude='firestore.rules' --exclude='firebase.json' --exclude='.firebaserc' \
             --exclude='.gitignore' --exclude='*.patch' --exclude='*.md' \
             ./ _site/
@@ -36,7 +36,7 @@ jobs:
       - name: Comprobar que el sitio está completo y sin archivos internos
         run: |
           for f in index.html analisis.html jubilacion.html necesidades.html plan-futuro.html vsp.html preguntas-medicas.html CNAME robots.txt sw.js estudio/index.html; do test -f "_site/$f" || { echo "FALTA $f"; exit 1; }; done
-          for f in firestore.rules firebase.json .firebaserc tests scripts; do test ! -e "_site/$f" || { echo "EXPUESTO $f"; exit 1; }; done
+          for f in firestore.rules firebase.json .firebaserc tests tests-emulador scripts; do test ! -e "_site/$f" || { echo "EXPUESTO $f"; exit 1; }; done
           echo "Sitio listo: $(find _site -type f | wc -l) archivos"
       - uses: actions/upload-pages-artifact@v3
         with:
