@@ -63,6 +63,8 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
   }
   if(withAnios){
     basic+=inmuebleOptField(opt,'pagoAhorro','Ahorro mensual del cliente (déjalo en cero y se calcula solo)',cfg.pagoAhorro||0,'50','€/mes','min="0"');
+    basic+=inmuebleOptField(opt,'bausparsumme','Importe del Bausparvertrag (cero = toda la financiación; el resto lo pone el banco)',cfg.bausparsumme||0,'5000','€','min="0"');
+    advanced+=inmuebleOptField(opt,'interesPuente','Interés del préstamo puente (cero = el del banco)',cfg.interesPuente||0,'0.01','%','min="0" max="20"');
     advanced+=inmuebleOptField(opt,'pagoPrestamo','Pago mensual del préstamo (0 = calculado; fija el plazo)',cfg.pagoPrestamo||0,'50','€/mes','min="0"');
   }
   if(withAhorro){
@@ -85,6 +87,7 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
     // Tilgung inicial equivalente (ver tilgungParaPlazo) y se mantiene al cambiar el interés mientras no se toque la Tilgung a mano.
     basic+='<label class="inm-f"><span>Plazo del préstamo</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" data-inm-opt="'+opt+'" data-inm-bankplazo="1" value="'+bancoPlazoActual(cfg)+'" step="any" min="5" max="40"><span class="inm-suf">años</span></span></label>';
     basic+=inmuebleOptField(opt,'zinsbindung','Vigencia del tipo (Zinsbindung)',cfg.zinsbindung,'1','años','min="1" max="40"');
+    if(opt==='banco') advanced+=inmuebleOptField(opt,'tipoRenovacion','Tipo supuesto al renovar, tras el tipo fijo (cero = el mismo)',cfg.tipoRenovacion||0,'0.1','%','min="0" max="20"');
   }
   basic+=inmuebleOptField(opt,'sondertilgung','Pago extra al año para terminar antes (opcional; cero = ninguno)',cfg.sondertilgung||0,'500','€/año','min="0"');
   if(opt==='banco'&&inmCtx&&inmCtx.modo==='refi') basic+='';
@@ -348,9 +351,9 @@ function inmuebleFraseRefi(d){
   return '<div class="inm-headline">'+h+'<div class="inm-headline-sub">No incluye alquiler, revalorización, impuestos ni lo que rendiría tu ahorro en otra parte.</div></div>';
 }
 
-function inmuebleFraseComprar(rEst,rk,igual,custom,puente){
-  var h, sub;
-  var costeEst=rEst.interesTotalPrestamo+rEst.comision-rEst.interesGanadoAhorro;
+function inmuebleFraseComprar(rEst,rk,igual,custom,puente,ext){
+  var h, sub; ext=ext||{cuota:0,interes:0};
+  var costeEst=rEst.interesTotalPrestamo+rEst.comision-rEst.interesGanadoAhorro+(ext.interes||0);
   if(igual){
     h='<span>'+(custom?'Con un pago mensual del banco de':'Con el mismo pago mensual de')+' <b>'+eur(rk.cuotaPrestamo)+'/mes</b>, el banco termina en <b>'+inmuebleAnios(inmuebleMesesDesdeHoy(rk,0))+'</b> y paga <b>'+eur(rk.interesTotalPrestamo+rk.comision)+'</b> de intereses y comisiones; el Bausparvertrag termina en <b>'+inmuebleAnios(inmuebleMesesDesdeHoy(rEst,0))+'</b> y paga <b>'+eur(costeEst)+'</b>';
     // Comprar hoy (puente): eres propietario desde el día 0 y el Bausparvertrag suma los intereses del puente; el alquiler de equilibrio
@@ -375,7 +378,7 @@ function inmuebleFraseComprar(rEst,rk,igual,custom,puente){
   } else {
     // Titular sencillo: cuánto se paga al mes con cada opción y cuánto dura, sin cifras grandes de coste (esas van en las tarjetas y el informe).
     h=(rEst.mesesAhorro>0&&puente>0)
-      ?'<span>Con el Bausparvertrag, mientras ahorras, pagas en total</span> <b>'+eur(rEst.cuotaAhorro+puente/rEst.mesesAhorro)+'/mes</b> <span>(ahorro + intereses del puente) y después</span> <b>'+eur(rEst.cuotaPrestamo)+'/mes</b>.'
+      ?'<span>Con el Bausparvertrag, mientras ahorras, pagas en total</span> <b>'+eur(rEst.cuotaAhorro+puente/rEst.mesesAhorro+ext.cuota)+'/mes</b> <span>'+(ext.cuota>0?'(ahorro + intereses del puente + banco para el resto) y después':'(ahorro + intereses del puente) y después')+'</span> <b>'+eur(rEst.cuotaPrestamo+ext.cuota)+'/mes</b>.'
       :(rEst.mesesAhorro>0)
       ?'<span>Con el Bausparvertrag ahorras <b>'+eur(rEst.cuotaAhorro)+'/mes</b> y después pagas <b>'+eur(rEst.cuotaPrestamo)+'/mes</b>.</span>'
       :'<span>Con el Bausparvertrag pagas <b>'+eur(rEst.cuotaPrestamo)+'/mes</b> desde el principio.</span>';
@@ -416,6 +419,32 @@ function inmuebleCompareToggle(c,efectivo,pagoIgual){
     (c==='igual'?'<label class="inm-f inm-inicio inm-adv"><span>Pago mensual igualado (0 = la cuota de ahorro)</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" id="inm-pago-igual" step="50" min="0" value="'+(pagoIgual||0)+'"><span class="inm-suf">€/mes</span></span></label>'+(pagoIgual>0?'<p class="inm-eff-note inm-adv"><span>Importe escrito a mano. Ponlo en cero para usar la cuota de ahorro calculada.</span></p>':''):'');
 }
 
+// Roadmap de Refinanciar y de Comprar y refinanciar: mismas etapas que en Comprar, con la carga total mientras se espera.
+function inmuebleRoadmapRefiHTML(o){
+  if(o.rEst.noAmortiza||o.rBanco.noAmortiza) return '';
+  function pctTxt(v){ return String(Math.round((v||0)*100)/100).replace('.',',')+' %'; }
+  function paso(num,tit,cuando,big,sub,cls){
+    return '<li class="inm-rm-paso'+(cls?' '+cls:'')+'"><span class="inm-rm-num">'+num+'</span><div class="inm-rm-body"><span class="inm-rm-tit">'+tit+'</span>'+
+      '<span class="inm-rm-cuando">'+cuando+'</span><b class="inm-rm-big">'+big+'</b>'+(sub?'<span class="inm-rm-sub">'+sub+'</span>':'')+'</div></li>';
+  }
+  var m0=o.mesesHastaRefi, rE=o.rEst, rB=o.rBanco, zM=Math.round((o.zinsbindung||0)*12), n=0, e='', b='';
+  var finE=inmuebleMesesDesdeHoy(rE,m0), finB=inmuebleMesesDesdeHoy(rB,m0);
+  var hoyTit=o.comb?'<span>Compras con el banco</span>':'<span>Sigues con tu crédito</span>';
+  e+=paso(++n,o.comb?'<span>Compras con el banco y ahorras</span>':'<span>Sigues con tu crédito y ahorras</span>','<span>Desde hoy,</span> <b>'+inmuebleAnios(m0)+'</b>',eur(o.cuotaActual+rE.cuotaAhorro)+'/mes',rE.cuotaAhorro>0?'<span>crédito + ahorro</span>':'<span>crédito actual</span>');
+  e+=paso(++n,'<span>Refinanciación con Badenia</span>','<b>'+inmuebleMesAnio(m0)+'</b> <span>(estimada, no garantizada)</span>',eur(rE.capitalPrestamo),'<span>de préstamo; tu ahorro cubre</span> <b>'+eur(rE.objetivoAhorro)+'</b>');
+  if(rE.capitalPrestamo>0) e+=paso(++n,'<span>Pagas el préstamo</span>','<span>Durante</span> <b>'+inmuebleAniosUnos(rE.mesesPrestamo)+'</b>',eur(rE.cuotaPrestamo)+'/mes','<span>tipo fijo del</span> <b>'+pctTxt(o.tipoEst)+'</b> <span>todo el plazo</span>');
+  e+=paso(++n,'<span>Vivienda pagada</span>','<b>'+inmuebleMesAnio(finE)+'</b> <span>·</span> <b>'+inmuebleAnios(finE)+'</b>',eur(o.intEst),'<span>de intereses y comisiones desde hoy</span>','inm-rm-fin');
+  n=0;
+  b+=paso(++n,hoyTit,'<span>Desde hoy,</span> <b>'+inmuebleAnios(m0)+'</b>',eur(o.cuotaActual)+'/mes','<span>sin ahorro aparte</span>');
+  b+=paso(++n,'<span>Refinancias con el banco</span>','<b>'+inmuebleMesAnio(m0)+'</b>',eur(rB.cuotaPrestamo)+'/mes','<span>tipo fijo del</span> <b>'+pctTxt(o.tipoBanco)+'</b>'+((zM>0&&zM<rB.mesesPrestamo)?' <span>durante</span> <b>'+inmuebleAnios(zM)+'</b>':''));
+  if(zM>0&&zM<rB.mesesPrestamo) b+=paso(++n,'<span>Fin del tipo fijo</span>','<b>'+inmuebleMesAnio(m0+zM)+'</b>',eur(rB.restschuldZinsbindung||0),'<span>aún por pagar: se renueva al tipo que haya entonces</span>','inm-rm-riesgo');
+  b+=paso(++n,'<span>Vivienda pagada</span>','<b>'+inmuebleMesAnio(finB)+'</b> <span>·</span> <b>'+inmuebleAnios(finB)+'</b>',eur(o.intBanco)+((zM>0&&zM<rB.mesesPrestamo)?'*':''),'<span>de intereses y comisiones desde hoy</span>','inm-rm-fin');
+  return '<div class="inm-curve-card inm-rm"><div class="inm-curve-head"><h5>Tu camino, paso a paso</h5></div>'+
+    '<div class="inm-rm-fila"><span class="inm-rm-lab">Badenia</span><ol class="inm-rm-pasos">'+e+'</ol></div>'+
+    '<div class="inm-rm-fila inm-rm-banco"><span class="inm-rm-lab">Banco</span><ol class="inm-rm-pasos">'+b+'</ol></div>'+
+    (o.intSeguir>0&&!o.comb?'<p class="inm-rm-clave"><span>Si sigues igual, sin refinanciar, pagarías</span> <b>'+eur(o.intSeguir)+'</b> <span>de intereses desde hoy.</span></p>':'')+
+    '<p class="inm-curve-note"><span>Cálculo orientativo: no es una oferta.</span>'+((zM>0&&zM<rB.mesesPrestamo)?' <span>* Supone que el banco mantiene el mismo tipo tras el tipo fijo.</span>':'')+'</p></div>';
+}
 function inmuebleRefiResultsHTML(refi,asParts,inm){
   var comb=!!refi.compraNueva;
   var rem=calcRefiRemaining(refi);
@@ -497,38 +526,64 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
     bancoParcial:(Math.min((refi.banco.zinsbindung||0)*12,rBanco.mesesPrestamo)<rBanco.mesesPrestamo),comb:comb,cuotaCompra:rem.cuotaOriginal});
   var cardsR='<div class="inm-results">'+baseRow()+row('Refinanciar con banco',rBanco,costeBancoAbs,false,true)+row(estTitle,rEst,costeEstAbs,false,false)+'</div>';
   var capR=inm?inmuebleCapacidadHTML(inm,comb?refi.importeOriginal:saldoAtRefi,(comb?[['Compra con el banco',rem.cuotaOriginal],['Banco + ahorro Badenia',rem.cuotaOriginal+rEst.cuotaAhorro]]:[['Tu crédito actual',rem.cuotaOriginal]]).concat([['Refinanciar con banco',rBanco.cuotaPrestamo],['Badenia · ahorro',rEst.cuotaAhorro],['Badenia · préstamo',rEst.cuotaPrestamo]])):'';
-  return asParts?{frase:frase,capacidad:capR,curva:curva,curvaSolo:curvaSolo,hitos:hitosCard,cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+capR+curva+cardsR);
+  var roadmapR=inmuebleRoadmapRefiHTML({comb:comb,mesesHastaRefi:mesesHastaRefi,rEst:rEst,rBanco:rBanco,zinsbindung:refi.banco.zinsbindung,cuotaActual:rem.cuotaOriginal,
+    tipoEst:estCfg.interesPrestamo,tipoBanco:refi.banco.interesPrestamo,intEst:costeEstAbs-rem.saldoPendiente,intBanco:costeBancoAbs-rem.saldoPendiente,intSeguir:rem.interesRestante});
+  return asParts?{roadmap:roadmapR,frase:frase,capacidad:capR,curva:curva,curvaSolo:curvaSolo,hitos:hitosCard,cards:cardsR,rem:rem,fr:fr,rEst:rEst,rBanco:rBanco}:(frase+roadmapR+capR+curva+cardsR);
 }
 
 // Roadmap para el cliente (Comprar): cada camino como una fila de etapas con una sola cifra grande por etapa, en vez de la gráfica
 // técnica. Bausparvertrag: ahorro (+ puente si se compra hoy) → asignación → préstamo → pagado. Banco: préstamo → fin del tipo fijo
 // (deuda que queda) → pagado. Debajo, la deuda que al banco aún le queda cuando el Bausparvertrag ya está pagado.
-function inmuebleRoadmapComprarHTML(precio,rEst,rk,estCfg,puente,zMeses,ptsBanco){
-  if(!(precio>0)||rEst.noAmortiza||rk.noAmortiza) return '';
+function inmuebleRoadmapComprarHTML(precio,rEst,rk,estCfg,puente,zMeses,ptsBanco,x){
+  x=x||{}; var bsum=x.bsum||precio, rL=x.rL||null, rLc=rL?rL.cuotaPrestamo:0, renov=x.renov||null;
+  if(!(precio>0)||rEst.noAmortiza||rk.noAmortiza||(rL&&rL.noAmortiza)) return '';
   function pctTxt(v){ return String(Math.round((v||0)*100)/100).replace('.',',')+' %'; }
   function paso(num,tit,cuando,big,sub,cls){
     return '<li class="inm-rm-paso'+(cls?' '+cls:'')+'"><span class="inm-rm-num">'+num+'</span><div class="inm-rm-body"><span class="inm-rm-tit">'+tit+'</span>'+
       '<span class="inm-rm-cuando">'+cuando+'</span><b class="inm-rm-big">'+big+'</b>'+(sub?'<span class="inm-rm-sub">'+sub+'</span>':'')+'</div></li>';
   }
-  var finE=inmuebleMesesDesdeHoy(rEst,0), finB=inmuebleMesesDesdeHoy(rk,0), hoy=(puente>0&&rEst.mesesAhorro>0), n=0, e='', b='';
-  var intE=rEst.costeTotal-precio+(hoy?puente:0), intB=rk.costeTotal-precio;
+  var finE=Math.max(inmuebleMesesDesdeHoy(rEst,0),rL?inmuebleMesesDesdeHoy(rL,0):0), finB=inmuebleMesesDesdeHoy(rk,0), hoy=(puente>0&&rEst.mesesAhorro>0), n=0, e='', b='';
+  var intE=rEst.costeTotal-bsum+(hoy?puente:0)+(rL?rL.costeTotal-x.L:0), intB=renov?renov.interes:rk.costeTotal-precio;
+  var conBanco=rL?' <span>+ banco para el resto</span>':'';
   if(rEst.mesesAhorro>0){
     e+=paso(++n,hoy?'<span>Compras y ahorras</span>':'<span>Ahorras, aún sin comprar</span>','<span>Desde hoy,</span> <b>'+inmuebleAnios(rEst.mesesAhorro)+'</b>',
-      eur(rEst.cuotaAhorro+(hoy?puente/rEst.mesesAhorro:0))+'/mes',hoy?'<span>ahorro + intereses del puente</span>':'<span>de ahorro</span>');
+      eur(rEst.cuotaAhorro+(hoy?puente/rEst.mesesAhorro:0)+rLc)+'/mes',(hoy?'<span>ahorro + intereses del puente</span>':'<span>de ahorro</span>')+conBanco);
     e+=paso(++n,'<span>Asignación del contrato</span>','<b>'+inmuebleMesAnio(rEst.mesesAhorro)+'</b> <span>(estimada, no garantizada)</span>',
       eur(rEst.objetivoAhorro),'<span>ahorrados, más</span> <b>'+eur(rEst.capitalPrestamo)+'</b> <span>de préstamo</span>');
   }
-  if(rEst.capitalPrestamo>0) e+=paso(++n,'<span>Pagas el préstamo</span>','<span>Durante</span> <b>'+inmuebleAniosUnos(rEst.mesesPrestamo)+'</b>',eur(rEst.cuotaPrestamo)+'/mes','<span>tipo fijo del</span> <b>'+pctTxt(estCfg.interesPrestamo)+'</b> <span>todo el plazo</span>');
+  if(rEst.capitalPrestamo>0) e+=paso(++n,'<span>Pagas el préstamo</span>','<span>Durante</span> <b>'+inmuebleAniosUnos(rEst.mesesPrestamo)+'</b>',eur(rEst.cuotaPrestamo+rLc)+'/mes','<span>tipo fijo del</span> <b>'+pctTxt(estCfg.interesPrestamo)+'</b> <span>todo el plazo</span>'+conBanco);
   e+=paso(++n,'<span>Vivienda pagada</span>','<b>'+inmuebleMesAnio(finE)+'</b> <span>·</span> <b>'+inmuebleAnios(finE)+'</b>',eur(intE),'<span>de intereses y comisiones en total'+(hoy?', puente incluido':'')+'</span>','inm-rm-fin');
   n=0;
   b+=paso(++n,'<span>Compras con el banco</span>','<span>Desde hoy</span>',eur(rk.cuotaPrestamo)+'/mes',(zMeses>0&&zMeses<finB)?'<span>tipo fijo del</span> <b>'+pctTxt(rk.tasaNominal)+'</b> <span>durante</span> <b>'+inmuebleAnios(zMeses)+'</b>':'<span>tipo fijo del</span> <b>'+pctTxt(rk.tasaNominal)+'</b>');
-  if(zMeses>0&&zMeses<finB) b+=paso(++n,'<span>Fin del tipo fijo</span>','<b>'+inmuebleMesAnio(zMeses)+'</b>',eur(rk.restschuldZinsbindung||inmuebleValorEn(ptsBanco,zMeses)),'<span>aún por pagar: se renueva al tipo que haya entonces</span>','inm-rm-riesgo');
-  b+=paso(++n,'<span>Vivienda pagada</span>','<b>'+inmuebleMesAnio(finB)+'</b> <span>·</span> <b>'+inmuebleAnios(finB)+'</b>',eur(intB)+((zMeses>0&&zMeses<finB)?'*':''),'<span>de intereses y comisiones en total</span>','inm-rm-fin');
+  if(zMeses>0&&zMeses<finB) b+=paso(++n,'<span>Fin del tipo fijo</span>','<b>'+inmuebleMesAnio(zMeses)+'</b>',eur(rk.restschuldZinsbindung||inmuebleValorEn(ptsBanco,zMeses)),renov?('<span>aún por pagar; con un tipo supuesto del</span> <b>'+pctTxt(renov.tipo)+'</b> <span>la cuota pasa a</span> <b>'+eur(renov.cuota)+'/mes</b>'):'<span>aún por pagar: se renueva al tipo que haya entonces</span>','inm-rm-riesgo');
+  b+=paso(++n,'<span>Vivienda pagada</span>','<b>'+inmuebleMesAnio(finB)+'</b> <span>·</span> <b>'+inmuebleAnios(finB)+'</b>',eur(intB)+((zMeses>0&&zMeses<finB&&!renov)?'*':''),'<span>de intereses y comisiones en total</span>','inm-rm-fin');
   var dif=(finE<finB-1)?'<p class="inm-rm-clave"><span>Cuando terminas de pagar el Bausparvertrag</span> <b>('+inmuebleMesAnio(finE)+')</b><span>, con el banco aún deberías</span> <b>'+eur(inmuebleValorEn(ptsBanco,finE))+'</b>.</p>':'';
+  if(rL) e='<li class="inm-rm-nota"><span>Bausparvertrag de</span> <b>'+eur(bsum)+'</b> <span>+ banco para el resto:</span> <b>'+eur(x.L)+'</b> <span>con una cuota de</span> <b>'+eur(rLc)+'/mes</b></li>'+e;
   return '<div class="inm-curve-card inm-rm"><div class="inm-curve-head"><h5>Tu camino, paso a paso</h5></div>'+
     '<div class="inm-rm-fila"><span class="inm-rm-lab">Bausparvertrag</span><ol class="inm-rm-pasos">'+e+'</ol></div>'+
     '<div class="inm-rm-fila inm-rm-banco"><span class="inm-rm-lab">Banco directo</span><ol class="inm-rm-pasos">'+b+'</ol></div>'+dif+
-    '<p class="inm-curve-note"><span>Cada camino tiene su propia cuota: el Bausparvertrag pide más al mes al principio y termina antes.</span>'+((zMeses>0&&zMeses<finB)?' <span>* Supone que el banco mantiene el mismo tipo tras el tipo fijo.</span>':'')+' <span>Cálculo orientativo: no es una oferta.</span></p></div>';
+    '<p class="inm-curve-note"><span>Cada camino tiene su propia cuota: el Bausparvertrag pide más al mes al principio y termina antes.</span>'+((zMeses>0&&zMeses<finB&&!renov)?' <span>* Supone que el banco mantiene el mismo tipo tras el tipo fijo.</span>':'')+' <span>Cálculo orientativo: no es una oferta.</span></p></div>';
+}
+// Suma dos curvas de deuda (Bausparvertrag + préstamo bancario para el resto) en una sola, mes a mes.
+function inmuebleSumarCurvas(a,b){
+  if(!b) return a;
+  var finA=a[a.length-1].meses, finB=b[b.length-1].meses, ms={};
+  a.concat(b).forEach(function(p){ ms[p.meses]=1; });
+  function va(m){ return m>=finA?0:inmuebleValorEn(a,m); }
+  function vb(m){ return m>=finB?0:inmuebleValorEn(b,m); }
+  var out=Object.keys(ms).map(Number).sort(function(x,y){return x-y;}).map(function(m){ return {meses:m,pendiente:va(m)+vb(m)}; });
+  out.exacto=function(m){ return va(m)+vb(m); }; out.ahorro=a.ahorro;
+  return out;
+}
+// Renovación del banco al terminar el tipo fijo con un tipo supuesto (campo tipoRenovacion; vacío o cero = el mismo tipo):
+// se recalcula la cuota sobre la deuda pendiente para el resto del plazo. Intereses = los del tipo fijo + los de después.
+function inmuebleBancoRenovacion(rk,cfg,F,zM){
+  var t=cfg&&cfg.tipoRenovacion;
+  if(!(t>0)||!(zM>0)||!(rk.mesesPrestamo>zM)||rk.noAmortiza||rk.sondertilgung>0) return null;
+  var R=balanceTrasMeses(F,rk.tasaNominal,rk.cuotaPrestamo,zM), n2=rk.mesesPrestamo-zM;
+  if(!(R>0.5)) return null;
+  var c2=annuityQuota(R,t,n2), int1=rk.cuotaPrestamo*zM-(F-R), int2=c2*n2-R;
+  return {tipo:t,restschuld:R,cuota:c2,meses:n2,interes:int1+int2+(rk.comision||0)};
 }
 function inmuebleResultsHTML(precio,inm,asParts){
   _inmInicio=inm.inicio||'';
@@ -536,21 +591,30 @@ function inmuebleResultsHTML(precio,inm,asParts){
   var estCfg=(estKey==='b')?inm.b:inm.a;
   var estTitle='Bausparvertrag · '+inmuebleEstNombre(estCfg);
   _inmLiveEstRefi=false;
-  var rEst=_inmLiveEst=calcInmuebleOption(precio,estCfg), rk0=calcInmuebleOption(precio,inm.banco);
+  // Bausparvertrag parcial: el contrato cubre B (≤ F) y un préstamo bancario cubre el resto L = F − B, con las condiciones del banco.
+  var bsum=(estCfg.bausparsumme>0)?Math.min(precio,estCfg.bausparsumme):precio, Lresto=Math.max(0,precio-bsum);
+  var rEst=_inmLiveEst=calcInmuebleOption(bsum,estCfg), rk0=calcInmuebleOption(precio,inm.banco);
+  var zMb=Math.round((inm.banco.zinsbindung||0)*12);
+  var rL=(Lresto>0.5)?calcInmuebleOption(Lresto,inm.banco):null, rLc=rL?rL.cuotaPrestamo:0, renovL=rL?inmuebleBancoRenovacion(rL,inm.banco,Lresto,zMb):null;
+  var rLint=rL?(renovL?renovL.interes:(rL.costeTotal-Lresto)):0;
   // Mismo pago mensual: el banco paga desde el mes 0 lo mismo que la cuota de ahorro. Solo tiene
   // sentido si esa cuota supera la del banco; si no, se deja como estaba.
-  var payEq=(inm.pagoIgual>0)?inm.pagoIgual:rEst.cuotaAhorro;
+  var payEq=(inm.pagoIgual>0)?inm.pagoIgual:(rEst.cuotaAhorro+rLc);
   var igual=(inm.comparar==='igual' && precio>0 && payEq>rk0.cuotaPrestamo+0.5);
   var cfgBanco=inm.banco;
   if(igual) cfgBanco=Object.assign({},inm.banco,{pagoPre:0,tilgungInicial:Math.max(0,payEq*1200/precio-(inm.banco.interesPrestamo||0)-inmuebleRecargoST(inm.banco))});
   var rk=_inmLiveBanco=igual?calcInmuebleOption(precio,cfgBanco):rk0;
   var bancoTitle=igual?'Banco directo · mismo pago mensual':'Banco directo';
-  var maxMeses=Math.max(inmuebleMesesDesdeHoy(rEst,0),inmuebleMesesDesdeHoy(rk,0),1);
-  var dif=rk.costeTotal-rEst.costeTotal;
+  var maxMeses=Math.max(inmuebleMesesDesdeHoy(rEst,0),rL?inmuebleMesesDesdeHoy(rL,0):0,inmuebleMesesDesdeHoy(rk,0),1);
+  var renov=igual?null:inmuebleBancoRenovacion(rk,inm.banco,precio,zMb);
+  var costeEstComb=rEst.costeTotal+(rL?rL.costeTotal:0);
+  var dif=rk.costeTotal-costeEstComb;
   // Comprar HOY con Bausparvertrag exige prefinanciar durante el ahorro (hipótesis: tipo del banco, solo intereses): el banco desembolsa
   // el día 0 y el Bausparvertrag no. Sin ese coste, la comparación favorece al Bausparvertrag de forma artificial.
-  var puente=(rEst.mesesAhorro>0&&rEst.cuotaAhorro>0&&inmuebleRequierePuente(inm))?inmuebleCostePuente(precio,inm.banco.interesPrestamo,rEst.mesesAhorro):0;
-  var difPuente=rk.costeTotal-(rEst.costeTotal+puente);
+  var puente=(rEst.mesesAhorro>0&&rEst.cuotaAhorro>0&&inmuebleRequierePuente(inm))?inmuebleCostePuente(bsum,(estCfg.interesPuente>0)?estCfg.interesPuente:inm.banco.interesPrestamo,rEst.mesesAhorro):0;
+  var difPuente=rk.costeTotal-(costeEstComb+puente);
+  var rEstV=Object.assign({},rEst,{mesesTotal:Math.max(rEst.mesesTotal,rL?rL.mesesTotal:0)});
+  if(rL) rEstV.mesesPrestamo=rEstV.mesesTotal-(rEst.mesesAhorro||0);
   var marcaMeses=Math.round((inm.banco.marcaAnios==null?10:Math.max(0,inm.banco.marcaAnios))*12);
   var nfR=inmuebleNecesidadFondos(inm), costeCompra=nfR.costeTotalCompra||precio, capitalAportado=Math.max(0,costeCompra-precio);
   function row(title,r,isBanco){
@@ -574,14 +638,17 @@ function inmuebleResultsHTML(precio,inm,asParts){
       // Lenguaje llano: lo que cuesta la vivienda (precio + gastos) más lo que cuesta el dinero prestado (intereses y comisiones). Antes
       // «Coste total» era préstamo + intereses, menos que el precio de la vivienda, y confundía.
       (function(){
-        var conP=(!isBanco&&puente>0), intereses=r.costeTotal-precio+(conP?puente:0);
-        return (conP?'<div class="inm-res-line"><span>Pago total al mes mientras ahorras (ahorro + intereses del puente)*</span><b>'+eur(r.cuotaAhorro+puente/Math.max(1,r.mesesAhorro))+'/mes</b></div>':'')+
+        var conP=(!isBanco&&puente>0), rv=(isBanco&&renov)?renov:null;
+        var intereses=isBanco?(rv?rv.interes:r.costeTotal-precio):(r.costeTotal-bsum+(conP?puente:0)+rLint);
+        return (!isBanco&&rL?'<div class="inm-res-line"><span>Préstamo del banco para el resto</span><b>'+eur(Lresto)+'</b></div><div class="inm-res-line"><span>Cuota del banco para el resto</span><b>'+eur(rLc)+'/mes</b></div>':'')+
+          (rv?'<div class="inm-res-line"><span>Cuota tras renovar al tipo supuesto</span><b>'+eur(rv.cuota)+'/mes</b></div>':'')+
+          (conP?'<div class="inm-res-line"><span>Pago total al mes mientras ahorras (ahorro + intereses del puente'+(rL?' + banco':'')+')*</span><b>'+eur(r.cuotaAhorro+puente/Math.max(1,r.mesesAhorro)+rLc)+'/mes</b></div>':'')+
           '<div class="inm-res-line"><span>Precio + gastos de compra</span><b>'+eur(costeCompra)+'</b></div>'+
           '<div class="inm-res-line"><span>'+(conP?'Intereses y comisiones (puente incluido)*':'Intereses y comisiones')+'</span><b>'+eur(intereses)+'</b></div>'+
           (conP?'<div class="inm-res-line inm-detalle"><span>De ellos, intereses del puente hasta la asignación*</span><b>'+eur(puente)+'</b></div>':'')+
           '<div class="inm-res-line total"><span>Total que pagas por la vivienda</span><b>'+eur(costeCompra+intereses)+'</b></div>'+
           (capitalAportado>0?'<div class="inm-res-line inm-detalle"><span>De ello, lo pones tú al principio (capital propio)</span><b>'+eur(capitalAportado)+'</b></div>':'')+
-          (conP?'<div class="inm-res-line inm-detalle"><span>Total si esperas a la asignación para comprar (sin puente)</span><b>'+eur(costeCompra+r.costeTotal-precio)+'</b></div>':'');
+          (conP?'<div class="inm-res-line inm-detalle"><span>Total si esperas a la asignación para comprar (sin puente)</span><b>'+eur(costeCompra+intereses-puente)+'</b></div>':'');
       })()+
       // La comparación en euros solo se publica cuando ambos lados pagan lo mismo al mes (ORDEN 8.5 de la especificación): con pagos
       // distintos el banco queda en su cuota mínima a 30 años y la diferencia es un artefacto, no un ahorro.
@@ -591,31 +658,32 @@ function inmuebleResultsHTML(precio,inm,asParts){
         :'<div class="inm-res-line inm-eff-hint"><span>Comparación en euros no disponible: los pagos mensuales de ambas opciones son distintos. Pulsa «Mismo pago mensual» para compararlas en igualdad.</span></div>'):'')+
       (!isBanco&&rEst.mesesAhorro>0&&!inmuebleRequierePuente(inm)?'<div class="inm-res-line inm-eff-hint inm-detalle"><span>Compra futura: se ahorra antes de comprar, así que no hay financiación puente. Hasta entonces no eres propietario.</span></div>':'')+
       (!isBanco&&puente>0?'<div class="inm-res-line inm-eff-hint"><span>* Hipótesis: para comprar hoy, un banco adelanta la financiación al tipo del banco, solo intereses, hasta la asignación del contrato. La fecha de asignación es una estimación, no está garantizada.</span></div>':'')+
-      inmuebleTimeRow(r,maxMeses,isBanco)+
+      inmuebleTimeRow(isBanco?r:rEstV,maxMeses,isBanco)+
       inmuebleCertRow(r,inm.banco.zinsbindung,isBanco)+
       '</div>';
   }
   var brutaE=(rEst.mesesAhorro>0&&inmuebleRequierePuente(inm));   // comprando hoy la deuda durante el ahorro es la del puente, completa
-  var ptsEst=inmuebleCurvaSaldo(precio,rEst,estCfg,brutaE), ptsBanco=inmuebleCurvaSaldo(precio,rk,cfgBanco);
+  var ptsEst=inmuebleSumarCurvas(inmuebleCurvaSaldo(bsum,rEst,estCfg,brutaE),rL?inmuebleCurvaSaldo(Lresto,rL,inm.banco):null), ptsBanco=inmuebleCurvaSaldo(precio,rk,cfgBanco);
   var modoC=inmuebleCurvaModo(inm), escen=[];
   var baseC=(modoC==='plazo')?rEst.mesesPrestamo/12:(modoC==='bauspar')?rEst.cuotaAhorro:rk.cuotaPrestamo;
   var listaC=inmuebleCurvaCuotas(inm,baseC);
   if(modoC==='banco') listaC=inmuebleCuotasBancoRealistas(listaC,rk.capitalPrestamo,(cfgBanco.interesPrestamo||0)+inmuebleRecargoST(cfgBanco),baseC);
   listaC.forEach(function(c){
-    var cfgE=(modoC==='plazo')?Object.assign({},estCfg,{tilgungsbeitragPerMille:tilgungsbeitragParaPlazo(precio,rEst.capitalPrestamo,estCfg.interesPrestamo,c)}):(modoC==='bauspar')?Object.assign({},estCfg,{pagoAhorro:c}):Object.assign({},cfgBanco,{pagoPre:c});
-    var rrE=calcInmuebleOption(precio,cfgE);
+    var cfgE=(modoC==='plazo')?Object.assign({},estCfg,{tilgungsbeitragPerMille:tilgungsbeitragParaPlazo(bsum,rEst.capitalPrestamo,estCfg.interesPrestamo,c)}):(modoC==='bauspar')?Object.assign({},estCfg,{pagoAhorro:c}):Object.assign({},cfgBanco,{pagoPre:c});
+    var bE=(modoC==='banco')?precio:bsum, rrE=calcInmuebleOption(bE,cfgE);
     if(rrE.noAmortiza||(modoC!=='banco'&&rrE.mesesAhorro===rEst.mesesAhorro&&rrE.mesesPrestamo===rEst.mesesPrestamo&&rrE.cuotaAhorro===rEst.cuotaAhorro&&rrE.cuotaPrestamo===rEst.cuotaPrestamo)) return;
-    escen.push({r:c,etq:(modoC==='plazo'?(c<baseC):(c>baseC))?'Agresiva':'Pasiva',lab:eur((modoC==='plazo')?rrE.cuotaPrestamo:c),cuota:(modoC==='plazo')?rrE.cuotaPrestamo:0,color:INM_CURVA_COLORES[escen.length],activo:((inm.curvaOff||[]).indexOf(c)<0),meses:inmuebleMesesDesdeHoy(rrE,0),pts:inmuebleCurvaSaldo(precio,rrE,cfgE,brutaE)});
+    escen.push({r:c,etq:(modoC==='plazo'?(c<baseC):(c>baseC))?'Agresiva':'Pasiva',lab:eur((modoC==='plazo')?rrE.cuotaPrestamo:c),cuota:(modoC==='plazo')?rrE.cuotaPrestamo:0,color:INM_CURVA_COLORES[escen.length],activo:((inm.curvaOff||[]).indexOf(c)<0),meses:inmuebleMesesDesdeHoy(rrE,0),pts:(modoC==='banco')?inmuebleCurvaSaldo(precio,rrE,cfgE,brutaE):inmuebleSumarCurvas(inmuebleCurvaSaldo(bsum,rrE,cfgE,brutaE),rL?inmuebleCurvaSaldo(Lresto,rL,inm.banco):null)});
   });
   var curvaHead='<div class="inm-curve-card"><div class="inm-curve-head"><h5>Cuánto queda por pagar, año a año</h5>'+
     '<div class="inm-curve-legend"><span><i style="background:var(--navy)"></i>'+esc(estTitle)+'</span><span><i style="background:var(--gold-deep)"></i>'+esc(bancoTitle)+' · '+eur(rk.cuotaPrestamo)+'/mes</span></div></div>'+inmuebleCurvaChips(escen,modoC)+
     inmuebleCurvaSVG(precio,ptsEst,ptsBanco,marcaMeses,Math.round((inm.banco.zinsbindung||0)*12),{escenarios:escen,zuteilung:rEst.mesesAhorro,ahorro:{hasta:rEst.mesesAhorro,total:rEst.objetivoAhorro,base:'precio',bruta:brutaE}})+
-    '<p class="inm-curve-note">'+((inm.banco.zinsbindung||0)>0?'<span>La línea vertical «Fin del tipo fijo» marca hasta cuándo está fijado el tipo del banco; después hay que renovar la financiación al tipo que haya entonces.</span> ':'')+(inmuebleMesesDesdeHoy(rEst,0)<inmuebleMesesDesdeHoy(rk,0)-1?'<span>La zona dorada clara es lo que al banco aún le queda por pagar cuando el Bausparvertrag ya está pagado.</span> ':'')+(brutaE?'<span>La línea del Bausparvertrag es deuda bruta: mientras ahorras sigue la financiación puente completa, y el ahorro (zona gris) es un activo aparte que no reduce esa deuda hasta la asignación del contrato.</span>'
+    (rL?'<p class="inm-curve-note"><span>La línea del Bausparvertrag suma el préstamo del banco para el resto.</span></p>':'')+
+    '<p class="inm-curve-note">'+((inm.banco.zinsbindung||0)>0?'<span>La línea vertical «Fin del tipo fijo» marca hasta cuándo está fijado el tipo del banco; después hay que renovar la financiación al tipo que haya entonces.</span> ':'')+(inmuebleMesesDesdeHoy(rEstV,0)<inmuebleMesesDesdeHoy(rk,0)-1?'<span>La zona dorada clara es lo que al banco aún le queda por pagar cuando el Bausparvertrag ya está pagado.</span> ':'')+(brutaE?'<span>La línea del Bausparvertrag es deuda bruta: mientras ahorras sigue la financiación puente completa, y el ahorro (zona gris) es un activo aparte que no reduce esa deuda hasta la asignación del contrato.</span>'
     :(rEst.mesesAhorro>0?'Mientras ahorras aún no hay deuda: la línea del Bausparvertrag muestra lo que falta por reunir (el precio menos el ahorro acumulado) y la zona sombreada es ese ahorro.':'La franja sombreada es lo que ya llevas de ventaja una vez terminas de pagar.'))+'</p>';
-  var hitosH=inmuebleHitosHTML(inmuebleHitosComprar(precio,rEst,rk,ptsEst,ptsBanco,Math.round((inm.banco.zinsbindung||0)*12)),'Bausparvertrag',Math.round((inm.banco.zinsbindung||0)*12));
+  var hitosH=inmuebleHitosHTML(inmuebleHitosComprar(bsum,rEstV,rk,ptsEst,ptsBanco,Math.round((inm.banco.zinsbindung||0)*12)),'Bausparvertrag',Math.round((inm.banco.zinsbindung||0)*12));
   var curva=curvaHead+hitosH+'</div>', curvaSolo=curvaHead+'</div>', hitosCard=hitosH?('<div class="inm-curve-card">'+hitosH+'</div>'):'';
-  var roadmap=inmuebleRoadmapComprarHTML(precio,rEst,rk,estCfg,puente,Math.round((inm.banco.zinsbindung||0)*12),ptsBanco);
-  var parts={roadmap:roadmap,frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0,puente),capacidad:inmuebleCapacidadHTML(inm,precio,[['Banco directo',rk.cuotaPrestamo],(puente>0&&rEst.mesesAhorro>0)?['Bausparvertrag · ahorro + puente',rEst.cuotaAhorro+puente/rEst.mesesAhorro]:['Bausparvertrag · ahorro',rEst.cuotaAhorro],['Bausparvertrag · préstamo',rEst.cuotaPrestamo]],rk.cuotaPrestamo),curva:curva,curvaSolo:curvaSolo,hitos:hitosCard,
+  var roadmap=inmuebleRoadmapComprarHTML(precio,rEst,rk,estCfg,puente,zMb,ptsBanco,{bsum:bsum,rL:rL,L:Lresto,renov:renov,ptsEst:ptsEst});
+  var parts={roadmap:roadmap,frase:inmuebleFraseComprar(rEst,rk,igual,inm.pagoIgual>0,puente,{cuota:rLc,interes:rLint}),capacidad:inmuebleCapacidadHTML(inm,precio,[['Banco directo',rk.cuotaPrestamo],(puente>0&&rEst.mesesAhorro>0)?['Bausparvertrag · ahorro + puente'+(rL?' + banco':''),rEst.cuotaAhorro+puente/rEst.mesesAhorro+rLc]:['Bausparvertrag · ahorro'+(rL?' + banco':''),rEst.cuotaAhorro+rLc],['Bausparvertrag · préstamo'+(rL?' + banco':''),rEst.cuotaPrestamo+rLc]],rk.cuotaPrestamo),curva:curva,curvaSolo:curvaSolo,hitos:hitosCard,
     cards:'<div class="inm-results">'+row(estTitle,rEst,false)+row(bancoTitle,rk,true)+'</div>',rEst:rEst,rk:rk,estCfg:estCfg};
   return asParts?parts:(parts.frase+parts.roadmap+parts.capacidad+parts.curva+parts.cards);
 }
@@ -975,6 +1043,7 @@ function buildInmuebleSlides(rec){
     cuotasR.push(['Refinanciar con banco',eur(P.rBanco.cuotaPrestamo)+'/mes',{f:'pagoPre',v:P.rBanco.cuotaPrestamo,sub:inmuebleSubDur(P.rBanco.mesesPrestamo,P.rBanco.noAmortiza)}]);
     sl.push({t:'Tu pago cada mes',h:inmuebleBigs(cuotasR)});
     if(P.capacidad) sl.push({t:'Capacidad de pago',h:P.capacidad});
+    if(P.roadmap) sl.push({t:'Tu camino, paso a paso',h:P.roadmap});
     sl.push({t:'Cuánto debes con el tiempo',h:P.curva});
     sl.push({t:'Comparación',h:P.frase+P.cards});
     sl.push({t:'Preguntas habituales',h:inmuebleFaqHTML()});
@@ -982,7 +1051,7 @@ function buildInmuebleSlides(rec){
   } else {
     var Q=inmuebleResultsHTML(inmuebleFin(inm),inm,true), rE=Q.rEst, rk=Q.rk;
     sl.push({t:'La propiedad',h:inmuebleBigs([['Precio del inmueble',eur(inm.precio)],].concat(inmuebleFin(inm)!==inm.precio?[['Importe a financiar',eur(inmuebleFin(inm))]]:[]).concat([['Mes de inicio',inmuebleMesAnio(0)],['Años de ahorro',inmuebleAnios(rE.mesesAhorro)],['Banco directo',inmuebleFmtPct(inm.banco.interesPrestamo)]]))});
-    var cuotas=[]; if(rE.cuotaAhorro>0){ cuotas.push(['Cuota ahorro',eur(rE.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:rE.cuotaAhorro,sub:inmuebleSubDur(rE.mesesAhorro)}]); var eCfg=(inm.estrategia==='b')?inm.b:inm.a; cuotas.push(['Interés del ahorro',inmuebleFmtPct(eCfg.interesAhorro),{f:'interesAhorro',v:eCfg.interesAhorro||0,u:'%'}]); cuotas.push(['Pago extra anual al ahorro',eur(eCfg.sonderAhorro||0)+'/año',{f:'sonderAhorro',v:eCfg.sonderAhorro||0,u:'€/año'}]); } cuotas.push(['Cuota préstamo',eur(rE.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:rE.cuotaPrestamo,sub:inmuebleSubDur(rE.mesesPrestamo,rE.noAmortiza)}]); cuotas.push(['Banco directo',eur(rk.cuotaPrestamo)+'/mes',{f:(inm.comparar==='igual'?'pagoIgual':'pagoPre'),v:rk.cuotaPrestamo,sub:inmuebleSubDur(rk.mesesPrestamo,rk.noAmortiza)}]);
+    var cuotas=[]; if(rE.cuotaAhorro>0){ cuotas.push(['Cuota ahorro',eur(rE.cuotaAhorro)+'/mes',{f:'pagoAhorro',v:rE.cuotaAhorro,sub:inmuebleSubDur(rE.mesesAhorro)}]); var eCfg=(inm.estrategia==='b')?inm.b:inm.a; if(eCfg.sonderAhorro>0) cuotas.push(['Pago extra anual al ahorro',eur(eCfg.sonderAhorro)+'/año',{f:'sonderAhorro',v:eCfg.sonderAhorro,u:'€/año'}]); } cuotas.push(['Cuota préstamo',eur(rE.cuotaPrestamo)+'/mes',{f:'pagoPrestamo',v:rE.cuotaPrestamo,sub:inmuebleSubDur(rE.mesesPrestamo,rE.noAmortiza)}]); cuotas.push(['Banco directo',eur(rk.cuotaPrestamo)+'/mes',{f:(inm.comparar==='igual'?'pagoIgual':'pagoPre'),v:rk.cuotaPrestamo,sub:inmuebleSubDur(rk.mesesPrestamo,rk.noAmortiza)}]);
     sl.push({t:'Tu pago cada mes',h:inmuebleBigs(cuotas)});
     if(Q.capacidad) sl.push({t:'Capacidad de pago',h:Q.capacidad});
     if(Q.roadmap) sl.push({t:'Tu camino, paso a paso',h:Q.roadmap});

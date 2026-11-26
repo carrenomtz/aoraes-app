@@ -740,6 +740,8 @@
   .inm-rm-sub b{color:var(--ink)}
   .inm-rm-riesgo{background:#fbf3e4}
   .inm-rm-fin{background:var(--gold-tint)}
+  .inm-rm-nota{grid-column:1/-1; font-size:12px; color:var(--muted); padding:2px 0}
+  .inm-rm-nota b{color:var(--ink)}
   .inm-rm-clave{margin:6px 0 4px; padding:10px 12px; border-left:3px solid var(--navy); background:var(--bg); font-size:13.5px; color:var(--ink)}
   .inm-rm-clave b{color:var(--navy)}
   @media (max-width:640px){ .inm-rm-fila{grid-template-columns:1fr; gap:6px} }

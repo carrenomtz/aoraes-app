@@ -70,3 +70,38 @@ test('La presentación incluye el roadmap y la comparación con el coste con pue
   assert.ok(t.indexOf('Tu camino, paso a paso')>=0 && t.indexOf('Tu camino, paso a paso')<t.indexOf('Cuánto debes con el tiempo'), t.join(' | '));
   assert.match(sl.find(s=>s.t==='Comparación').h,/puente incluido/);
 });
+function renderCfg(c,js){
+  return vm.runInContext(`(function(){var inm=defaultInmueble(); ${js}; var rec={inmueble:inm}; normalizeInmueble(rec); inm=rec.inmueble; return inmuebleResultsHTML(inmuebleFin(inm),inm,true);})()`,c);
+}
+test('Bausparvertrag parcial: B cubre una parte, el banco el resto, y los totales suman las dos deudas',()=>{
+  const c=ctx();
+  const p=renderCfg(c,"inm.precio=300000; inm.gastosPct=10; inm.capitalPropio=60000; inm.a.bausparsumme=110000; inm.banco.interesPrestamo=4");
+  assert.match(p.cards,/Préstamo del banco para el resto<\/span><b>160\.000/);
+  assert.match(p.roadmap,/banco para el resto/);
+  // B = 110.000: ahorro 40 % = 44.000
+  assert.strictEqual(Math.round(p.rEst.objetivoAhorro),44000);
+  const tot=+p.cards.match(/Total que pagas por la vivienda<\/span><b>([\d.]+)/)[1].replace(/\./g,'');
+  assert.ok(tot>330000,`${tot}`);
+});
+test('Tipo propio del puente: un puente más caro sube los intereses',()=>{
+  const c=ctx();
+  const n=h=>+h.cards.match(/Intereses y comisiones \(puente incluido\)\*<\/span><b>([\d.]+)/)[1].replace(/\./g,'');
+  const a=renderCfg(c,"inm.precio=200000; inm.banco.interesPrestamo=4");
+  const b=renderCfg(c,"inm.precio=200000; inm.banco.interesPrestamo=4; inm.a.interesPuente=5");
+  assert.ok(n(b)>n(a),`${n(a)} vs ${n(b)}`);
+});
+test('Tipo supuesto al renovar: cambia la cuota tras el tipo fijo y los intereses del banco',()=>{
+  const c=ctx();
+  const a=renderCfg(c,"inm.precio=200000; inm.banco.interesPrestamo=4");
+  const b=renderCfg(c,"inm.precio=200000; inm.banco.interesPrestamo=4; inm.banco.tipoRenovacion=6");
+  assert.match(b.cards,/Cuota tras renovar al tipo supuesto/);
+  assert.match(b.roadmap,/la cuota pasa a/);
+  const n=h=>[...h.cards.matchAll(/Total que pagas por la vivienda<\/span><b>([\d.]+)/g)].pop()[1].replace(/\./g,'');
+  assert.ok(+n(b)>+n(a));
+});
+test('Roadmap en Refinanciar',()=>{
+  const c=ctx();
+  const p=vm.runInContext(`(function(){var inm=defaultInmueble(); inm.modo='refi'; var rec={inmueble:inm}; normalizeInmueble(rec); inm=rec.inmueble; return inmuebleRefiResultsHTML(inm.refi,true,inm);})()`,c);
+  assert.match(p.roadmap,/Refinanciación con Badenia/);
+  assert.match(p.roadmap,/crédito \+ ahorro/);
+});

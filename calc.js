@@ -653,6 +653,7 @@ var INM_LIMITES={
   ingresoVariable:[0,1e6], variableRecPct:[0,100], reservaMensual:[0,1e5], presupuestoDeseado:[0,1e5], mantenimientoPct:[0,5], hausgeld:[0,1e5], segurosProp:[0,1e5], energiaProp:[0,1e5], otrosProp:[0,1e5],
   precio:[0,1e8], ingresoNeto:[0,1e6], capitalPropio:[0,1e8], gastosPct:[0,30], pagoIgual:[0,1e6], reserva:[0,1e8], comprometido:[0,1e8], ayudas:[0,1e8],
   interesPrestamo:[0,20], interesAhorro:[0,20], interesOriginal:[0,20], recargoST:[0,5], comision:[0,10],
+  bausparsumme:[0,1e8], interesPuente:[0,20], tipoRenovacion:[0,20],
   zinsbindung:[0,40], plazoOriginal:[0,60], pct:[0,100], anios:[0,40], marcaAnios:[0,40], topeST:[0,100],
   sondertilgung:[0,1e7], sonderAhorro:[0,1e6], pagoAhorro:[0,1e6], pagoPrestamo:[0,1e6], pagoPre:[0,1e6],
   cuotaActual:[0,1e6], saldoHoy:[0,1e8], importeOriginal:[0,1e8]
