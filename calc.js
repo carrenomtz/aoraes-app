@@ -141,15 +141,20 @@ function calcInmuebleOption(precio,cfg){
   // del Guthaben nada más pagarla, antes de que pueda generar interés.
   var comisionAhorro=esBausparvertrag?precio*(cfg.comision||0)/100:0;
   var sonderAhorro=(esBausparvertrag&&pct>0)?Math.max(0,cfg.sonderAhorro||0):0, sonderPedida=sonderAhorro;
-  var sc1=(pct>0&&mesesAhorro>0)?ahorroCuotaConSonder(objetivoAhorro+comisionAhorro,sonderAhorro,cfg.interesAhorro,mesesAhorro):{cuota:0,sonder:0,aportado:0};
+  // Aportación inicial (Einmalzahlung al firmar): crece con el interés del ahorro y reduce lo que falta reunir con las cuotas.
+  var rA0=(cfg.interesAhorro||0)/100/12, G0=(esBausparvertrag&&pct>0)?Math.min(Math.max(0,cfg.aportacionInicial||0),objetivoAhorro+comisionAhorro):0;
+  function fvG0(n){ return G0*Math.pow(1+rA0,n); }
+  var sc1=(pct>0&&mesesAhorro>0)?ahorroCuotaConSonder(Math.max(0,objetivoAhorro+comisionAhorro-fvG0(mesesAhorro)),sonderAhorro,cfg.interesAhorro,mesesAhorro):{cuota:0,sonder:0,aportado:0};
   var cuotaAhorro=sc1.cuota; sonderAhorro=sc1.sonder;
-  var interesGanadoAhorro=(pct>0&&mesesAhorro>0)?Math.max(0,objetivoAhorro+comisionAhorro-cuotaAhorro*mesesAhorro-sc1.aportado):0;
+  var interesGanadoAhorro=(pct>0&&mesesAhorro>0)?Math.max(0,objetivoAhorro+comisionAhorro-cuotaAhorro*mesesAhorro-sc1.aportado-G0):0;
+  // Mes en que el saldo llega al ahorro mínimo (puede ser antes que la asignación, que además exige el tiempo mínimo).
+  var mesesObjetivo=(cuotaAhorro>0||sonderAhorro>0||!(G0>0))?mesesAhorro:0, pagoPedido=0, mesesConPagoPedido=0;
   // Refinanciar: el tiempo de ahorro es fijo (hasta la fecha de refinanciación), así que con un pago
   // fijado lo que cambia es CUÁNTO se ahorra (neto de la comisión, tope = el saldo) y, por tanto, el
   // préstamo que queda.
   if(esBausparvertrag && cfg.pagoAhorro>0 && cfg.ahorroPorTiempo && pct>0 && mesesAhorro>0){
     sonderAhorro=sonderPedida;
-    var fvR=ahorroSaldoEn(cfg.pagoAhorro,sonderAhorro,cfg.interesAhorro,mesesAhorro), aportR=cfg.pagoAhorro*mesesAhorro+sonderAhorro*Math.floor(mesesAhorro/12);
+    var fvR=ahorroSaldoEn(cfg.pagoAhorro,sonderAhorro,cfg.interesAhorro,mesesAhorro)+fvG0(mesesAhorro), aportR=cfg.pagoAhorro*mesesAhorro+sonderAhorro*Math.floor(mesesAhorro/12)+G0;
     objetivoAhorro=Math.min(precio,Math.max(0,fvR-comisionAhorro)); capitalPrestamo=precio-objetivoAhorro;
     cuotaAhorro=cfg.pagoAhorro; interesGanadoAhorro=Math.max(0,fvR-aportR);
   }
@@ -157,17 +162,21 @@ function calcInmuebleOption(precio,cfg){
   // se simula cuánto tarda en juntarse objetivo+comisión con ese pago (último pago recortado) —
   // el plazo de ahorro pasa a ser el resultado.
   if(esBausparvertrag && cfg.pagoAhorro>0 && pct>0 && objetivoAhorro>0 && !cfg.ahorroPorTiempo){
-    var Ta=objetivoAhorro+comisionAhorro, rA=(cfg.interesAhorro||0)/100/12, balA=0, nA=0, contribA=0;
+    var Ta=objetivoAhorro+comisionAhorro, rA=(cfg.interesAhorro||0)/100/12, balA=G0, nA=0, contribA=G0;
     sonderAhorro=sonderPedida;
     while(balA<Ta-0.005 && nA<1200){
       nA++; balA=balA*(1+rA); var pA=Math.min(cfg.pagoAhorro,Ta-balA); balA+=pA; contribA+=pA;
       if(sonderAhorro>0 && nA%12===0 && balA<Ta-0.005){ var sA=Math.min(sonderAhorro,Ta-balA); balA+=sA; contribA+=sA; }
     }
-    mesesAhorro=nA; cuotaAhorro=cfg.pagoAhorro; interesGanadoAhorro=Math.max(0,Ta-contribA);
+    mesesAhorro=nA; mesesObjetivo=nA; cuotaAhorro=cfg.pagoAhorro; interesGanadoAhorro=Math.max(0,Ta-contribA);
     if(!cfg.sinMinimoAhorro && nA<BAUSPAR_MIN_MESES){
       // Con ese pago se llegaría al objetivo antes del mínimo: el ahorro dura el mínimo y la cuota necesaria es la de ese plazo.
-      var scM=ahorroCuotaConSonder(Ta,sonderPedida,cfg.interesAhorro,BAUSPAR_MIN_MESES);
-      mesesAhorro=BAUSPAR_MIN_MESES; cuotaAhorro=scM.cuota; sonderAhorro=scM.sonder; interesGanadoAhorro=Math.max(0,Ta-cuotaAhorro*BAUSPAR_MIN_MESES-scM.aportado); minAhorroAplicado=true;
+      // Con ese pago se llega antes: se mantiene el pago del asesor (mesesObjetivo = cuándo se reúne) y la asignación espera al mínimo.
+      // Si solo la aportación inicial ya cubre el objetivo, no hace falta cuota mensual.
+      var scM=ahorroCuotaConSonder(Math.max(0,Ta-fvG0(BAUSPAR_MIN_MESES)),sonderPedida,cfg.interesAhorro,BAUSPAR_MIN_MESES);
+      pagoPedido=cfg.pagoAhorro; mesesConPagoPedido=nA;
+      mesesAhorro=BAUSPAR_MIN_MESES; cuotaAhorro=scM.cuota; sonderAhorro=scM.sonder; interesGanadoAhorro=Math.max(0,Ta-cuotaAhorro*BAUSPAR_MIN_MESES-scM.aportado-G0); minAhorroAplicado=true;
+      mesesObjetivo=(cuotaAhorro>0||sonderAhorro>0)?BAUSPAR_MIN_MESES:0;
     }
   }
   // Bausparvertrag (a/b/refiA/refiB): el Tilgungsbeitrag es un ‰ fijo de la Bausparsumme
@@ -210,7 +219,7 @@ function calcInmuebleOption(precio,cfg){
   var restschuldZinsbindung=(!esBausparvertrag&&cfg.zinsbindung!=null)
     ?balanceTrasMeses(capitalPrestamo,cfg.interesPrestamo,cuotaPrestamo,Math.min(mesesPrestamo,Math.round((cfg.zinsbindung||0)*12)))
     :null;
-  var res={sonderAhorro:sonderAhorro,sonderAhorroTope:(sonderAhorro<sonderPedida-0.5),minAhorroAplicado:minAhorroAplicado,noAmortiza:(capitalPrestamo>0&&mesesPrestamo>=1200),objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal,restschuldZinsbindung:restschuldZinsbindung};
+  var res={pagoPedido:pagoPedido,mesesConPagoPedido:mesesConPagoPedido,aportacionInicial:G0,mesesObjetivo:Math.min(mesesObjetivo,mesesAhorro),sonderAhorro:sonderAhorro,sonderAhorroTope:(sonderAhorro<sonderPedida-0.5),minAhorroAplicado:minAhorroAplicado,noAmortiza:(capitalPrestamo>0&&mesesPrestamo>=1200),objetivoAhorro:objetivoAhorro,capitalPrestamo:capitalPrestamo,cuotaAhorro:cuotaAhorro,cuotaPrestamo:cuotaPrestamo,interesTotalPrestamo:interesTotalPrestamo,interesGanadoAhorro:interesGanadoAhorro,comision:comision,costeTotal:costeTotal,tasaEfectiva:tasaEfectiva,tasaNominal:cfg.interesPrestamo||0,mesesAhorro:mesesAhorroEfectivo,mesesPrestamo:mesesPrestamo,mesesTotal:mesesTotal,restschuldZinsbindung:restschuldZinsbindung};
   // Sondertilgung anual (banco y fase de préstamo del Bausparvertrag): un pago extra a capital cada 12 meses, con la cuota
   // mensual constante. Sin fórmula cerrada, así que se simula mes a mes y se sobrescribe plazo,
   // intereses, coste y Restschuld; se guarda también cuánto se ahorra frente a no hacerla.
@@ -368,7 +377,7 @@ function inmuebleCurvaSaldo(precio,r,cfg,bruta){
   // Ahorro acumulado del Bausparvertrag en el mes t (activo), con tope en el objetivo; 0 sin fase de ahorro o después de la asignación.
   function ahorroAt(t){
     if(!(r.mesesAhorro>0)||t>r.mesesAhorro) return 0;
-    return Math.min(ahorroSaldoEn(r.cuotaAhorro,r.sonderAhorro,cfg.interesAhorro,t),r.objetivoAhorro);
+    return Math.min(ahorroSaldoEn(r.cuotaAhorro,r.sonderAhorro,cfg.interesAhorro,t)+(r.aportacionInicial||0)*Math.pow(1+(cfg.interesAhorro||0)/1200,t),r.objetivoAhorro);
   }
   function pend(t){
     if(t>=r.mesesTotal) return 0;
@@ -653,7 +662,7 @@ var INM_LIMITES={
   ingresoVariable:[0,1e6], variableRecPct:[0,100], reservaMensual:[0,1e5], presupuestoDeseado:[0,1e5], mantenimientoPct:[0,5], hausgeld:[0,1e5], segurosProp:[0,1e5], energiaProp:[0,1e5], otrosProp:[0,1e5],
   precio:[0,1e8], ingresoNeto:[0,1e6], capitalPropio:[0,1e8], gastosPct:[0,30], pagoIgual:[0,1e6], reserva:[0,1e8], comprometido:[0,1e8], ayudas:[0,1e8],
   interesPrestamo:[0,20], interesAhorro:[0,20], interesOriginal:[0,20], recargoST:[0,5], comision:[0,10],
-  bausparsumme:[0,1e8], interesPuente:[0,20], tipoRenovacion:[0,20],
+  bausparsumme:[0,1e8], interesPuente:[0,20], tipoRenovacion:[0,20], aportacionInicial:[0,1e8],
   zinsbindung:[0,40], plazoOriginal:[0,60], pct:[0,100], anios:[0,40], marcaAnios:[0,40], topeST:[0,100],
   sondertilgung:[0,1e7], sonderAhorro:[0,1e6], pagoAhorro:[0,1e6], pagoPrestamo:[0,1e6], pagoPre:[0,1e6],
   cuotaActual:[0,1e6], saldoHoy:[0,1e8], importeOriginal:[0,1e8]

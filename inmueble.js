@@ -59,10 +59,12 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
     // El ritmo de ahorro mensual es de lo primero que el cliente quiere ajustar (puede no llegar a la cuota calculada y
     // compensarlo con Sondertilgung), así que va visible también en modo simple.
     basic+=inmuebleOptField(opt,'pagoAhorro','Ahorro mensual del cliente hasta refinanciar (déjalo en cero y se calcula solo)',cfg.pagoAhorro||0,'50','€/mes','min="0"');
+    basic+=inmuebleOptField(opt,'aportacionInicial','Aportación inicial al firmar (opcional; cero = ninguna)',cfg.aportacionInicial||0,'1000','€','min="0"');
     advanced+=inmuebleOptField(opt,'pagoPrestamo','Pago mensual del préstamo (0 = calculado; fija el plazo)',cfg.pagoPrestamo||0,'50','€/mes','min="0"');
   }
   if(withAnios){
     basic+=inmuebleOptField(opt,'pagoAhorro','Ahorro mensual del cliente (déjalo en cero y se calcula solo)',cfg.pagoAhorro||0,'50','€/mes','min="0"');
+    basic+=inmuebleOptField(opt,'aportacionInicial','Aportación inicial al firmar (opcional; cero = ninguna)',cfg.aportacionInicial||0,'1000','€','min="0"');
     basic+=inmuebleOptField(opt,'bausparsumme','Importe del Bausparvertrag (cero = toda la financiación; el resto lo pone el banco)',cfg.bausparsumme||0,'5000','€','min="0"');
     advanced+=inmuebleOptField(opt,'interesPuente','Interés del préstamo puente (cero = el del banco)',cfg.interesPuente||0,'0.01','%','min="0" max="20"');
     advanced+=inmuebleOptField(opt,'pagoPrestamo','Pago mensual del préstamo (0 = calculado; fija el plazo)',cfg.pagoPrestamo||0,'50','€/mes','min="0"');
@@ -461,7 +463,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
   var costeMientrasTanto=rem.cuotaOriginal*Math.min(mesesHastaRefi,rem.mesesRestantes);
   var rBanco=_inmLiveBanco=calcInmuebleOption(saldoAtRefi,{pct:0,anios:0,interesAhorro:0,interesPrestamo:refi.banco.interesPrestamo,tilgungInicial:refi.banco.tilgungInicial,comision:refi.banco.comision,zinsbindung:refi.banco.zinsbindung,sondertilgung:refi.banco.sondertilgung,recargoST:refi.banco.recargoST,topeST:refi.banco.topeST,pagoPre:refi.banco.pagoPre});
   _inmLiveEstRefi=true;
-  var rEst=_inmLiveEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,sonderAhorro:estCfg.sonderAhorro,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
+  var rEst=_inmLiveEst=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:estCfg.pct,anios:anosDisponibles,interesAhorro:estCfg.interesAhorro,interesPrestamo:estCfg.interesPrestamo,tilgungsbeitragPerMille:estCfg.tilgungsbeitragPerMille,comision:estCfg.comision,sondertilgung:estCfg.sondertilgung,topeST:estCfg.topeST,sonderAhorro:estCfg.sonderAhorro,aportacionInicial:estCfg.aportacionInicial,pagoAhorro:estCfg.pagoAhorro,pagoPrestamo:estCfg.pagoPrestamo,ahorroPorTiempo:true});
   var costeBancoAbs=costeMientrasTanto+rBanco.costeTotal;
   var costeEstAbs=costeMientrasTanto+rEst.costeTotal;
   var maxMeses=Math.max(inmuebleMesesDesdeHoy(rBanco,mesesHastaRefi),inmuebleMesesDesdeHoy(rEst,mesesHastaRefi),1);
@@ -504,7 +506,7 @@ function inmuebleRefiResultsHTML(refi,asParts,inm){
     var rrE, ptsE;
     if(modoR!=='banco'){
       var cfgA=(modoR==='plazo')?Object.assign({},estCfg,{tilgungsbeitragPerMille:tilgungsbeitragParaPlazo(saldoAtRefi,rEst.capitalPrestamo,estCfg.interesPrestamo,c)}):Object.assign({},estCfg,{pagoAhorro:c});
-      rrE=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:cfgA.pct,anios:anosDisponibles,interesAhorro:cfgA.interesAhorro,interesPrestamo:cfgA.interesPrestamo,tilgungsbeitragPerMille:cfgA.tilgungsbeitragPerMille,comision:cfgA.comision,sondertilgung:cfgA.sondertilgung,topeST:cfgA.topeST,sonderAhorro:cfgA.sonderAhorro,pagoAhorro:cfgA.pagoAhorro,pagoPrestamo:cfgA.pagoPrestamo,ahorroPorTiempo:true});
+      rrE=calcInmuebleOption(saldoAtRefi,{sinMinimoAhorro:true,pct:cfgA.pct,anios:anosDisponibles,interesAhorro:cfgA.interesAhorro,interesPrestamo:cfgA.interesPrestamo,tilgungsbeitragPerMille:cfgA.tilgungsbeitragPerMille,comision:cfgA.comision,sondertilgung:cfgA.sondertilgung,topeST:cfgA.topeST,sonderAhorro:cfgA.sonderAhorro,aportacionInicial:cfgA.aportacionInicial,pagoAhorro:cfgA.pagoAhorro,pagoPrestamo:cfgA.pagoPrestamo,ahorroPorTiempo:true});
       ptsE=inmuebleCurvaSaldoRefi(rem,refi,mesesHastaRefi,rrE,cfgA,true);
     }else{
       var cfgE=Object.assign({},refi.banco,{pagoPre:c});
@@ -547,8 +549,8 @@ function inmuebleRoadmapComprarHTML(precio,rEst,rk,estCfg,puente,zMeses,ptsBanco
   var conBanco=rL?' <span>+ banco para el resto</span>':'';
   if(rEst.mesesAhorro>0){
     e+=paso(++n,hoy?'<span>Compras y ahorras</span>':'<span>Ahorras, aún sin comprar</span>','<span>Desde hoy,</span> <b>'+inmuebleAnios(rEst.mesesAhorro)+'</b>',
-      eur(rEst.cuotaAhorro+(hoy?puente/rEst.mesesAhorro:0)+rLc)+'/mes',(hoy?'<span>ahorro + intereses del puente</span>':'<span>de ahorro</span>')+conBanco);
-    e+=paso(++n,'<span>Asignación del contrato</span>','<b>'+inmuebleMesAnio(rEst.mesesAhorro)+'</b> <span>(estimada, no garantizada)</span>',
+      eur(rEst.cuotaAhorro+(hoy?puente/rEst.mesesAhorro:0)+rLc)+'/mes',(hoy?'<span>ahorro + intereses del puente</span>':'<span>de ahorro</span>')+conBanco+(rEst.aportacionInicial>0?' <span>· aportación inicial</span> <b>'+eur(rEst.aportacionInicial)+'</b>':''));
+    e+=paso(++n,'<span>Asignación del contrato</span>','<b>'+inmuebleMesAnio(rEst.mesesAhorro)+'</b> <span>(estimada, pendiente de Badenia)</span>'+((rEst.mesesObjetivo<rEst.mesesAhorro)?' <span>· ahorro mínimo reunido</span> <b>'+(rEst.mesesObjetivo>0?inmuebleMesAnio(rEst.mesesObjetivo):'desde el inicio')+'</b>':''),
       eur(rEst.objetivoAhorro),'<span>ahorrados, más</span> <b>'+eur(rEst.capitalPrestamo)+'</b> <span>de préstamo</span>');
   }
   if(rEst.capitalPrestamo>0) e+=paso(++n,'<span>Pagas el préstamo</span>','<span>Durante</span> <b>'+inmuebleAniosUnos(rEst.mesesPrestamo)+'</b>',eur(rEst.cuotaPrestamo+rLc)+'/mes','<span>tipo fijo del</span> <b>'+pctTxt(estCfg.interesPrestamo)+'</b> <span>todo el plazo</span>'+conBanco);
@@ -585,6 +587,17 @@ function inmuebleBancoRenovacion(rk,cfg,F,zM){
   var c2=annuityQuota(R,t,n2), int1=rk.cuotaPrestamo*zM-(F-R), int2=c2*n2-R;
   return {tipo:t,restschuld:R,cuota:c2,meses:n2,interes:int1+int2+(rk.comision||0)};
 }
+// Bausparvertrag: aportación inicial y las dos fechas que no hay que confundir — cuándo se reúne el ahorro mínimo (calculable) y
+// cuándo se estima la asignación (exige además el tiempo mínimo y la Bewertungszahl de la tarifa, pendiente de confirmar con Badenia).
+function inmuebleFechasAhorroHTML(r){
+  if(!(r.mesesAhorro>0)) return '';
+  var h='';
+  if(r.aportacionInicial>0) h+='<div class="inm-res-line"><span>Aportación inicial al firmar</span><b>'+eur(r.aportacionInicial)+'</b></div>';
+  h+='<div class="inm-res-line"><span>Ahorro mínimo reunido</span><b>'+(r.mesesObjetivo>0?inmuebleMesAnio(r.mesesObjetivo):'desde el inicio')+'</b></div>';
+  h+='<div class="inm-res-line"><span>Asignación estimada (pendiente de confirmar con Badenia)</span><b>'+inmuebleMesAnio(r.mesesAhorro)+'</b></div>';
+  if(r.pagoPedido>0&&r.mesesConPagoPedido>0) h+='<div class="inm-res-line inm-eff-hint"><span>Ahorrando</span> <b>'+eur(r.pagoPedido)+'/mes</b> <span>reunirías el ahorro mínimo en</span> <b>'+inmuebleAniosUnos(r.mesesConPagoPedido)+'</b><span>, pero la asignación no llega antes del tiempo mínimo: basta con</span> <b>'+eur(r.cuotaAhorro)+'/mes</b>.</div>';
+  return h;
+}
 function inmuebleResultsHTML(precio,inm,asParts){
   _inmInicio=inm.inicio||'';
   var estKey=(inm.estrategia==='b')?'b':'a';
@@ -611,7 +624,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
   var dif=rk.costeTotal-costeEstComb;
   // Comprar HOY con Bausparvertrag exige prefinanciar durante el ahorro (hipótesis: tipo del banco, solo intereses): el banco desembolsa
   // el día 0 y el Bausparvertrag no. Sin ese coste, la comparación favorece al Bausparvertrag de forma artificial.
-  var puente=(rEst.mesesAhorro>0&&rEst.cuotaAhorro>0&&inmuebleRequierePuente(inm))?inmuebleCostePuente(bsum,(estCfg.interesPuente>0)?estCfg.interesPuente:inm.banco.interesPrestamo,rEst.mesesAhorro):0;
+  var puente=(rEst.mesesAhorro>0&&(rEst.cuotaAhorro>0||rEst.aportacionInicial>0)&&inmuebleRequierePuente(inm))?inmuebleCostePuente(bsum,(estCfg.interesPuente>0)?estCfg.interesPuente:inm.banco.interesPrestamo,rEst.mesesAhorro):0;
   var difPuente=rk.costeTotal-(costeEstComb+puente);
   var rEstV=Object.assign({},rEst,{mesesTotal:Math.max(rEst.mesesTotal,rL?rL.mesesTotal:0)});
   if(rL) rEstV.mesesPrestamo=rEstV.mesesTotal-(rEst.mesesAhorro||0);
@@ -623,6 +636,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
       (r.cuotaAhorro>0&&r.sonderAhorro>0?'<div class="inm-res-line"><span>Pago extra anual al ahorro</span><b>'+eur(r.sonderAhorro)+'/año</b></div>':'')+
       (r.sonderAhorroTope?'<div class="inm-res-line inm-eff-hint"><span>El pago extra se ha recortado: por sí solo cubriría casi todo el ahorro.</span></div>':'')+
       '<div class="inm-res-line"><span>Cuota préstamo</span><b>'+eur(r.cuotaPrestamo)+'/mes</b></div>'+
+      (!isBanco?inmuebleFechasAhorroHTML(r):'')+
       (!isBanco&&!(r.objetivoAhorro>0)&&r.capitalPrestamo>0?'<div class="inm-res-warn"><span>Un Bausparvertrag exige un ahorro mínimo según la tarifa. Sin ahorro, este cálculo no es válido.</span></div>':'')+
       (r.minAhorroAplicado?'<div class="inm-res-line inm-eff-hint"><span>El Bausparvertrag no se puede activar antes de '+String(BAUSPAR_MIN_ANIOS).replace('.',',')+' años: se usa ese mínimo.</span></div>':'')+
       (r.noAmortiza?'<div class="inm-res-warn"><span>Con este pago el préstamo no se amortiza en menos de 100 años.</span> <span>Los años y los intereses son solo el tope del cálculo.</span></div>':'')+

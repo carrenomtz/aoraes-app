@@ -105,3 +105,21 @@ test('Roadmap en Refinanciar',()=>{
   assert.match(p.roadmap,/Refinanciación con Badenia/);
   assert.match(p.roadmap,/crédito \+ ahorro/);
 });
+test('Aportación inicial: adelanta el ahorro mínimo; la asignación nunca antes del mínimo; sin cuota sigue habiendo puente',()=>{
+  const c=ctx(), C=vm.runInContext('({calcInmuebleOption,BAUSPAR_MIN_MESES})',c);
+  const base={pct:40,anios:3.6,interesAhorro:0,interesPrestamo:1.75,tilgungsbeitragPerMille:5.5,comision:0};
+  // 110.000 €, 40 % = 44.000 €: 500 €/mes sin aportación → 88 meses; con 20.000 € iniciales → 48 meses
+  let r=C.calcInmuebleOption(110000,Object.assign({},base,{pagoAhorro:500}));
+  assert.strictEqual(r.mesesObjetivo,88); assert.strictEqual(r.mesesAhorro,88);
+  r=C.calcInmuebleOption(110000,Object.assign({},base,{pagoAhorro:500,aportacionInicial:20000}));
+  assert.strictEqual(r.mesesObjetivo,48); assert.strictEqual(r.aportacionInicial,20000);
+  // con 30.000 € + 500 €/mes se reuniría en 28 meses, pero la asignación espera al mínimo y basta una cuota menor
+  r=C.calcInmuebleOption(110000,Object.assign({},base,{pagoAhorro:500,aportacionInicial:30000}));
+  assert.strictEqual(r.mesesConPagoPedido,28); assert.strictEqual(r.mesesAhorro,C.BAUSPAR_MIN_MESES); assert.ok(r.cuotaAhorro<500);
+  // todo el ahorro mínimo de golpe: sin cuota mensual, asignación al mínimo
+  r=C.calcInmuebleOption(110000,Object.assign({},base,{aportacionInicial:44000}));
+  assert.ok(r.cuotaAhorro<1); assert.strictEqual(r.mesesAhorro,C.BAUSPAR_MIN_MESES); assert.strictEqual(r.mesesObjetivo,0);
+  const p=renderCfg(c,"inm.precio=200000; inm.banco.interesPrestamo=4; inm.a.aportacionInicial=90000");
+  assert.match(p.cards,/Intereses del puente hasta la asignación|puente incluido/);
+  assert.match(p.cards,/Ahorro mínimo reunido<\/span><b>desde el inicio/);
+});
