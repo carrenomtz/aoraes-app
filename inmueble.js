@@ -58,11 +58,11 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
   if(opt==='refiA'||opt==='refiB'){
     // El ritmo de ahorro mensual es de lo primero que el cliente quiere ajustar (puede no llegar a la cuota calculada y
     // compensarlo con Sondertilgung), así que va visible también en modo simple.
-    basic+=inmuebleOptField(opt,'pagoAhorro','Pago mensual de ahorro (0 = calculado; fija cuánto se ahorra hasta la refinanciación)',cfg.pagoAhorro||0,'50','€/mes','min="0"');
+    basic+=inmuebleOptField(opt,'pagoAhorro','Ahorro mensual del cliente hasta refinanciar (déjalo en cero y se calcula solo)',cfg.pagoAhorro||0,'50','€/mes','min="0"');
     advanced+=inmuebleOptField(opt,'pagoPrestamo','Pago mensual del préstamo (0 = calculado; fija el plazo)',cfg.pagoPrestamo||0,'50','€/mes','min="0"');
   }
   if(withAnios){
-    basic+=inmuebleOptField(opt,'pagoAhorro','Pago mensual de ahorro (0 = calculado; fija los años de ahorro)',cfg.pagoAhorro||0,'50','€/mes','min="0"');
+    basic+=inmuebleOptField(opt,'pagoAhorro','Ahorro mensual del cliente (déjalo en cero y se calcula solo)',cfg.pagoAhorro||0,'50','€/mes','min="0"');
     advanced+=inmuebleOptField(opt,'pagoPrestamo','Pago mensual del préstamo (0 = calculado; fija el plazo)',cfg.pagoPrestamo||0,'50','€/mes','min="0"');
   }
   if(withAhorro){
@@ -86,7 +86,7 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
     basic+='<label class="inm-f"><span>Plazo del préstamo</span><span class="inm-inp-wrap"><input type="number" class="inm-inp" data-inm-opt="'+opt+'" data-inm-bankplazo="1" value="'+bancoPlazoActual(cfg)+'" step="any" min="5" max="40"><span class="inm-suf">años</span></span></label>';
     basic+=inmuebleOptField(opt,'zinsbindung','Vigencia del tipo (Zinsbindung)',cfg.zinsbindung,'1','años','min="1" max="40"');
   }
-  basic+=inmuebleOptField(opt,'sondertilgung','Amortización extra anual (Sondertilgung)',cfg.sondertilgung||0,'500','€/año','min="0"');
+  basic+=inmuebleOptField(opt,'sondertilgung','Pago extra al año para terminar antes (opcional; cero = ninguno)',cfg.sondertilgung||0,'500','€/año','min="0"');
   if(opt==='banco'&&inmCtx&&inmCtx.modo==='refi') basic+='';
   else if(opt==='banco'||opt==='refiBanco') basic+='<div class="inm-live" id="inm-live-'+opt+'"><!--INMLIVE--></div>';
   else basic+='<div class="inm-live inm-live-est"><!--INMLIVEEST--></div>';
@@ -552,6 +552,7 @@ function inmuebleResultsHTML(precio,inm,asParts){
   var puente=(rEst.mesesAhorro>0&&rEst.cuotaAhorro>0&&inmuebleRequierePuente(inm))?inmuebleCostePuente(precio,inm.banco.interesPrestamo,rEst.mesesAhorro):0;
   var difPuente=rk.costeTotal-(rEst.costeTotal+puente);
   var marcaMeses=Math.round((inm.banco.marcaAnios==null?10:Math.max(0,inm.banco.marcaAnios))*12);
+  var nfR=inmuebleNecesidadFondos(inm), costeCompra=nfR.costeTotalCompra||precio, capitalAportado=Math.max(0,costeCompra-precio);
   function row(title,r,isBanco){
     return '<div class="inm-res-card"><h5>'+esc(title)+'</h5>'+
       (r.cuotaAhorro>0?'<div class="inm-res-line"><span>Cuota ahorro</span><b>'+eur(r.cuotaAhorro)+'/mes</b></div>':'')+
@@ -570,12 +571,18 @@ function inmuebleResultsHTML(precio,inm,asParts){
       (r.tasaEfectiva!=null?'<div class="inm-res-line inm-eff inm-detalle"><span>Interés efectivo del préstamo<span class="inm-eff-hint"> · nominal '+String(r.tasaNominal).replace('.',',')+'%</span></span><b>'+(r.tasaEfectiva*100).toFixed(2).replace('.',',')+'%</b></div>':'')+
       // Comprar hoy con Bausparvertrag: el coste principal incluye el puente (sin él, el Bausparvertrag parecía más barato de lo que es y
       // el orden 40 % / 50 % se invertía). El coste sin puente solo vale si se espera a la asignación para comprar: va al detalle.
-      ((!isBanco&&puente>0)
-        ?'<div class="inm-res-line"><span>Pago total al mes mientras ahorras (ahorro + intereses del puente)*</span><b>'+eur(r.cuotaAhorro+puente/Math.max(1,r.mesesAhorro))+'/mes</b></div>'+
-          '<div class="inm-res-line"><span>Intereses del puente hasta la asignación*</span><b>'+eur(puente)+'</b></div>'+
-          '<div class="inm-res-line total"><span>Coste total si compras hoy</span><b>'+eur(r.costeTotal+puente)+'</b></div>'+
-          '<div class="inm-res-line inm-detalle"><span>Coste total sin puente (si esperas a la asignación para comprar)</span><b>'+eur(r.costeTotal)+'</b></div>'
-        :'<div class="inm-res-line total"><span>Coste total</span><b>'+eur(r.costeTotal)+'</b></div>')+
+      // Lenguaje llano: lo que cuesta la vivienda (precio + gastos) más lo que cuesta el dinero prestado (intereses y comisiones). Antes
+      // «Coste total» era préstamo + intereses, menos que el precio de la vivienda, y confundía.
+      (function(){
+        var conP=(!isBanco&&puente>0), intereses=r.costeTotal-precio+(conP?puente:0);
+        return (conP?'<div class="inm-res-line"><span>Pago total al mes mientras ahorras (ahorro + intereses del puente)*</span><b>'+eur(r.cuotaAhorro+puente/Math.max(1,r.mesesAhorro))+'/mes</b></div>':'')+
+          '<div class="inm-res-line"><span>Precio + gastos de compra</span><b>'+eur(costeCompra)+'</b></div>'+
+          '<div class="inm-res-line"><span>'+(conP?'Intereses y comisiones (puente incluido)*':'Intereses y comisiones')+'</span><b>'+eur(intereses)+'</b></div>'+
+          (conP?'<div class="inm-res-line inm-detalle"><span>De ellos, intereses del puente hasta la asignación*</span><b>'+eur(puente)+'</b></div>':'')+
+          '<div class="inm-res-line total"><span>Total que pagas por la vivienda</span><b>'+eur(costeCompra+intereses)+'</b></div>'+
+          (capitalAportado>0?'<div class="inm-res-line inm-detalle"><span>De ello, lo pones tú al principio (capital propio)</span><b>'+eur(capitalAportado)+'</b></div>':'')+
+          (conP?'<div class="inm-res-line inm-detalle"><span>Total si esperas a la asignación para comprar (sin puente)</span><b>'+eur(costeCompra+r.costeTotal-precio)+'</b></div>':'');
+      })()+
       // La comparación en euros solo se publica cuando ambos lados pagan lo mismo al mes (ORDEN 8.5 de la especificación): con pagos
       // distintos el banco queda en su cuota mínima a 30 años y la diferencia es un artefacto, no un ahorro.
       (!isBanco?(igual

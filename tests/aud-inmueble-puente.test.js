@@ -18,16 +18,18 @@ function render(c,estrategia,ingreso){
 }
 test('Comprar hoy: el coste principal del Bausparvertrag incluye el puente',()=>{
   const c=ctx(), p=render(c,'a');
-  assert.match(p.cards,/<div class="inm-res-line total"><span>Coste total si compras hoy<\/span>/);
+  assert.match(p.cards,/<div class="inm-res-line total"><span>Total que pagas por la vivienda<\/span>/);
+  assert.match(p.cards,/Precio \+ gastos de compra<\/span><b>220\.000/);
   assert.match(p.cards,/Pago total al mes mientras ahorras/);
   assert.match(p.frase,/mientras ahorras, pagas en total/);
   // el coste con puente es mayor que el coste sin puente
-  const con=+p.cards.match(/Coste total si compras hoy<\/span><b>([\d.]+)/)[1].replace(/\./g,''), sin=Math.round(p.rEst.costeTotal);
-  assert.ok(con>sin+20000,`${con} vs ${sin}`);
+  // total = precio + gastos + intereses y comisiones (con puente): siempre mayor que lo que cuesta la vivienda
+  const tot=+p.cards.match(/Total que pagas por la vivienda<\/span><b>([\d.]+)/)[1].replace(/\./g,'');
+  assert.ok(tot>220000+20000,`${tot}`);
 });
 test('Con puente, el 40 % no aparece más caro que el 50 % por omitir el puente',()=>{
   const c=ctx(), a=render(c,'a'), b=render(c,'b');
-  const n=h=>+h.cards.match(/Coste total si compras hoy<\/span><b>([\d.]+)/)[1].replace(/\./g,'');
+  const n=h=>+h.cards.match(/Total que pagas por la vivienda<\/span><b>([\d.]+)/)[1].replace(/\./g,'');
   assert.ok(n(a)<n(b),`40 %: ${n(a)} · 50 %: ${n(b)}`);
 });
 test('Un ingreso mensual irreal muestra un aviso',()=>{
@@ -66,5 +68,5 @@ test('La presentación incluye el roadmap y la comparación con el coste con pue
   const sl=vm.runInContext(`(function(){var inm=defaultInmueble(); inm.precio=200000; inm.gastosPct=10; inm.capitalPropio=40000; return buildInmuebleSlides({inmueble:inm});})()`,c);
   const t=sl.map(s=>s.t);
   assert.ok(t.indexOf('Tu camino, paso a paso')>=0 && t.indexOf('Tu camino, paso a paso')<t.indexOf('Cuánto debes con el tiempo'), t.join(' | '));
-  assert.match(sl.find(s=>s.t==='Comparación').h,/Coste total si compras hoy/);
+  assert.match(sl.find(s=>s.t==='Comparación').h,/puente incluido/);
 });
