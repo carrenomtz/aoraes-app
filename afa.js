@@ -39,7 +39,8 @@ function defaultAfa(){
 
 // Fórmulas: Nebenkosten = precio × (ITP% + notaría% + registro%) + otros; Base amortizable
 // (= valor del Gebäude a efectos de AfA) = precio + Nebenkosten - suelo - cocina — el suelo
-// (Grund und Boden) NUNCA se amortiza y la cocina se deduce entera en el año 1, no dentro del
+// (Grund und Boden) NUNCA se amortiza y la cocina se resta de la base (B.5: se trata aparte; su amortización concreta,
+// p. ej. ya no «íntegra en el año 1», se confirma con el Steuerberater y no se calcula aquí) en vez de amortizarse dentro del
 // %/año continuo. La AfA en sí se calcula SIEMPRE sobre esa base, en dos escenarios independientes:
 //  - Estándar: el % legal normal del inmueble (afaEstandarPct), sin tocar el Gutachten.
 //  - Gutachten: SOLO si tieneGutachten=true, % = 100/restnutzungsdauerGutachten — puede salir
@@ -56,6 +57,7 @@ function calcAfa(afa){
   var precioCompra=afa.precioCompra||0;
   var factorEdificio=precioCompra>0?(1-Math.min(sueloEfectivo,precioCompra)/precioCompra):0;
   var baseAmortizable=Math.max(0,(precioCompra+nebenkosten)*factorEdificio-(afa.valorCocina||0));
+  var nebenkostenSuelo=nebenkosten*(1-factorEdificio); // B.5: parte de los gastos de adquisición imputada al suelo (no amortizable)
   var pctEstandar=afa.afaEstandarPct||0;
   var perdidaEstandarAnual=baseAmortizable*pctEstandar/100;
   var pctGutachten=null, perdidaGutachtenAnual=null, diferenciaAnual=null;
@@ -70,7 +72,7 @@ function calcAfa(afa){
   // un Gutachten con una vida útil más larga no baja la AfA por debajo del % estándar. (Las tarjetas de pantalla siguen mostrando ambos escenarios.)
   var pctEfectivo=(afa.tieneGutachten&&pctGutachten!=null)?Math.max(pctGutachten,pctEstandar):pctEstandar;
   var perdidaEfectivaAnual=baseAmortizable*pctEfectivo/100;
-  return {nebenkosten:nebenkosten, notarioRegistro:notarioRegistro, sueloEfectivo:sueloEfectivo, baseAmortizable:baseAmortizable,
+  return {nebenkosten:nebenkosten, nebenkostenSuelo:nebenkostenSuelo, notarioRegistro:notarioRegistro, sueloEfectivo:sueloEfectivo, baseAmortizable:baseAmortizable,
     pctEstandar:pctEstandar, perdidaEstandarAnual:perdidaEstandarAnual,
     pctGutachten:pctGutachten, perdidaGutachtenAnual:perdidaGutachtenAnual, diferenciaAnual:diferenciaAnual,
     pctEfectivo:pctEfectivo, perdidaEfectivaAnual:perdidaEfectivaAnual};
@@ -99,7 +101,8 @@ function afaResultsHTML(afa){
   var cards='<div class="inm-res-card"><h5>Base amortizable (Gebäudewert)</h5>'+
       '<div class="inm-res-line"><span>Nebenkosten (ITP + notaría + registro + otros)</span><b>'+eur(c.nebenkosten)+'</b></div>'+
       '<div class="inm-res-line"><span>Valor del suelo (Grund und Boden, no amortizable)</span><b>'+(afa.sueloPendiente?'Pendiente — Steuerberater':eur(c.sueloEfectivo))+'</b></div>'+
-      (afa.valorCocina>0?'<div class="inm-res-line"><span>Cocina — deducción íntegra año 1</span><b>'+eur(afa.valorCocina)+'</b></div>':'')+
+      (c.nebenkostenSuelo>0?'<div class="inm-res-line"><span>Nebenkosten imputados al suelo (no amortizables)</span><b>'+eur(c.nebenkostenSuelo)+'</b></div>':'')+
+      (afa.valorCocina>0?'<div class="inm-res-line"><span>Cocina — se amortiza aparte (a confirmar con el Steuerberater)</span><b>'+eur(afa.valorCocina)+'</b></div>':'')+
       '<div class="inm-res-line total"><span>Base amortizable</span><b>'+eur(c.baseAmortizable)+'</b></div>'+
     '</div>'+
     '<div class="inm-res-card"><h5>AfA estándar (sin Gutachten)</h5>'+
@@ -111,7 +114,9 @@ function afaResultsHTML(afa){
       '<div class="inm-res-line"><span>Vida útil restante (Gutachten)</span><b>'+afa.restnutzungsdauerGutachten+' años</b></div>'+
       '<div class="inm-res-line"><span>% AfA según Gutachten</span><b>'+c.pctGutachten.toFixed(2).replace('.',',')+'%</b></div>'+
       '<div class="inm-res-line total"><span>AfA anual según Gutachten</span><b>'+eur(c.perdidaGutachtenAnual)+'</b></div>'+
-      '<div class="inm-res-line '+(c.diferenciaAnual>=0?'save pos':'save neg')+'"><span>'+(c.diferenciaAnual>=0?'Gasto fiscal deducible adicional':'Gasto fiscal deducible menor')+' vs. estándar</span><b>'+eur(Math.abs(c.diferenciaAnual))+'</b></div>'+
+      (c.diferenciaAnual>=0
+        ?'<div class="inm-res-line save pos"><span>Gasto fiscal deducible adicional vs. estándar</span><b>'+eur(c.diferenciaAnual)+'</b></div>'
+        :'<div class="inm-res-line save neg"><span>Sin efecto: se mantiene la AfA estándar (vida útil del Gutachten más larga)</span><b>—</b></div>')+
       '<div class="inm-note" style="margin:8px 0 0">Esta diferencia es gasto fiscal deducible adicional, no ahorro fiscal directo — el ahorro real depende del tipo impositivo del cliente y se calcula aparte.</div>'+
     '</div>';
   }
@@ -158,7 +163,7 @@ function afaBlock(rec){
     afaField('otrosGastos','Otros gastos de adquisición',afa.otrosGastos,'50','€','min="0"')+
     afaField('valorSuelo','Valor del suelo (Bodenwert, del Gutachten)',afa.valorSuelo,'1000','€','min="0"'+(afa.sueloPendiente?' disabled':''))+
     '<label class="afa-check"><input type="checkbox" data-afa-check="sueloPendiente"'+(afa.sueloPendiente?' checked':'')+'> Que lo calcule el Steuerberater — el Gutachten no especifica el valor del suelo.</label>'+
-    afaField('valorCocina','Cocina (Einbauküche) — deducción íntegra año 1',afa.valorCocina,'100','€','min="0"')+
+    afaField('valorCocina','Cocina (Einbauküche) — se amortiza aparte',afa.valorCocina,'100','€','min="0"')+
     afaField('afaEstandarPct','AfA estándar del inmueble (según fecha de construcción)',afa.afaEstandarPct,'0.1','%','min="0" max="10"')+
     '<label class="afa-check"><input type="checkbox" data-afa-check="tieneGutachten"'+(afa.tieneGutachten?' checked':'')+'> Existe un Restnutzungsdauergutachten (informe de vida útil restante).</label>'+
     '<p class="inm-note" style="margin:-4px 0 14px">Un Restnutzungsdauergutachten puede acreditar una vida útil real del edificio más corta que la estándar. Eso puede dar una AfA anual más alta — pero también podría dar una más baja si el informe acredita una vida útil más larga. El cálculo se aplica siempre solo sobre la parte amortizable del edificio, nunca sobre el suelo.</p>'+
@@ -229,7 +234,9 @@ function buildAfaInforme(rec){
       '<div class="afa-inf-row"><span>Vida útil restante (Gutachten)</span><b>'+afa.restnutzungsdauerGutachten+' años</b></div>'+
       '<div class="afa-inf-row"><span>% AfA según Gutachten</span><b>'+c.pctGutachten.toFixed(2).replace('.',',')+'%</b></div>'+
       '<div class="afa-inf-row total"><span>AfA anual según Gutachten</span><b>'+eur(c.perdidaGutachtenAnual)+'</b></div>'+
-      '<div class="afa-inf-row"><span>'+(c.diferenciaAnual>=0?'Gasto fiscal deducible adicional':'Gasto fiscal deducible menor')+' vs. estándar</span><b>'+eur(Math.abs(c.diferenciaAnual))+'</b></div>'+
+      (c.diferenciaAnual>=0
+        ?'<div class="afa-inf-row"><span>Gasto fiscal deducible adicional vs. estándar</span><b>'+eur(c.diferenciaAnual)+'</b></div>'
+        :'<div class="afa-inf-row"><span>Sin efecto: se mantiene la AfA estándar (vida útil del Gutachten más larga)</span><b>—</b></div>')+
     '</div>'
     ):'')+
     (afa.hipotecaInteresesAnual>0?('<div class="afa-inf-sec"><h4>Gasto corriente (no AfA)</h4><div class="afa-inf-row"><span>Intereses de hipoteca (anual)</span><b>'+eur(afa.hipotecaInteresesAnual)+'</b></div></div>'):'')+
@@ -254,12 +261,14 @@ function buildAfaSteuerberaterText(rec){
   lines.push('- Precio de compra: '+eur(afa.precioCompra));
   lines.push('- Nebenkosten (ITP + notaría + registro + otros): '+eur(c.nebenkosten));
   lines.push('- Valor del suelo: '+(afa.sueloPendiente?'pendiente de cálculo por su parte':eur(c.sueloEfectivo)));
-  if(afa.valorCocina>0) lines.push('- Cocina (deducción íntegra año 1): '+eur(afa.valorCocina));
+  if(afa.valorCocina>0) lines.push('- Cocina (se amortiza aparte, fuera de la base; a confirmar con el Steuerberater): '+eur(afa.valorCocina));
   lines.push('- Base amortizable (Gebäudewert): '+eur(c.baseAmortizable));
   lines.push('- AfA estándar: '+c.pctEstandar.toFixed(2).replace('.',',')+'% anual → '+eur(c.perdidaEstandarAnual));
   if(afa.tieneGutachten && c.pctGutachten!=null){
     lines.push('- Restnutzungsdauergutachten: '+afa.restnutzungsdauerGutachten+' años → '+c.pctGutachten.toFixed(2).replace('.',',')+'% anual → '+eur(c.perdidaGutachtenAnual));
-    lines.push('- Gasto fiscal deducible '+(c.diferenciaAnual>=0?'adicional':'menor')+' vs. estándar: '+eur(Math.abs(c.diferenciaAnual))+' (no es ahorro fiscal directo, depende del tipo impositivo del cliente)');
+    lines.push(c.diferenciaAnual>=0
+      ?'- Gasto fiscal deducible adicional vs. estándar: '+eur(c.diferenciaAnual)+' (no es ahorro fiscal directo, depende del tipo impositivo del cliente)'
+      :'- Sin efecto: se mantiene la AfA estándar, porque la vida útil del Gutachten es más larga que la típica (§7 Abs. 4 EStG; confirmar con el Steuerberater)');
   }
   if(afa.hipotecaInteresesAnual>0) lines.push('- Intereses de hipoteca (gasto corriente anual): '+eur(afa.hipotecaInteresesAnual));
   lines.push('');

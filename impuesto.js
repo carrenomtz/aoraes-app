@@ -36,8 +36,8 @@ var AORAES_IMPUESTO=(function(){
     return Math.max(0,2*cuota(zveConjunto/2)-2*cuota(Math.max(0,zveConjunto-ded)/2));
   }
   // Tipo de Kirchensteuer sobre la cuota del impuesto (AOR-TAX-003): 8 % en Baden-Württemberg y Bayern, 9 % en el resto de Länder. 0 si el contribuyente no
-  // pertenece a una Kirchengemeinde (afiliado===false). null si el Bundesland es desconocido: no se inventa un tipo. Todavía NO está conectado a ninguna pantalla
-  // (Análisis y Jubilación siguen usando 9 % fijo y lo avisan en su texto); conectarlo cambia cifras y ese texto, así que requiere autorización.
+  // pertenece a una Kirchengemeinde (afiliado===false). null si el Bundesland es desconocido: no se inventa un tipo. Conectado (B.3) en la fiscalidad estimada del Análisis (S.9)
+  // con el Bundesland de residencia de Datos personales (S.11); sin Bundesland se usa 9 % como supuesto y se avisa. Jubilación no aplica Kirchensteuer.
   var LAENDER=['Baden-Württemberg','Bayern','Berlin','Brandenburg','Bremen','Hamburg','Hessen','Mecklenburg-Vorpommern','Niedersachsen','Nordrhein-Westfalen',
     'Rheinland-Pfalz','Saarland','Sachsen','Sachsen-Anhalt','Schleswig-Holstein','Thüringen'];
   function kirchensteuerSatz(bundesland,afiliado){

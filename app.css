@@ -724,6 +724,25 @@
   .inm-inf .inm-sug-btn, #inm-pres-inner .inm-sug-btn{display:none}
   .inm-chip.off{opacity:.42; text-decoration:line-through}
   .inm-hitos{margin-top:8px}
+  .inm-rm-fila{display:grid; grid-template-columns:120px 1fr; gap:12px; align-items:start; padding:12px 0; border-top:1px solid var(--line-soft)}
+  .inm-rm-lab{font-family:'Fraunces',Georgia,serif; font-weight:600; color:var(--navy); font-size:14px; padding-top:4px}
+  .inm-rm-banco .inm-rm-lab{color:var(--gold-deep)}
+  .inm-rm-pasos{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px}
+  .inm-rm-paso{display:flex; gap:8px; background:var(--bg); border-radius:var(--r-md); padding:10px 12px; position:relative}
+  .inm-rm-num{flex:none; width:22px; height:22px; border-radius:50%; background:var(--navy); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center}
+  .inm-rm-banco .inm-rm-num{background:var(--gold-deep)}
+  .inm-rm-body{display:flex; flex-direction:column; gap:2px; min-width:0}
+  .inm-rm-tit{font-weight:700; color:var(--navy); font-size:12.5px}
+  .inm-rm-cuando{font-size:11px; color:var(--muted)}
+  .inm-rm-cuando b{color:var(--ink); font-weight:600}
+  .inm-rm-big{font-family:'Fraunces',Georgia,serif; font-size:20px; color:var(--navy); line-height:1.2; margin-top:2px; font-variant-numeric:tabular-nums}
+  .inm-rm-sub{font-size:11px; color:var(--muted)}
+  .inm-rm-sub b{color:var(--ink)}
+  .inm-rm-riesgo{background:#fbf3e4}
+  .inm-rm-fin{background:var(--gold-tint)}
+  .inm-rm-clave{margin:6px 0 4px; padding:10px 12px; border-left:3px solid var(--navy); background:var(--bg); font-size:13.5px; color:var(--ink)}
+  .inm-rm-clave b{color:var(--navy)}
+  @media (max-width:640px){ .inm-rm-fila{grid-template-columns:1fr; gap:6px} }
   .inm-hitos th:nth-child(2),.inm-hitos td:nth-child(2){text-align:left; font-weight:400; color:var(--muted)}
   .inm-hitos td:first-child{white-space:normal; max-width:230px}
   .inm-hitos small{display:block; font-size:10.5px; font-weight:400; color:var(--faint); margin-top:1px}

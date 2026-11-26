@@ -17,7 +17,7 @@
 <link rel="preload" href="fonts/Fraunces-opsz-wght-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/Manrope-wght-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="./app.css?v=4bcecea7">
+<link rel="stylesheet" href="./app.css?v=8b04c122">
 </head>
 <body>
   <div class="auth-gate" id="auth-gate">
@@ -387,12 +387,12 @@
        preguntas-medicas.html cuando corran embebidos) puedan guardar/leer sin conocer Firebase
        directamente. El apiKey de este bloque NO es secreto — Firebase lo diseña para vivir en
        el cliente; la seguridad real la dan las reglas de Firestore (solo cada usuario ve lo suyo). -->
-  <script src="./i18n.js?v=79f8e2d5"></script>
+  <script src="./i18n.js?v=4ca084fe"></script>
 <script src="./util.js?v=3e8fcffb"></script>
 <script src="./leads.js?v=28d53483"></script>
 <script src="./calc.js?v=eba0208a"></script>
-<script src="./inmueble.js?v=89112d10"></script>
-<script src="./afa.js?v=253000f3"></script>
+<script src="./inmueble.js?v=0c6a10cb"></script>
+<script src="./afa.js?v=2b9bfad8"></script>
 <script src="./fiscal.js?v=874fe5e5"></script>
 <script src="./fiscal-ui.js?v=900c6e63"></script>
 <script src="./idle.js?v=8c7edecd"></script>
@@ -990,13 +990,13 @@
       var action = isSignup ? createUserWithEmailAndPassword : signInWithEmailAndPassword;
       action(auth, email, pass).catch(function(err){
         var code = (err && err.code) || '', known = true, msg;
-        if(code==='auth/email-already-in-use') msg='Ese correo ya tiene una cuenta — inicia sesión en vez de crear una nueva.';
+        // AOR-SEC-003 / N3: no confirmar que el correo ya está registrado (enumeración de cuentas).
+        if(code==='auth/email-already-in-use') msg='No se pudo crear la cuenta. Si ya estás registrado, inicia sesión o usa «¿Olvidaste tu contraseña?».';
         else if(code==='auth/invalid-email') msg='Correo no válido.';
         else if(code==='auth/weak-password'||code==='auth/password-does-not-meet-requirements') msg='La contraseña necesita al menos 6 caracteres.';
         // Con la protección contra enumeración de correos de Firebase, un correo sin cuenta también
         // llega como invalid-credential: por eso el texto no dice cuál de los dos falló.
-        else if(code==='auth/wrong-password'||code==='auth/invalid-credential') msg='Correo o contraseña incorrectos.';
-        else if(code==='auth/user-not-found') msg='No hay cuenta con ese correo — crea una nueva.';
+        else if(code==='auth/wrong-password'||code==='auth/invalid-credential'||code==='auth/user-not-found') msg='Correo o contraseña incorrectos.';
         else if(code==='auth/network-request-failed') msg='Sin conexión con el servidor. Revisa tu internet o desactiva el bloqueador de anuncios y vuelve a intentarlo.';
         else if(code==='auth/too-many-requests') msg='Demasiados intentos. Espera unos minutos e inténtalo de nuevo, o usa «¿Olvidaste tu contraseña?».';
         else if(code==='auth/operation-not-allowed'||code==='auth/admin-restricted-operation') msg='El registro de nuevas cuentas no está disponible ahora. Avisa al administrador.';

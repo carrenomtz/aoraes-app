@@ -45,11 +45,28 @@ test('TAX-003: tasa de Kirchensteuer por Bundesland (8 % Baden-Württemberg y Ba
   assert.equal(T.kirchensteuerSatz('Bayern',false),0); assert.equal(T.kirchensteuerSatz('Berlin',false),0);
   assert.equal(T.kirchensteuerSatz(''),null); assert.equal(T.kirchensteuerSatz('Narnia'),null); assert.equal(T.kirchensteuerSatz(undefined),null);
 });
-test('TAX-003 (hallazgo): renderTaxEstimate aplica 9 % fijo a todos, sin Soli, y 0,78 × bruto como zvE',()=>{
+test('TAX-003 (B.3): renderTaxEstimate usa el tipo por Bundesland (kirchTipo), sin Soli, y 0,78 × bruto como zvE',()=>{
   const r=bloque(ana,'function renderTaxEstimate(');
-  assert.ok(/tax\*=1\.09; marginal\*=1\.09;/.test(r)); assert.ok(/var zve=grossHousehold\*0\.78;/.test(r)); assert.ok(!/solidari|soli/i.test(r.replace(/Solidaritätszuschlag/g,'')) || true);
+  assert.ok(/tax\*=1\+kt\.satz; marginal\*=1\+kt\.satz;/.test(r)); assert.ok(!/1\.09/.test(r)); assert.ok(!/1\.09/.test(fn(ana,'riesterTaxSaving'))); assert.ok(/var zve=grossHousehold\*0\.78;/.test(r)); assert.ok(!/solidari|soli/i.test(r.replace(/Solidaritätszuschlag/g,'')) || true);
   assert.ok(!/0\.055|Solidarit/.test(r.replace(/\/\/.*$/gm,'').replace(/<b>.*?<\/b>/g,'').split('wEl.innerHTML')[0]),'no hay cálculo de Soli');
   has(jub,/AORAES_IMPUESTO\.tipoMarginal\(gross\*0\.78\)/); has(jub,/AORAES_IMPUESTO\.ahorroPorDeduccion\(S\.salary\*0\.78,ded\)/);
+});
+
+test('TAX-003 (B.3): kirchTipo() lee el Bundesland de Datos personales; sin Bundesland usa 9 % como supuesto y avisa; BW/Bayern 8 %',()=>{
+  has(ana,/data-pers="bundesland_A"/); has(ana,/if\(t\.matches\('\[data-pers="bundesland_A"\]'\)\) did=true;/);
+  // los 16 Länder del selector coinciden con los de impuesto.js
+  const sel=ana.match(/<select id="f-pers-bundesland_A"[^>]*>([\s\S]*?)<\/select>/)[1];
+  const opts=[...sel.matchAll(/<option>([^<]+)<\/option>/g)].map(m=>m[1]).sort();
+  assert.equal(opts.length,16); assert.equal(new Set(opts).size,16);
+  opts.forEach(b=>assert.notEqual(T.kirchensteuerSatz(b,true),null,b));
+  // ejecuta el helper real con un DOM mínimo
+  const src=fn(ana,'kirchTipo');
+  const k=land=>new Function('document','AORAES_IMPUESTO',src+'; return kirchTipo();')({querySelector:()=>({value:land})},T);
+  assert.deepEqual(k('Bayern'),{satz:0.08,conocido:true,land:'Bayern'});
+  assert.deepEqual(k('Baden-Württemberg'),{satz:0.08,conocido:true,land:'Baden-Württemberg'});
+  assert.deepEqual(k('Berlin'),{satz:0.09,conocido:true,land:'Berlin'});
+  assert.deepEqual(k(''),{satz:0.09,conocido:false,land:''});
+  has(fn(ana,'renderTaxEstimate'),/falta el Bundesland de residencia/);
 });
 
 // ================= AOR-TAX-004/005: AfA (§7 EStG) =================
@@ -85,7 +102,7 @@ test('TAX-005: Gutachten — %=100/vida útil; vida útil 0 no divide; AfA efect
 });
 test('TAX-004 (hallazgo): % estándar es un campo editable con 2 % por defecto; la ley da 3 % (fin. 2023+), 2 % (1925–2022), 2,5 % (<1925)',()=>{
   has(afaSrc,/afaEstandarPct:2,/); has(afaSrc,/AfA estándar del inmueble \(según fecha de construcción\)/);
-  has(afaSrc,/cocina se deduce entera en el año 1/);   // afirmación fiscal a revisar (Einbauküche es un bien mueble con su propia vida útil)
+  has(afaSrc,/B\.5: se trata aparte/);   // B.5: ya no se afirma «íntegra en el año 1»; la cocina (bien mueble) se confirma con el Steuerberater
 });
 
 // ================= AOR-TAX-007: Grunderwerbsteuer duplicado =================
@@ -132,6 +149,9 @@ test('PEN-002 (L, hallazgo): el campo de edad admite 50–75 y el factor se limi
   const dob=new Date(1990,5,15), reg=P.regularRetirementDate(dob);
   [50,55,60,62].forEach(e=>near(P.computeAccessFactor(P.addYears(dob,e),reg),1-0.144,1e-12)); // misma pensión (−14,4 %) a los 50 que a los 63
   has(ana,/La app no comprueba si el cliente cumple los requisitos legales para jubilarse antes/);
+  // B.4: por debajo de 63 no se calcula pensión pública (queda pendiente, con aviso); el campo sigue admitiendo 50–75 para el ahorro privado
+  has(ana,/var EDAD_MIN_PENSION_ANTICIPADA=63;/); has(ana,/if\(edadJub<EDAD_MIN_PENSION_ANTICIPADA\)\{[\s\S]{0,200}pension\.earlyBlocked=true;/);
+  has(ana,/sin pensión pública anticipada/);
 });
 test('PEN-001 (L, hallazgo): Entgeltpunkte con sueldo actual ÷ salario medio 2026 y techo 2026 para años pasados y futuros; carrera desde los 23 como hipótesis',()=>{
   has(ana,/Math\.min\(pastAnnual,GV\.generalPensionContributionCeiling\)\/GV\.averagePensionEarnings\*contributionYearsRaw/);
@@ -176,8 +196,9 @@ test('RET-007 (hallazgo): la renta del ETF usa 4 % fijo; el control «retDraw» 
   has(jub,/const moG=gE\*0\.04\/12;/); has(jub,/const monthlyEquiv=capitalEst\*\(\(S\.retDraw\|\|3\)\/100\)\/12;/); has(jub,/const _mr=Math\.pow\(1\+\(S\.retDraw\|\|0\)\/100,1\/12\)-1;/);
   has(jub,/Rentabilidad en la jubilación<b id="av-retdraw">/);
 });
-test('RET-003 (hallazgo): «garantizada» = capital proyectado al rendimiento elegido × Rentenfaktor; excedentes aparte; etiqueta «Renta garantizada de por vida»',()=>{
-  has(jub,/rMoG=gR\*\(Pr\.rf\/10000\),pMoG=gP\*\(Pp\.rf\/10000\)/); has(jub,/rMoGs=rMoG\*\(Pr\.surplus\|\|1\)/); has(jub,/Renta garantizada<br>de por vida/);
+test('RET-003 (hallazgo): «garantizada» = capital proyectado al rendimiento elegido × Rentenfaktor; excedentes aparte; etiqueta corregida (B.2): «Renta estimada de por vida (parte garantizada según contrato)»',()=>{
+  has(jub,/rMoG=gR\*\(Pr\.rf\/10000\),pMoG=gP\*\(Pp\.rf\/10000\)/); has(jub,/rMoGs=rMoG\*\(Pr\.surplus\|\|1\)/);
+  has(jub,/Renta estimada de por vida<br>\(parte garantizada según contrato\)/); assert.ok(!/Renta garantizada<br>de por vida/.test(jub));
 });
 test('RET-009 (L, hallazgo): Riester — Kinderzulage 300 € para todos los hijos (sin 185 €) y sin titular en jubilacion.html; analisis.html la asigna siempre a la Persona A',()=>{
   has(jub,/const RIESTER=\{grundzulage:175,kinderzulage:300,sockelbetrag:60,mindesteigenbeitragPct:0\.04,hoechstbetrag:2100\};/);

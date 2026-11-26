@@ -84,14 +84,15 @@ test('ANA-007: con RC cubierta el pilar Patrimonio parte de 80 aunque falten hog
 });
 
 // ---------- AOR-ANA-008 contratos S.5 ----------
-test('ANA-008: renta GARANTIZADA y ESTIMADA se SUMAN en priv; si la estimada incluye la garantizada (habitual en un Vorschlag) se cuenta dos veces',()=>{
+test('ANA-008 (B.6): la ESTIMADA incluye la GARANTIZADA; por contrato se acumula solo estimada−garantizada, así que garantizada+estimada = max(…) y no se cuenta dos veces',()=>{
   has(/var priv=\(pot\*PROD_ANN_NET\)\/infFactor\+contIncome\+rentaGar\+rentaEst;/);
-  has(/label:'Renta mensual GARANTIZADA según el contrato \(opcional\)'/); has(/label:'Renta mensual ESTIMADA, proyección no garantizada \(opcional\)'/);
-  const priv=(gar,est,inf=1)=>gar/inf+est/inf;
-  assert.equal(priv(250,350),600);      // si 350 ya incluye los 250 garantizados, lo correcto sería 350
+  has(/est=Math\.max\(\(parseFloat\(r\.rentaEstimada\)\|\|0\)-gar,0\)/);
+  has(/label:'Renta mensual GARANTIZADA según el contrato \(opcional\)'/); has(/label:'Renta mensual TOTAL ESTIMADA, incluida la garantizada, proyección no garantizada \(opcional\)'/);
+  const agg=(gar,estRaw)=>gar+Math.max(estRaw-gar,0);
+  assert.equal(agg(250,350),350); assert.equal(agg(250,0),250); assert.equal(agg(0,350),350); assert.equal(agg(400,350),400);
 });
 test('ANA-008: un contrato con renta declarada deja de alimentar la proyección genérica (evita contar su aportación dos veces)',()=>{
-  has(/if\(gar>0\|\|est>0\)\{ garA\+=gar\*pA;/); has(/else \{ aporteProyA\+=monto\*pA; aporteProyB\+=monto\*pB; \}/);
+  has(/if\(hayRenta\)\{ garA\+=gar\*pA;/); has(/else \{ aporteProyA\+=monto\*pA; aporteProyB\+=monto\*pB; \}/);
 });
 test('ANA-008: bAV suma un 15 % de empleador a la aportación; Riester suma la Zulage; ambas entran en «aporteJubilacion» (tasa de ahorro del cliente)',()=>{
   has(/if\(BAV_TYPES\.indexOf\(r\.tipo\)>=0\) monto\*=\(1\+BAV_EMPLOYER_MATCH\);/); has(/var BAV_EMPLOYER_MATCH=0\.15;/);

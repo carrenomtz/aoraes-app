@@ -24,7 +24,7 @@ test('SEC-001: el borrador sin cliente activo se escribe en una ranura GLOBAL (n
 
 // ---------------- AOR-SEC-002: Steuer-ID, IBAN ----------------
 test('SEC-002 (hallazgo P): Steuer-ID e IBAN son campos de la ficha (sincronizados a Firestore con el resto) y salen en la sección «Datos personales» del informe, que el asesor puede desactivar; el perfil fiscal nunca los importa',()=>{
-  has(ana,/data-pers="steuerId_A"/); has(ana,/data-pers="iban_A"/); has(ana,/\['IBAN',g\('iban',letter\)\]/); has(ana,/\['Steuer-ID',g\('steuerId',letter\)\]/);
+  has(ana,/data-pers="steuerId_A"/); has(ana,/data-pers="iban_A"/); has(ana,/\['IBAN',maskTail\(g\('iban',letter\),4\)\]/); has(ana,/\['Steuer-ID',maskTail\(g\('steuerId',letter\),3\)\]/); // B.7: enmascarados en el informe
   has(ana,/copia de S\.11 \(identificación, contacto, IBAN, Steuer-ID\) para que el\s+\/\/ asesor tenga la ficha completa/);
   has(ana,/var INFORME_OFF_KEY='aoraes_informe_off_v1';/);                                              // secciones del informe que se pueden desactivar
   assert.ok(!/iban/i.test(read('fiscal.js')+read('fiscal-ui.js')+read('jubilacion.html')));            // ningún cálculo usa el IBAN
