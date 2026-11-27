@@ -1287,8 +1287,17 @@ function inmuebleOnClick(e){
       }
       var inmPrint=e.target.closest('#inm-print-btn');
       if(inmPrint){
-        if(!APP_HOST.wsRec||!APP_HOST.wsRec.inmueble) return true;
-        document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(APP_HOST.wsRec);
+        // Antes, sin proyecto guardado o ante cualquier error, el botón no hacía nada. Ahora se crea el proyecto por defecto si falta
+        // y, si el informe falla, se avisa con el motivo en vez de quedarse en silencio.
+        if(!APP_HOST.wsRec){ alert('Abre una ficha de cliente o el modo genérico para generar el informe.'); return true; }
+        try{
+          normalizeInmueble(APP_HOST.wsRec);
+          document.getElementById('afa-inf-body').innerHTML=buildInmuebleInforme(APP_HOST.wsRec);
+        }catch(errInf){
+          if(window.console) console.error('Informe inmobiliario:',errInf);
+          alert('No se pudo generar el informe: '+(errInf&&errInf.message||errInf)+'. Recarga la página e inténtalo de nuevo; si sigue fallando, avisa al equipo con una captura.');
+          return true;
+        }
         // Vista previa editable primero (p. ej. la Sonderzahlung); se imprime con el botón "Imprimir / PDF" de la barra superior.
         _infOpener=document.activeElement;
         document.getElementById('afa-informe').classList.add('inm','on');
