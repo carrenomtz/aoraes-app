@@ -134,3 +134,16 @@ test('Puente: aviso si se usa el tipo del banco; con el tipo de la caja baja el 
   // 180.000 € al 1,70 % durante 43 meses ≈ 10.965 € de puente, frente a 25.800 € al 4 %
   assert.ok(n(a)-n(b)>14000,`${n(a)} vs ${n(b)}`);
 });
+test('El informe se genera con gastos de compra en % sin depender de una función pct global (antes: «pct is not defined»)',()=>{
+  const c={console,Intl,Math,Date,JSON,Object,Array,String,Number,isFinite,isNaN,parseFloat,parseInt,
+    eur:v=>Math.round(v).toLocaleString('de-DE')+' €', esc:x=>String(x), fmtAnos:m=>(m/12).toFixed(1)+' años',
+    window:{addEventListener(){}}, document:{addEventListener(){},querySelector(){return null},querySelectorAll(){return []},getElementById(){return null}}, localStorage:{getItem:()=>null,setItem:()=>{}}};
+  vm.createContext(c);
+  vm.runInContext(fs.readFileSync(path.join(root,'calc.js'),'utf8'),c);
+  vm.runInContext(fs.readFileSync(path.join(root,'inmueble.js'),'utf8'),c);
+  for(const modo of ["","inm.modo='refi';","inm.modo='refi'; inm.refi.compraNueva=true;"]){
+    const h=vm.runInContext(`(function(){var inm=defaultInmueble(); inm.precio=200000; inm.gastosPct=10; inm.capitalPropio=40000; ${modo} return buildInmuebleInforme({inmueble:inm});})()`,c);
+    assert.match(h,/Informe del proyecto inmobiliario/);
+    if(!modo.includes("modo='refi';") || modo.includes('compraNueva')) assert.match(h,/Gastos de compra/);
+  }
+});

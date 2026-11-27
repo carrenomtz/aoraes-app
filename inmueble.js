@@ -825,7 +825,7 @@ function inmuebleFinLine(inm){
 function inmuebleInformeCostesRows(inm,row){
   var par=inmuebleGastosPartidas(inm), h='';
   if(par){ par.forEach(function(x){ if(x.importe>0) h+=row(x.label,eur(x.importe)); }); h+=row('Gastos de compra (total)',eur(inmuebleGastosTotal(inm))); }
-  else if((inm.gastosPct||0)>0) h+=row('Gastos de compra',pct(inm.gastosPct));
+  else if((inm.gastosPct||0)>0) h+=row('Gastos de compra',inmuebleFmtPct(inm.gastosPct));
   if((inm.capitalPropio||0)>0) h+=row('Capital propio disponible',eur(inm.capitalPropio));
   if((inm.reserva||0)>0) h+=row('Reserva que se mantiene',eur(inm.reserva));
   if((inm.comprometido||0)>0) h+=row('Capital comprometido para otros fines',eur(inm.comprometido));
