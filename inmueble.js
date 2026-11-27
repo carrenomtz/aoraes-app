@@ -64,9 +64,12 @@ function inmuebleOptionCard(opt,title,cfg,note,bausparsumme,inmCtx){
   }
   if(withAnios){
     basic+=inmuebleOptField(opt,'pagoAhorro','Ahorro mensual del cliente (déjalo en cero y se calcula solo)',cfg.pagoAhorro||0,'50','€/mes','min="0"');
+    var bsCard=(cfg.bausparsumme>0)?Math.min(cfg.bausparsumme,bausparsumme||cfg.bausparsumme):(bausparsumme||0), ahorroTarifa=Math.round(bsCard*0.004);
+    if(ahorroTarifa>0) basic+='<div class="inm-quick"><button type="button" data-inm-quickfield="pagoAhorro" data-inm-quickval="'+ahorroTarifa+'"><span>Ahorro habitual de la tarifa</span> <b>'+eur(ahorroTarifa)+'/mes</b></button></div>'+
+      '<p class="inm-eff-note"><span>Con el ahorro habitual de la tarifa (unos cuatro por mil del contrato al mes), la asignación suele tardar unos ocho o nueve años. El mínimo de unos tres años y medio exige ahorrar mucho más o ingresar casi todo de golpe.</span></p>';
     basic+=inmuebleOptField(opt,'aportacionInicial','Aportación inicial al firmar (opcional; cero = ninguna)',cfg.aportacionInicial||0,'1000','€','min="0"');
+    basic+=inmuebleOptField(opt,'interesPuente','Interés del préstamo puente de la Bausparkasse (pídelo a Badenia; cero = se usa el del banco)',cfg.interesPuente||0,'0.01','%','min="0" max="20"');
     basic+=inmuebleOptField(opt,'bausparsumme','Importe del Bausparvertrag (cero = toda la financiación; el resto lo pone el banco)',cfg.bausparsumme||0,'5000','€','min="0"');
-    advanced+=inmuebleOptField(opt,'interesPuente','Interés del préstamo puente (cero = el del banco)',cfg.interesPuente||0,'0.01','%','min="0" max="20"');
     advanced+=inmuebleOptField(opt,'pagoPrestamo','Pago mensual del préstamo (0 = calculado; fija el plazo)',cfg.pagoPrestamo||0,'50','€/mes','min="0"');
   }
   if(withAhorro){
@@ -595,6 +598,7 @@ function inmuebleFechasAhorroHTML(r){
   if(r.aportacionInicial>0) h+='<div class="inm-res-line"><span>Aportación inicial al firmar</span><b>'+eur(r.aportacionInicial)+'</b></div>';
   h+='<div class="inm-res-line"><span>Ahorro mínimo reunido</span><b>'+(r.mesesObjetivo>0?inmuebleMesAnio(r.mesesObjetivo):'desde el inicio')+'</b></div>';
   h+='<div class="inm-res-line"><span>Asignación estimada (pendiente de confirmar con Badenia)</span><b>'+inmuebleMesAnio(r.mesesAhorro)+'</b></div>';
+  if(r.mesesObjetivo<r.mesesAhorro) h+='<div class="inm-res-line inm-eff-hint inm-detalle"><span>Si compras hoy: prefinanciación hasta reunir el ahorro mínimo y crédito intermedio desde ahí hasta la asignación.</span></div>';
   if(r.pagoPedido>0&&r.mesesConPagoPedido>0) h+='<div class="inm-res-line inm-eff-hint"><span>Ahorrando</span> <b>'+eur(r.pagoPedido)+'/mes</b> <span>reunirías el ahorro mínimo en</span> <b>'+inmuebleAniosUnos(r.mesesConPagoPedido)+'</b><span>, pero la asignación no llega antes del tiempo mínimo: basta con</span> <b>'+eur(r.cuotaAhorro)+'/mes</b>.</div>';
   return h;
 }
@@ -671,7 +675,8 @@ function inmuebleResultsHTML(precio,inm,asParts){
           (puente>0?'<div class="inm-res-line save inm-detalle"><span>'+(difPuente>=0?'Menos intereses y comisiones que el banco si compras hoy':'Más intereses y comisiones que el banco si compras hoy')+'</span><b'+(difPuente>=0?' class="inm-ahorro"':'')+'>'+eur(Math.abs(difPuente))+'</b></div>':'')
         :'<div class="inm-res-line inm-eff-hint"><span>Comparación en euros no disponible: los pagos mensuales de ambas opciones son distintos. Pulsa «Mismo pago mensual» para compararlas en igualdad.</span></div>'):'')+
       (!isBanco&&rEst.mesesAhorro>0&&!inmuebleRequierePuente(inm)?'<div class="inm-res-line inm-eff-hint inm-detalle"><span>Compra futura: se ahorra antes de comprar, así que no hay financiación puente. Hasta entonces no eres propietario.</span></div>':'')+
-      (!isBanco&&puente>0?'<div class="inm-res-line inm-eff-hint"><span>* Hipótesis: para comprar hoy, un banco adelanta la financiación al tipo del banco, solo intereses, hasta la asignación del contrato. La fecha de asignación es una estimación, no está garantizada.</span></div>':'')+
+      (!isBanco&&puente>0&&!(estCfg.interesPuente>0)?'<div class="inm-res-warn"><span>El préstamo puente se está calculando con el tipo del banco. La Bausparkasse lo suele dar a su propio tipo, normalmente más bajo: escríbelo en «Interés del préstamo puente» para no inflar el coste.</span></div>':'')+
+      (!isBanco&&puente>0?'<div class="inm-res-line inm-eff-hint"><span>* Hipótesis: para comprar hoy, la Bausparkasse adelanta el importe del contrato y solo se pagan intereses hasta la asignación: prefinanciación mientras se reúne el ahorro mínimo y crédito intermedio desde ahí.</span> <span>Su tipo fijo puede terminar antes de la asignación, y durante ese tipo fijo no se puede amortizar antes sin indemnización.</span> <span>La fecha de asignación es una estimación, no está garantizada.</span></div>':'')+
       inmuebleTimeRow(isBanco?r:rEstV,maxMeses,isBanco)+
       inmuebleCertRow(r,inm.banco.zinsbindung,isBanco)+
       '</div>';
@@ -938,6 +943,8 @@ function inmuebleLimitsHTML(inm){
 
 // Diapositiva "Preguntas habituales": objeciones frecuentes con respuesta corta y neutra (sin cifras ni promesas). Cada frase va en su propio <span> para que se traduzca.
 var INM_FAQ=[
+  ['¿Puedo devolver el préstamo Bauspar antes de tiempo?',['Sí: el préstamo Bauspar se puede amortizar total o parcialmente en cualquier momento, sin penalización.','El préstamo puente (prefinanciación o crédito intermedio) es distinto: durante su tipo fijo no se puede amortizar antes sin indemnización.']],
+  ['¿Qué garantías pide la Bausparkasse?',['Basta una garantía en segundo rango, así que el primero queda libre para el banco.','En importes pequeños puede no hacer falta garantía sobre la vivienda; la Bausparkasse confirma el límite.']],
   ['Un conocido me ha dicho que tiene una oferta mejor.',['Comparar bien es justo lo que buscamos: se ponen las dos ofertas con el mismo importe, el mismo plazo y el mismo periodo de tipo fijo.','Hay que incluir también las comisiones y la deuda que queda al terminar el tipo fijo.','Con los mismos supuestos la comparación es justa.']],
   ['¿Por qué piden tantos documentos?',['El banco debe comprobar ingresos, gastos y el inmueble antes de conceder el préstamo.','Tener todo preparado desde el principio acorta el proceso y evita retrasos.']],
   ['¿Por qué no elegir un tipo fijo más corto, que suele ser más barato?',['Un tipo fijo más corto suele tener un interés menor, pero al terminar hay que refinanciar al tipo que haya entonces y la cuota puede subir.','Uno más largo cuesta algo más hoy y da más seguridad.','Depende de cuánta incertidumbre quiera asumir el cliente.']],

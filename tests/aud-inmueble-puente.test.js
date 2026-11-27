@@ -123,3 +123,14 @@ test('Aportación inicial: adelanta el ahorro mínimo; la asignación nunca ante
   assert.match(p.cards,/Intereses del puente hasta la asignación|puente incluido/);
   assert.match(p.cards,/Ahorro mínimo reunido<\/span><b>desde el inicio/);
 });
+test('Puente: aviso si se usa el tipo del banco; con el tipo de la caja baja el coste y desaparece el aviso',()=>{
+  const c=ctx();
+  const n=h=>+h.cards.match(/Intereses y comisiones \(puente incluido\)\*<\/span><b>([\d.]+)/)[1].replace(/\./g,'');
+  const a=renderCfg(c,"inm.precio=200000; inm.gastosPct=10; inm.capitalPropio=40000; inm.banco.interesPrestamo=4");
+  const b=renderCfg(c,"inm.precio=200000; inm.gastosPct=10; inm.capitalPropio=40000; inm.banco.interesPrestamo=4; inm.a.interesPuente=1.7");
+  assert.match(a.cards,/se está calculando con el tipo del banco/);
+  assert.doesNotMatch(b.cards,/se está calculando con el tipo del banco/);
+  assert.match(b.cards,/prefinanciación mientras se reúne el ahorro mínimo/);
+  // 180.000 € al 1,70 % durante 43 meses ≈ 10.965 € de puente, frente a 25.800 € al 4 %
+  assert.ok(n(a)-n(b)>14000,`${n(a)} vs ${n(b)}`);
+});

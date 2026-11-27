@@ -41,7 +41,7 @@ test('IMM-006: puente = capital × tipo/12 × meses de ahorro, solo intereses so
 test('IMM-006 (hallazgo C): el puente no modela comisiones, seguros, tipo variable, retraso de asignación ni falta de Anschlussfinanzierung; la asignación se supone en la fecha estimada',()=>{
   const f=fs.readFileSync(path.join(root,'calc.js'),'utf8'); const b=f.slice(f.indexOf('// Puente hasta la asignación'),f.indexOf('function isoDateYearsAgo'));
   assert.ok(/no está garantizada/.test(b)); assert.ok(!/comision|seguro|variable|retraso/i.test(b.replace(/\/\/.*$/gm,'')));
-  const inm=fs.readFileSync(path.join(root,'inmueble.js'),'utf8'); assert.ok(/Hipótesis: para comprar hoy, un banco adelanta la financiación/.test(inm));
+  const inm=fs.readFileSync(path.join(root,'inmueble.js'),'utf8'); assert.ok(/Hipótesis: para comprar hoy, la Bausparkasse adelanta el importe del contrato/.test(inm));
 });
 
 // ---------- IMM-004/005/008 Bauspar ----------
